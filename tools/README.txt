@@ -3,7 +3,7 @@ backwards compatible with O/NScripter (except for recoder). I may decide later
 on to add incompatible features, such as compression.
 
 crypt
-crypt can be used to unencrypt O/NScripter and ONSlaught script files. It uses
+crypt can be used to decrypt O/NScripter and ONSlaught script files. It uses
 XOR-based encryption, which is symmetric. This means that the same code is used
 for both encryption and decryption.
 The original tool, nscmake, was crap. A 450 MHz took over twenty minutes to

@@ -1,4 +1,4 @@
-200801??
+20080126
     * First release separate from the main archive.
     * Added nsaio to replace the old ONScripter programs. Don't expect this to
       ever be ported to anything other than Windows and Linux. Boost is not easy

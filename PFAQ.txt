@@ -23,10 +23,10 @@ A: These are the most prominent changes:
      unimplemented for being considered impractical.
    * Archives with ASCII-only names are read correctly. I believe O/NScripter
      uses Shift JIS to store file names in archive headers. This has yet to be
-	 implemented.
+     implemented.
    * "nscrflog.dat" and "gloval.sav" are read correctly, but written back in a
      format O/NScripter can't read. "nscrflog.dat" is written back as
-	 "nonsflog.dat". "gloval.sav" is written back as "global.sav".
+     "nonsflog.dat". "gloval.sav" is written back as "global.sav".
    * Only a narrow range of save game files are supported. Namely, versions
      200-202. Save game files are written in a format O/NScripter can't read.
    * "envdata" (whatever it is) is ignored.
@@ -43,23 +43,23 @@ O/NScripter).
      UCS-2 with or without BOM (Unicode encoding)
      UTF-8 (Unicode encoding)
      Shift JIS (code page)
-     Future releases may add more encondings or code pages, and/or the
-	 possibility to add more through some interpreted language (probably
-	 Python).
+     Future releases may add more encodings or code pages, and/or the
+     possibility to add more through some interpreted language (probably
+     Python).
    * Non-monospace font support.
    * A few new commands.
    * Debug mode allows script writers to view the values of variables and to run
      commands a few commands from the console. The verbosity of the engine can
-	 be changed through the command line, or through a file that simulated the
-	 command line.
+     be changed through the command line, or through a file that simulated the
+     command line.
    * Images may have an alpha channel. As simple as this sounds, this was not
      supported by O/NScripter. For an image to have transparency, it was
-	 necessary to add the alpha plane to the right of the bitmap.
+     necessary to add the alpha plane to the right of the bitmap.
    * When drawing to the screen, all processors are used to speed things up.
    * Through a clever programming trick, it's possible to run a script at a
      different physical resolution than its logical resolution. For example, a
-	 script that was designed to be ran at 640x480 can be scaled up to 1280x1024
-	 without changing the script or the data.
+     script that was designed to be ran at 640x480 can be scaled up to 1280x1024
+     without changing the script or the data.
 
 Q: Why should I use ONSlaught instead of O/NScripter?
 A: Unlike O/NScripter, ONSlaught was designed from the start to support European
@@ -79,6 +79,33 @@ individual glyphs, which is a plus for aesthetics.
 These reasons are, of course, only relevant for script writers. End users have
 no reason to stop using their current engine.
 
+Q: Under what terms is ONSlaught licensed?
+A: ONSlaught is licensed under the terms of a classic 3-clause BSD-style
+licence. It allows the following:
+* All or parts of the code may be used in both closed and open source -- be it
+  as redistributions or derivative works -- or for any other purpose, as long as
+  the copyright notice, the list of conditions, and the disclaimer is included.
+Additionally:
+* The author's name may only be used to promote derivative works with his prior
+  written permission.
+* Derivative works may only include the word "ONSlaught" with the authors prior
+  written permission.
+I chose the BSD-style licence because I've always considered the GPL to provide
+only a false sense of freedom, and because I don't feel free software to be a
+silver bullet.
+Allow me to expand: If I write code and make it available, it's because I want
+other people to use it, and to use it to produce more great software. If I
+arbitrarily deny a group of people their right to use it, then I'm defeating my
+own purpose. In the end, whether a certain software is free or not is relatively
+irrelevant when compared to its quality. In most cases, anyway. If my code can
+help create great software, what right do I have to deny society its benefit
+based on the licence choice of the third party? And what right do I have to
+force other people to feel the same way I do?
+
+Some files were written by other people. See Licence.txt for their respective
+licences and acknowledgements.
+
+
 Q: Where are the save files stored?
 A: It depends on the system. On Windows, they are stored in a directory in
 "My Documents\.ONSlaught\". On Linux, they are stored in a directory in
@@ -86,6 +113,7 @@ A: It depends on the system. On Windows, they are stored in a directory in
 depends on the script.
 The engine reports the location at startup. Depending on the options you passed
 to it, you may read it on the console, or in "stdout.txt".
+UPDATE:
 
 Q: When I set the available save game slots to the maximum and enter the save
 screen, it takes a while to load and then it displays fewer slots than it
@@ -97,14 +125,9 @@ set the correct number of slots yourself.
 
 Q: How stable is ONSlaught?
 A: Stable, and getting more stable every day. If you find any bugs, don't
-hesitate to inform me throught email. KnownIssues.txt enumerates the bugs I'm
+hesitate to inform me through email. KnownIssues.txt enumerates the bugs I'm
 already aware of. Some of them are external to the engine (e.g. a bug in one of
 the libraries), and therefore, I cannot fix them.
-Compiling for Linux wakes up a few dormant bugs that don't manifest in Windows.
-At this moment, I cannot discern if these bugs come from my code, or from the
-libraries. Thus far, I've only found one serious bug I haven't determined when
-it happens. It's recommended to save often, in Linux.
-The Windows version is proctically bug-free.
 
 Q: My target system doesn't allow passing command line arguments. What do I do?
 A: If there's a file named "arguments.txt" i nthe working directory, the engine

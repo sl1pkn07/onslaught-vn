@@ -1,106 +1,122 @@
 ﻿The following things have changed from ONScripter:
-	Changed syntax:
-		All syntax used by the expression parser (numerical constants,
-		operators, and identifiers) is automatically converted to ASCII during
-		parsing (no exceptions), so an expression containing invalid characters
-		will of course not be correctly parsed. I am aware that there are
-		Unicode characters that look like ASCII characters (such as full-width
-		latin glyphs, or the many spaces), so that's why I wanted to make this
-		straight, just in case some system entered these characters by default.
-		Strings and command names and can use any character, though.
-		Variables: Only the following are valid variable name characters: latin
-			alphabet characters (A-Z and a-z), underscores, and numerals
-			anywhere but as the first character in the name (to avoid conflict
-			with numerical constants). This is the same rule used by C and
-			derived languages. For example, _1identifier is valid, but
-			1identifier is not.
-			Variable names can be of any length.
-			"%variable" and "$variable" refer to the same variable when used as
-			an out parameter (e.g. the variable "%a" in "mov %a,0" is an out
-			parameter), but if used as an in parameter for a command that
-			expects a different variable name, it will be rejected (e.g. "mov
-			%a,$b" is invalid even if "$b" was actually declared as "%b").
-		Expressions: Expressions are now C-styled.
-			The following operators are allowed: ||, &&, ==, !=, <>, >=, <=, =,
-			>, <, +, -, *, /, |, &.
-			Note that & and | are different from && and ||.
-			fchk and lchk are extra unary operators. See the original
-			documentation for details.
-			String literals are not allowed in expressions. String variables are
-			only allowed in combination with one of the two unary operators.
-		Strings:
-			Only things inside of quotes are considered strings. Only these two
-			characters are treated as quotes: " (Unicode code point U+0022),
-			` (Unicode code point U+0060). It's possible to use one quote inside
-			of a string that uses the other kind of quote: `This is a whole
-			"string" because the inner quotes, being of a different kind, are
-			ignored.`
-			U+0060 is also used to print lines when it's the first
-			non-whitespace character in a line.
-		Arrays: They have the same constraints as variables.
-			Arrays may have any number of dimensions.
-			Arrays can have mixed types (e.g. ?a[0] may be an integer while
-			?a[1] may be a string). As this is hard to keep track of (by a
-			human, that is), it's not recommendable.
-			Arrays use a different name space than variables, so "?a" is
-			different from "%a".
-			Array indices are now interpreted as complete expressions
-			(e.g. ?a[%a*%b+4][?b[%c]] is valid to use in any part of the script
-			[as long as all the variables used are defined, of course]).
-	Unimplemented commands:
-		linepage: Redundant functionality.
-		versionstr: Unused.
-		avi: Functionality depends on a myriad of factors.
-		zenkakko: Unknown purpose.
-		soundpressplgin: Deprecated and not portable.
-		spi: Not portable.
-		getreg: Not portable.
-	Changed behaviors:
-		if: Expression syntax has changed. See the changed syntax section.
-		arc: No longer uses a dynamic link library due to portability issues.
-		setwindow: The behavior changes if the command is used after a
-			new_set_window. Prefer this one over the older one, as it's more
-			predictable.
-			The units are in pixels.
-			Syntax: setwindow %,%,%,%,%,%,%,%,%,%,#,%,%,%,%
-				The parameters are, in order:
-				start X of the text frame,
-				start Y of the text frame,
-				end X of the text frame,
-				end Y of the text frame,
-				height of the font in pixels,
-				extra character (horizontal) spacing,
-				extra line (vertical) spacing,
-				default text speed (the engine will wait this many ms after each
-				 character),
-				use bold font? (ignored),
-				render shadow?,
-				hex color value for thw text window,
-				start X of the text window,
-				start Y of the text window,
-				end X of the text window,
-				end Y of the text window,
-			Syntax: setwindow %,%,%,%,%,%,%,%,%,%,$,%,%,%,%
-				The parameters for this syntax are the same as the previous, but
-				instead of a color value, a file string referring to an image is
-				used.
-			
-	New commands:
-		date2: The same as "date", but the year is returned in YYYY format,
-			not YY.
-		enable_onslaught_language_extensions: Enables language extensions. Most 
-			significantly, variables can now be declared anywhere.
-		disable_onslaught_language_extensions: Disables language extensions.
-		getini: It is back from Nscripter.
-		new_setwindow: Uses the new version of setwindow.
-		set_default_font_size %: Changes the default font size. Meant to be used
-		with new_setwindow.
-		unalias: Undefine a previously defined alias.
-		literal_print: Mostly reserved for debugging. It will print whatever
-		text is passed to it. For example:
-		
-		literal_print "This is an example of the \"literal_print\" command.\nWith this command, we can print any characters we want, such as new\rlines, \"quotes\", back\\slashes, or even Unicode characters: \xFFE6.\n\nWe can also print the value of variables: %var=",%var,"\n\"literal_print\" is therefore very useful for debugging scripts.\nAs usual, we don't need to worry about line- or page-wrapping, either."
-		
-		use_new_if: There was a problem with the if in the old ONScripter. According to boolean algebra, "NOT (a AND b)" is not the same as "(NOT a) AND (NOT b)". Apparently, the original coder missed that class.
-		use_new_if will force the engine to use the correct logic.
-		centerh: 
+    Changed syntax:
+        All syntax used by the expression parser (numerical constants,
+        operators, and identifiers) is automatically converted to ASCII during
+        parsing (no exceptions), so an expression containing invalid characters
+        will of course not be correctly parsed. I am aware that there are
+        Unicode characters that look like ASCII characters (such as full-width
+        latin glyphs, or the many spaces), so that's why I wanted to make this
+        straight, just in case some system entered these characters by default.
+        Strings and command names and can use any character, though.
+        Variables: Only the following are valid variable name characters: latin
+            alphabet characters (A-Z and a-z), underscores, and numerals
+            anywhere but as the first character in the name (to avoid conflict
+            with numerical constants). This is the same rule used by C and
+            derived languages. For example, _1identifier is valid, but
+            1identifier is not.
+            Variable names can be of any length.
+            "%variable" and "$variable" refer to the same variable when used as
+            an out parameter (e.g. the variable "%a" in "mov %a,0" is an out
+            parameter), but if used as an in parameter for a command that
+            expects a different variable name, it will be rejected (e.g. "mov
+            %a,$b" is invalid even if "$b" was actually declared as "%b").
+        Expressions: Expressions are now C-styled.
+            The following operators are allowed: ||, &&, ==, !=, <>, >=, <=, =,
+            >, <, +, -, *, /, |, &.
+            Note that & and | are different from && and ||.
+            fchk and lchk are extra unary operators. See the original
+            documentation for details.
+            String literals are not allowed in expressions. String variables are
+            only allowed in combination with one of the two unary operators.
+        Strings:
+            Only things inside of quotes are considered strings. Only these two
+            characters are treated as quotes: " (Unicode code point U+0022),
+            ` (Unicode code point U+0060). It's possible to use one quote inside
+            of a string that uses the other kind of quote: `This is a whole
+            "string" because the inner quotes, being of a different kind, are
+            ignored.`
+            U+0060 is also used to print lines when it's the first
+            non-whitespace character in a line.
+        Arrays: They have the same constraints as variables.
+            Arrays may have any number of dimensions.
+            Arrays can have mixed types (e.g. ?a[0] may be an integer while
+            ?a[1] may be a string). As this is hard to keep track of (by a
+            human, that is), it's not recommendable.
+            Arrays use a different name space than variables, so "?a" is
+            different from "%a".
+            Array indices are now interpreted as complete expressions
+            (e.g. ?a[%a*%b+4][?b[%c]] is valid to use in any part of the script
+            [as long as all the variables used are defined, of course]).
+    Unimplemented commands:
+        linepage: Redundant functionality.
+        versionstr: Unused.
+        avi: Functionality depends on a myriad of factors.
+        zenkakko: Unknown purpose.
+        soundpressplgin: Deprecated and not portable.
+        spi: Not portable.
+        getreg: Not portable.
+    Changed behaviors:
+        if: Expression syntax has changed. See the changed syntax section.
+        arc: No longer uses a dynamic link library due to portability issues.
+        setwindow: The behavior changes if the command is used after a
+            new_set_window. Prefer this one over the older one, as it's more
+            predictable.
+            The units are in pixels.
+            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,#,%,%,%,%
+                The parameters are, in order:
+                start X of the text frame,
+                start Y of the text frame,
+                end X of the text frame,
+                end Y of the text frame,
+                height of the font in pixels,
+                extra character (horizontal) spacing,
+                extra line (vertical) spacing,
+                default text speed (the engine will wait this many ms after each
+                 character),
+                use bold font? (ignored),
+                render shadow?,
+                hex color value for thw text window,
+                start X of the text window,
+                start Y of the text window,
+                end X of the text window,
+                end Y of the text window,
+            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,$,%,%,%,%
+                The parameters for this syntax are the same as the previous, but
+                instead of a color value, a file string referring to an image is
+                used.
+            
+    New commands:
+        date2: The same as "date", but the year is returned in YYYY format,
+            not YY.
+        enable_onslaught_language_extensions: Enables language extensions. Most 
+            significantly, variables can now be declared anywhere.
+        disable_onslaught_language_extensions: Disables language extensions.
+        getini: It is back from NScripter.
+        new_setwindow: Uses the new version of setwindow.
+        set_default_font_size %: Changes the default font size. Meant to be used
+        with new_setwindow.
+        unalias: Undefine a previously defined alias.
+        literal_print: Mostly reserved for debugging. It will print whatever
+        text is passed to it. For example:
+        
+        literal_print "This is an example of the \"literal_print\" command.\nWith this command, we can print any characters we want, such as new\rlines, \"quotes\", back\\slashes, or even Unicode characters: \xFFE6.\n\nWe can also print the value of variables: %var=",%var,"\n\"literal_print\" is therefore very useful for debugging scripts.\nAs usual, we don't need to worry about line- or page-wrapping, either."
+        
+        use_new_if: There was a problem with the if in the old ONScripter.
+            According to boolean algebra, "NOT (a AND b)" is not the same as
+            "(NOT a) AND (NOT b)". Apparently, the original coder missed that
+            class.
+        use_new_if will force the engine to use the correct logic.
+        centerh: Sets the center pivot to a horizontal percentage of the screen.
+            For example, centerh 0 is left justified, centerh 50 is centered,
+            and centerh 100 is right justified.
+            The syntax is: centerh %
+            % must be in the range [0;100]. If it's below the range, zero is
+            assumed. If above, 100 is assumed.
+        centerv: Works the same as centerh, but for vertical centering. In order
+            to support this command, a new escape sequence was added: "!nl". It
+            is replaced by a new line during the printing process.
+            It is important that all printing commands end with a \:
+                `Sample vertically!nlcentered text.\ ;<-- Ok.
+                `Sample vertically!nlcentered text. ;<-- May produce strange artifacts.
+                \ ;<-- If this appears before the next printing command, there's no problem.
+            Also, at the moment vertical centering produces incorrect results when the size of a page of text is greater than the size of the screen. This will probably be fixed in future releases.
