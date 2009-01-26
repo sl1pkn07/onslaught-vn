@@ -1,0 +1,89 @@
+/*
+* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*     * Redistributions of source code must retain the above copyright notice, 
+*       this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * Helios' name may not be used to endorse or promote products derived from
+*       this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL HELIOS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+* EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+* OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#ifndef NONS_GFX_H
+#define NONS_GFX_H
+
+#include "../../Common.h"
+#include "../../ErrorCodes.h"
+#include "VirtualScreen.h"
+#include <SDL/SDL.h>
+#include <set>
+#include <map>
+
+enum{
+	TRANSITION=0,
+	POSTPROCESSING=1,
+};
+
+struct NONS_GFX{
+	ulong effect;
+	ulong duration;
+	wchar_t *rule;
+	long type;
+	bool stored;
+	SDL_Color color;
+	static ulong effectblank;
+	NONS_GFX(ulong effect=0,ulong duration=0,wchar_t *rule=0);
+	NONS_GFX(const NONS_GFX &b);
+	NONS_GFX &operator=(const NONS_GFX &b);
+	~NONS_GFX();
+	static ErrorCode callEffect(ulong number,long duration,wchar_t *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
+	ErrorCode call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
+	void effectNothing(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectOnlyUpdate(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectRshutter(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectLshutter(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectDshutter(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectUshutter(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectRcurtain(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectLcurtain(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectDcurtain(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectUcurtain(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectRscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectLscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectDscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectUscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectMosaicIn(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectMosaicOut(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+	void effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
+
+	void effectMonochrome(SDL_Surface *src0,SDL_Surface *dst);
+	void effectNegative(SDL_Surface *src0,SDL_Surface *dst);
+	void effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst);
+};
+
+struct NONS_GFXstore{
+	std::map<ulong,NONS_GFX *> effects;
+	NONS_GFX *add(ulong code,ulong effect,ulong duration,wchar_t *rule=0);
+	NONS_GFX *retrieve(ulong code);
+	bool remove(ulong code);
+	NONS_GFXstore();
+	~NONS_GFXstore();
+};
+#endif

@@ -1,0 +1,12 @@
+* MP3
+	smpeg.dll (used for mp3 playback) tends to crash unexpectedly. It's
+	encouraged to use OGG, instead. Use MP3 at your own risk.
+* Debug mode
+	When running in language debug mode and the debug thread is waiting for
+	input, the program will not end until *any* input (including an empty
+	string) is given. The interpreter and the image loader will be destroyed
+	cleanly (thereby commiting "global.sav" and "nonsflog.dat"), so it's
+	otherwise completely safe.
+	The thread can be killed early with "exit" or "quit".
+* Linux
+	???
