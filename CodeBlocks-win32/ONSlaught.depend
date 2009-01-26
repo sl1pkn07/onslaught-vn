@@ -1,0 +1,1764 @@
+# depslib dependency file v1.0
+1230769585 source:c:\nons\src\commandlineoptions.cpp
+	"CommandLineOptions.h"
+	"Globals.h"
+
+1230769552 c:\nons\src\commandlineoptions.h
+	"enums.h"
+	"CommonTypes.h"
+
+1229360115 c:\nons\src\enums.h
+
+1229360115 c:\nons\src\commontypes.h
+	<SDL/SDL_stdinc.h>
+
+1199058516 c:\nons\include\sdl\sdl_stdinc.h
+	"SDL_config.h"
+	<sys/types.h>
+	<stdio.h>
+	<stdlib.h>
+	<stddef.h>
+	<stdarg.h>
+	<stdlib.h>
+	<malloc.h>
+	<stddef.h>
+	<stdarg.h>
+	<memory.h>
+	<string.h>
+	<strings.h>
+	<inttypes.h>
+	<stdint.h>
+	<ctype.h>
+	<iconv.h>
+	"begin_code.h"
+	<alloca.h>
+	<malloc.h>
+	<malloc.h>
+	<malloc.h>
+	<stdlib.h>
+	"close_code.h"
+
+1199063826 c:\nons\include\sdl\sdl_config.h
+	"SDL_platform.h"
+	"SDL_config_dreamcast.h"
+	"SDL_config_macos.h"
+	"SDL_config_macosx.h"
+	"SDL_config_symbian.h"
+	"SDL_config_win32.h"
+	"SDL_config_os2.h"
+	"SDL_config_minimal.h"
+
+1199058516 c:\nons\include\sdl\sdl_platform.h
+
+1199058516 c:\nons\include\sdl\sdl_config_dreamcast.h
+	"SDL_platform.h"
+
+1199058516 c:\nons\include\sdl\sdl_config_macos.h
+	"SDL_platform.h"
+	<MacTypes.h>
+
+1199058516 c:\nons\include\sdl\sdl_config_macosx.h
+	"SDL_platform.h"
+	<AvailabilityMacros.h>
+
+1199058516 c:\nons\include\sdl\sdl_config_symbian.h
+	"SDL_platform.h"
+	<stdarg.h>
+	<stddef.h>
+
+1199058516 c:\nons\include\sdl\sdl_config_win32.h
+	"SDL_platform.h"
+
+1199058516 c:\nons\include\sdl\sdl_config_os2.h
+	"SDL_platform.h"
+
+1223776339 c:\nons\include\sdl\sdl_config_minimal.h
+	"SDL_platform.h"
+	<stdarg.h>
+
+1199058516 c:\nons\include\sdl\begin_code.h
+
+1199058516 c:\nons\include\sdl\close_code.h
+
+1230436591 c:\nons\src\globals.h
+	"CommandLineOptions.h"
+	"IO_System/InputHandler.h"
+	"IO_System/StdOut.h"
+	"IO_System/SAR/Image_Loader/ImageLoader.h"
+	<map>
+	<vector>
+	<cassert>
+
+1229752595 c:\nons\src\io_system\inputhandler.h
+	<SDL/SDL.h>
+	<queue>
+	"../Common.h"
+
+1199058516 c:\nons\include\sdl\sdl.h
+	"SDL_main.h"
+	"SDL_stdinc.h"
+	"SDL_audio.h"
+	"SDL_cdrom.h"
+	"SDL_cpuinfo.h"
+	"SDL_endian.h"
+	"SDL_error.h"
+	"SDL_events.h"
+	"SDL_loadso.h"
+	"SDL_mutex.h"
+	"SDL_rwops.h"
+	"SDL_thread.h"
+	"SDL_timer.h"
+	"SDL_video.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_main.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_audio.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_endian.h"
+	"SDL_mutex.h"
+	"SDL_thread.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_error.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_endian.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_mutex.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_thread.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_mutex.h"
+	"begin_code.h"
+	<process.h>
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_rwops.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_cdrom.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_cpuinfo.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_events.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_active.h"
+	"SDL_keyboard.h"
+	"SDL_mouse.h"
+	"SDL_joystick.h"
+	"SDL_quit.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_active.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_keyboard.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_keysym.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_keysym.h
+
+1199058516 c:\nons\include\sdl\sdl_mouse.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_video.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_joystick.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_quit.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+
+1199058516 c:\nons\include\sdl\sdl_loadso.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_timer.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_version.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1230734533 c:\nons\src\common.h
+	<iostream>
+	"CommonTypes.h"
+
+1229367171 c:\nons\src\io_system\stdout.h
+	"../Common.h"
+	"../CommandLineOptions.h"
+	<fstream>
+	<SDL/SDL.h>
+
+1229971329 c:\nons\src\io_system\sar\image_loader\imageloader.h
+	"../../../Common.h"
+	"../GeneralArchive.h"
+	"FileLog.h"
+	"Image.h"
+	<vector>
+
+1229360115 c:\nons\src\io_system\sar\generalarchive.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"Archive.h"
+
+1229360115 c:\nons\src\errorcodes.h
+	"CommonTypes.h"
+
+1229360115 c:\nons\src\io_system\sar\archive.h
+	"../../Common.h"
+	"TreeNode.h"
+
+1229360115 c:\nons\src\io_system\sar\treenode.h
+	"../../Common.h"
+	"ArchivedFile.h"
+	<vector>
+
+1229360115 c:\nons\src\io_system\sar\archivedfile.h
+	"../../Common.h"
+
+1230493851 c:\nons\src\io_system\sar\image_loader\filelog.h
+	"../../../Common.h"
+	"../../../strCmpT.h"
+	<set>
+
+1229360115 c:\nons\src\strcmpt.h
+
+1229971302 c:\nons\src\io_system\sar\image_loader\image.h
+	"../../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+
+1184299608 c:\nons\include\sdl\sdl_image.h
+	"SDL.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1229886845 source:c:\nons\src\encryption.cpp
+	"Encryption.h"
+	"Globals.h"
+	"IO_System/FileIO.h"
+
+1229360115 c:\nons\src\encryption.h
+	"Common.h"
+	"ErrorCodes.h"
+	<iostream>
+
+1229360115 c:\nons\src\io_system\fileio.h
+	"../Common.h"
+	<fstream>
+
+1229886845 source:c:\nons\src\everything.cpp
+	"Everything.h"
+	"Globals.h"
+
+1229360115 c:\nons\src\everything.h
+	"Common.h"
+	"ErrorCodes.h"
+	"IO_System/Graphics/ScreenSpace.h"
+	"IO_System/Audio/Audio.h"
+	"IO_System/Graphics/ButtonLayer.h"
+	"IO_System/SAR/GeneralArchive.h"
+	"IO_System/Script/Script.h"
+
+1231033140 c:\nons\src\io_system\graphics\screenspace.h
+	<vector>
+	"StandardOutput.h"
+	"../../Common.h"
+	"GFX.h"
+	"../../ErrorCodes.h"
+	"Lookback.h"
+	"VirtualScreen.h"
+
+1231107827 c:\nons\src\io_system\graphics\standardoutput.h
+	"../InputHandler.h"
+	"Layer.h"
+	"../../Common.h"
+	"GFX.h"
+	"VirtualScreen.h"
+	<string>
+
+1229360115 c:\nons\src\io_system\graphics\layer.h
+	<SDL/SDL_image.h>
+	"FontCache.h"
+	"../../Common.h"
+	"../SAR/Image_Loader/ImageLoader.h"
+	"../../enums.h"
+
+1229360115 c:\nons\src\io_system\graphics\fontcache.h
+	<vector>
+	"Glyph.h"
+	"Font.h"
+
+1229382390 c:\nons\src\io_system\graphics\glyph.h
+	<SDL/SDL.h>
+	"SDL_ttf.h"
+	"Font.h"
+	"../../Common.h"
+
+1229376299 c:\nons\src\io_system\graphics\sdl_ttf.h
+	<SDL/SDL.h>
+	<SDL/begin_code.h>
+	<SDL/close_code.h>
+
+1229382389 c:\nons\src\io_system\graphics\font.h
+	"SDL_ttf.h"
+	"../../Common.h"
+
+1229907913 c:\nons\src\io_system\graphics\gfx.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"VirtualScreen.h"
+	<SDL/SDL.h>
+	<set>
+	<map>
+
+1229987791 c:\nons\src\io_system\graphics\virtualscreen.h
+	"../../Common.h"
+	<SDL/SDL.h>
+
+1229360115 c:\nons\src\io_system\graphics\lookback.h
+	"../../Common.h"
+	"StandardOutput.h"
+	<SDL/SDL.h>
+
+1229649044 c:\nons\src\io_system\audio\audio.h
+	"SoundEffect.h"
+	"Music.h"
+	"SoundCache.h"
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	<map>
+	<string>
+
+1229360115 c:\nons\src\io_system\audio\soundeffect.h
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	"CachedSound.h"
+	"../../Common.h"
+
+1184988080 c:\nons\include\sdl\sdl_mixer.h
+	"SDL_types.h"
+	"SDL_rwops.h"
+	"SDL_audio.h"
+	"SDL_endian.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\nons\include\sdl\sdl_types.h
+	"SDL_stdinc.h"
+
+1229360115 c:\nons\src\io_system\audio\cachedsound.h
+	"../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	<ctime>
+
+1229360115 c:\nons\src\io_system\audio\music.h
+	<SDL/SDL_mixer.h>
+	"../../Common.h"
+
+1229360115 c:\nons\src\io_system\audio\soundcache.h
+	"../../Common.h"
+	"../../strCmpT.h"
+	"SoundEffect.h"
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_thread.h>
+	<map>
+	<list>
+
+1229360115 c:\nons\src\io_system\graphics\buttonlayer.h
+	"../../Common.h"
+	<vector>
+	"Button.h"
+	"ScreenSpace.h"
+	"../Audio/Audio.h"
+	"../SAR/GeneralArchive.h"
+
+1229360115 c:\nons\src\io_system\graphics\button.h
+	"../../Common.h"
+	"ScreenSpace.h"
+	<vector>
+
+1229360115 c:\nons\src\io_system\script\script.h
+	"../../Common.h"
+	"ScriptBlock.h"
+	"../../Encryption.h"
+	"../../ErrorCodes.h"
+	"../../enums.h"
+	<vector>
+
+1229360115 c:\nons\src\io_system\script\scriptblock.h
+	"../../Common.h"
+
+1230943485 source:c:\nons\src\functions.cpp
+	"Functions.h"
+	"Globals.h"
+	"UTF.h"
+	<cmath>
+	<bzlib.h>
+
+1230936781 c:\nons\src\functions.h
+	"Common.h"
+	"ErrorCodes.h"
+	<vector>
+	<string>
+	<ctime>
+	<SDL/SDL.h>
+
+1230928867 c:\nons\src\utf.h
+	"Common.h"
+	"Functions.h"
+	<fstream>
+	<cstring>
+
+1197203680 c:\nons\include\bzlib.h
+	<stdio.h>
+	<windows.h>
+
+1230734533 source:c:\nons\src\globals.cpp
+	"Globals.h"
+	<SDL/SDL.h>
+
+1230912929 source:c:\nons\src\io_system\audio\audio.cpp
+	"Audio.h"
+	"../FileIO.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230444558 source:c:\nons\src\io_system\audio\cachedsound.cpp
+	"CachedSound.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230436548 source:c:\nons\src\io_system\audio\music.cpp
+	"Music.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230440481 source:c:\nons\src\io_system\audio\soundcache.cpp
+	"SoundCache.h"
+	"../../Functions.h"
+	"../InputHandler.h"
+	"../../Globals.h"
+
+1229360115 source:c:\nons\src\io_system\audio\soundeffect.cpp
+	"SoundEffect.h"
+	"../../Functions.h"
+
+1229886845 source:c:\nons\src\io_system\fileio.cpp
+	"FileIO.h"
+	"../Globals.h"
+	<windows.h>
+
+1230928930 source:c:\nons\src\io_system\graphics\button.cpp
+	"Button.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	<climits>
+
+1230766715 source:c:\nons\src\io_system\graphics\buttonlayer.cpp
+	"ButtonLayer.h"
+	"../../Globals.h"
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+
+1229360115 c:\nons\src\io_system\graphics\menu.h
+	"../../Common.h"
+	"ButtonLayer.h"
+	"Layer.h"
+	<SDL/SDL.h>
+	<vector>
+
+1230933446 c:\nons\src\io_system\iofunctions.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"InputHandler.h"
+	"Graphics/VirtualScreen.h"
+
+1230928930 source:c:\nons\src\io_system\graphics\cursor.cpp
+	"Cursor.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	"ScreenSpace.h"
+	<climits>
+	<vector>
+
+1229360115 c:\nons\src\io_system\graphics\cursor.h
+	"../../Common.h"
+	"../../enums.h"
+	"StandardOutput.h"
+	"Menu.h"
+	<SDL/SDL.h>
+
+1229360115 source:c:\nons\src\io_system\graphics\font.cpp
+	"Font.h"
+	"../../Globals.h"
+
+1231013539 source:c:\nons\src\io_system\graphics\fontcache.cpp
+	"FontCache.h"
+	"../../Common.h"
+	"../../Globals.h"
+
+1230735049 source:c:\nons\src\io_system\graphics\gfx.cpp
+	"GFX.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	<cmath>
+
+1229888716 source:c:\nons\src\io_system\graphics\glyph.cpp
+	"Glyph.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229888715 source:c:\nons\src\io_system\graphics\layer.cpp
+	"Layer.h"
+	"../../Globals.h"
+
+1229888715 source:c:\nons\src\io_system\graphics\lookback.cpp
+	"Lookback.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"Button.h"
+	"../IOFunctions.h"
+
+1230733441 source:c:\nons\src\io_system\graphics\menu.cpp
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	"../../Processing/ScriptInterpreter.h"
+	"../SaveFile.h"
+
+1231166799 c:\nons\src\processing\scriptinterpreter.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"ParsedLine.h"
+	"VariableStore.h"
+	"../IO_System/Script/Script.h"
+	"../Everything.h"
+	"../IO_System/Graphics/GFX.h"
+	"../IO_System/INIfile.h"
+	"../IO_System/SAR/Image_Loader/ImageLoader.h"
+	"../IO_System/Graphics/Cursor.h"
+	"../IO_System/Graphics/Menu.h"
+	"../IO_System/SaveFile.h"
+	"../enums.h"
+	<set>
+	<stack>
+	<cmath>
+	<cstdlib>
+	<ctime>
+
+1229360115 c:\nons\src\processing\parsedline.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1230491712 c:\nons\src\processing\variablestore.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../strCmpT.h"
+	"Variable.h"
+	"ExpressionParser.h"
+	<vector>
+	<map>
+	<set>
+
+1229393936 c:\nons\src\processing\variable.h
+	"../Common.h"
+	<climits>
+
+1229360115 c:\nons\src\processing\expressionparser.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1229360115 c:\nons\src\io_system\inifile.h
+	"../Common.h"
+	"../UTF.h"
+	"../strCmpT.h"
+	"../ErrorCodes.h"
+	"../enums.h"
+	<map>
+
+1229360115 c:\nons\src\io_system\savefile.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../Processing/Variable.h"
+	<vector>
+	<ctime>
+	<SDL/SDL.h>
+	"../UTF.h"
+
+995399544 c:\nons\include\sdl\smpeg.h
+	"SDL.h"
+	"SDL_mutex.h"
+	"SDL_audio.h"
+	"MPEGfilter.h"
+
+968188292 c:\nons\include\sdl\mpegfilter.h
+
+1230433339 source:c:\nons\src\io_system\graphics\sdl_ttf.c
+	<math.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<alloca.h>
+	<ft2build.h>
+	<SDL/SDL.h>
+	<SDL/SDL_endian.h>
+	"SDL_ttf.h"
+	<freetype/fterrors.h>
+
+1185023706 c:\nons\include\ft2build.h
+	<freetype/config/ftheader.h>
+
+1168352456 c:\nons\include\freetype\config\ftheader.h
+
+1169548372 c:\nons\include\freetype\fterrors.h
+
+1231033140 source:c:\nons\src\io_system\graphics\screenspace.cpp
+	"ScreenSpace.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1231110416 source:c:\nons\src\io_system\graphics\standardoutput.cpp
+	"StandardOutput.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+
+1230306707 source:c:\nons\src\io_system\graphics\virtualscreen.cpp
+	"VirtualScreen.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229887248 source:c:\nons\src\io_system\inifile.cpp
+	"INIfile.h"
+	"../Functions.h"
+	"../Globals.h"
+	"FileIO.h"
+
+1230933447 source:c:\nons\src\io_system\iofunctions.cpp
+	"IOFunctions.h"
+	"../Globals.h"
+	<cstdlib>
+
+1229886845 source:c:\nons\src\io_system\inputhandler.cpp
+	"InputHandler.h"
+	"../Globals.h"
+
+1230737167 source:c:\nons\src\io_system\sar\archive.cpp
+	"Archive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+	<bzlib.h>
+
+1229889380 source:c:\nons\src\io_system\sar\archivedfile.cpp
+	"ArchivedFile.h"
+	"../../Globals.h"
+
+1229889380 source:c:\nons\src\io_system\sar\generalarchive.cpp
+	"GeneralArchive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+
+1229889380 source:c:\nons\src\io_system\sar\image_loader\filelog.cpp
+	"FileLog.h"
+	"../../../Encryption.h"
+	"../../FileIO.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+	"../../../UTF.h"
+	<cstring>
+
+1229972764 source:c:\nons\src\io_system\sar\image_loader\image.cpp
+	"Image.h"
+	"../../../Globals.h"
+	"../../../Functions.h"
+
+1230524513 source:c:\nons\src\io_system\sar\image_loader\imageloader.cpp
+	"ImageLoader.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+
+1229889380 source:c:\nons\src\io_system\sar\treenode.cpp
+	"TreeNode.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229887248 source:c:\nons\src\io_system\savefile.cpp
+	"SaveFile.h"
+	"FileIO.h"
+	"../Functions.h"
+	"../Globals.h"
+	<windows.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<unistd.h>
+	<windows.h>
+	<cerrno>
+	<sys/stat.h>
+	<sys/types.h>
+	<pwd.h>
+	<unistd.h>
+
+1229889379 source:c:\nons\src\io_system\script\script.cpp
+	"Script.h"
+	"../FileIO.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	"../SaveFile.h"
+	"sha1.h"
+	<cstring>
+
+1229360115 c:\nons\src\io_system\script\sha1.h
+
+1229360115 source:c:\nons\src\io_system\script\scriptblock.cpp
+	"ScriptBlock.h"
+	"../../Functions.h"
+
+1229360115 source:c:\nons\src\io_system\script\sha1.cpp
+	"sha1.h"
+
+1229807109 source:c:\nons\src\io_system\stdout.cpp
+	"StdOut.h"
+	"../UTF.h"
+	<ctime>
+
+1231167280 source:c:\nons\src\onslaught.cpp
+	<cwchar>
+	<fstream>
+	<cstdlib>
+	<csignal>
+	"Common.h"
+	"Functions.h"
+	"Everything.h"
+	"Globals.h"
+	"ErrorCodes.h"
+	"Processing/ScriptInterpreter.h"
+	"IO_System/IOFunctions.h"
+	"IO_System/FileIO.h"
+	<tchar.h>
+	<windows.h>
+
+1230928930 source:c:\nons\src\processing\expressionparser.cpp
+	"ExpressionParser.h"
+	"../Functions.h"
+	"../UTF.h"
+	"../Globals.h"
+
+1231001964 source:c:\nons\src\processing\parsedline.cpp
+	"ParsedLine.h"
+	"../Functions.h"
+	"../UTF.h"
+	"../Globals.h"
+	<climits>
+
+1231110472 source:c:\nons\src\processing\scriptinterpreter.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1231108173 source:c:\nons\src\processing\scriptinterpreter_commandsai.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	<cctype>
+
+1231166798 source:c:\nons\src\processing\scriptinterpreter_commandsjr.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1230773898 source:c:\nons\src\processing\scriptinterpreter_commandssz.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	<cmath>
+
+1230491712 source:c:\nons\src\processing\scriptinterpreter_savegame.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1229890576 source:c:\nons\src\processing\variable.cpp
+	"Variable.h"
+	"../Functions.h"
+	"../Globals.h"
+
+1230730439 source:c:\nons\src\processing\variablestore.cpp
+	"VariableStore.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	"../UTF.h"
+	<cctype>
+
+1229360115 source:c:\nons\src\sjis.table.cpp
+
+1230928867 source:c:\nons\src\utf.cpp
+	"UTF.h"
+	"Functions.h"
+	"Globals.h"
+	"SJIS.table.cpp"
+
+1229360115 c:\nons\src\sjis.table.cpp
+
+1229360115 source:c:\nons\src\strcmpt.cpp
+	"strCmpT.h"
+	<cstring>
+	<cwchar>
+
+1230769585 source:c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.cpp
+	"CommandLineOptions.h"
+	"Globals.h"
+
+1230769552 c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.h
+	"enums.h"
+	"CommonTypes.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\enums.h
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\commontypes.h
+	<SDL/SDL_stdinc.h>
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_stdinc.h
+	"SDL_config.h"
+	<sys/types.h>
+	<stdio.h>
+	<stdlib.h>
+	<stddef.h>
+	<stdarg.h>
+	<stdlib.h>
+	<malloc.h>
+	<stddef.h>
+	<stdarg.h>
+	<memory.h>
+	<string.h>
+	<strings.h>
+	<inttypes.h>
+	<stdint.h>
+	<ctype.h>
+	<iconv.h>
+	"begin_code.h"
+	<alloca.h>
+	<malloc.h>
+	<malloc.h>
+	<malloc.h>
+	<stdlib.h>
+	"close_code.h"
+
+1199063826 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config.h
+	"SDL_platform.h"
+	"SDL_config_dreamcast.h"
+	"SDL_config_macos.h"
+	"SDL_config_macosx.h"
+	"SDL_config_symbian.h"
+	"SDL_config_win32.h"
+	"SDL_config_os2.h"
+	"SDL_config_minimal.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_platform.h
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_dreamcast.h
+	"SDL_platform.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macos.h
+	"SDL_platform.h"
+	<MacTypes.h>
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macosx.h
+	"SDL_platform.h"
+	<AvailabilityMacros.h>
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_symbian.h
+	"SDL_platform.h"
+	<stdarg.h>
+	<stddef.h>
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_win32.h
+	"SDL_platform.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_os2.h
+	"SDL_platform.h"
+
+1223776339 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_minimal.h
+	"SDL_platform.h"
+	<stdarg.h>
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\begin_code.h
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\close_code.h
+
+1230436591 c:\documents and settings\root\my documents\onslaught\src\globals.h
+	"CommandLineOptions.h"
+	"IO_System/InputHandler.h"
+	"IO_System/StdOut.h"
+	"IO_System/SAR/Image_Loader/ImageLoader.h"
+	<map>
+	<vector>
+	<cassert>
+
+1229752595 c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.h
+	<SDL/SDL.h>
+	<queue>
+	"../Common.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl.h
+	"SDL_main.h"
+	"SDL_stdinc.h"
+	"SDL_audio.h"
+	"SDL_cdrom.h"
+	"SDL_cpuinfo.h"
+	"SDL_endian.h"
+	"SDL_error.h"
+	"SDL_events.h"
+	"SDL_loadso.h"
+	"SDL_mutex.h"
+	"SDL_rwops.h"
+	"SDL_thread.h"
+	"SDL_timer.h"
+	"SDL_video.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_main.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_audio.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_endian.h"
+	"SDL_mutex.h"
+	"SDL_thread.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_error.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_endian.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mutex.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_thread.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_mutex.h"
+	"begin_code.h"
+	<process.h>
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_rwops.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cdrom.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cpuinfo.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_events.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_active.h"
+	"SDL_keyboard.h"
+	"SDL_mouse.h"
+	"SDL_joystick.h"
+	"SDL_quit.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_active.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keyboard.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_keysym.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keysym.h
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mouse.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_video.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_video.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"SDL_rwops.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_joystick.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_quit.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_loadso.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_timer.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_version.h
+	"SDL_stdinc.h"
+	"begin_code.h"
+	"close_code.h"
+
+1230734533 c:\documents and settings\root\my documents\onslaught\src\common.h
+	<iostream>
+	"CommonTypes.h"
+
+1229367171 c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.h
+	"../Common.h"
+	"../CommandLineOptions.h"
+	<fstream>
+	<SDL/SDL.h>
+
+1229971329 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.h
+	"../../../Common.h"
+	"../GeneralArchive.h"
+	"FileLog.h"
+	"Image.h"
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"Archive.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\errorcodes.h
+	"CommonTypes.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.h
+	"../../Common.h"
+	"TreeNode.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.h
+	"../../Common.h"
+	"ArchivedFile.h"
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.h
+	"../../Common.h"
+
+1230493851 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.h
+	"../../../Common.h"
+	"../../../strCmpT.h"
+	<set>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\strcmpt.h
+
+1229971302 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.h
+	"../../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+
+1184299608 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_image.h
+	"SDL.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1229886845 source:c:\documents and settings\root\my documents\onslaught\src\encryption.cpp
+	"Encryption.h"
+	"Globals.h"
+	"IO_System/FileIO.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\encryption.h
+	"Common.h"
+	"ErrorCodes.h"
+	<iostream>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.h
+	"../Common.h"
+	<fstream>
+
+1229886845 source:c:\documents and settings\root\my documents\onslaught\src\everything.cpp
+	"Everything.h"
+	"Globals.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\everything.h
+	"Common.h"
+	"ErrorCodes.h"
+	"IO_System/Graphics/ScreenSpace.h"
+	"IO_System/Audio/Audio.h"
+	"IO_System/Graphics/ButtonLayer.h"
+	"IO_System/SAR/GeneralArchive.h"
+	"IO_System/Script/Script.h"
+
+1231033140 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.h
+	<vector>
+	"StandardOutput.h"
+	"../../Common.h"
+	"GFX.h"
+	"../../ErrorCodes.h"
+	"Lookback.h"
+	"VirtualScreen.h"
+
+1231107827 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.h
+	"../InputHandler.h"
+	"Layer.h"
+	"../../Common.h"
+	"GFX.h"
+	"VirtualScreen.h"
+	<string>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.h
+	<SDL/SDL_image.h>
+	"FontCache.h"
+	"../../Common.h"
+	"../SAR/Image_Loader/ImageLoader.h"
+	"../../enums.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.h
+	<vector>
+	"Glyph.h"
+	"Font.h"
+
+1229382390 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.h
+	<SDL/SDL.h>
+	"SDL_ttf.h"
+	"Font.h"
+	"../../Common.h"
+
+1229376299 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.h
+	<SDL/SDL.h>
+	<SDL/begin_code.h>
+	<SDL/close_code.h>
+
+1229382389 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.h
+	"SDL_ttf.h"
+	"../../Common.h"
+
+1229907913 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"VirtualScreen.h"
+	<SDL/SDL.h>
+	<set>
+	<map>
+
+1229987791 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.h
+	"../../Common.h"
+	<SDL/SDL.h>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.h
+	"../../Common.h"
+	"StandardOutput.h"
+	<SDL/SDL.h>
+
+1229649044 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.h
+	"SoundEffect.h"
+	"Music.h"
+	"SoundCache.h"
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	<map>
+	<string>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.h
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	"CachedSound.h"
+	"../../Common.h"
+
+1184988080 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mixer.h
+	"SDL_types.h"
+	"SDL_rwops.h"
+	"SDL_audio.h"
+	"SDL_endian.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_types.h
+	"SDL_stdinc.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.h
+	"../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	<ctime>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.h
+	<SDL/SDL_mixer.h>
+	"../../Common.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.h
+	"../../Common.h"
+	"../../strCmpT.h"
+	"SoundEffect.h"
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_thread.h>
+	<map>
+	<list>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.h
+	"../../Common.h"
+	<vector>
+	"Button.h"
+	"ScreenSpace.h"
+	"../Audio/Audio.h"
+	"../SAR/GeneralArchive.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.h
+	"../../Common.h"
+	"ScreenSpace.h"
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.h
+	"../../Common.h"
+	"ScriptBlock.h"
+	"../../Encryption.h"
+	"../../ErrorCodes.h"
+	"../../enums.h"
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.h
+	"../../Common.h"
+
+1230943485 source:c:\documents and settings\root\my documents\onslaught\src\functions.cpp
+	"Functions.h"
+	"Globals.h"
+	"UTF.h"
+	<cmath>
+	<bzlib.h>
+
+1230936781 c:\documents and settings\root\my documents\onslaught\src\functions.h
+	"Common.h"
+	"ErrorCodes.h"
+	<vector>
+	<string>
+	<ctime>
+	<SDL/SDL.h>
+
+1230928867 c:\documents and settings\root\my documents\onslaught\src\utf.h
+	"Common.h"
+	"Functions.h"
+	<fstream>
+	<cstring>
+
+1197203680 c:\documents and settings\root\my documents\onslaught\include\bzlib.h
+	<stdio.h>
+	<windows.h>
+
+1230734533 source:c:\documents and settings\root\my documents\onslaught\src\globals.cpp
+	"Globals.h"
+	<SDL/SDL.h>
+
+1230912929 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.cpp
+	"Audio.h"
+	"../FileIO.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230444558 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.cpp
+	"CachedSound.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230436548 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.cpp
+	"Music.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1230440481 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.cpp
+	"SoundCache.h"
+	"../../Functions.h"
+	"../InputHandler.h"
+	"../../Globals.h"
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.cpp
+	"SoundEffect.h"
+	"../../Functions.h"
+
+1229886845 source:c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.cpp
+	"FileIO.h"
+	"../Globals.h"
+	<windows.h>
+
+1230928930 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.cpp
+	"Button.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	<climits>
+
+1230766715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.cpp
+	"ButtonLayer.h"
+	"../../Globals.h"
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.h
+	"../../Common.h"
+	"ButtonLayer.h"
+	"Layer.h"
+	<SDL/SDL.h>
+	<vector>
+
+1230933446 c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"InputHandler.h"
+	"Graphics/VirtualScreen.h"
+
+1230928930 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.cpp
+	"Cursor.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	"ScreenSpace.h"
+	<climits>
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.h
+	"../../Common.h"
+	"../../enums.h"
+	"StandardOutput.h"
+	"Menu.h"
+	<SDL/SDL.h>
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.cpp
+	"Font.h"
+	"../../Globals.h"
+
+1231013539 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.cpp
+	"FontCache.h"
+	"../../Common.h"
+	"../../Globals.h"
+
+1230735049 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.cpp
+	"GFX.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	<cmath>
+
+1229888716 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.cpp
+	"Glyph.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229888715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.cpp
+	"Layer.h"
+	"../../Globals.h"
+
+1229888715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.cpp
+	"Lookback.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"Button.h"
+	"../IOFunctions.h"
+
+1230733441 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.cpp
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	"../../Processing/ScriptInterpreter.h"
+	"../SaveFile.h"
+
+1231108173 c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"ParsedLine.h"
+	"VariableStore.h"
+	"../IO_System/Script/Script.h"
+	"../Everything.h"
+	"../IO_System/Graphics/GFX.h"
+	"../IO_System/INIfile.h"
+	"../IO_System/SAR/Image_Loader/ImageLoader.h"
+	"../IO_System/Graphics/Cursor.h"
+	"../IO_System/Graphics/Menu.h"
+	"../IO_System/SaveFile.h"
+	"../enums.h"
+	<set>
+	<stack>
+	<cmath>
+	<cstdlib>
+	<ctime>
+	<SDL/smpeg.h>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1230491712 c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../strCmpT.h"
+	"Variable.h"
+	"ExpressionParser.h"
+	<vector>
+	<map>
+	<set>
+
+1229393936 c:\documents and settings\root\my documents\onslaught\src\processing\variable.h
+	"../Common.h"
+	<climits>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.h
+	"../Common.h"
+	"../UTF.h"
+	"../strCmpT.h"
+	"../ErrorCodes.h"
+	"../enums.h"
+	<map>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../Processing/Variable.h"
+	<vector>
+	<ctime>
+	<SDL/SDL.h>
+	"../UTF.h"
+
+995399544 c:\documents and settings\root\my documents\onslaught\include\sdl\smpeg.h
+	"SDL.h"
+	"SDL_mutex.h"
+	"SDL_audio.h"
+	"MPEGfilter.h"
+
+968188292 c:\documents and settings\root\my documents\onslaught\include\sdl\mpegfilter.h
+
+1230433339 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.c
+	<math.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<alloca.h>
+	<ft2build.h>
+	<SDL/SDL.h>
+	<SDL/SDL_endian.h>
+	"SDL_ttf.h"
+	<freetype/fterrors.h>
+
+1185023706 c:\documents and settings\root\my documents\onslaught\include\ft2build.h
+	<freetype/config/ftheader.h>
+
+1168352456 c:\documents and settings\root\my documents\onslaught\include\freetype\config\ftheader.h
+
+1169548372 c:\documents and settings\root\my documents\onslaught\include\freetype\fterrors.h
+
+1231033140 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.cpp
+	"ScreenSpace.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1231110416 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.cpp
+	"StandardOutput.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+
+1230306707 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.cpp
+	"VirtualScreen.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229887248 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.cpp
+	"INIfile.h"
+	"../Functions.h"
+	"../Globals.h"
+	"FileIO.h"
+
+1230933447 source:c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.cpp
+	"IOFunctions.h"
+	"../Globals.h"
+	<cstdlib>
+
+1229886845 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.cpp
+	"InputHandler.h"
+	"../Globals.h"
+
+1230737167 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.cpp
+	"Archive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+	<bzlib.h>
+
+1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.cpp
+	"ArchivedFile.h"
+	"../../Globals.h"
+
+1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.cpp
+	"GeneralArchive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+
+1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.cpp
+	"FileLog.h"
+	"../../../Encryption.h"
+	"../../FileIO.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+	"../../../UTF.h"
+	<cstring>
+
+1229972764 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.cpp
+	"Image.h"
+	"../../../Globals.h"
+	"../../../Functions.h"
+
+1230524513 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.cpp
+	"ImageLoader.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+
+1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.cpp
+	"TreeNode.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1229887248 source:c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.cpp
+	"SaveFile.h"
+	"FileIO.h"
+	"../Functions.h"
+	"../Globals.h"
+	<windows.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<unistd.h>
+	<windows.h>
+	<cerrno>
+	<sys/stat.h>
+	<sys/types.h>
+	<pwd.h>
+	<unistd.h>
+
+1229889379 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.cpp
+	"Script.h"
+	"../FileIO.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	"../SaveFile.h"
+	"sha1.h"
+	<cstring>
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.h
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.cpp
+	"ScriptBlock.h"
+	"../../Functions.h"
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.cpp
+	"sha1.h"
+
+1229807109 source:c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.cpp
+	"StdOut.h"
+	"../UTF.h"
+	<ctime>
+
+1230928930 source:c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.cpp
+	"ExpressionParser.h"
+	"../Functions.h"
+	"../UTF.h"
+	"../Globals.h"
+
+1231001964 source:c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.cpp
+	"ParsedLine.h"
+	"../Functions.h"
+	"../UTF.h"
+	"../Globals.h"
+	<climits>
+
+1231110472 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1231108173 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsai.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	<cctype>
+
+1231032989 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsjr.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1230773898 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandssz.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	<cmath>
+
+1230491712 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_savegame.cpp
+	"ScriptInterpreter.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+
+1229890576 source:c:\documents and settings\root\my documents\onslaught\src\processing\variable.cpp
+	"Variable.h"
+	"../Functions.h"
+	"../Globals.h"
+
+1230730439 source:c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.cpp
+	"VariableStore.h"
+	"../Functions.h"
+	"../Globals.h"
+	"../IO_System/FileIO.h"
+	"../IO_System/IOFunctions.h"
+	"../UTF.h"
+	<cctype>
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
+
+1230928867 source:c:\documents and settings\root\my documents\onslaught\src\utf.cpp
+	"UTF.h"
+	"Functions.h"
+	"Globals.h"
+	"SJIS.table.cpp"
+
+1229360115 c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
+
+1229360115 source:c:\documents and settings\root\my documents\onslaught\src\strcmpt.cpp
+	"strCmpT.h"
+	<cstring>
+	<cwchar>
+

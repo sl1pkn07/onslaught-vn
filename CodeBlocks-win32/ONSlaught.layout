@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release" />
+	<File name="..\src\Functions.cpp" open="0" top="0" tabpos="1">
+		<Cursor position="15314" topLine="564" />
+	</File>
+	<File name="..\src\Globals.h" open="0" top="0" tabpos="0">
+		<Cursor position="2397" topLine="43" />
+	</File>
+	<File name="..\src\ONSlaught.cpp" open="0" top="0" tabpos="1">
+		<Cursor position="15457" topLine="532" />
+	</File>
+	<File name="..\src\Processing\ScriptInterpreter.h" open="0" top="0" tabpos="0">
+		<Cursor position="1949" topLine="20" />
+	</File>
+	<File name="..\src\Processing\ScriptInterpreter_commandsAI.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1496" topLine="16" />
+	</File>
+	<File name="..\src\Processing\ScriptInterpreter_commandsJR.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="12897" topLine="12" />
+	</File>
+</CodeBlocks_layout_file>

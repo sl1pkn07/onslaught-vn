@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ONSlaught" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="..\bin-win32\ONSlaught-win32-MinGW" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Debug\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="..\bin-win32\ONSlaught-win32-MinGW" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-w" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add directory="..\include" />
+		</Compiler>
+		<Linker>
+			<Add library="SDL.dll" />
+			<Add library="mingw32" />
+			<Add library="SDLmain" />
+			<Add library="SDL_image.dll" />
+			<Add library="SDL_mixer.dll" />
+			<Add library="bz2" />
+			<Add library="freetype.dll" />
+			<Add library="SDL" />
+			<Add directory="..\lib-win32" />
+		</Linker>
+		<Unit filename="..\src\CommandLineOptions.cpp" />
+		<Unit filename="..\src\CommandLineOptions.h" />
+		<Unit filename="..\src\Common.h" />
+		<Unit filename="..\src\CommonTypes.h" />
+		<Unit filename="..\src\Encryption.cpp" />
+		<Unit filename="..\src\Encryption.h" />
+		<Unit filename="..\src\ErrorCodes.h" />
+		<Unit filename="..\src\Everything.cpp" />
+		<Unit filename="..\src\Everything.h" />
+		<Unit filename="..\src\Functions.cpp" />
+		<Unit filename="..\src\Functions.h" />
+		<Unit filename="..\src\Globals.cpp" />
+		<Unit filename="..\src\Globals.h" />
+		<Unit filename="..\src\IO_System\Audio\Audio.cpp" />
+		<Unit filename="..\src\IO_System\Audio\Audio.h" />
+		<Unit filename="..\src\IO_System\Audio\CachedSound.cpp" />
+		<Unit filename="..\src\IO_System\Audio\CachedSound.h" />
+		<Unit filename="..\src\IO_System\Audio\Music.cpp" />
+		<Unit filename="..\src\IO_System\Audio\Music.h" />
+		<Unit filename="..\src\IO_System\Audio\SoundCache.cpp" />
+		<Unit filename="..\src\IO_System\Audio\SoundCache.h" />
+		<Unit filename="..\src\IO_System\Audio\SoundEffect.cpp" />
+		<Unit filename="..\src\IO_System\Audio\SoundEffect.h" />
+		<Unit filename="..\src\IO_System\ConfigFile.cpp" />
+		<Unit filename="..\src\IO_System\ConfigFile.h" />
+		<Unit filename="..\src\IO_System\FileIO.cpp" />
+		<Unit filename="..\src\IO_System\FileIO.h" />
+		<Unit filename="..\src\IO_System\Graphics\Button.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Button.h" />
+		<Unit filename="..\src\IO_System\Graphics\ButtonLayer.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\ButtonLayer.h" />
+		<Unit filename="..\src\IO_System\Graphics\Cursor.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Cursor.h" />
+		<Unit filename="..\src\IO_System\Graphics\Font.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Font.h" />
+		<Unit filename="..\src\IO_System\Graphics\FontCache.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\FontCache.h" />
+		<Unit filename="..\src\IO_System\Graphics\GFX.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\GFX.h" />
+		<Unit filename="..\src\IO_System\Graphics\Glyph.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Glyph.h" />
+		<Unit filename="..\src\IO_System\Graphics\Layer.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Layer.h" />
+		<Unit filename="..\src\IO_System\Graphics\Lookback.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Lookback.h" />
+		<Unit filename="..\src\IO_System\Graphics\Menu.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\Menu.h" />
+		<Unit filename="..\src\IO_System\Graphics\SDL_ttf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\IO_System\Graphics\SDL_ttf.h" />
+		<Unit filename="..\src\IO_System\Graphics\ScreenSpace.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\ScreenSpace.h" />
+		<Unit filename="..\src\IO_System\Graphics\StandardOutput.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\StandardOutput.h" />
+		<Unit filename="..\src\IO_System\Graphics\VirtualScreen.cpp" />
+		<Unit filename="..\src\IO_System\Graphics\VirtualScreen.h" />
+		<Unit filename="..\src\IO_System\INIfile.cpp" />
+		<Unit filename="..\src\IO_System\INIfile.h" />
+		<Unit filename="..\src\IO_System\IOFunctions.cpp" />
+		<Unit filename="..\src\IO_System\IOFunctions.h" />
+		<Unit filename="..\src\IO_System\InputHandler.cpp" />
+		<Unit filename="..\src\IO_System\InputHandler.h" />
+		<Unit filename="..\src\IO_System\SAR\Archive.cpp" />
+		<Unit filename="..\src\IO_System\SAR\Archive.h" />
+		<Unit filename="..\src\IO_System\SAR\ArchivedFile.cpp" />
+		<Unit filename="..\src\IO_System\SAR\ArchivedFile.h" />
+		<Unit filename="..\src\IO_System\SAR\GeneralArchive.cpp" />
+		<Unit filename="..\src\IO_System\SAR\GeneralArchive.h" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\FileLog.cpp" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\FileLog.h" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\Image.cpp" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\Image.h" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\ImageLoader.cpp" />
+		<Unit filename="..\src\IO_System\SAR\Image_Loader\ImageLoader.h" />
+		<Unit filename="..\src\IO_System\SAR\TreeNode.cpp" />
+		<Unit filename="..\src\IO_System\SAR\TreeNode.h" />
+		<Unit filename="..\src\IO_System\SaveFile.cpp" />
+		<Unit filename="..\src\IO_System\SaveFile.h" />
+		<Unit filename="..\src\IO_System\Script\Script.cpp" />
+		<Unit filename="..\src\IO_System\Script\Script.h" />
+		<Unit filename="..\src\IO_System\Script\ScriptBlock.cpp" />
+		<Unit filename="..\src\IO_System\Script\ScriptBlock.h" />
+		<Unit filename="..\src\IO_System\Script\sha1.cpp" />
+		<Unit filename="..\src\IO_System\Script\sha1.h" />
+		<Unit filename="..\src\IO_System\StdOut.cpp" />
+		<Unit filename="..\src\IO_System\StdOut.h" />
+		<Unit filename="..\src\ONSlaught.cpp" />
+		<Unit filename="..\src\Parallelization.h" />
+		<Unit filename="..\src\Processing\ExpressionParser.cpp" />
+		<Unit filename="..\src\Processing\ExpressionParser.h" />
+		<Unit filename="..\src\Processing\ParsedLine.cpp" />
+		<Unit filename="..\src\Processing\ParsedLine.h" />
+		<Unit filename="..\src\Processing\ScriptInterpreter.cpp" />
+		<Unit filename="..\src\Processing\ScriptInterpreter.h" />
+		<Unit filename="..\src\Processing\ScriptInterpreter_commandsAI.cpp" />
+		<Unit filename="..\src\Processing\ScriptInterpreter_commandsJR.cpp" />
+		<Unit filename="..\src\Processing\ScriptInterpreter_commandsSZ.cpp" />
+		<Unit filename="..\src\Processing\ScriptInterpreter_savegame.cpp" />
+		<Unit filename="..\src\Processing\Variable.cpp" />
+		<Unit filename="..\src\Processing\Variable.h" />
+		<Unit filename="..\src\Processing\VariableStore.cpp" />
+		<Unit filename="..\src\Processing\VariableStore.h" />
+		<Unit filename="..\src\SJIS.table.cpp" />
+		<Unit filename="..\src\UTF.cpp" />
+		<Unit filename="..\src\UTF.h" />
+		<Unit filename="..\src\enums.h" />
+		<Unit filename="..\src\strCmpT.cpp" />
+		<Unit filename="..\src\strCmpT.h" />
+		<Unit filename="..\src\version.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
