@@ -4,6 +4,6 @@ Offset 0, word: Total files in archive.
 Offset 2, dword: Start of the data stream.
 Offset 6, C string: Complete path of the first file.
 Offset 6+strlen(str), dword: Start of the file data relative to the start of the
-	data stream.
+    data stream.
 Offset 6+strlen(str)+4, dword: size of first file.
 Offset 6+strlen(str)+4+4, string: Complete path of the second file.

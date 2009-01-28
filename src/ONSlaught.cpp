@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -41,10 +41,10 @@
 #include "IO_System/FileIO.h"
 
 #if defined(NONS_SYS_WINDOWS)
-#define _WIN32_WINNT 0x0600
-#ifndef UNICODE
+//#define _WIN32_WINNT 0x0600
+/*#ifndef UNICODE
 #define UNICODE
-#endif
+#endif*/
 #include <tchar.h>
 #include <windows.h>
 #define COMMAND_LINE_ARGUMENT_TYPE wchar_t
@@ -316,7 +316,6 @@ void parseCommandLine(int argc,T **argv){
 				break;
 			case 10: //--version
 				{
-					//TODO: Update me.
 					std::cout <<"ONSlaught "<<ONSLAUGHT_BUILD_VERSION<<" "ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
 						"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 						"All rights reserved.\n\n"
@@ -619,8 +618,8 @@ int
 	main(int argc,char **argv)
 #endif
 {
-	std::cout <<"ONSlaught "<<ONSLAUGHT_BUILD_VERSION<<' '<<ONSLAUGHT_BUILD_VERSION_STR<<": An ONScripter clone with Unicode support.\n\n"
-		"Copyright (c) 2008, Helios (helios.vmg@gmail.com)\n"
+	std::cout <<"ONSlaught "<<ONSLAUGHT_BUILD_VERSION<<" "ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
+		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"
 		"\"I did it for the lulz.\"\n\n"<<std::endl;
 	signal(SIGTERM,handle_SIGTERM);

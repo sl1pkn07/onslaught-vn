@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -108,10 +108,77 @@ std::vector<tm *> *existing_files(wchar_t *location){
 }
 
 #if defined(NONS_SYS_WINDOWS)
-#ifndef UNICODE
+/*#ifndef UNICODE
 #define UNICODE
-#endif
+#endif*/
 #include <windows.h>
+
+enum WINDOWS_VERSION{
+	ERR=0,
+	//9x kernel
+	V95=1,
+	V98=2,
+	VME=3,
+	//NT kernel
+	V2K=4,
+	VXP=5,
+	VVI=6,
+	VW7=7
+};
+
+WINDOWS_VERSION getWindowsVersion(){
+	//First try with the 9x kernel
+	HKEY k;
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\0"),0,KEY_READ,&k)!=ERROR_SUCCESS)
+		return ERR;
+	DWORD type,size;
+	WINDOWS_VERSION ret;
+	if (RegQueryValueEx(k,TEXT("Version"),0,&type,0,&size)!=ERROR_SUCCESS || type!=REG_SZ){
+		//Not the 9x kernel
+		RegCloseKey(k);
+		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"),0,KEY_READ,&k)!=ERROR_SUCCESS)
+			return ERR;
+		if (RegQueryValueEx(k,TEXT("CurrentVersion"),0,&type,0,&size)!=ERROR_SUCCESS || type!=REG_SZ)
+			return ERR;
+		char *str=new char[size];
+		RegQueryValueEx(k,TEXT("CurrentVersion"),0,&type,(LPBYTE)str,&size);
+		RegCloseKey(k);
+		switch (*str){
+			case '5':
+				ret=VXP;
+				break;
+			case '6':
+				ret=VVI;
+				break;
+			case '7':
+				ret=VW7;
+				break;
+			default:
+				ret=ERR;
+		}
+		delete[] str;
+	}else{
+		char *str=new char[size];
+		RegQueryValueEx(k,(LPCTSTR)"VersionNumber",0,&type,(LPBYTE)str,&size);
+		RegCloseKey(k);
+		switch (str[2]){
+			case '0':
+				ret=V95;
+				break;
+			case '1':
+				ret=V98;
+				break;
+			case '9':
+				ret=VME;
+				break;
+			default:
+				ret=ERR;
+		}
+		delete[] str;
+	}
+	return ret;
+}
+
 #elif defined(NONS_SYS_LINUX)
 #include <cerrno>
 #include <sys/stat.h>
@@ -122,6 +189,8 @@ std::vector<tm *> *existing_files(wchar_t *location){
 
 char *getConfigLocation(){
 #if defined(NONS_SYS_WINDOWS)
+	if (getWindowsVersion()<V2K)
+		return copyString("./");
 	HKEY k;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER,TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"),0,KEY_READ,&k)!=ERROR_SUCCESS)
 		return copyString("./");
@@ -130,10 +199,10 @@ char *getConfigLocation(){
 		RegCloseKey(k);
 		return copyString("./");
 	}
-	wchar_t *path=new wchar_t[size/2];
+	TCHAR *path=new TCHAR[size/sizeof(TCHAR)];
 	RegQueryValueEx(k,TEXT("Personal"),0,&type,(LPBYTE)path,&size);
 	RegCloseKey(k);
-	size/=2;
+	size/=sizeof(TCHAR);
 	toforwardslash(path);
 	if (path[size-1]!='/')
 		addStringsInplace(&path,"/.ONSlaught");
@@ -166,9 +235,17 @@ char *getConfigLocation(){
 }
 
 char *getSaveLocation(unsigned hash[5]){
+#ifdef NONS_SYS_WINDOWS
+	if (getWindowsVersion()<V2K)
+		return copyString("./");
+#endif
 	char *root=getConfigLocation();
 #if defined(NONS_SYS_WINDOWS)
+#ifdef UNICODE
 	wchar_t *path=copyWString(root);
+#else
+	char *path=copyString(root);
+#endif
 #elif defined(NONS_SYS_LINUX)
 	char *path=copyString(root);
 #else
@@ -888,7 +965,7 @@ bool NONS_SaveFile::save(char *filename){
 			writeByte(c->volume|(c->loop?0:0x80),&buffer);
 		}
 	}
-	
+
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
 	bool ret=!writefile(filename,writebuffer,l);

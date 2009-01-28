@@ -142,3 +142,4 @@ system is being worked out.
 -no-console
 Hides the console (only for Windows).
 Since the console can't be used, it also disables -debug.
+

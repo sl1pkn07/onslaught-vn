@@ -38,6 +38,12 @@ ONSlaught's implicit and explicit goal is it supersede ONScripter, while at the
 same time maintaining a simple design, and code as portable as possible.
 
 
+REQUIREMENTS (compilation)
+
+SDL, SDL_image (should have been compiled at least with jpeg and png support),
+SDL_mixer (ogg support heavily recommended), FreeType 2, bz2lib.
+
+
 PORTING
 
 At the moment, ONSlaught is only available for Windows 32-bit, Linux x86, and

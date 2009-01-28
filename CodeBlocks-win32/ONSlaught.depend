@@ -888,20 +888,20 @@
 	<cstring>
 	<cwchar>
 
-1230769585 source:c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.cpp
 	"CommandLineOptions.h"
 	"Globals.h"
 
-1230769552 c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\commandlineoptions.h
 	"enums.h"
 	"CommonTypes.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\enums.h
+1232978769 c:\documents and settings\root\my documents\onslaught\src\enums.h
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\commontypes.h
+1232978769 c:\documents and settings\root\my documents\onslaught\src\commontypes.h
 	<SDL/SDL_stdinc.h>
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_stdinc.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_stdinc.h
 	"SDL_config.h"
 	<sys/types.h>
 	<stdio.h>
@@ -927,7 +927,7 @@
 	<stdlib.h>
 	"close_code.h"
 
-1199063826 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config.h
 	"SDL_platform.h"
 	"SDL_config_dreamcast.h"
 	"SDL_config_macos.h"
@@ -937,39 +937,41 @@
 	"SDL_config_os2.h"
 	"SDL_config_minimal.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_platform.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_platform.h
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_dreamcast.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_dreamcast.h
 	"SDL_platform.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macos.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macos.h
 	"SDL_platform.h"
 	<MacTypes.h>
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macosx.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_macosx.h
 	"SDL_platform.h"
 	<AvailabilityMacros.h>
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_symbian.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_symbian.h
 	"SDL_platform.h"
 	<stdarg.h>
 	<stddef.h>
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_win32.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_win32.h
 	"SDL_platform.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_os2.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_os2.h
 	"SDL_platform.h"
 
-1223776339 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_minimal.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_config_minimal.h
 	"SDL_platform.h"
 	<stdarg.h>
+	<stdint.h>
+	<string.h>
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\begin_code.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\begin_code.h
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\close_code.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\close_code.h
 
-1230436591 c:\documents and settings\root\my documents\onslaught\src\globals.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\globals.h
 	"CommandLineOptions.h"
 	"IO_System/InputHandler.h"
 	"IO_System/StdOut.h"
@@ -977,13 +979,14 @@
 	<map>
 	<vector>
 	<cassert>
+	"Parallelization.h"
 
-1229752595 c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.h
 	<SDL/SDL.h>
 	<queue>
 	"../Common.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl.h
 	"SDL_main.h"
 	"SDL_stdinc.h"
 	"SDL_audio.h"
@@ -1002,14 +1005,14 @@
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_main.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_main.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_audio.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_audio.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_endian.h"
@@ -1019,23 +1022,23 @@
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_error.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_error.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_endian.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_endian.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mutex.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mutex.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_thread.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_thread.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_mutex.h"
@@ -1043,24 +1046,24 @@
 	<process.h>
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_rwops.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_rwops.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cdrom.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cdrom.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cpuinfo.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_cpuinfo.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_events.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_events.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_active.h"
@@ -1071,136 +1074,137 @@
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_active.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_active.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keyboard.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keyboard.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_keysym.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keysym.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_keysym.h
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mouse.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mouse.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_video.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_video.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_rwops.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_joystick.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_joystick.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_quit.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_quit.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_loadso.h
-	"SDL_stdinc.h"
-	"SDL_error.h"
-	"begin_code.h"
-	"close_code.h"
-
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_timer.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_loadso.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_version.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_timer.h
+	"SDL_stdinc.h"
+	"SDL_error.h"
+	"begin_code.h"
+	"close_code.h"
+
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_version.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1230734533 c:\documents and settings\root\my documents\onslaught\src\common.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\common.h
 	<iostream>
 	"CommonTypes.h"
+	<cwchar>
 
-1229367171 c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.h
 	"../Common.h"
 	"../CommandLineOptions.h"
 	<fstream>
 	<SDL/SDL.h>
 
-1229971329 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.h
 	"../../../Common.h"
 	"../GeneralArchive.h"
 	"FileLog.h"
 	"Image.h"
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.h
 	"../../Common.h"
 	"../../ErrorCodes.h"
 	"Archive.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\errorcodes.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\errorcodes.h
 	"CommonTypes.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.h
 	"../../Common.h"
 	"TreeNode.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.h
 	"../../Common.h"
 	"ArchivedFile.h"
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.h
 	"../../Common.h"
 
-1230493851 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.h
 	"../../../Common.h"
 	"../../../strCmpT.h"
 	<set>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\strcmpt.h
+1232978769 c:\documents and settings\root\my documents\onslaught\src\strcmpt.h
 
-1229971302 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.h
 	"../../../Common.h"
 	<SDL/SDL.h>
 	<SDL/SDL_image.h>
 
-1184299608 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_image.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_image.h
 	"SDL.h"
 	"SDL_version.h"
 	"begin_code.h"
 	"close_code.h"
 
-1229886845 source:c:\documents and settings\root\my documents\onslaught\src\encryption.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\encryption.cpp
 	"Encryption.h"
 	"Globals.h"
 	"IO_System/FileIO.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\encryption.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\encryption.h
 	"Common.h"
 	"ErrorCodes.h"
 	<iostream>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.h
 	"../Common.h"
 	<fstream>
 
-1229886845 source:c:\documents and settings\root\my documents\onslaught\src\everything.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\everything.cpp
 	"Everything.h"
 	"Globals.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\everything.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\everything.h
 	"Common.h"
 	"ErrorCodes.h"
 	"IO_System/Graphics/ScreenSpace.h"
@@ -1209,7 +1213,7 @@
 	"IO_System/SAR/GeneralArchive.h"
 	"IO_System/Script/Script.h"
 
-1231033140 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.h
 	<vector>
 	"StandardOutput.h"
 	"../../Common.h"
@@ -1218,7 +1222,7 @@
 	"Lookback.h"
 	"VirtualScreen.h"
 
-1231107827 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.h
 	"../InputHandler.h"
 	"Layer.h"
 	"../../Common.h"
@@ -1226,34 +1230,34 @@
 	"VirtualScreen.h"
 	<string>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.h
 	<SDL/SDL_image.h>
 	"FontCache.h"
 	"../../Common.h"
 	"../SAR/Image_Loader/ImageLoader.h"
 	"../../enums.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.h
 	<vector>
 	"Glyph.h"
 	"Font.h"
 
-1229382390 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.h
 	<SDL/SDL.h>
 	"SDL_ttf.h"
 	"Font.h"
 	"../../Common.h"
 
-1229376299 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.h
+1232978766 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.h
 	<SDL/SDL.h>
 	<SDL/begin_code.h>
 	<SDL/close_code.h>
 
-1229382389 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.h
 	"SDL_ttf.h"
 	"../../Common.h"
 
-1229907913 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.h
 	"../../Common.h"
 	"../../ErrorCodes.h"
 	"VirtualScreen.h"
@@ -1261,16 +1265,16 @@
 	<set>
 	<map>
 
-1229987791 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.h
 	"../../Common.h"
 	<SDL/SDL.h>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.h
 	"../../Common.h"
 	"StandardOutput.h"
 	<SDL/SDL.h>
 
-1229649044 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.h
 	"SoundEffect.h"
 	"Music.h"
 	"SoundCache.h"
@@ -1279,13 +1283,13 @@
 	<map>
 	<string>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.h
 	<SDL/SDL.h>
 	<SDL/SDL_mixer.h>
 	"CachedSound.h"
 	"../../Common.h"
 
-1184988080 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mixer.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_mixer.h
 	"SDL_types.h"
 	"SDL_rwops.h"
 	"SDL_audio.h"
@@ -1294,20 +1298,20 @@
 	"begin_code.h"
 	"close_code.h"
 
-1199058516 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_types.h
+1232978750 c:\documents and settings\root\my documents\onslaught\include\sdl\sdl_types.h
 	"SDL_stdinc.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.h
 	"../../Common.h"
 	<SDL/SDL.h>
 	<SDL/SDL_mixer.h>
 	<ctime>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.h
 	<SDL/SDL_mixer.h>
 	"../../Common.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.h
 	"../../Common.h"
 	"../../strCmpT.h"
 	"SoundEffect.h"
@@ -1316,7 +1320,7 @@
 	<map>
 	<list>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.h
 	"../../Common.h"
 	<vector>
 	"Button.h"
@@ -1324,110 +1328,111 @@
 	"../Audio/Audio.h"
 	"../SAR/GeneralArchive.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.h
 	"../../Common.h"
 	"ScreenSpace.h"
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.h
 	"../../Common.h"
 	"ScriptBlock.h"
 	"../../Encryption.h"
 	"../../ErrorCodes.h"
 	"../../enums.h"
+	"../SAR/GeneralArchive.h"
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.h
 	"../../Common.h"
 
-1230943485 source:c:\documents and settings\root\my documents\onslaught\src\functions.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\functions.cpp
 	"Functions.h"
+	<bzlib.h>
 	"Globals.h"
 	"UTF.h"
 	<cmath>
-	<bzlib.h>
 
-1230936781 c:\documents and settings\root\my documents\onslaught\src\functions.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\functions.h
 	"Common.h"
 	"ErrorCodes.h"
+	<SDL/SDL.h>
 	<vector>
 	<string>
 	<ctime>
-	<SDL/SDL.h>
 
-1230928867 c:\documents and settings\root\my documents\onslaught\src\utf.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\utf.h
 	"Common.h"
 	"Functions.h"
 	<fstream>
 	<cstring>
 
-1197203680 c:\documents and settings\root\my documents\onslaught\include\bzlib.h
+1232978757 c:\documents and settings\root\my documents\onslaught\include\bzlib.h
 	<stdio.h>
 	<windows.h>
 
-1230734533 source:c:\documents and settings\root\my documents\onslaught\src\globals.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\globals.cpp
 	"Globals.h"
 	<SDL/SDL.h>
 
-1230912929 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\audio.cpp
 	"Audio.h"
 	"../FileIO.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1230444558 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\cachedsound.cpp
 	"CachedSound.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1230436548 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\music.cpp
 	"Music.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1230440481 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundcache.cpp
 	"SoundCache.h"
 	"../../Functions.h"
 	"../InputHandler.h"
 	"../../Globals.h"
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\audio\soundeffect.cpp
 	"SoundEffect.h"
 	"../../Functions.h"
 
-1229886845 source:c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\fileio.cpp
 	"FileIO.h"
 	"../Globals.h"
 	<windows.h>
 
-1230928930 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\button.cpp
 	"Button.h"
 	"../../Functions.h"
 	"../../UTF.h"
 	"../../Globals.h"
 	<climits>
 
-1230766715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\buttonlayer.cpp
 	"ButtonLayer.h"
 	"../../Globals.h"
 	"Menu.h"
 	"../../Functions.h"
 	"../IOFunctions.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.h
 	"../../Common.h"
 	"ButtonLayer.h"
 	"Layer.h"
 	<SDL/SDL.h>
 	<vector>
 
-1230933446 c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	"InputHandler.h"
 	"Graphics/VirtualScreen.h"
 
-1230928930 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.cpp
 	"Cursor.h"
 	"../../Functions.h"
 	"../../UTF.h"
@@ -1436,46 +1441,46 @@
 	<climits>
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.h
+1233002633 c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\cursor.h
 	"../../Common.h"
 	"../../enums.h"
 	"StandardOutput.h"
 	"Menu.h"
 	<SDL/SDL.h>
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\font.cpp
 	"Font.h"
 	"../../Globals.h"
 
-1231013539 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\fontcache.cpp
 	"FontCache.h"
 	"../../Common.h"
 	"../../Globals.h"
 
-1230735049 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\gfx.cpp
 	"GFX.h"
 	"../../Functions.h"
 	"../IOFunctions.h"
 	"../../Globals.h"
 	<cmath>
 
-1229888716 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.cpp
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\glyph.cpp
 	"Glyph.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1229888715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\layer.cpp
 	"Layer.h"
 	"../../Globals.h"
 
-1229888715 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\lookback.cpp
 	"Lookback.h"
 	"../../Functions.h"
 	"../../Globals.h"
 	"Button.h"
 	"../IOFunctions.h"
 
-1230733441 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\menu.cpp
 	"Menu.h"
 	"../../Functions.h"
 	"../IOFunctions.h"
@@ -1483,33 +1488,34 @@
 	"../../Processing/ScriptInterpreter.h"
 	"../SaveFile.h"
 
-1231108173 c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	"ParsedLine.h"
 	"VariableStore.h"
-	"../IO_System/Script/Script.h"
 	"../Everything.h"
+	"../IO_System/Script/Script.h"
 	"../IO_System/Graphics/GFX.h"
 	"../IO_System/INIfile.h"
 	"../IO_System/SAR/Image_Loader/ImageLoader.h"
 	"../IO_System/Graphics/Cursor.h"
 	"../IO_System/Graphics/Menu.h"
 	"../IO_System/SaveFile.h"
+	"../IO_System/ConfigFile.h"
 	"../enums.h"
 	<set>
 	<stack>
 	<cmath>
 	<cstdlib>
 	<ctime>
-	<SDL/smpeg.h>
+	"../version.h"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	<vector>
 
-1230491712 c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	"../strCmpT.h"
@@ -1519,16 +1525,16 @@
 	<map>
 	<set>
 
-1229393936 c:\documents and settings\root\my documents\onslaught\src\processing\variable.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\processing\variable.h
 	"../Common.h"
 	<climits>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	<vector>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.h
 	"../Common.h"
 	"../UTF.h"
 	"../strCmpT.h"
@@ -1536,7 +1542,7 @@
 	"../enums.h"
 	<map>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.h
+1233002634 c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.h
 	"../Common.h"
 	"../ErrorCodes.h"
 	"../Processing/Variable.h"
@@ -1553,7 +1559,7 @@
 
 968188292 c:\documents and settings\root\my documents\onslaught\include\sdl\mpegfilter.h
 
-1230433339 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.c
+1232978766 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\sdl_ttf.c
 	<math.h>
 	<stdio.h>
 	<stdlib.h>
@@ -1565,62 +1571,63 @@
 	"SDL_ttf.h"
 	<freetype/fterrors.h>
 
-1185023706 c:\documents and settings\root\my documents\onslaught\include\ft2build.h
+1232978757 c:\documents and settings\root\my documents\onslaught\include\ft2build.h
 	<freetype/config/ftheader.h>
 
-1168352456 c:\documents and settings\root\my documents\onslaught\include\freetype\config\ftheader.h
+1232978756 c:\documents and settings\root\my documents\onslaught\include\freetype\config\ftheader.h
 
-1169548372 c:\documents and settings\root\my documents\onslaught\include\freetype\fterrors.h
+1232978757 c:\documents and settings\root\my documents\onslaught\include\freetype\fterrors.h
 
-1231033140 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\screenspace.cpp
 	"ScreenSpace.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1231110416 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\standardoutput.cpp
 	"StandardOutput.h"
 	"../../Functions.h"
 	"../../UTF.h"
 	"../../Globals.h"
+	<cstdlib>
 
-1230306707 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\graphics\virtualscreen.cpp
 	"VirtualScreen.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1229887248 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inifile.cpp
 	"INIfile.h"
 	"../Functions.h"
 	"../Globals.h"
 	"FileIO.h"
 
-1230933447 source:c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\iofunctions.cpp
 	"IOFunctions.h"
 	"../Globals.h"
 	<cstdlib>
 
-1229886845 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\inputhandler.cpp
 	"InputHandler.h"
 	"../Globals.h"
 
-1230737167 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archive.cpp
 	"Archive.h"
 	"../../Functions.h"
 	"../../Globals.h"
 	"../FileIO.h"
 	<bzlib.h>
 
-1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\archivedfile.cpp
 	"ArchivedFile.h"
 	"../../Globals.h"
 
-1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\generalarchive.cpp
 	"GeneralArchive.h"
 	"../../Functions.h"
 	"../../Globals.h"
 	"../FileIO.h"
 
-1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\filelog.cpp
 	"FileLog.h"
 	"../../../Encryption.h"
 	"../../FileIO.h"
@@ -1629,22 +1636,22 @@
 	"../../../UTF.h"
 	<cstring>
 
-1229972764 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\image.cpp
 	"Image.h"
 	"../../../Globals.h"
 	"../../../Functions.h"
 
-1230524513 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\image_loader\imageloader.cpp
 	"ImageLoader.h"
 	"../../../Functions.h"
 	"../../../Globals.h"
 
-1229889380 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\sar\treenode.cpp
 	"TreeNode.h"
 	"../../Functions.h"
 	"../../Globals.h"
 
-1229887248 source:c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.cpp
+1233169186 source:c:\documents and settings\root\my documents\onslaught\src\io_system\savefile.cpp
 	"SaveFile.h"
 	"FileIO.h"
 	"../Functions.h"
@@ -1660,7 +1667,7 @@
 	<pwd.h>
 	<unistd.h>
 
-1229889379 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\script.cpp
 	"Script.h"
 	"../FileIO.h"
 	"../../UTF.h"
@@ -1669,41 +1676,41 @@
 	"sha1.h"
 	<cstring>
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.h
+1232978767 c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.h
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\scriptblock.cpp
 	"ScriptBlock.h"
 	"../../Functions.h"
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.cpp
+1232978767 source:c:\documents and settings\root\my documents\onslaught\src\io_system\script\sha1.cpp
 	"sha1.h"
 
-1229807109 source:c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\io_system\stdout.cpp
 	"StdOut.h"
 	"../UTF.h"
 	<ctime>
 
-1230928930 source:c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\expressionparser.cpp
 	"ExpressionParser.h"
 	"../Functions.h"
 	"../UTF.h"
 	"../Globals.h"
 
-1231001964 source:c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\parsedline.cpp
 	"ParsedLine.h"
 	"../Functions.h"
 	"../UTF.h"
 	"../Globals.h"
 	<climits>
 
-1231110472 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter.cpp
 	"ScriptInterpreter.h"
 	"../Functions.h"
 	"../Globals.h"
 	"../IO_System/FileIO.h"
 	"../IO_System/IOFunctions.h"
 
-1231108173 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsai.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsai.cpp
 	"ScriptInterpreter.h"
 	"../Functions.h"
 	"../Globals.h"
@@ -1711,14 +1718,14 @@
 	"../IO_System/IOFunctions.h"
 	<cctype>
 
-1231032989 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsjr.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandsjr.cpp
 	"ScriptInterpreter.h"
 	"../Functions.h"
 	"../Globals.h"
 	"../IO_System/FileIO.h"
 	"../IO_System/IOFunctions.h"
 
-1230773898 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandssz.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_commandssz.cpp
 	"ScriptInterpreter.h"
 	"../Functions.h"
 	"../Globals.h"
@@ -1726,19 +1733,19 @@
 	"../IO_System/IOFunctions.h"
 	<cmath>
 
-1230491712 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_savegame.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\scriptinterpreter_savegame.cpp
 	"ScriptInterpreter.h"
 	"../Functions.h"
 	"../Globals.h"
 	"../IO_System/FileIO.h"
 	"../IO_System/IOFunctions.h"
 
-1229890576 source:c:\documents and settings\root\my documents\onslaught\src\processing\variable.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\variable.cpp
 	"Variable.h"
 	"../Functions.h"
 	"../Globals.h"
 
-1230730439 source:c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\processing\variablestore.cpp
 	"VariableStore.h"
 	"../Functions.h"
 	"../Globals.h"
@@ -1747,18 +1754,50 @@
 	"../UTF.h"
 	<cctype>
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
 
-1230928867 source:c:\documents and settings\root\my documents\onslaught\src\utf.cpp
+1233002634 source:c:\documents and settings\root\my documents\onslaught\src\utf.cpp
 	"UTF.h"
 	"Functions.h"
 	"Globals.h"
 	"SJIS.table.cpp"
 
-1229360115 c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
+1233002634 c:\documents and settings\root\my documents\onslaught\src\sjis.table.cpp
 
-1229360115 source:c:\documents and settings\root\my documents\onslaught\src\strcmpt.cpp
+1232978769 source:c:\documents and settings\root\my documents\onslaught\src\strcmpt.cpp
 	"strCmpT.h"
 	<cstring>
 	<cwchar>
+
+1232978769 c:\documents and settings\root\my documents\onslaught\src\parallelization.h
+	"CommonTypes.h"
+
+1233002633 source:c:\documents and settings\root\my documents\onslaught\src\io_system\configfile.cpp
+	"ConfigFile.h"
+	"../Functions.h"
+
+1233004080 c:\documents and settings\root\my documents\onslaught\src\io_system\configfile.h
+	<map>
+	<cstring>
+	"../strCmpT.h"
+	"../UTF.h"
+	"../enums.h"
+	"FileIO.h"
+
+1233002385 c:\documents and settings\root\my documents\onslaught\src\version.h
+
+1233136366 source:c:\documents and settings\root\my documents\onslaught\src\onslaught.cpp
+	<fstream>
+	<cstdlib>
+	<csignal>
+	"Common.h"
+	"Functions.h"
+	"Everything.h"
+	"Globals.h"
+	"ErrorCodes.h"
+	"Processing/ScriptInterpreter.h"
+	"IO_System/IOFunctions.h"
+	"IO_System/FileIO.h"
+	<tchar.h>
+	<windows.h>
 
