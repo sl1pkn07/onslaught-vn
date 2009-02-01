@@ -39,7 +39,7 @@ struct NONS_GeneralArchive{
 	std::vector<NONS_Archive *> NSAarchives;
 	NONS_GeneralArchive();
 	~NONS_GeneralArchive();
-	ErrorCode init(const char *filename,bool which=0);
+	ErrorCode init(const char *filename,bool which,bool failSilently);
 	uchar *getFileBuffer(const wchar_t *filepath,ulong *buffersize);
 	uchar *getFileBuffer(const char *filepath,ulong *buffersize);
 };

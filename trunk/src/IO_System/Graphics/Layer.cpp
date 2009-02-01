@@ -42,6 +42,8 @@ NONS_Layer::NONS_Layer(SDL_Rect *size,unsigned rgba){
 	this->useDataAsDefaultShade=0;
 	this->alpha=0xFF;
 	this->clip_rect=this->data->clip_rect;
+	this->clip_rect.x=size->x;
+	this->clip_rect.y=size->y;
 }
 
 NONS_Layer::NONS_Layer(SDL_Surface *img,unsigned rgba){

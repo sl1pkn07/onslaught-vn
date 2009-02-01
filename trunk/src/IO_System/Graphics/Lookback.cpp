@@ -36,61 +36,139 @@
 #include "Button.h"
 #include "../IOFunctions.h"
 
-NONS_Lookback::NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b,int w,int h){
+NONS_Lookback::NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b){
 	this->output=output;
 	this->foreground.r=r;
 	this->foreground.g=g;
 	this->foreground.b=b;
 	this->up=new NONS_Button();
 	this->down=new NONS_Button();
-	int thirdofscreen=h/3;
-	SDL_Rect temp={0,0,w,thirdofscreen};
+	SDL_Rect temp=this->output->foregroundLayer->clip_rect;
+	int thirdofscreen=temp.h/3;
+	temp.y=thirdofscreen;
 	((NONS_Button *)this->up)->onLayer=new NONS_Layer(&temp,0);
 	((NONS_Button *)this->up)->offLayer=new NONS_Layer(&temp,0);
 	((NONS_Button *)this->down)->onLayer=new NONS_Layer(&temp,0);
 	((NONS_Button *)this->down)->offLayer=new NONS_Layer(&temp,0);
 	((NONS_Button *)this->down)->posy=thirdofscreen*2;
 	((NONS_Button *)this->up)->box=temp;
+	((NONS_Button *)this->up)->box.x=0;
+	((NONS_Button *)this->up)->box.y=0;
 	((NONS_Button *)this->down)->box=temp;
+	((NONS_Button *)this->down)->box.x=0;
+	((NONS_Button *)this->down)->box.y=0;
+	this->sUpon=0;
+	this->sUpoff=0;
+	this->sDownon=0;
+	this->sDownoff=0;
 }
 
 NONS_Lookback::~NONS_Lookback(){
 	delete (NONS_Button *)this->up;
 	delete (NONS_Button *)this->down;
+	if (!!this->sUpon)
+		SDL_FreeSurface(this->sUpon);
+	if (!!this->sUpoff)
+		SDL_FreeSurface(this->sUpoff);
+	if (!!this->sDownon)
+		SDL_FreeSurface(this->sDownon);
+	if (!!this->sDownoff)
+		SDL_FreeSurface(this->sDownoff);
 }
 
 bool NONS_Lookback::setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wchar_t *downoff){
-	SDL_Surface *sUpon=ImageLoader->fetchCursor(upon,CLOptions.animMethod),
-		*sUpoff=ImageLoader->fetchCursor(upoff,CLOptions.animMethod),
-		*sDownon=ImageLoader->fetchCursor(downon,CLOptions.animMethod),
-		*sDownoff=ImageLoader->fetchCursor(downoff,CLOptions.animMethod);
-	if (!sUpon || !sUpoff || !sDownon || !sDownoff){
-		if (!!sUpon)
-			SDL_FreeSurface(sUpon);
-		if (!!sUpoff)
-			SDL_FreeSurface(sUpoff);
-		if (!!sDownon)
-			SDL_FreeSurface(sDownon);
-		if (!!sDownoff)
-			SDL_FreeSurface(sDownoff);
+	long first;
+	
+	first=instr(upon,";");
+	if (first>=0)
+		upon+=first+1;
+
+	first=instr(upoff,";");
+	if (first>=0)
+		upoff+=first+1;
+
+	first=instr(downon,";");
+	if (first>=0)
+		downon+=first+1;
+
+	first=instr(downoff,";");
+	if (first>=0)
+		downoff+=first+1;
+
+	SDL_Surface *temp0=ImageLoader->fetchCursor(upon,CLOptions.animMethod),
+		*temp1=ImageLoader->fetchCursor(upoff,CLOptions.animMethod),
+		*temp2=ImageLoader->fetchCursor(downon,CLOptions.animMethod),
+		*temp3=ImageLoader->fetchCursor(downoff,CLOptions.animMethod);
+	if (!temp0 || !temp1 || !temp2 || !temp3){
+		if (!!temp0)
+			SDL_FreeSurface(temp0);
+		if (!!temp1)
+			SDL_FreeSurface(temp1);
+		if (!!temp2)
+			SDL_FreeSurface(temp2);
+		if (!!temp3)
+			SDL_FreeSurface(temp3);
 		return 0;
 	}
-	SDL_Rect src={0,0,sUpon->w,sUpon->h},
-		dst={((NONS_Button *)this->up)->onLayer->clip_rect.w-sUpon->w,0,0,0};
-	manualBlit(sUpon,&src,((NONS_Button *)this->up)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->up)->onLayer->clip_rect.w-sUpoff->w;
-	manualBlit(sUpoff,&src,((NONS_Button *)this->up)->offLayer->data,&dst);
-	dst.x=((NONS_Button *)this->down)->onLayer->clip_rect.w-sDownon->w;
-	dst.y=((NONS_Button *)this->down)->onLayer->clip_rect.h-sDownon->h;
-	manualBlit(sDownon,&src,((NONS_Button *)this->down)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->down)->offLayer->clip_rect.w-sDownoff->w;
-	dst.y=((NONS_Button *)this->down)->offLayer->clip_rect.h-sDownoff->h;
-	manualBlit(sDownoff,&src,((NONS_Button *)this->down)->offLayer->data,&dst);
-	SDL_FreeSurface(sUpon);
-	SDL_FreeSurface(sUpoff);
-	SDL_FreeSurface(sDownon);
-	SDL_FreeSurface(sDownoff);
+	this->sUpon=temp0;
+	this->sUpoff=temp1;
+	this->sDownon=temp2;
+	this->sDownoff=temp3;
+	SDL_Rect src={0,0,this->sUpon->w,this->sUpon->h},
+		dst={((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpon->w,0,0,0};
+	manualBlit(this->sUpon,&src,((NONS_Button *)this->up)->onLayer->data,&dst);
+	dst.x=((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpoff->w;
+	manualBlit(this->sUpoff,&src,((NONS_Button *)this->up)->offLayer->data,&dst);
+	dst.x=((NONS_Button *)this->down)->onLayer->clip_rect.w-this->sDownon->w;
+	dst.y=((NONS_Button *)this->down)->onLayer->clip_rect.h-this->sDownon->h;
+	manualBlit(this->sDownon,&src,((NONS_Button *)this->down)->onLayer->data,&dst);
+	dst.x=((NONS_Button *)this->down)->offLayer->clip_rect.w-this->sDownoff->w;
+	dst.y=((NONS_Button *)this->down)->offLayer->clip_rect.h-this->sDownoff->h;
+	manualBlit(this->sDownoff,&src,((NONS_Button *)this->down)->offLayer->data,&dst);
 	return 1;
+}
+
+void NONS_Lookback::reset(NONS_StandardOutput *output){
+	delete (NONS_Button *)this->up;
+	delete (NONS_Button *)this->down;
+	this->output=output;
+	SDL_Rect temp=this->output->foregroundLayer->clip_rect;
+	int thirdofscreen=temp.h/3;
+	temp.h=thirdofscreen;
+	this->up=new NONS_Button();
+	this->down=new NONS_Button();
+	((NONS_Button *)this->up)->onLayer=new NONS_Layer(&temp,0);
+	((NONS_Button *)this->up)->offLayer=new NONS_Layer(&temp,0);
+	((NONS_Button *)this->down)->onLayer=new NONS_Layer(&temp,0);
+	((NONS_Button *)this->down)->offLayer=new NONS_Layer(&temp,0);
+	((NONS_Button *)this->down)->posy=thirdofscreen*2;
+	((NONS_Button *)this->up)->box=temp;
+	((NONS_Button *)this->up)->box.x=0;
+	((NONS_Button *)this->up)->box.y=0;
+	((NONS_Button *)this->down)->box=temp;
+	((NONS_Button *)this->down)->box.x=0;
+	((NONS_Button *)this->down)->box.y=0;
+	((NONS_Button *)this->up)->posx+=temp.x;
+	((NONS_Button *)this->up)->posy+=temp.y;
+	((NONS_Button *)this->down)->posx+=temp.x;
+	((NONS_Button *)this->down)->posy+=temp.y;
+	if (!this->sUpon)
+		return;
+	SDL_Rect src={0,0,this->sUpon->w,this->sUpon->h},
+		dst={((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpon->w,0,0,0};
+	manualBlit(this->sUpon,&src,((NONS_Button *)this->up)->onLayer->data,&dst);
+	dst.x=((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpoff->w;
+	manualBlit(this->sUpoff,&src,((NONS_Button *)this->up)->offLayer->data,&dst);
+	//((NONS_Button *)this->up)->posx=((NONS_Button *)this->up)->onLayer->clip_rect.x;
+	//((NONS_Button *)this->up)->posy=((NONS_Button *)this->up)->onLayer->clip_rect.y;
+	dst.x=((NONS_Button *)this->down)->onLayer->clip_rect.w-this->sDownon->w;
+	dst.y=((NONS_Button *)this->down)->onLayer->clip_rect.h-this->sDownon->h;
+	manualBlit(this->sDownon,&src,((NONS_Button *)this->down)->onLayer->data,&dst);
+	dst.x=((NONS_Button *)this->down)->offLayer->clip_rect.w-this->sDownoff->w;
+	dst.y=((NONS_Button *)this->down)->offLayer->clip_rect.h-this->sDownoff->h;
+	manualBlit(this->sDownoff,&src,((NONS_Button *)this->down)->offLayer->data,&dst);
+	//((NONS_Button *)this->down)->posx=((NONS_Button *)this->down)->onLayer->clip_rect.x;
+	//((NONS_Button *)this->down)->posy=((NONS_Button *)this->down)->onLayer->clip_rect.y/*+thirdofscreen*2*/;
 }
 
 void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
@@ -135,14 +213,6 @@ void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
 	}else
 		mouseOver=-1;
 	dst->updateWholeScreen();
-	/*else{
-		((NONS_Button *)this->up)->merge(dst,copyDst,0,1);
-		if (((NONS_Button *)this->down)->MouseOver(x,y)){
-			mouseOver=1;
-			((NONS_Button *)this->down)->merge(dst,copyDst,1,1);
-		}else
-			((NONS_Button *)this->down)->merge(dst,copyDst,0,1);
-	}*/
 	while (1){
 		queue->WaitForEvent(10);
 		while (!queue->data.empty()){

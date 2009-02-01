@@ -1,13 +1,14 @@
-     100 files     150 text files.
-classified 150 filesDuplicate file check 150 files (146 known unique)Unique:      100 files                                               146 unique files.                              
-Counting:  100      80 files ignored.
+     100 files     108 text files.
+classified 108 filesDuplicate file check 108 files (107 known unique)Unique:      100 files                                               108 unique files.                              
+Counting:  100     190 files ignored.
 
-http://cloc.sourceforge.net v 1.06  T=1.0 s (67.0 files/s, 21067.0 lines/s)
+http://cloc.sourceforge.net v 1.07  T=0.5 s (214.0 files/s, 52254.0 lines/s)
 -------------------------------------------------------------------------------
 Language          files     blank   comment      code    scale   3rd gen. equiv
 -------------------------------------------------------------------------------
-C++                  50       964      2474     16361 x   1.51 =       24705.11
-C/C++ Header         17        77       545       646 x   1.00 =         646.00
+C++                  52      1028      2630     16809 x   1.51 =       25381.59
+C/C++ Header         54       267      1588      1956 x   1.00 =        1956.00
+C                     1       205       224      1420 x   0.77 =        1093.40
 -------------------------------------------------------------------------------
-SUM:                 67      1041      3019     17007 x   1.49 =       25351.11
+SUM:                107      1500      4442     20185 x   1.41 =       28430.99
 -------------------------------------------------------------------------------

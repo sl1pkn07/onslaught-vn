@@ -115,7 +115,7 @@ void preparseIf(T *string,std::vector<T *> *vec){
 		"date2","enable_onslaught_language_extensions",
 		"disable_onslaught_language_extensions","getini","new_set_window",
 		"set_default_font_size","unalias","literal_print","use_new_if",
-		"centerh","centerv",0
+		"centerh","centerv","killmenu",0
 	};
 	long end=-1,minend=LONG_MAX;
 	for (long a=0;limiters[a];a++){

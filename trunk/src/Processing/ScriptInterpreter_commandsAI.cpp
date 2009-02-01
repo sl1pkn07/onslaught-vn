@@ -313,19 +313,20 @@ ErrorCode NONS_ScriptInterpreter::command_getmp3vol(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
-	if (line.parameters.size()<3)
+	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
 		return NONS_NOT_IN_DEFINE_MODE;
-	long code,effect,timing;
+	long code,effect,timing=0;
 	wchar_t *rule=0;
 	_GETINTVALUE(code,0,)
 	if (this->gfx_store->retrieve(code))
 		return NONS_DUPLICATE_EFFECT_DEFINITION;
 	_GETINTVALUE(effect,1,)
-	if (effect<2 || effect>255)
+	if (effect>255)
 		return NONS_EFFECT_CODE_OUT_OF_RANGE;
-	_GETINTVALUE(timing,2,)
+	if (line.parameters.size()>2)
+		_GETINTVALUE(timing,2,)
 	if (line.parameters.size()>3)
 		_GETWCSVALUE(rule,3,)
 	NONS_GFX *gfx=this->gfx_store->add(code,effect,timing,rule);
@@ -567,7 +568,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_br(NONS_ParsedLine &line){
-	return this->Printer2(WSTRLITERAL(L""));
+	return this->Printer(WSTRLITERAL(L""));
 }
 
 ErrorCode NONS_ScriptInterpreter::command_cl(NONS_ParsedLine &line){

@@ -82,7 +82,7 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
 
-	char *settings_filename=addStrings(this->NONS_config_dir,"settings.cfg");
+	char *settings_filename=addStrings(config_directory,"settings.cfg");
 	ConfigFile settings(settings_filename);
 	if (settings.exists(L"textSpeedMode"))
 		this->current_speed_setting=settings.getInt(L"textSpeedMode");
@@ -95,8 +95,16 @@ void NONS_ScriptInterpreter::init(){
 	this->defaulty=480;
 	this->defaultfs=18;
 	this->legacy_set_window=1;
-	this->arrowCursor=new NONS_Cursor();
-	this->pageCursor=new NONS_Cursor();
+	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0);
+	if (!this->arrowCursor->data){
+		delete this->arrowCursor;
+		this->arrowCursor=new NONS_Cursor();
+	}
+	this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0);
+	if (!this->pageCursor->data){
+		delete this->pageCursor;
+		this->pageCursor=new NONS_Cursor();
+	}
 	this->gfx_store=this->everything->screen->gfx_store;
 	this->hideTextDuringEffect=1;
 	this->selectOn.r=0xFF;
@@ -127,7 +135,6 @@ void NONS_ScriptInterpreter::init(){
 }
 
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
-	this->NONS_config_dir=getConfigLocation();
 	this->nsadir=0;
 	this->arrowCursor=0;
 	this->pageCursor=0;
@@ -457,8 +464,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"use_new_if"]=&NONS_ScriptInterpreter::command_use_new_if;
 	this->commandList[L"centerh"]=&NONS_ScriptInterpreter::command_centerh;
 	this->commandList[L"centerv"]=&NONS_ScriptInterpreter::command_centerv;
+	this->commandList[L"killmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
 	/*this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
@@ -495,7 +502,7 @@ void NONS_ScriptInterpreter::uninit(){
 	if (this->imageButtons)
 		delete this->imageButtons;
 	delete this->saveGame;
-	char *settings_filename=addStrings(this->NONS_config_dir,"settings.cfg");
+	char *settings_filename=addStrings(config_directory,"settings.cfg");
 	ConfigFile settings;
 	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
 	settings.writeOut(settings_filename);
@@ -505,7 +512,6 @@ void NONS_ScriptInterpreter::uninit(){
 NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
 	InputObserver.detach(this->inputQueue);
 	this->uninit();
-	delete[] this->NONS_config_dir;
 	//delete this->main_font;
 }
 
@@ -610,7 +616,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					softwareCtrlIsPressed=0;
 					this->printed_lines.insert(this->current_line);
 				}
-				this->Printer2(line.line);
+				this->Printer(line.line);
 				break;
 			case PARSEDLINE_COMMAND:
 				{
@@ -751,219 +757,12 @@ wchar_t *getArray(const wchar_t *string){
 	return copyWString(string,l);
 }
 
-/*void NONS_ScriptInterpreter::setDefaultWindow(){
-	if (this->everything->screen)
-		return;
-	this->main_font=new NONS_Font("default.ttf",this->defaultfs,TTF_STYLE_NORMAL);
-	this->everything->screen=new NONS_ScreenSpace(20,this->main_font,this->gfx_store);
-	//this->everything->screen->output->shadeLayer->setShade(0x99,0x99,0x99);
-	this->everything->screen->output->shadeLayer->Clear();
-	//this->everything->screen->Background->defaultShade=0;
-	this->everything->screen->Background->Clear();
-	this->everything->screen->BlendAll(1);
-}*/
-
-/*ErrorCode NONS_ScriptInterpreter::Printer(wchar_t *line){
-	if (!this->everything->screen)
-		this->setDefaultWindow();
-	this->currentBuffer=this->everything->screen->output->currentBuffer;
-	bool skip=*line=='`';
-	//Unused:
-	//ulong olen=wcslen(line)-skip;
-	wchar_t *str=addStrings(line+skip,L"\n");
-	wchar_t *original=str;
-	bool printed=0;
-	bool justClicked=0;
-	while (*str){
-		switch (*str){
-			case '\\':
-				this->everything->screen->showText();
-				if (!justClicked && this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-					goto Printer_000;
-				justClicked=0;
-				this->everything->screen->clearText();
-				str++;
-				if (*str=='\n')
-					goto Printer_000;
-				break;
-			case '@':
-				this->everything->screen->showText();
-				if (!justClicked && this->arrowCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-					goto Printer_000;
-				str++;
-				if (*str=='\n' && !printed)
-					goto Printer_000;
-				break;
-			case '!':
-				if (!instr(str,"!sd")){
-					this->everything->screen->output->display_speed=this->default_speed;
-					str+=3;
-					if (*str=='\n')
-						goto Printer_000;
-					break;
-				}else{
-					bool notess=!instr(str,"!s"),notdee=!instr(str,"!d"),notdu=!instr(str,"!w");
-					if (notess || notdee || notdu){
-						str+=2;
-						ulong l=0;
-						for (;isdigit(str[l]);l++);
-						if (l>0){
-							char *temp=copyString(str,l);
-							long s=atol(temp);
-							delete[] temp;
-							if (notess)
-								this->everything->screen->output->display_speed=s;
-							else if (notdee)
-								waitCancellable(s);
-							else
-								waitNonCancellable(s);
-							str+=l;
-							break;
-						}else
-							str-=2;
-					}
-				}
-			case '#':
-				if (*str=='#'){
-					ulong len=wcslen(str+1);
-					if (len>=6){
-						str++;
-						integer32 parsed=0;
-						short a;
-						for (a=0;a<6;a++){
-							char hex=toupper(str[a]);
-							if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
-								break;
-							parsed<<=4;
-							parsed|=(hex>='0' && hex<='9')?hex-'0':hex-'A'+10;
-						}
-						if (a==6){
-							SDL_Color color=this->everything->screen->output->foregroundLayer->fontCache->foreground;
-							color.r=parsed>>16;
-							color.g=(parsed&0xFF00)>>8;
-							color.b=(parsed&0xFF);
-							this->everything->screen->output->foregroundLayer->fontCache->foreground=color;
-							str+=6;
-							break;
-						}
-						str--;
-					}
-				}
-			case '%':
-				if (*str=='%'){
-					if (isalpha(str[1]) || str[1]=='_'){
-						ulong l;
-						for (l=0;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
-						if (l){
-							wchar_t *name=copyWString(str,l+1);
-							NONS_Variable *var=this->store->retrieve(name);
-							delete[] name;
-							if (var){
-								long current_position=str-original;
-								wchar_t *newstring=insertIntoString(original,current_position,l+1,var->intValue);
-								delete[] original;
-								original=newstring;
-								str=newstring+current_position;
-							}
-						}
-					}
-				}
-			case '$':
-				if (*str=='$'){
-					if (isalpha(str[1]) || str[1]=='_'){
-						ulong l;
-						for (l=0;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
-						if (l){
-							wchar_t *name=copyWString(str,l+1);
-							NONS_Variable *var=this->store->retrieve(name);
-							delete[] name;
-							if (var){
-								long current_position=str-original;
-								wchar_t *newstring=insertIntoString(original,current_position,l+1,var->wcsValue);
-								delete[] original;
-								original=newstring;
-								str=newstring+current_position;
-							}
-						}
-					}
-				}
-			case '?':
-				if (*str=='?'){
-					wchar_t *name=getArray(str);
-					if (name){
-						NONS_Variable *var=this->store->retrieve(name);
-						long l=wcslen(name);
-						delete[] name;
-						if (var){
-							if (var->type=='%'){
-								long current_position=str-original;
-								wchar_t *newstring=insertIntoString(original,current_position,l+1,var->intValue);
-								delete[] original;
-								original=newstring;
-								str=newstring+current_position;
-							}else if (var->type=='$'){
-								long current_position=str-original;
-								wchar_t *newstring=insertIntoString(original,current_position,l+1,var->wcsValue);
-								delete[] original;
-								original=newstring;
-								str=newstring+current_position;
-							}
-						}
-					}
-				}
-			default:
-				{
-					ulong end=1,end2;
-					for (;str[end] && !(multicomparison(str[end],"@\\#") || str[end]=='!' && (str[end+1]=='s' || str[end+1]=='d' || str[end+1]=='w'));end++);
-					if (this->clickStr){
-						for (end2=1;str[end2] && !multicomparison(str[end2],this->clickStr);end2++);
-						end2++;
-						if (end2<end){
-							end=end2;
-							justClicked=1;
-						}
-					}
-					wchar_t *printstring=copyWString(str,end);
-					this->everything->screen->showText();
-					std::vector<NONS_Glyph *> *temp1=this->everything->screen->NONSOut(printstring,0);
-					if (justClicked && this->arrowCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
-						if (temp1)
-							delete temp1;
-						goto Printer_000;
-					}
-					printed=1;
-					delete[] printstring;
-					while (temp1){
-						if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
-							delete temp1;
-							goto Printer_000;
-						}
-						justClicked=1;
-						this->everything->screen->clearText();
-						std::vector<NONS_Glyph *> *temp2=0;
-						if (temp1->size())
-							temp2=this->everything->screen->NONSOut(temp1);
-						delete temp1;
-						if (!temp2){
-							justClicked=0;
-							break;
-						}
-						temp1=temp2;
-					}
-					str+=end;
-				}
-		}
-	}
-Printer_000:
-	delete[] original;
-	return NONS_NO_ERROR;
-}*/
-
 void NONS_ScriptInterpreter::reduceString(
 		const wchar_t *src,
 		std::wstring &dst,
 		std::set<NONS_Variable *> *visited,
-		std::vector<std::pair<wchar_t *,NONS_Variable *> > *stack){
+		std::vector<std::pair<wchar_t *,NONS_Variable *> > *stack
+	){
 	if (!src)
 		return;
 	for (const wchar_t *str=src;*str;){
@@ -1153,7 +952,7 @@ struct printingPage{
 	printingPage(int a){}
 };
 
-ErrorCode NONS_ScriptInterpreter::Printer2(const wchar_t *line){
+ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 	/*if (!this->everything->screen)
 		this->setDefaultWindow();*/
 	this->currentBuffer=this->everything->screen->output->currentBuffer;
@@ -1321,8 +1120,7 @@ ErrorCode NONS_ScriptInterpreter::getStrValue(wchar_t *str,char **value){
 	if (*str=='%')
 		return NONS_UNMATCHING_OPERANDS;
 	if (*str=='\"' || *str=='`'){
-		wchar_t find[]={0,0};
-		find[0]=*str;
+		wchar_t find[]={*str,0};
 		long endstr=instr(str+1,find);
 		if (endstr<0)
 			return NONS_UNMATCHED_QUOTES;
@@ -1354,8 +1152,7 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 	if (*str=='%')
 		return NONS_UNMATCHING_OPERANDS;
 	if (*str=='\"' || *str=='`'){
-		wchar_t find[]={0,0};
-		find[0]=*str;
+		wchar_t find[]={*str,0};
 		long endstr=instr(str+1,find);
 		if (endstr<0)
 			return NONS_UNMATCHED_QUOTES;

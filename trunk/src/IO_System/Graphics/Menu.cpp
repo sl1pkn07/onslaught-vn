@@ -237,7 +237,7 @@ int NONS_Menu::save(){
 	if (!this->files){
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
 	}
-	std::vector<tm *> *files=existing_files(((NONS_ScriptInterpreter *)interpreter)->script->saveDir);
+	std::vector<tm *> *files=existing_files(save_directory);
 	int choice;
 	while (1){
 		std::vector<wchar_t *> strings;
@@ -304,7 +304,7 @@ int NONS_Menu::load(){
 	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
 	if (!this->files)
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
-	std::vector<tm *> *files=existing_files(((NONS_ScriptInterpreter *)interpreter)->script->saveDir);
+	std::vector<tm *> *files=existing_files(save_directory);
 	int choice;
 	while (1){
 		std::vector<wchar_t *> strings;

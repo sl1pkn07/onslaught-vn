@@ -59,7 +59,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *
 	this->negative=0;
 	this->sprite_priority=this->layerStack.size()-1;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
-	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b,CLOptions.virtualWidth,CLOptions.virtualHeight);
+	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
 }
 
 NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store){
@@ -83,7 +83,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 	else
 		this->gfx_store=store;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
-	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b,CLOptions.virtualWidth,CLOptions.virtualHeight);
+	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
 }
 
 NONS_ScreenSpace::~NONS_ScreenSpace(){
@@ -108,9 +108,13 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
 	this->BlendNoText(0);
 	if (this->output->visible){
-		multiplyBlend(this->output->shadeLayer->data,&(this->output->shadeLayer->clip_rect),this->screenBuffer,&(this->screenBuffer->clip_rect));
-		manualBlit(this->output->shadowLayer->data,0,this->screenBuffer,0,this->output->shadowLayer->alpha);
-		manualBlit(this->output->foregroundLayer->data,0,this->screenBuffer,0,this->output->foregroundLayer->alpha);
+		if (!this->output->shadeLayer->useDataAsDefaultShade)
+			multiplyBlend(this->output->shadeLayer->data,0,this->screenBuffer,&(this->output->shadeLayer->clip_rect));
+		else
+			manualBlit(this->output->shadeLayer->data,0,this->screenBuffer,&(this->output->shadeLayer->clip_rect));
+		if (this->output->shadowLayer)
+			manualBlit(this->output->shadowLayer->data,0,this->screenBuffer,&(this->output->shadowLayer->clip_rect),this->output->shadowLayer->alpha);
+		manualBlit(this->output->foregroundLayer->data,0,this->screenBuffer,&(this->output->foregroundLayer->clip_rect),this->output->foregroundLayer->alpha);
 	}
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
@@ -213,7 +217,7 @@ void NONS_ScreenSpace::resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Fon
 	this->output=new NONS_StandardOutput(font,window,frame,shadow);
 	delete this->output->transition;
 	this->output->transition=temp;
-	this->lookback->output=this->output;
+	this->lookback->reset(this->output);
 }
 
 ErrorCode NONS_ScreenSpace::loadSprite(ulong n,wchar_t *string,wchar_t *name,long x,long y,uchar alpha,METHODS method,bool visibility){

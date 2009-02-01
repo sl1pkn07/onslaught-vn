@@ -36,14 +36,15 @@
 #include "../FileIO.h"
 #include <bzlib.h>
 
-NONS_Archive::NONS_Archive(const char *filename){
+NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
 	this->file=0;
 	this->loaded=0;
 	this->root=0;
 	this->path=0;
 	if (!fileExists(filename)){
-		v_stderr <<"Error. Could not open \""<<filename<<"\"."<<std::endl;
+		if (!failSilently)
+			v_stderr <<"Error. Could not open \""<<filename<<"\"."<<std::endl;
 		this->file=0;
 		this->path=0;
 		this->loaded=0;

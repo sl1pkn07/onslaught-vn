@@ -58,6 +58,7 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->scriptPath=0;
 	this->scriptEncryption=NO_ENCRYPTION;
 	this->override_stdout=0;
+	this->reset_redirection_files=1;
 	this->debugMode=0;
 	this->noconsole=0;
 	this->virtualWidth=DEFAULT_INPUT_WIDTH;

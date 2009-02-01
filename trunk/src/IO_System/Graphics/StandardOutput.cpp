@@ -68,7 +68,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect
 		this->shadowLayer->MakeTextLayer(font,&rgb2,1);
 	}else
 		this->shadowLayer=0;
-	this->shadeLayer=new NONS_Layer(size,amask&0x99999999);
+	this->shadeLayer=new NONS_Layer(size,(0x99<<rshift)|(0x99<<gshift)|(0x99<<bshift));
 	this->x=frame->x;
 	this->y=frame->y;
 	this->x0=frame->x;
@@ -181,7 +181,9 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 	for (ulong a=start;a<end && a<this->cachedText.size();a++){
 		t0=SDL_GetTicks();
 		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(this->cachedText[a]);
-		NONS_Glyph *glyph2=this->shadowLayer->fontCache->getGlyph(this->cachedText[a]);
+		NONS_Glyph *glyph2=0;
+		if (this->shadowLayer)
+			glyph2=this->shadowLayer->fontCache->getGlyph(this->cachedText[a]);
 		if (!glyph){
 			if (y0+lineSkip>=this->h+this->y0){
 				this->resumePrinting=1;
@@ -253,11 +255,11 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			default:
 				this->prebufferedText.push_back(glyph->codePoint);
 		}
-		if (this->shadowLayer){
-			glyph2->putGlyph(this->shadowLayer->data,x0+1,y0+1,&(this->shadowLayer->fontCache->foreground),1);
+		if (glyph2){
+			glyph2->putGlyph(this->shadowLayer->data,x0+1-this->shadowLayer->clip_rect.x,y0+1-this->shadowLayer->clip_rect.y,&(this->shadowLayer->fontCache->foreground),1);
 			glyph2->putGlyph(dst->virtualScreen,x0+1,y0+1,0);
 		}
-		glyph->putGlyph(this->foregroundLayer->data,x0,y0,&(this->foregroundLayer->fontCache->foreground),1);
+		glyph->putGlyph(this->foregroundLayer->data,x0-this->foregroundLayer->clip_rect.x,y0-this->foregroundLayer->clip_rect.y,&(this->foregroundLayer->fontCache->foreground),1);
 		glyph->putGlyph(dst->virtualScreen,x0,y0,0);
 		dst->updateScreen(x0,y0,advance+1,fontLineSkip+1);
 		if (printedChars)

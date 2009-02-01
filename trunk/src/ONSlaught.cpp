@@ -66,7 +66,7 @@ void usage(){
 		"  -verbosity <number>\n"
 		"      Set log verbosity level. 0 by default.\n"
 		"  -save-directory <directory name>\n"
-		"      Override automatic save game directory selection."
+		"      Override automatic save game directory selection.\n"
 		"      See the documentation for more information.\n"
 		"  -f\n"
 		"      Start in fullscreen.\n"
@@ -117,7 +117,11 @@ void usage(){
 		"  -redirect\n"
 		"      Redirect stdout and stderr to \"stdout.txt\" and \"stderr.txt\"\n"
 		"      correspondingly.\n"
-		"      If -debug has been used, it is disabled.\n";
+		"      If -debug has been used, it is disabled.\n"
+		"  -!reset-out-files\"\n"
+		"      Only used with \"-redirect\".\n"
+		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
+		"      them and puts the date and time as identification.\n";
 	exit(0);
 }
 
@@ -169,6 +173,7 @@ void parseCommandLine(int argc,T **argv){
 		"-h",
 		"-?",
 		"-save-directory",
+		"-!reset-out-files",
 		0
 	};
 	for (long argument=1;argument<argc;argument++){
@@ -382,6 +387,9 @@ void parseCommandLine(int argc,T **argv){
 						CLOptions.savedir=str;
 					}
 				}
+				break;
+			case 22: //-!reset-out-files
+				CLOptions.reset_redirection_files=0;
 				break;
 			case 17://-sdebug
 			default:
@@ -626,8 +634,12 @@ int
 	signal(SIGINT,handle_SIGINT);
 	if (!useArgumentsFile("arguments.txt"))
 		parseCommandLine(argc,argv);
-	if (CLOptions.override_stdout)
+	if (CLOptions.override_stdout){
+		v_stdout.redirect();
+		v_stderr.redirect();
+		v_stdlog.redirect();
 		std::cout <<"Redirecting."<<std::endl;
+	}
 #ifdef NONS_PARALLELIZE
 	//get CPU count
 #if defined(NONS_SYS_WINDOWS)
@@ -680,17 +692,20 @@ int
 	}
 #endif
 	everything=new NONS_Everything();
-	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	ErrorCode error=NONS_NO_ERROR;
 	if (CLOptions.scriptPath)
 		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
 	else
 		error=everything->init_script(CLOptions.scriptencoding);
+	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	if (error!=NONS_NO_ERROR){
 		handleErrors(error,-1,"mainThread");
 		exit(error);
 	}
-	v_stdout <<"Save files go in \""<<everything->script->saveDir<<"\"."<<std::endl;
+	if (!config_directory)
+		config_directory=getConfigLocation();
+	v_stdout <<"Global files go in \""<<config_directory<<"\"."<<std::endl;
+	v_stdout <<"Local files go in \""<<save_directory<<"\"."<<std::endl;
 	if (CLOptions.musicDirectory)
 		error=everything->init_audio(CLOptions.musicDirectory);
 	else

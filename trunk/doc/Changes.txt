@@ -55,6 +55,7 @@
         soundpressplgin: Deprecated and not portable.
         spi: Not portable.
         getreg: Not portable.
+        killmenu: Not portable.
     Changed behaviors:
         if: Expression syntax has changed. See the changed syntax section.
         arc: No longer uses a dynamic link library due to portability issues.
@@ -80,7 +81,7 @@
                 start Y of the text window,
                 end X of the text window,
                 end Y of the text window,
-            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,$,%,%,%,%
+            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,$,%,%
                 The parameters for this syntax are the same as the previous, but
                 instead of a color value, a file string referring to an image is
                 used.

@@ -42,7 +42,6 @@ NONS_Script::NONS_Script(){
 	this->script=0;
 	this->length=0;
 	memset(this->hash,0,sizeof(unsigned)*5);
-	this->saveDir=0;
 }
 
 ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
@@ -113,7 +112,7 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 	}
 	//hash.Input((char *)buffer,l*sizeof(wchar_t));
 	hash.Result(this->hash);
-	this->saveDir=getSaveLocation(this->hash);
+	save_directory=getSaveLocation(this->hash);
 	return NONS_NO_ERROR;
 }
 
@@ -122,8 +121,6 @@ NONS_Script::~NONS_Script(){
 		delete[] this->script;
 	for (ulong a=0;a<this->blocks.size();a++)
 		delete this->blocks[a];
-	if (this->saveDir)
-		delete[] this->saveDir;
 }
 
 long NONS_Script::offsetFromBlock(const wchar_t *name){

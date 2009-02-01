@@ -132,6 +132,12 @@ categories is sent to stdout.
 This option also unconditionally disables debug.
 
 
+-!reset-out-files
+Only used with "-redirect".
+Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens them
+and puts the date and time as identification.
+
+
 -debug
 Enables debug mode. In debug mode, it is possible to view and change the value
 of variables.

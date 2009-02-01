@@ -47,7 +47,7 @@ long SJISoffset_to_WCSoffset(wchar_t *buffer,long offset){
 }
 
 bool NONS_ScriptInterpreter::load(int file){
-	char *path=this->script->saveDir;
+	char *path=save_directory;
 	//this line makes sure that 'filename' has enough space for sprintf()
 	char *filename=addStrings(path,"save01.dat");
 	sprintf(filename,"%ssave%d.dat",path,file);
@@ -755,7 +755,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		}
 		SDL_UnlockMutex(au->soundcache->mutex);
 	}
-	char *path=this->script->saveDir;
+	char *path=save_directory;
 	char *filename=addStrings(path,"save01.dat");
 	sprintf(filename,"%ssave%d.dat",path,file);
 	bool ret=this->saveGame->save(filename);

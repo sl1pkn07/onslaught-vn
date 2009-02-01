@@ -37,15 +37,15 @@
 #define NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
 ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_ParsedLine &line){
 	this->errored_lines.insert(this->current_line);
-	if (!wcscmp(line.line,L"arc")){
+	/*if (!wcscmp(line.line,L"arc")){
 		if (line.parameters.size()<1){
-			ErrorCode error=this->everything->archive->init("arc.sar",0);
+			ErrorCode error=this->everything->archive->init("arc.sar",0,1);
 			if ((error&NONS_NO_ERROR_FLAG)!=NONS_NO_ERROR_FLAG)
-				return this->everything->archive->init("ARC.SAR",0);
+				return this->everything->archive->init("ARC.SAR",0,0);
 			return error;
 		}
 		char *name=copyString(line.parameters[0]);
-		ErrorCode ret=this->everything->archive->init(name,0);
+		ErrorCode ret=this->everything->archive->init(name,0,0);
 		delete[] name;
 		return ret;
 	}else{
@@ -72,15 +72,10 @@ ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_ParsedLine &line){
 			"ARC9.NSA",
 			0
 		};
-		ErrorCode ret=NONS_NO_ERROR;
-		v_stderr <<"NONS_ScriptInterpreter::command_nsa(): I'll try to open every possible archive,\n"
-			"    now. Ignore any error messages. Ignore anything\n"
-			"    NONS_ScriptInterpreter::interpretNextLine() says about line "<<this->current_line<<", too."<<std::endl;
 		for (short a=0;filenames[a];a++)
-			if ((this->everything->archive->init(filenames[a],1)&NONS_NO_ERROR_FLAG)!=NONS_NO_ERROR_FLAG)
-				ret=NONS_UNDEFINED_ERROR;
-		return ret;
-	}
+			this->everything->archive->init(filenames[a],1,1);*/
+		return NONS_NO_ERROR;
+	//}
 }
 
 ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_ParsedLine &line){
