@@ -35,15 +35,43 @@
 #include <ctime>
 
 NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
-	if (this->cout==std::cout)
-		this->file=new std::ofstream("stdout.txt",std::ios::app);
-	else if (this->cout==std::cerr)
-		this->file=new std::ofstream("stderr.txt",std::ios::app);
+	this->file=0;
+}
+
+void NONS_RedirectedOutput::writeWideString(wchar_t *str){
+	char *temp=WChar_to_UTF8(str);
+	*this <<temp;
+	delete[] temp;
+}
+
+NONS_RedirectedOutput::~NONS_RedirectedOutput(){
+	if (this->file)
+		this->file->close();
+}
+
+std::ostream &NONS_RedirectedOutput::getstream(){
+	if (CLOptions.override_stdout)
+		return *(this->file);
 	else
-		this->file=new std::ofstream("stdlog.txt",std::ios::app);
+		return this->cout;
+}
+
+void NONS_RedirectedOutput::redirect(){
+	if (!!this->file)
+		delete[] this->file;
+	if (!CLOptions.override_stdout){
+		this->file=0;
+		return;
+	}
+	if (this->cout==std::cout)
+		this->file=new std::ofstream("stdout.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
+	else if (this->cout==std::cerr)
+		this->file=new std::ofstream("stderr.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
+	else
+		this->file=new std::ofstream("stdlog.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
 	if (!this->file->is_open())
 		delete this->file;
-	else{
+	else if (!CLOptions.reset_redirection_files){
 		char str[25];
 		time_t secs=time(0);
 		tm *t=localtime(&secs);
@@ -55,22 +83,5 @@ NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
 			"Session "<<str<<"\n"
 			"--------------------------------------------------------------------------------"<<std::endl;
 	}
-}
-
-void NONS_RedirectedOutput::writeWideString(wchar_t *str){
-	char *temp=WChar_to_UTF8(str);
-	*this <<temp;
-	delete[] temp;
-}
-
-NONS_RedirectedOutput::~NONS_RedirectedOutput(){
-	this->file->close();
-}
-
-std::ostream &NONS_RedirectedOutput::getstream(){
-	if (CLOptions.override_stdout)
-		return *(this->file);
-	else
-		return this->cout;
 }
 #endif

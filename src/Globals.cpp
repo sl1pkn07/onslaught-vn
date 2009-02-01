@@ -131,4 +131,7 @@ SDL_mutex *screenMutex=0;
 #ifdef NONS_PARALLELIZE
 ulong cpu_count=1;
 #endif
+
+char *save_directory=0;
+char *config_directory=0;
 #endif

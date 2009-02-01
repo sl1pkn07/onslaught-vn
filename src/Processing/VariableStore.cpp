@@ -43,9 +43,13 @@ std::set<wchar_t *,wstrCmp> labelsUsed;
 NONS_VariableStore::NONS_VariableStore(){
 	long l;
 	this->commitGlobals=0;
-	uchar *buffer=readfile("global.sav",&l);
+	char *dir=addStrings(save_directory,"global.sav");
+	uchar *buffer=readfile(dir,&l);
 	if (!buffer){
-		buffer=readfile("gloval.sav",&l);
+		delete[] dir;
+		dir=addStrings(save_directory,"gloval.sav");
+		buffer=readfile(dir,&l);
+		delete[] dir;
 		if (!buffer)
 			return;
 		for (long a=0,stackpos=200;a<l;stackpos++){
@@ -157,7 +161,9 @@ void NONS_VariableStore::saveData(){
 	}
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
-	writefile("global.sav",writebuffer,l);
+	char *dir=addStrings(save_directory,"global.sav");
+	writefile(dir,writebuffer,l);
+	delete[] dir;
 	delete[] writebuffer;
 }
 

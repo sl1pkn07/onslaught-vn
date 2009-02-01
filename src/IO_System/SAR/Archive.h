@@ -48,7 +48,7 @@ struct NONS_Archive{
 		NS3_ARCHIVE=4
 	};
 	bool loaded;
-	NONS_Archive(const char *filename);
+	NONS_Archive(const char *filename,bool failSilently);
 	~NONS_Archive();
 	/*
 	1 if the archive has been loaded or if it had already been loaded.

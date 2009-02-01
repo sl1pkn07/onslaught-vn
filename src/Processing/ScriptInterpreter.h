@@ -89,7 +89,7 @@ struct NONS_StackElement{
 class NONS_ScriptInterpreter{
 	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmp> commandListType;
 	//ErrorCode Printer(wchar_t *line);
-	ErrorCode Printer2(const wchar_t *line);
+	ErrorCode Printer(const wchar_t *line);
 	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_Variable *> *visited=0,std::vector<std::pair<wchar_t *,NONS_Variable *> > *stack=0);
 	void uninit();
 	void init();
@@ -267,14 +267,14 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);*/
+	//Not a command!:
+	ErrorCode bad_select(NONS_ParsedLine &line);
 public:
 	NONS_Script *script;
 	NONS_VariableStore *store;
 	NONS_GFXstore *gfx_store;
 	NONS_Everything *everything;
-	char *NONS_config_dir;
 	NONS_ScriptInterpreter(NONS_Everything *everything);
 	~NONS_ScriptInterpreter();
 	bool interpretNextLine();

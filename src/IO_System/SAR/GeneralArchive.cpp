@@ -36,16 +36,43 @@
 #include "../FileIO.h"
 
 NONS_GeneralArchive::NONS_GeneralArchive(){
-	this->archive=new NONS_Archive("arc.sar");
+	this->archive=new NONS_Archive("arc.sar",1);
 	this->archive->readArchive();
 	if (!this->archive->loaded){
 		delete this->archive;
-		this->archive=new NONS_Archive("ARC.SAR");
+		this->archive=new NONS_Archive("ARC.SAR",1);
 		this->archive->readArchive();
 		if (!this->archive->loaded){
 			delete this->archive;
 			this->archive=0;
 		}
+	}
+	{
+		const char *filenames[]={
+			"arc.nsa",
+			"ARC.NSA",
+			"arc1.nsa",
+			"ARC1.NSA",
+			"arc2.nsa",
+			"ARC2.NSA",
+			"arc3.nsa",
+			"ARC3.NSA",
+			"arc4.nsa",
+			"ARC4.NSA",
+			"arc5.nsa",
+			"ARC5.NSA",
+			"arc6.nsa",
+			"ARC6.NSA",
+			"arc7.nsa",
+			"ARC7.NSA",
+			"arc8.nsa",
+			"ARC8.NSA",
+			"arc9.nsa",
+			"ARC9.NSA",
+			0
+		};
+		for (short a=0;filenames[a];a++)
+			this->init(filenames[a],1,1);
 	}
 }
 
@@ -78,12 +105,12 @@ uchar *NONS_GeneralArchive::getFileBuffer(const char *filepath,ulong *buffersize
 	return ret;
 }
 
-ErrorCode NONS_GeneralArchive::init(const char *filename,bool which){
+ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSilently){
 	if (!filename)
 		return NONS_INVALID_PARAMETER;
 	if (!which && this->archive)
 		return NONS_ALREADY_INITIALIZED;
-	NONS_Archive *temp=new NONS_Archive(filename);
+	NONS_Archive *temp=new NONS_Archive(filename,failSilently);
 	if (!temp->readArchive()){
 		delete temp;
 		return NONS_INVALID_ARCHIVE;

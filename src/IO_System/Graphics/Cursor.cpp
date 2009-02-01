@@ -235,36 +235,32 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 								break;
 							case SDLK_UP:
 							case SDLK_PAGEUP:
-								screen->BlendNoText(0);
-								LOCKSCREEN;
-								manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
-								multiplyBlend(screen->output->shadeLayer->data,&(screen->output->shadeLayer->clip_rect),screen->screen->virtualScreen,0);
-								UNLOCKSCREEN;
-								screen->lookback->callLookback(screen->screen);
-								while (!queue->data.empty())
-									queue->pop();
-								screen->BlendAll(0);
-								LOCKSCREEN;
-								manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
-								if (anim)
-									manualBlit(this->data,&srcRect,screen->screen->virtualScreen,&dstRect);
-								UNLOCKSCREEN;
-								screen->screen->updateWholeScreen();
-								//SDL_UpdateRect(screen->screen,0,0,0,0);
-								screen->screen->updateWholeScreen();
-								break;
+								{
+									screen->BlendNoText(0);
+									LOCKSCREEN;
+									manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+									multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
+									UNLOCKSCREEN;
+									screen->lookback->callLookback(screen->screen);
+									while (!queue->data.empty())
+										queue->pop();
+									screen->BlendAll(0);
+									LOCKSCREEN;
+									manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+									if (anim)
+										manualBlit(this->data,&srcRect,screen->screen->virtualScreen,&dstRect);
+									UNLOCKSCREEN;
+									screen->screen->updateWholeScreen();
+									break;
+								}
 							case SDLK_MENU:
 								break;
 							default:
 								goto animate_000;
 						}
 						break;
-					case SDL_KEYUP:
-						break;
 					case SDL_MOUSEBUTTONDOWN:
 						done=1;
-						break;
-					case SDL_MOUSEMOTION:
 						break;
 					default:
 						break;

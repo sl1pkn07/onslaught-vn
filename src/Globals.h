@@ -63,4 +63,7 @@ extern SDL_mutex *exitMutex;
 extern SDL_mutex *screenMutex;
 
 #include "Parallelization.h"
+
+extern char *save_directory;
+extern char *config_directory;
 #endif

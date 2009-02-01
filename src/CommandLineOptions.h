@@ -43,6 +43,7 @@ struct NONS_CommandLineOptions{
 	char *scriptPath;
 	ENCRYPTION scriptEncryption;
 	bool override_stdout;
+	bool reset_redirection_files;
 	bool debugMode;
 	bool noconsole;
 	ushort virtualWidth,virtualHeight,

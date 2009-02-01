@@ -49,6 +49,7 @@ struct NONS_RedirectedOutput{
 			return this->cout <<a;
 	}
 	void writeWideString(wchar_t *str);
+	void redirect();
 	std::ostream &getstream();
 };
 #endif

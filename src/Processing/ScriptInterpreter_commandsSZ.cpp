@@ -143,7 +143,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 	int forceLineSkip=0;
 	if (this->legacy_set_window){
 		long fontsizeY;
-		if (line.parameters.size()<16)
+		if (line.parameters.size()<14)
 			return NONS_INSUFFICIENT_PARAMETERS;
 		_GETINTVALUE(frameXstart,0,)
 		_GETINTVALUE(frameYstart,1,)
@@ -158,16 +158,21 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		_GETINTVALUE(shadow,10,)
 		_GETINTVALUE(windowXstart,12,)
 		_GETINTVALUE(windowYstart,13,)
-		_GETINTVALUE(windowXend,14,)
-		_GETINTVALUE(windowYend,15,)
 		if (this->getIntValue(line.parameters[11],&color)!=NONS_NO_ERROR){
 			syntax=1;
 			_GETWCSVALUE(filename,11,)
+			windowXend=windowXstart+1;
+			windowYend=windowYstart+1;
+		}else{
+			_GETINTVALUE(windowXend,14,)
+			_GETINTVALUE(windowYend,15,)
 		}
 		frameXend*=fontsize+spacingX;
+		frameXend+=frameXstart;
 		fontsize=this->defaultfs;
 		forceLineSkip=fontsizeY+spacingY;
 		frameYend*=fontsizeY+spacingY;
+		frameYend+=frameYstart;
 	}else{
 		if (line.parameters.size()<15)
 			return NONS_INSUFFICIENT_PARAMETERS;
@@ -202,28 +207,11 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			delete[] filename;
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	if (!this->legacy_set_window){
-		frameXend-=frameXstart-1;
-		frameYend-=frameYstart-1;
-		windowXend-=windowXstart-1;
-		windowYend-=windowYstart-1;
-	}
 	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1};
-	SDL_Rect frameRect={frameXstart,frameYstart,frameXend,frameYend};
-	if (!this->everything->screen){
-		//this->main_font=new NONS_Font("default.ttf",fontsize,bold!=0?TTF_STYLE_BOLD:TTF_STYLE_NORMAL);
-		INIT_NONS_FONT(this->main_font,fontsize,this->everything->archive)
-		this->main_font->spacing=spacingX;
-		this->everything->screen=new NONS_ScreenSpace(
-			&windowRect,
-			&frameRect,
-			this->main_font,
-			shadow!=0,
-			this->gfx_store
-		);
-	}else{
+	SDL_Rect frameRect={frameXstart,frameYstart,frameXend-frameXstart+1,frameYend-frameYstart+1};
+	{
 		SDL_Surface *scr=this->everything->screen->screen->virtualScreen;
-		if (frameXstart+frameXend>scr->w || frameYstart+frameYend>scr->h)
+		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
 			v_stderr <<"Warning: The text frame is larger than the screen"<<std::endl;
 		if (this->everything->screen->output->shadeLayer->useDataAsDefaultShade){
 			ImageLoader->unfetchImage(this->everything->screen->output->shadeLayer->data);
@@ -240,14 +228,24 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			this->everything->screen->output->shadowLayer->fontCache->refreshCache();
 		}/*else
 			this->main_font->setStyle(bold!=0?TTF_STYLE_BOLD:TTF_STYLE_NORMAL);*/
-		this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
-	}
-	if (!syntax){
-		this->everything->screen->output->shadeLayer->setShade((color&0xFF0000)>>16,(color&0xFF00)>>8,color&0xFF);
-		this->everything->screen->output->shadeLayer->Clear();
-	}else{
-		SDL_Surface *pic=ImageLoader->fetchImage(filename,&(this->everything->screen->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-		this->everything->screen->output->shadeLayer->usePicAsDefaultShade(pic);
+		SDL_Surface *pic;
+		if (!syntax){
+			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
+			this->everything->screen->output->shadeLayer->setShade((color&0xFF0000)>>16,(color&0xFF00)>>8,color&0xFF);
+			this->everything->screen->output->shadeLayer->Clear();
+		}else{
+			long f=instr(filename,";");
+			pic=ImageLoader->fetchImage(
+				filename+(f>=0?f+1:0),
+				&(this->everything->screen->screen->virtualScreen->clip_rect),
+				CLOptions.layerMethod
+			);
+			windowRect.w=pic->w;
+			windowRect.h=pic->h;
+			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
+		}
+		if (!!syntax)
+			this->everything->screen->output->shadeLayer->usePicAsDefaultShade(pic);
 	}
 	this->everything->screen->output->extraAdvance=spacingX;
 	//this->everything->screen->output->extraLineSkip=0;
@@ -442,7 +440,7 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 		selnum=1;
 	}else{
 		if (line.parameters.size()<2 || line.parameters.size()%2)
-			return NONS_INSUFFICIENT_PARAMETERS;
+			return this->bad_select(line);
 		selnum=0;
 	}
 	NONS_Variable *var;
@@ -516,6 +514,36 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 		this->interpreter_position=offset;
 	}
 	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::bad_select(NONS_ParsedLine &line){
+	v_stderr <<"NONS_ScriptInterpreter::bad_select(): WARNING: a ";
+	v_stderr.writeWideString(line.line);
+	v_stderr <<" without regular parameters was found on line "<<line.lineNo<<". This may indicate that you're using "
+		"the irregular syntax. If that's the case, you should consider migrating to the regular syntax.\n"
+		"    I'm going to try and parse the command all the same, so don't be surprised if there are errors.\n"
+		"    Oh, and this is still considered a syntax error, so I'm going to return INSUFFICIENT_PARAMETERS."<<std::endl;
+	ulong pos=this->previous_interpreter_position;
+	wchar_t *script=this->script->script;
+	for (;!iswhitespace(script[pos]);pos++);
+	while (1){
+		for (;iswhitespace(script[pos]);pos++);
+		ulong start=pos,l=1;
+		if (script[start]=='\"' || script[start]=='`'){
+			for (;script[start+l]!=script[start];l++);
+			l++;
+		}else
+			for (;!iswhitespace(script[start+l]);l++);
+		line.parameters.push_back(copyWString(script+start,l));
+		pos+=l;
+		for (;iswhitespace(script[pos]);pos++);
+		if (script[pos]!=',')
+			break;
+		for (pos++;iswhitespace(script[pos]);pos++);
+	};
+	this->interpreter_position=pos;
+	this->command_select(line);
+	return NONS_INSUFFICIENT_PARAMETERS;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_selectcolor(NONS_ParsedLine &line){

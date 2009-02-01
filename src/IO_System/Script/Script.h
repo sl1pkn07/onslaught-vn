@@ -44,7 +44,6 @@ struct NONS_Script{
 	unsigned hash[5];
 	std::vector<NONS_ScriptBlock *> blocks;
 	std::vector<ulong> jumps;
-	char *saveDir;
 	NONS_Script();
 	~NONS_Script();
 	ErrorCode init(const char *scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption);
