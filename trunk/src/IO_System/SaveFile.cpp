@@ -43,7 +43,7 @@
 #include <unistd.h>
 #endif
 
-tm *getDate(char *filename){
+tm *getDate(const char *filename){
 	tm *res=new tm();
 #if defined(NONS_SYS_WINDOWS)
 	FILETIME time;

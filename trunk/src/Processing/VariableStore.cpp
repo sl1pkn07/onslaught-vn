@@ -207,7 +207,7 @@ ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_ter
 		}
 	}
 	long *results=new long[operations.size()];
-	const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
+	static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
 	for (ulong a=0;a<operations.size();a++){
 		long opA,opB,res;
 		switch (operations[a]->operandA->type){

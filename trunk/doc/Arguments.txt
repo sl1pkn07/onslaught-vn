@@ -23,7 +23,7 @@ Using the following command line:
 ONSlaught -save-directory "Parrot Sketch"
 would cause save games to go in
 "C:\Documents and Settings\User\My Documents\.ONSlaught\Parrot Sketch\" in
-Windows XP, and in "~/.ONSlaught/Parrot Sketch" in Linux.
+Windows XP, and in "~/.ONSlaught/Parrot Sketch/" in Linux.
 
 At the time of this writing (2009-01-24), this option only has effect on Linux
 and Windows. Any other platform the engine is compiled for will put its save
@@ -56,13 +56,13 @@ Start in fullscreen.
 -r <number> <number> <number> <number>
 Sets the screen resolution. The first two numbers are width and height of the
 virtual screen (script coordinates shound be given based on this resolution).
-The second two numbers are width and height of the physical screen or window
+The second two numbers are width and height of the physical screen, or window,
 graphical output will go to. Linear interpolation is used to resize the picture,
 so the rescale ratio (realResolution/virtualResolution) should never be above 2
 (for example, if the virtual resolution is 640x480, the real resolution should
-not be greater than 1280x960). Interpolation artifacts are obvious after scales
-of 2. If the ratios don't match, the difference will be compensated with
-vertical black bars at the sides or horizontal bars at the top and bottom,
+not be greater than 1280x960). Interpolation artifacts are obvious for scales
+greater than 2. If the ratios don't match, the difference will be compensated
+with vertical black bars at the sides or horizontal bars at the top and bottom,
 depending on the case. The picture is never cropped. Wasted screen space is
 better than lost picture. Specially for resizes such as 16:9->4:3.
 
@@ -115,7 +115,6 @@ Selects the trasparency method for cursors.
 
 -transparency-method-layer {old|alpha}
 Selects the trasparency method for layer images.
-
 
 
 -image-cache-size <size>

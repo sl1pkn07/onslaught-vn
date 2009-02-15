@@ -67,7 +67,7 @@ T *getLine(T *buffer){
 
 template <typename T>
 void preparseIf(T *string,std::vector<T *> *vec){
-	const char *limiters[]={
+	static const char *limiters[]={
 		"abssetcursor","add","allsphide","allspresume","amsp","arc","atoi",
 		"autoclick","automode_time","automode","avi","bar","barclear","bg",
 		"bgcopy","bgcpy","bgm","bgmonce","bgmstop","bgmvol","blt","br","break",

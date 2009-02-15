@@ -119,7 +119,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../../include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NONS_SVN"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -131,6 +131,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_UNICODE;UNICODE;NONS_SVN"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -644,6 +645,14 @@
 		<File
 			RelativePath="..\..\onslaught.rc"
 			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCResourceCompilerTool"
+					PreprocessorDefinitions="_UNICODE;UNICODE;_DEBUG"
+				/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

@@ -199,6 +199,7 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_ld(NONS_ParsedLine &line);
 	ErrorCode command_cl(NONS_ParsedLine &line);
 	ErrorCode command_tal(NONS_ParsedLine &line);
+	ErrorCode command_undocumented(NONS_ParsedLine &line);
 	ErrorCode command_unimplemented(NONS_ParsedLine &line);
 	ErrorCode command_lsp(NONS_ParsedLine &line);
 	ErrorCode command_csp(NONS_ParsedLine &line);
@@ -260,7 +261,19 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_loadgame(NONS_ParsedLine &line);
 	ErrorCode command_centerh(NONS_ParsedLine &line);
 	ErrorCode command_centerv(NONS_ParsedLine &line);
+	ErrorCode command_blt(NONS_ParsedLine &line);
+	ErrorCode command_fileexist(NONS_ParsedLine &line);
+	ErrorCode command_menu_full(NONS_ParsedLine &line);
+	ErrorCode command_savefileexist(NONS_ParsedLine &line);
+	ErrorCode command_savescreenshot(NONS_ParsedLine &line);
+	ErrorCode command_savetime(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
+	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);

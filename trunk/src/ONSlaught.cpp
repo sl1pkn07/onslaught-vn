@@ -52,6 +52,16 @@
 #define COMMAND_LINE_ARGUMENT_TYPE char
 #endif
 
+#define PRINT_VERSION {\
+	std::cout <<"ONSlaught ";\
+	if (ONSLAUGHT_BUILD_VERSION<99999999)\
+		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";\
+	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"\
+		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"\
+		"All rights reserved.\n\n"\
+		"\"I did it for the lulz.\"\n\n"<<std::endl;\
+}
+
 int mainThread(void *nothing);
 
 void usage(){
@@ -150,7 +160,7 @@ template <typename T>
 void parseCommandLine(int argc,T **argv){
 	if (argc==1)
 		return;
-	const char *options[]={
+	static const char *options[]={
 		"--help",
 		"-script",
 		"-encoding",
@@ -321,10 +331,7 @@ void parseCommandLine(int argc,T **argv){
 				break;
 			case 10: //--version
 				{
-					std::cout <<"ONSlaught "<<ONSLAUGHT_BUILD_VERSION<<" "ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
-						"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
-						"All rights reserved.\n\n"
-						"\"I did it for the lulz.\"\n\n"<<std::endl;
+					PRINT_VERSION
 					new NONS_ScriptInterpreter(0);
 				}
 				exit(0);
@@ -626,10 +633,7 @@ int
 	main(int argc,char **argv)
 #endif
 {
-	std::cout <<"ONSlaught "<<ONSLAUGHT_BUILD_VERSION<<" "ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
-		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
-		"All rights reserved.\n\n"
-		"\"I did it for the lulz.\"\n\n"<<std::endl;
+	PRINT_VERSION
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
 	if (!useArgumentsFile("arguments.txt"))

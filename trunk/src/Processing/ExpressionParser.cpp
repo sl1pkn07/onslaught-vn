@@ -186,7 +186,7 @@ T *getOperator(T *string,ulong *offset){
 	string+=*offset;
 	char *copy1=copyString(string,1);
 	char *copy2=copyString(string,2);
-	const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
+	static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
 	for (ushort op=0;operators[op];op++){
 		if (!strcmp(copy1,operators[op]) || !strcmp(copy2,operators[op])){
 			delete[] copy1;
@@ -234,7 +234,7 @@ ulong isunaryoperator(T *exp,ulong offset){
 	exp+=offset;
 	static const char *operators[]={
 		"fchk",
-		"lchk",
+		"lchk"
 	};
 	ulong l=0;
 	for (;exp[l] && !iswhitespace((char)exp[l]);l++);

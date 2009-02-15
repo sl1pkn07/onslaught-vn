@@ -49,8 +49,6 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 	this->fullscreen=CLOptions.startFullscreen;
 }
 
-#define ABS(x) ((x)<0?-(x):(x))
-
 NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
 	this->realScreen=SDL_SetVideoMode(ow,oh,24,SDL_HWSURFACE|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (iw==ow && ih==oh){
@@ -84,7 +82,7 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
 			this->y_multiplier=ulong(h*256)/ih;
 			this->x_divisor=(iw<<8)/ow;
 			this->y_divisor=ulong(ih*256)/h;
-			if (x_multiplier<0x100 || h/float(ih)<.5)
+			if (x_multiplier<0x100 || h/float(ih)<1)
 				this->normalInterpolation=&bilinearInterpolation2;
 		}else{
 			float w=float(oh)*float(ratio0);
@@ -96,9 +94,10 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
 			this->y_multiplier=(oh<<8)/ih;
 			this->x_divisor=ulong(iw*256)/w;
 			this->y_divisor=(ih<<8)/oh;
-			if (w/float(iw)<.5 || y_multiplier<=0x100)
+			if (w/float(iw)<1 || y_multiplier<=0x100)
 				this->normalInterpolation=&bilinearInterpolation2;
 		}
+		//this->normalInterpolation=&nearestNeighborInterpolation;
 		this->realScreen->clip_rect=this->outRect;
 	}
 	this->fullscreen=CLOptions.startFullscreen;
@@ -194,10 +193,13 @@ ulong NONS_VirtualScreen::convertH(ulong h){
 	return r;
 }
 
-bool NONS_VirtualScreen::toggleFullscreen(){
+bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	LOCKSCREEN;
 	bool a=(this->virtualScreen==this->realScreen);
-	this->fullscreen=!this->fullscreen;
+	if (mode==2)
+		this->fullscreen=!this->fullscreen;
+	else
+		this->fullscreen=mode&1;
 	ushort w=this->realScreen->w,
 		h=this->realScreen->h;
 	SDL_Surface *tempCopy=0;
@@ -309,6 +311,7 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 		while (errorY>0 && y1<dstRect0.h){
 #endif
 			uchar *pos10=pos1;
+			errorX=0;
 			for (unsigned x0=srcRect0.x,x1=dstRect0.x;x0<srcRect0.w && x1<dstRect0.w;){
 				errorX+=derrorX;
 #ifndef NN_NOT_FLOAT
@@ -466,62 +469,37 @@ void nearestNeighborInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SD
 	Uint16 pitch1=dst->pitch;
 	uchar *pos0=pixels0+srcRect0.x*advance0+srcRect0.y*pitch0;
 	uchar *pos1=pixels1+dstRect0.x*advance1+dstRect0.y*pitch1;
-#define NN_NOT_FLOAT
-#ifndef NN_NOT_FLOAT
-	float errorX=0,errorY=0;
-	float derrorX=!x_factor?float(dstRect0.w)/float(srcRect0.w):float(x_factor)/256;
-	float derrorY=!y_factor?float(dstRect0.h)/float(srcRect0.h):float(y_factor)/256;
-#else
 	long errorX=0,errorY=0;
 	ulong derrorX=!x_factor?(ulong(dstRect0.w)<<8)/srcRect0.w:x_factor;
 	ulong derrorY=!y_factor?(ulong(dstRect0.h)<<8)/srcRect0.h:y_factor;
-#endif
 	SDL_Rect s=srcRect0,
 		d=dstRect0;
 	srcRect0.w+=srcRect0.x;
 	dstRect0.w+=dstRect0.x;
 	srcRect0.h+=srcRect0.y;
 	dstRect0.h+=dstRect0.y;
-	//char str[100];
 	for (unsigned y0=srcRect0.y,y1=dstRect0.y;y0<srcRect0.h && y1<dstRect0.h;){
 		uchar *pos00=pos0;
 		errorY+=derrorY;
-#ifndef NN_NOT_FLOAT
-		//while (errorY>=.5 && y1<dstRect0.h){
-		while (errorY>0 && y1<dstRect0.h){
-#else
 		//while (errorY>=0x80 && y1<dstRect0.h){
 		while (errorY>0 && y1<dstRect0.h){
-#endif
 			uchar *pos10=pos1;
+			errorX=0;
 			for (unsigned x0=srcRect0.x,x1=dstRect0.x;x0<srcRect0.w && x1<dstRect0.w;){
 				errorX+=derrorX;
-#ifndef NN_NOT_FLOAT
-				//while (errorX>=.5 && x1<dstRect0.w){
-				while (errorX>0 && x1<dstRect0.w){
-#else
 				//while (errorX>=0x80 && x1<dstRect0.w){
 				while (errorX>0 && x1<dstRect0.w){
-#endif
 					pos1[Roffset1]=pos0[Roffset0];
 					pos1[Goffset1]=pos0[Goffset0];
 					pos1[Boffset1]=pos0[Boffset0];
-#ifndef NN_NOT_FLOAT
-					errorX--;
-#else
 					errorX-=0x100;
-#endif
 					pos1+=advance1;
 					x1++;
 				}
 				pos0+=advance0;
 				x0++;
 			}
-#ifndef NN_NOT_FLOAT
-			errorY--;
-#else
 			errorY-=0x100;
-#endif
 			pos1=pos10+pitch1;
 			y1++;
 			pos0=pos00;
@@ -743,8 +721,8 @@ int bilinearInterpolation_threaded(void *parameters){
 }
 
 void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
-	SDL_Rect &srcRect0=*srcRect,
-		&dstRect0=*dstRect;
+	SDL_Rect srcRect0=*srcRect,
+		dstRect0=*dstRect;
 	uchar *pixels0=(uchar *)src->pixels;
 	uchar *pixels1=(uchar *)dst->pixels;
 	uchar Roffset0=(src->format->Rshift)>>3;
@@ -1032,8 +1010,8 @@ int bilinearInterpolation2_threaded(void *parameters){
 }
 
 void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
-	SDL_Rect &srcRect0=*srcRect,
-		&dstRect0=*dstRect;
+	SDL_Rect srcRect0=*srcRect,
+		dstRect0=*dstRect;
 	uchar *pixels0=(uchar *)src->pixels;
 	uchar *pixels1=(uchar *)dst->pixels;
 	uchar Roffset0=(src->format->Rshift)>>3;
@@ -1055,6 +1033,7 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 	srcRect0.h+=srcRect0.y;
 	dstRect0.h+=dstRect0.y;
 	integer32 Y0=dstRect0.y*sizeY,Y1=Y0+sizeY,
+	//integer32 Y1=dstRect0.y*sizeY,Y0=Y1+sizeY,
 		X0,X1;
 	integer32 area=((sizeX>>8)*sizeY)>>8;
 	uchar *pixel1=pos1+pitch1*dstRect0.y+advance1*dstRect0.x;

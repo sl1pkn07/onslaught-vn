@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
-	<ActiveTarget name="Debug" />
+	<ActiveTarget name="SVN" />
 	<File name="..\src\Functions.cpp" open="0" top="0" tabpos="1">
 		<Cursor position="15314" topLine="564" />
 	</File>

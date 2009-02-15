@@ -1,11 +1,13 @@
 ????????
     Sofware-related changes:
+      * Implemented the following commands: blt, fileexist, menu_full, mp3stop,
+            savefileexist, savescreenshot, savescreenshot2, savetime.
       * New command line argument: -!reset-out-files
       * Improved redirection files behavior.
       * Fixed bug in setwindow.
       * Unimplemented commands: killmenu
-	  * global.sav and nonsflog.dat moved to the save directory.
-	  * Fixed bug printing mechanism.
+      * global.sav and nonsflog.dat moved to the save directory.
+      * Fixed bug in printing mechanism.
     
     Documentation changes:
       * Added CompatibilityList.txt

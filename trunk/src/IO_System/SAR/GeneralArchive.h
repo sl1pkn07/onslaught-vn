@@ -42,6 +42,7 @@ struct NONS_GeneralArchive{
 	ErrorCode init(const char *filename,bool which,bool failSilently);
 	uchar *getFileBuffer(const wchar_t *filepath,ulong *buffersize);
 	uchar *getFileBuffer(const char *filepath,ulong *buffersize);
+	bool exists(const wchar_t *filepath);
 };
 
 #endif
