@@ -102,6 +102,7 @@ typedef integer32 ErrorCode;
 #define NONS_NO_SPRITE_LOADED_THERE					56
 #define NONS_INVALID_TRANSPARENCY_METHOD			57
 #define NONS_UNSUPPORTED_SAVEGAME_VERSION			58
+#define NONS_UNDOCUMENTED_COMMAND					59
 
 extern const char *errorMessages[];
 #endif

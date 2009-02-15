@@ -59,5 +59,6 @@ struct NONS_Archive{
 	bool readNSA();
 	uchar *getFileBuffer(NONS_TreeNode *node,ulong *buffersize);
 	uchar *getFileBuffer(const wchar_t *filepath,ulong *buffersize);
+	bool exists(const wchar_t *filepath);
 };
 #endif

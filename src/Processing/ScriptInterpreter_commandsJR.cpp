@@ -865,12 +865,12 @@ ErrorCode NONS_ScriptInterpreter::command_rmode(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_reset(NONS_ParsedLine &line){
 	this->uninit();
 	this->init();
-	if (this->everything->screen){
-		this->everything->screen->clear();
-		delete this->gfx_store;
-		this->gfx_store=new NONS_GFXstore();
-		this->everything->screen->gfx_store=this->gfx_store;
-	}
+	//if (this->everything->screen){
+	this->everything->screen->clear();
+	delete this->gfx_store;
+	this->gfx_store=new NONS_GFXstore();
+	this->everything->screen->gfx_store=this->gfx_store;
+	//}
 	this->everything->audio->stopAllSound();
 	return NONS_NO_ERROR;
 }
@@ -987,7 +987,30 @@ ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_ParsedLine &line){
 	return this->load(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_ParsedLine &line){
+	this->everything->screen->screen->toggleFullscreen(!wcscmp(line.line,L"menu_full"));
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

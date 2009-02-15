@@ -54,6 +54,8 @@
 			return NONS_INVALID_VARIABLE_NAME;\
 }
 
+#define NONS_NEWSURFACE(w,h,d) SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,(w),(h),(d),rmask,gmask,bmask,amask)
+
 //string functions
 wchar_t *copyWString(const wchar_t *str,ulong len=0);
 wchar_t *copyWString(const char *str,ulong len=0);

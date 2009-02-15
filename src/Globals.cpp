@@ -95,6 +95,8 @@ const char *errorMessages[]={
 	"No sprite is loaded at that index.",
 	"Invalid transparency method.",
 	"Unsupported savegame version.",
+	"Undocumented command. The developer doesn't know at this time what this command does with sufficient detail. "
+		"If you do, please contact him and explain in as much detail as possible."
 };
 NONS_RedirectedOutput v_stdout(std::cout);
 NONS_RedirectedOutput v_stderr(std::cerr);

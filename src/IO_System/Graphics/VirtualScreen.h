@@ -67,7 +67,8 @@ struct NONS_VirtualScreen{
 	void blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rect *dstrect);
 	void updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast=0);
 	void updateWholeScreen(bool fast=0);
-	bool toggleFullscreen();
+	//If 0, to window; if 1, to fullscreen; if 2, toggle.
+	bool toggleFullscreen(uchar mode=2);
 	long convertX(long x);
 	long convertY(long y);
 	long unconvertX(long x);
@@ -76,6 +77,8 @@ struct NONS_VirtualScreen{
 	ulong convertH(ulong h);
 	void updateWithoutLock(bool fast=0);
 };
+
+#define ABS(x) ((x)<0?-(x):(x))
 
 void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);
 void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);

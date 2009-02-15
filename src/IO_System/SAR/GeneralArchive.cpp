@@ -84,27 +84,6 @@ NONS_GeneralArchive::~NONS_GeneralArchive(){
 			delete this->NSAarchives[a];
 }
 
-uchar *NONS_GeneralArchive::getFileBuffer(const wchar_t *filepath,ulong *buffersize){
-	uchar *res=0;
-	for (long a=this->NSAarchives.size()-1;a>=0;a--){
-		if (res=this->NSAarchives[a]->getFileBuffer(filepath,buffersize))
-			return res;
-	}
-	if (this->archive && (res=this->archive->getFileBuffer(filepath,buffersize)))
-		return res;
-	char *copy=copyString(filepath);
-	res=readfile(copy,(long *)buffersize);
-	delete[] copy;
-	return res;
-}
-
-uchar *NONS_GeneralArchive::getFileBuffer(const char *filepath,ulong *buffersize){
-	wchar_t *temp=copyWString(filepath);
-	uchar *ret=this->getFileBuffer(temp,buffersize);
-	delete[] temp;
-	return ret;
-}
-
 ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSilently){
 	if (!filename)
 		return NONS_INVALID_PARAMETER;
@@ -127,5 +106,38 @@ ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSil
 		this->NSAarchives.push_back(temp);
 	}
 	return NONS_NO_ERROR;
+}
+
+uchar *NONS_GeneralArchive::getFileBuffer(const wchar_t *filepath,ulong *buffersize){
+	uchar *res=0;
+	for (long a=this->NSAarchives.size()-1;a>=0;a--){
+		if (res=this->NSAarchives[a]->getFileBuffer(filepath,buffersize))
+			return res;
+	}
+	if (this->archive && (res=this->archive->getFileBuffer(filepath,buffersize)))
+		return res;
+	char *copy=copyString(filepath);
+	res=readfile(copy,(long *)buffersize);
+	delete[] copy;
+	return res;
+}
+
+uchar *NONS_GeneralArchive::getFileBuffer(const char *filepath,ulong *buffersize){
+	wchar_t *temp=copyWString(filepath);
+	uchar *ret=this->getFileBuffer(temp,buffersize);
+	delete[] temp;
+	return ret;
+}
+
+bool NONS_GeneralArchive::exists(const wchar_t *filepath){
+	for (long a=this->NSAarchives.size()-1;a>=0;a--)
+		if (this->NSAarchives[a]->exists(filepath))
+			return 1;
+	if (this->archive && this->archive->exists(filepath))
+		return 1;
+	char *copy=copyString(filepath);
+	bool res=fileExists(copy);
+	delete[] copy;
+	return res;
 }
 #endif

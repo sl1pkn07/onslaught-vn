@@ -59,11 +59,12 @@
     Changed behaviors:
         if: Expression syntax has changed. See the changed syntax section.
         arc: No longer uses a dynamic link library due to portability issues.
-        setwindow: The behavior changes if the command is used after a
-            new_set_window. Prefer this one over the older one, as it's more
-            predictable.
+        setwindow %,%,%,%,%,%,%,%,%,%,#,%,%,%,%
+        setwindow %,%,%,%,%,%,%,%,%,%,$,%,%
+            The behavior changes if the command is used after a new_set_window.
+            Prefer this one over the older one, as it's more predictable.
             The units are in pixels.
-            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,#,%,%,%,%
+            Syntax 1:
                 The parameters are, in order:
                 start X of the text frame,
                 start Y of the text frame,
@@ -81,7 +82,7 @@
                 start Y of the text window,
                 end X of the text window,
                 end Y of the text window,
-            Syntax: setwindow %,%,%,%,%,%,%,%,%,%,$,%,%
+            Syntax 2:
                 The parameters for this syntax are the same as the previous, but
                 instead of a color value, a file string referring to an image is
                 used.
@@ -106,18 +107,28 @@
             According to boolean algebra, "NOT (a AND b)" is not the same as
             "(NOT a) AND (NOT b)". Apparently, the original coder missed that
             class.
-        use_new_if will force the engine to use the correct logic.
-        centerh: Sets the center pivot to a horizontal percentage of the screen.
-            For example, centerh 0 is left justified, centerh 50 is centered,
-            and centerh 100 is right justified.
-            The syntax is: centerh %
+            use_new_if will force the engine to use the correct logic.
+        centerh %: Sets the center pivot to a horizontal percentage of the
+            screen. For example, centerh 0 is left justified, centerh 50 is
+            centered, and centerh 100 is right justified.
             % must be in the range [0;100]. If it's below the range, zero is
             assumed. If above, 100 is assumed.
-        centerv: Works the same as centerh, but for vertical centering. In order
-            to support this command, a new escape sequence was added: "!nl". It
-            is replaced by a new line during the printing process.
+        centerv %: Works the same as centerh, but for vertical centering. In
+            order to support this command, a new escape sequence was added:
+            "!nl". It is replaced by a newline during the printing process.
             It is important that all printing commands end with a \:
                 `Sample vertically!nlcentered text.\ ;<-- Ok.
                 `Sample vertically!nlcentered text. ;<-- May produce strange artifacts.
                 \ ;<-- If this appears before the next printing command, there's no problem.
             Also, at the moment vertical centering produces incorrect results when the size of a page of text is greater than the size of the screen. This will probably be fixed in future releases.
+            The syntax is identical to centerh.
+    
+    Undocumented commands:
+        These are commands that, while existing in ONScripter, their
+        documentation is either lacking or missing.
+        fileexist %,$: If $ either in the file system or in the archives, % is
+            set to non-zero, otherwise, % is set to zero.
+        savescreenshot $
+        savescreenshot2 $
+            Save the contents of the screen to the file $.
+        

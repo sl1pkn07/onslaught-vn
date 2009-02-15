@@ -773,6 +773,8 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_ParsedLine &line){
 	if (this->imageButtons)
 		delete this->imageButtons;
 	this->imageButtons=0;
+	if (!wcscmp(line.parameters[0],L"clear"))
+		return NONS_NO_ERROR;
 	wchar_t *filename=0;
 	_GETWCSVALUE(filename,0,)
 	if (!*filename){
@@ -831,7 +833,7 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_ParsedLine &line){
 	int choice=this->imageButtons->getUserInput(this->imageButtonExpiration);
 	var->set(choice+1);
 	this->btnTimer=SDL_GetTicks();
-	if (choice>=0){
+	if (choice>=0 && wcscmp(line.line,L"btnwait2")){
 		delete this->imageButtons;
 		this->imageButtons=0;
 	}
@@ -895,13 +897,58 @@ ErrorCode NONS_ScriptInterpreter::command_centerv(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_blt(NONS_ParsedLine &line){
+	if (line.parameters.size()<8)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	long screenX,screenY,screenW,screenH,
+		imgX,imgY,imgW,imgH;
+	_GETINTVALUE(screenX,0,)
+	_GETINTVALUE(screenY,1,)
+	_GETINTVALUE(screenW,2,)
+	_GETINTVALUE(screenH,3,)
+	_GETINTVALUE(imgX,4,)
+	_GETINTVALUE(imgY,5,)
+	_GETINTVALUE(imgW,6,)
+	_GETINTVALUE(imgH,7,)
+	SDL_Rect dstRect={screenX,screenY,screenW,screenH},
+		srcRect={imgX,imgY,imgW,imgH};
+	void (*interpolationFunction)(SDL_Surface *,SDL_Rect *,SDL_Surface *,SDL_Rect *,ulong,ulong)=&nearestNeighborInterpolation;
+	ulong x_multiplier=1,y_multiplier=1;
+	if (imgW==screenW && imgH==screenH){
+		LOCKSCREEN;
+		manualBlit(this->imageButtons->loadedGraphic,&srcRect,this->everything->screen->screen->virtualScreen,&dstRect);
+		UNLOCKSCREEN;
+	}else{
+		x_multiplier=(screenW<<8)/imgW;
+		y_multiplier=(screenH<<8)/imgH;
+		LOCKSCREEN;
+		interpolationFunction(
+			this->imageButtons->loadedGraphic,&srcRect,
+			this->everything->screen->screen->virtualScreen,
+			&dstRect,x_multiplier,y_multiplier
+		);
+		UNLOCKSCREEN;
+	}
+	this->everything->screen->screen->updateScreen(dstRect.x,dstRect.y,dstRect.w,dstRect.h);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_ParsedLine &line){
+	if (line.parameters.size()<2)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
+	if (!dst)
+		return NONS_UNDEFINED_VARIABLE;
+	wchar_t *filename=0;
+	_GETWCSVALUE(filename,1,)
+	dst->set(this->everything->archive->exists(filename));
+	delete[] filename;
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

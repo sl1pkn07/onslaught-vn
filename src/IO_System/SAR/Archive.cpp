@@ -375,4 +375,8 @@ uchar *NONS_Archive::getFileBuffer(const wchar_t *filepath,ulong *buffersize){
 		return 0;
 	return this->getFileBuffer(node,buffersize);
 }
+
+bool NONS_Archive::exists(const wchar_t *filepath){
+	return this->loaded && this->root->getBranch(filepath,0)!=0;
+}
 #endif

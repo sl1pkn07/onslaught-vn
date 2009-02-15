@@ -44,6 +44,7 @@ std::vector<tm *> *existing_files(char *location="./");
 std::vector<tm *> *existing_files(wchar_t *location=L"./");
 char *getConfigLocation();
 char *getSaveLocation(unsigned hash[5]);
+tm *getDate(const char *filename);
 
 struct NONS_SaveFile{
 	char format;

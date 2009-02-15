@@ -32,7 +32,9 @@
 #include "../Globals.h"
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
+//#include "../IO_System/SaveFile.h"
 #include <cmath>
+#include <sstream>
 
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
 #define NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
@@ -353,6 +355,10 @@ ErrorCode NONS_ScriptInterpreter::command_tal(NONS_ParsedLine &line){
 
 ErrorCode NONS_ScriptInterpreter::command_unimplemented(NONS_ParsedLine &line){
 	return NONS_UNIMPLEMENTED_COMMAND;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_undocumented(NONS_ParsedLine &line){
+	return NONS_UNDOCUMENTED_COMMAND;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_unalias(NONS_ParsedLine &line){
@@ -781,6 +787,8 @@ ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_ParsedLine &line
 }
 
 ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return NONS_INSUFFICIENT_PARAMETERS;
 	long file;
 	_GETINTVALUE(file,0,)
 	if (file<1)
@@ -788,16 +796,72 @@ ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_ParsedLine &line){
 	return this->save(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_ParsedLine &line){
+	if (line.parameters.size()<2)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
+	if (!dst)
+		return NONS_UNDEFINED_VARIABLE;
+	long file;
+	_GETINTVALUE(file,1,)
+	if (file<1)
+		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	std::stringstream stream;
+	std::string path;
+	stream <<save_directory<<"save"<<file<<".dat";
+	std::getline(stream,path);
+	dst->set(fileExists(path.c_str()));
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return NONS_INSUFFICIENT_PARAMETERS;
+	char *filename;
+	_GETSTRVALUE(filename,0,)
+	LOCKSCREEN;
+	SDL_SaveBMP(this->everything->screen->screen->virtualScreen,filename);
+	UNLOCKSCREEN;
+	delete[] filename;
+	return NONS_INSUFFICIENT_PARAMETERS;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_ParsedLine &line){
+	if (line.parameters.size()<5)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_Variable *month=this->store->retrieve(line.parameters[1]),
+		*day=this->store->retrieve(line.parameters[2]),
+		*hour=this->store->retrieve(line.parameters[3]),
+		*minute=this->store->retrieve(line.parameters[4]);
+	if (!month || !day || !hour || !minute)
+		return NONS_UNDEFINED_VARIABLE;
+	long file;
+	_GETINTVALUE(file,0,)
+	if (file<1)
+		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	std::string path;
+	{
+		std::stringstream stream;
+		stream <<save_directory<<"save"<<file<<".dat";
+		std::getline(stream,path);
+	}
+	if (!fileExists(path.c_str())){
+		day->set(0);
+		month->set(0);
+		hour->set(0);
+		minute->set(0);
+	}else{
+		tm *date=getDate(path.c_str());
+		day->set(date->tm_mon+1);
+		month->set(date->tm_mday);
+		hour->set(date->tm_hour);
+		minute->set(date->tm_min);
+		delete date;
+	}
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

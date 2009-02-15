@@ -3,6 +3,7 @@ project (nsaio)
 
 set(EXECUTABLE_OUTPUT_PATH bin-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 set(CMAKE_BUILD_TYPE Release)
+add_definitions(-DNONS_SVN)
 
 #include_directories(/usr/include/boost-1_37)
 
