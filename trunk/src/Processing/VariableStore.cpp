@@ -47,9 +47,7 @@ NONS_VariableStore::NONS_VariableStore(){
 	uchar *buffer=readfile(dir,&l);
 	if (!buffer){
 		delete[] dir;
-		dir=addStrings(save_directory,"gloval.sav");
-		buffer=readfile(dir,&l);
-		delete[] dir;
+		buffer=readfile("gloval.sav",&l);
 		if (!buffer)
 			return;
 		for (long a=0,stackpos=200;a<l;stackpos++){

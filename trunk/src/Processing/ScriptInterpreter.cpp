@@ -393,6 +393,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"savescreenshot"]=&NONS_ScriptInterpreter::command_savescreenshot;
 	this->commandList[L"savescreenshot2"]=&NONS_ScriptInterpreter::command_savescreenshot;
 	this->commandList[L"savetime"]=&NONS_ScriptInterpreter::command_savetime;
+	this->commandList[L"savetime2"]=&NONS_ScriptInterpreter::command_savetime2;
 	this->commandList[L"select"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"selectbtnwait"]=0;
 	this->commandList[L"selectcolor"]=&NONS_ScriptInterpreter::command_selectcolor;

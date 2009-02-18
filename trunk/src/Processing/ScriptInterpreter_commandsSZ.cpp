@@ -861,6 +861,47 @@ ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_ParsedLine &line){
+	if (line.parameters.size()<7)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_Variable *year=this->store->retrieve(line.parameters[1]),
+		*month=this->store->retrieve(line.parameters[2]),
+		*day=this->store->retrieve(line.parameters[3]),
+		*hour=this->store->retrieve(line.parameters[4]),
+		*minute=this->store->retrieve(line.parameters[5]),
+		*second=this->store->retrieve(line.parameters[6]);
+	if (!year || !month || !day || !hour || !minute || !second)
+		return NONS_UNDEFINED_VARIABLE;
+	long file;
+	_GETINTVALUE(file,0,)
+		if (file<1)
+			return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	std::string path;
+	{
+		std::stringstream stream;
+		stream <<save_directory<<"save"<<file<<".dat";
+		std::getline(stream,path);
+	}
+	if (!fileExists(path.c_str())){
+		year->set(0);
+		month->set(0);
+		day->set(0);
+		hour->set(0);
+		minute->set(0);
+		second->set(0);
+	}else{
+		tm *date=getDate(path.c_str());
+		year->set(date->tm_year+1900);
+		month->set(date->tm_mday);
+		day->set(date->tm_mon+1);
+		hour->set(date->tm_hour);
+		minute->set(date->tm_min);
+		second->set(date->tm_sec);
+		delete date;
+	}
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
