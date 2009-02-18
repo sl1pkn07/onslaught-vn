@@ -267,6 +267,7 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_savefileexist(NONS_ParsedLine &line);
 	ErrorCode command_savescreenshot(NONS_ParsedLine &line);
 	ErrorCode command_savetime(NONS_ParsedLine &line);
+	ErrorCode command_savetime2(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);

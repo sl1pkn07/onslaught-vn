@@ -17,9 +17,10 @@
             Variable names can be of any length.
             "%variable" and "$variable" refer to the same variable when used as
             an out parameter (e.g. the variable "%a" in "mov %a,0" is an out
-            parameter), but if used as an in parameter for a command that
-            expects a different variable name, it will be rejected (e.g. "mov
-            %a,$b" is invalid even if "$b" was actually declared as "%b").
+            parameter, because data will be written to it, rather than read from
+            it), but if used as an in parameter for a command that expects a
+            different variable name, it will be rejected (e.g. "mov %a,$b" is
+            invalid).
         Expressions: Expressions are now C-styled.
             The following operators are allowed: ||, &&, ==, !=, <>, >=, <=, =,
             >, <, +, -, *, /, |, &.
@@ -120,15 +121,21 @@
                 `Sample vertically!nlcentered text.\ ;<-- Ok.
                 `Sample vertically!nlcentered text. ;<-- May produce strange artifacts.
                 \ ;<-- If this appears before the next printing command, there's no problem.
-            Also, at the moment vertical centering produces incorrect results when the size of a page of text is greater than the size of the screen. This will probably be fixed in future releases.
+            Also, at the moment vertical centering produces incorrect results
+            when the size of a page of text is greater than the size of the
+            screen. This will probably be fixed in future releases.
             The syntax is identical to centerh.
+        savetime2 %fileno,%year,%month,%day,%hour,%minute,%second:
+            The same as savetime, but also gives the year and the second the
+            savegame was generated.
     
     Undocumented commands:
         These are commands that, while existing in ONScripter, their
         documentation is either lacking or missing.
-        fileexist %,$: If $ either in the file system or in the archives, % is
-            set to non-zero, otherwise, % is set to zero.
-        savescreenshot $
-        savescreenshot2 $
-            Save the contents of the screen to the file $.
+        fileexist %var,$filename: If $filename is either in the file system or
+            in the archives, %var is set to non-zero. Otherwise, it's set to
+            zero.
+        savescreenshot $file:
+        savescreenshot2 $file:
+            Save the contents of the screen to the $file.
         

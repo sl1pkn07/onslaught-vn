@@ -39,16 +39,22 @@
 #include "../../../UTF.h"
 #include <cstring>
 
-#define LOG_FILENAME "nonsflog.dat"
+#define LOG_FILENAME_OLD "NScrflog.dat"
+#define LOG_FILENAME_NEW "nonsflog.dat"
 
 NONS_FileLog::NONS_FileLog(){
 	this->commit=0;
 	long l;
 	if (!config_directory)
 		config_directory=getConfigLocation();
-	char *filename=addStrings(save_directory,LOG_FILENAME);
+	char *filename=addStrings(save_directory,LOG_FILENAME_NEW);;
 	char *buffer=(char *)readfile(filename,&l);
-	delete[] filename;
+	if (!buffer){
+		delete[] filename;
+		filename=LOG_FILENAME_OLD;
+		buffer=(char *)readfile(filename,&l);
+	}else
+		delete[] filename;
 	if (!buffer)
 		return;
 	if (!instr(buffer,"BZh")){
@@ -150,7 +156,7 @@ void NONS_FileLog::writeOut(){
 	inPlaceDecryption(buffer+startEncryption,finalSize-startEncryption,XOR84_ENCRYPTION);
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2(buffer,finalSize,&l);
-	char *filename=addStrings(save_directory,LOG_FILENAME);
+	char *filename=addStrings(save_directory,LOG_FILENAME_NEW);
 	writefile(filename,writebuffer,l);
 	delete[] filename;
 	delete[] writebuffer;

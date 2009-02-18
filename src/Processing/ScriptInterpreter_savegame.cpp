@@ -508,7 +508,7 @@ bool NONS_ScriptInterpreter::load(int file){
 			NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
 			SDL_FreeSurface(srf);
 		}
-		SDL_Delay(2500);
+		SDL_Delay(1500);
 		scr->BlendAll(10,1000,0);
 		scr->showText();
 		//audio

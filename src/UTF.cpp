@@ -277,7 +277,6 @@ long getUTF8size(const wchar_t *buffer,long size){
 		else
 			res+=3;
 	}
-	res+=3;
 	return res;
 }
 
@@ -297,12 +296,9 @@ long getUTF8size(const wchar_t *string){
 }
 
 char *WChar_to_UTF8(const wchar_t *buffer,long initialSize,long *finalSize){
-	long fSize=getUTF8size(buffer,initialSize)+3;
+	long fSize=getUTF8size(buffer,initialSize);
 	char *res=new char[fSize];
 	long b=0;
-	res[b++]=BOM8A;
-	res[b++]=BOM8B;
-	res[b++]=BOM8C;
 	for (long a=0;a<initialSize;a++,b++){
 		wchar_t character=buffer[a];
 		if (character<0x80)
