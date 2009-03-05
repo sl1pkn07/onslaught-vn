@@ -86,7 +86,7 @@ NONS_GeneralArchive::~NONS_GeneralArchive(){
 
 ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSilently){
 	if (!filename)
-		return NONS_INVALID_PARAMETER;
+		return NONS_INTERNAL_INVALID_PARAMETER;
 	if (!which && this->archive)
 		return NONS_ALREADY_INITIALIZED;
 	NONS_Archive *temp=new NONS_Archive(filename,failSilently);

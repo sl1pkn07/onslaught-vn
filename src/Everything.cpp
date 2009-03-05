@@ -85,7 +85,7 @@ ErrorCode NONS_Everything::init_audio(const char *musicDir){
 
 ErrorCode NONS_Everything::init_script(const char *filename,ulong encoding,ulong encryption){
 	if (!filename)
-		return NONS_INVALID_PARAMETER;
+		return NONS_INTERNAL_INVALID_PARAMETER;
 	this->script=new NONS_Script();
 	{
 		ErrorCode error_code=this->script->init(filename,this->archive,encoding,encryption);

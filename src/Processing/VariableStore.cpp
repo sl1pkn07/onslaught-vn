@@ -52,13 +52,10 @@ NONS_VariableStore::NONS_VariableStore(){
 			return;
 		for (long a=0,stackpos=200;a<l;stackpos++){
 			NONS_Variable *var=new NONS_Variable();
-			var->type='%';
-			var->intValue=readSignedDWord((char *)buffer,&a);
-			_READ_BINARY_SJIS_STRING(var->wcsValue,buffer,a)
-			if (!*var->wcsValue){
-				delete[] var->wcsValue;
-				var->wcsValue=0;
-			}
+			var->intValue->set(readSignedDWord((char *)buffer,&a));
+			wchar_t *temp;
+			_READ_BINARY_SJIS_STRING(temp,buffer,a)
+			var->wcsValue->set(temp,1);
 			this->stack[stackpos]=var;
 		}
 	}else{
@@ -87,9 +84,10 @@ NONS_VariableStore::NONS_VariableStore(){
 			currentInterval+=2;
 			for (ulong c=0;c<b;c++){
 				NONS_Variable *var=new NONS_Variable();
-				var->type='%';
-				var->intValue=readSignedDWord((char *)buffer,&offset);
-				_READ_BINARY_UTF8_STRING(var->wcsValue,buffer,offset)
+				var->intValue->set(readSignedDWord((char *)buffer,&offset));
+				wchar_t *temp;
+				_READ_BINARY_UTF8_STRING(temp,buffer,offset)
+				var->wcsValue->set(temp,1);
 				this->stack[a++]=var;
 			}
 		}
@@ -99,11 +97,11 @@ NONS_VariableStore::NONS_VariableStore(){
 
 NONS_VariableStore::~NONS_VariableStore(){
 	this->saveData();
-	for (std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->variables.begin();i!=this->variables.end();i++){
+	for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->aliases.begin();i!=this->aliases.end();i++){
 		delete[] i->first;
 		delete i->second;
 	}
-	for (std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->arrayVariables.begin();i!=this->arrayVariables.end();i++){
+	for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->arrays.begin();i!=this->arrays.end();i++){
 		delete[] i->first;
 		delete i->second;
 	}
@@ -121,7 +119,7 @@ void NONS_VariableStore::saveData(){
 	if (i->first<200)
 		writeDWord(0,&buffer);
 	else{
-		for (;i!=this->stack.end() && (!i->second->intValue && (!i->second->wcsValue || !*i->second->wcsValue));i++);
+		for (;i!=this->stack.end() && (!i->second->intValue->getInt() && (!i->second->wcsValue->getWcs() || !*i->second->wcsValue->getWcs()));i++);
 		if (i==this->stack.end())
 			writeDWord(0,&buffer);
 		else{
@@ -129,7 +127,7 @@ void NONS_VariableStore::saveData(){
 			ulong last=i->first;
 			intervals.push_back(last++);
 			for (i++;i!=this->stack.end();i++){
-				if (!i->second->intValue && (!i->second->wcsValue || !*i->second->wcsValue))
+				if (!i->second->intValue->getInt() && (!i->second->wcsValue->getWcs() || !*i->second->wcsValue->getWcs()))
 					continue;
 				if (i->first!=last){
 					intervals.push_back(last-intervals[intervals.size()-1]);
@@ -150,10 +148,10 @@ void NONS_VariableStore::saveData(){
 				}
 			}
 			for (i=this->stack.find(intervals[0]);i!=this->stack.end();i++){
-				if (!i->second->intValue && (!i->second->wcsValue || !*i->second->wcsValue))
+				if (!i->second->intValue->getInt() && (!i->second->wcsValue->getWcs() || !*i->second->wcsValue->getWcs()))
 					continue;
-				writeDWord(i->second->intValue,&buffer);
-				writeString(i->second->wcsValue,&buffer);
+				writeDWord(i->second->intValue->getInt(),&buffer);
+				writeString(i->second->wcsValue->getWcs(),&buffer);
 			}
 		}
 	}
@@ -165,7 +163,7 @@ void NONS_VariableStore::saveData(){
 	delete[] writebuffer;
 }
 
-ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_terms){
+ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool invert_terms){
 	std::vector<simpleoperation<char> *> operations;
 	char *exp2=copyString(exp);
 	_HANDLE_POSSIBLE_ERRORS(parse_expression(exp2,0,&operations),
@@ -214,7 +212,7 @@ ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_ter
 				break;
 			case 1:
 				{
-					NONS_Variable *var;
+					NONS_VariableMember *var;
 					if (*(operations[a]->operandA->symbol)!='?'){
 						wchar_t *temp=copyWString(operations[a]->operandA->symbol);
 						var=this->retrieve(temp);
@@ -228,9 +226,9 @@ ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_ter
 							delete[] results;)
 						delete[] temp;
 					}
-					if (var->type!='%')
+					if (var->getType()!='%')
 						return NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION;
-					opA=var->intValue;
+					opA=var->getInt();
 				}
 				break;
 			case 2:
@@ -276,7 +274,7 @@ ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_ter
 				break;
 			case 1:
 				{
-					NONS_Variable *var;
+					NONS_VariableMember *var;
 					if (*(operations[a]->operandB->symbol)!='?'){
 						wchar_t *temp=copyWString(operations[a]->operandB->symbol);
 						var=this->retrieve(temp);
@@ -293,9 +291,9 @@ ErrorCode NONS_VariableStore::evaluate(wchar_t *exp,long *result,bool invert_ter
 							)
 						delete[] temp;
 					}
-					if (var->type!='%')
+					if (var->getType()!='%')
 						return NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION;
-					opB=var->intValue;
+					opB=var->getInt();
 				}
 				break;
 			case 2:
@@ -388,35 +386,50 @@ void NONS_VariableStore::push(ulong pos,NONS_Variable *var){
 	}
 }
 
-NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name){
+template <typename T>
+int atoi2(T *str){
+	char *temp=copyString(str);
+	int res=atoi(temp);
+	delete[] temp;
+	return res;
+}
+
+NONS_VariableMember *NONS_VariableStore::retrieve(const wchar_t *name){
 	if (!name || !*name)
 		return 0;
 	if (*name=='%' || *name=='$'){
-		name++;
-		NONS_Variable *var=this->retrieve(name);
+		NONS_VariableMember *var=this->retrieve(name+1);
 		if (!var){
 			long res=0;
-			if (this->evaluate(name,&res)!=NONS_NO_ERROR || res<0)
+			if (this->evaluate(name+1,&res)!=NONS_NO_ERROR || res<0)
 				return 0;
-			return this->retrieve(res);
+			NONS_Variable *tempVar=this->retrieve(res);
+			if (!tempVar)
+				return 0;
+			if (*name=='%')
+				return tempVar->intValue;
+			else
+				return tempVar->wcsValue;
 		}
-		if (isanumber(name))
+		if (isanumber(name+1))
 			return var;
-		if (*name!='%' && *name!='?')
-			return this->retrieve(var->intValue);
-		else{
-			char *temp=new char[30];
-			*temp='%';
-			sprintf(temp+1,"%u",var->intValue);
-			wchar_t *wtemp=copyWString(temp);
-			delete[] temp;
-			NONS_Variable *res=this->retrieve(wtemp);
-			delete[] wtemp;
-			return res;
+		if (var->getType()=='%'){
+			NONS_Variable *tempVar=this->retrieve(var->getInt());
+			if (*name=='%')
+				return tempVar->intValue;
+			else
+				return tempVar->wcsValue;
+		}else{
+			int temp=atoi2(var->getWcs());
+			NONS_Variable *tempVar=this->retrieve(temp);
+			if (*name=='%')
+				return tempVar->intValue;
+			else
+				return tempVar->wcsValue;
 		}
 	}
 	if (*name=='?'){
-		NONS_Variable *res=0;
+		NONS_VariableMember *res=0;
 		ErrorCode error=this->resolveIndexing(name,&res);
 		if (error!=NONS_NO_ERROR){
 			handleErrors(error,-1,"NONS_VariableStore::retrieve");
@@ -424,38 +437,39 @@ NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name){
 		}
 		return res;
 	}
-	std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->variables.find(name);
-	if (i!=this->variables.end())
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->aliases.find((wchar_t *)name);
+	if (i!=this->aliases.end())
 		return i->second;
-	if (!isanumber(name))
+	return 0;
+	/*if (!isanumber(name))
 		return 0;
 	char *copy=copyString(name);
 	ulong n=atol(copy);
 	delete[] copy;
-	return this->retrieve(n);
+	return this->retrieve(n);*/
 }
 
 NONS_Variable *NONS_VariableStore::retrieve(ulong position){
 	std::map<ulong,NONS_Variable *>::iterator i=this->stack.find(position);
 	if (i==this->stack.end()){
-		SDL_LockMutex(exitMutex);
+		//SDL_LockMutex(exitMutex);
 		NONS_Variable *var=new NONS_Variable();
 		this->stack[position]=var;
-		SDL_UnlockMutex(exitMutex);
+		//SDL_UnlockMutex(exitMutex);
 		return var;
 	}
 	return i->second;
 }
 
-NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name,std::vector<ulong> *index){
+NONS_VariableMember *NONS_VariableStore::retrieve(const wchar_t *name,const std::vector<ulong> *index){
 	if (!name || !*name || !index)
 		return 0;
 	if (*name=='?')
 		return this->retrieve(name+1,index);
-	std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->arrayVariables.find(name);
-	if (i==this->arrayVariables.end())
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->arrays.find((wchar_t *)name);
+	if (i==this->arrays.end())
 		return 0;
-	NONS_Variable *var=i->second;
+	NONS_VariableMember *var=i->second;
 	for (ulong a=0;a<index->size();a++){
 		if ((*index)[a]>=var->dimensionSize)
 			return 0;
@@ -464,15 +478,15 @@ NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name,std::vector<ulong> *in
 	return var;
 }
 
-NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name,ulong *index,ulong size){
+NONS_VariableMember *NONS_VariableStore::retrieve(const wchar_t *name,ulong *index,ulong size){
 	if (!name || !*name || !index && size)
 		return 0;
 	if (*name=='?')
 		return this->retrieve(name+1,index,size);
-	std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->arrayVariables.find(name);
-	if (i==this->arrayVariables.end())
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->arrays.find((wchar_t *)name);
+	if (i==this->arrays.end())
 		return 0;
-	NONS_Variable *var=i->second;
+	NONS_VariableMember *var=i->second;
 	for (ulong a=0;a<size;a++){
 		if (index[a]>=var->dimensionSize)
 			return 0;
@@ -481,7 +495,7 @@ NONS_Variable *NONS_VariableStore::retrieve(wchar_t *name,ulong *index,ulong siz
 	return var;
 }
 
-ErrorCode NONS_VariableStore::resolveIndexing(wchar_t *expression,NONS_Variable **res){
+ErrorCode NONS_VariableStore::resolveIndexing(const wchar_t *expression,NONS_VariableMember **res){
 	if (!expression || !res)
 		return NONS_INTERNAL_INVALID_PARAMETER;
 	if (*expression=='?')
@@ -490,10 +504,19 @@ ErrorCode NONS_VariableStore::resolveIndexing(wchar_t *expression,NONS_Variable 
 	if (first<0)
 		return NONS_INTERNAL_INVALID_PARAMETER;
 	wchar_t *copy=copyWString(expression,first);
-	NONS_Variable *var=this->retrieve(copy,0,0);
+	NONS_VariableMember *var=this->retrieve(copy,0,0);
 	delete[] copy;
 	if (!var)
 		return NONS_UNDEFINED_VARIABLE;
+	if (var->getType()=='$'){
+		long temp;
+		ErrorCode error=this->evaluate(var->getWcs(),&temp);
+		if (CHECK_FLAG(error,NONS_NO_ERROR))
+			return error;
+		if (!this->retrieve(temp))
+			return NONS_UNDEFINED_VARIABLE;
+		var=this->retrieve(temp)->intValue;
+	}
 	std::vector<ulong> indices;
 	while (first>=0){
 		expression+=first+1;
@@ -539,7 +562,7 @@ ErrorCode NONS_VariableStore::getStrValue(wchar_t *str,char **value){
 			delete[] *value;
 		*value=copyString(str+1,endstr);
 	}else{
-		NONS_Variable *var=0;
+		NONS_VariableMember *var=0;
 		if (*str=='?'){
 			_HANDLE_POSSIBLE_ERRORS(this->resolveIndexing(str,&var),)
 		}else
@@ -548,9 +571,9 @@ ErrorCode NONS_VariableStore::getStrValue(wchar_t *str,char **value){
 			return NONS_UNDEFINED_VARIABLE;
 		if (*value)
 			delete[] *value;
-		if (!var->wcsValue)
+		if (!var->getWcs())
 			*value=copyString("");
-		*value=copyString(var->wcsValue);
+		*value=copyString(var->getWcs());
 	}
 	return NONS_NO_ERROR;
 }

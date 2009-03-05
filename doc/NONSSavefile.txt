@@ -47,7 +47,8 @@ Variables section{
 		if (n2){
 			n2*Variable{
 				sDWord. intValue.
-				String. wcsValue.
+				//Removed on 2009-02-23:
+				//String. wcsValue.
 				<recursion from *0 to *1>
 			}
 		}

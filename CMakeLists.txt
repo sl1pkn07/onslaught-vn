@@ -75,6 +75,7 @@ add_executable(ONSlaught
 	src/Processing/ScriptInterpreter_commandsSZ.cpp
 	src/Processing/ScriptInterpreter_savegame.cpp
 	src/Processing/Variable.cpp
+	src/Processing/VariableMember.cpp
 	src/Processing/VariableStore.cpp
 )
 

@@ -42,25 +42,25 @@
 extern std::set<wchar_t *,wstrCmp> labelsUsed;
 
 struct NONS_VariableStore{
-	std::map<wchar_t *,NONS_Variable *,wstrCmpCI> variables;
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI> aliases;
 	std::map<ulong,NONS_Variable *> stack;
-	std::map<wchar_t *,NONS_Variable *,wstrCmpCI> arrayVariables;
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI> arrays;
 	bool commitGlobals;
 	NONS_VariableStore();
 	~NONS_VariableStore();
 	void saveData();
-	ErrorCode evaluate(wchar_t *exp,long *result,bool invert_terms=0);
-	ErrorCode resolveIndexing(wchar_t *expression,NONS_Variable **res);
+	ErrorCode evaluate(const wchar_t *exp,long *result,bool invert_terms=0);
+	ErrorCode resolveIndexing(const wchar_t *expression,NONS_VariableMember **res);
 	void push(ulong pos,NONS_Variable *var);
 	bool link(wchar_t *name,ulong pos);
 	void push(wchar_t *name,NONS_Variable *var);
-	NONS_Variable *retrieve(wchar_t *name);
+	NONS_VariableMember *retrieve(const wchar_t *name);
 	NONS_Variable *retrieve(ulong position);
-	NONS_Variable *retrieve(wchar_t *name,std::vector<ulong> *index);
-	NONS_Variable *retrieve(wchar_t *name,ulong *index,ulong size);
+	NONS_VariableMember *retrieve(const wchar_t *name,const std::vector<ulong> *index);
+	NONS_VariableMember *retrieve(const wchar_t *name,ulong *index,ulong size);
 	ErrorCode getIntValue(wchar_t *str,long *value);
 	ErrorCode getStrValue(wchar_t *str,char **value);
-	ErrorCode getWcsValue(wchar_t *str,wchar_t **value);
+	//ErrorCode getWcsValue(wchar_t *str,wchar_t **value);
 	ErrorCode getStrValue(char *str,char **value);
 };
 #endif

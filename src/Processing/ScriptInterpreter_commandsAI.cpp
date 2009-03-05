@@ -57,17 +57,22 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 		return NONS_NOT_IN_DEFINE_MODE;
 	if (!this->store->retrieve(line.parameters[0])){
 		_CHECK_VARIABLE_NAME(line.parameters[0])
-		NONS_Variable *val=new NONS_Variable();
+		NONS_VariableMember *val;
 		if (line.parameters.size()>1){
 			if (!wcscmp(line.line,L"numalias")){
-				_GETINTVALUE(val->intValue,1,)
-				val->type='%';
+				long temp;
+				_GETINTVALUE(temp,1,)
+				val=new NONS_VariableMember('%');
+				val->set(temp);
 			}else{
-				_GETWCSVALUE(val->wcsValue,1,)
-				val->type='$';
+				wchar_t *temp=0;
+				_GETWCSVALUE(temp,1,)
+				val=new NONS_VariableMember('$');
+				val->set(temp,1);
 			}
+			val->makeConstant();
 		}
-		this->store->variables[copyWString(line.parameters[0])]=val;
+		this->store->aliases[copyWString(line.parameters[0])]=val;
 		return NONS_NO_ERROR;
 	}else
 		return NONS_DUPLICATE_VARIABLE_DEFINITION;
@@ -106,7 +111,7 @@ ErrorCode NONS_ScriptInterpreter::command_gosub(NONS_ParsedLine &line){
 	NONS_StackElement *el=new NONS_StackElement(this->interpreter_position,0);
 	this->callStack.push_back(el);
 	ErrorCode error=this->command_goto(line);
-	if (!(error&NONS_NO_ERROR_FLAG)){
+	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		this->callStack.pop_back();
 		handleErrors(error,this->current_line,"NONS_ScriptInterpreter::command_gosub");
 		return error;
@@ -120,7 +125,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	long res=0;
 	bool notif=!wcscmp(line.line,L"notif");
 	ErrorCode ret=this->store->evaluate(line.parameters[0],&res,notif && !this->new_if);
-	if (!(ret&NONS_NO_ERROR_FLAG))
+	if (!CHECK_FLAG(ret,NONS_NO_ERROR_FLAG))
 		return ret;
 	if (notif && this->new_if)
 		res=!res;
@@ -148,11 +153,11 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 			delete[] copy;
 			if (error==NONS_GOSUB && ifblock[a+1])
 				(*(this->callStack.end()-1))->first_interpret_string=copyWString(ifblock+a+1);
-			if (!(error&NONS_NO_ERROR_FLAG)){
+			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if");
 				ret=NONS_UNDEFINED_ERROR;
 			}
-			if (error&NONS_BREAK_WORTHY_ERROR || ifblock[a]==';')
+			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || ifblock[a]==';')
 				return ret;
 			commandstart=a+1;
 		}
@@ -161,7 +166,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	ErrorCode error=this->interpretString(copy);
 	if (error==NONS_END)
 		return error;
-	if (!(error&NONS_NO_ERROR_FLAG)){
+	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		handleErrors(error,-1,"NONS_ScriptInterpreter::command_if");
 		ret=NONS_UNDEFINED_ERROR;
 	}
@@ -172,9 +177,8 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_add(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	long val;
 	_GETINTVALUE(val,1,)
 	while (1){
@@ -184,7 +188,6 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_ParsedLine &line){
 		}
 		if (!wcscmp(line.line,L"sub")){
 			var->sub(val);
-			var->intValue-=val;
 			break;
 		}
 		if (!wcscmp(line.line,L"mul")){
@@ -222,9 +225,8 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_inc(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	if (!wcscmp(line.line,L"inc"))
 		var->inc();
 	else
@@ -235,9 +237,8 @@ ErrorCode NONS_ScriptInterpreter::command_inc(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	wchar_t *opA=0,*opB=0;
 	_GETWCSVALUE(opA,1,)
 	_GETWCSVALUE(opB,2,)
@@ -250,16 +251,11 @@ ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_itoa(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETSTRVARIABLE(dst,0,)
 	long src;
 	_GETINTVALUE(src,1,)
-	char temp[100];
-	sprintf(temp,"%d",src);
-	if (dst->wcsValue)
-		delete[] dst->wcsValue;
-	dst->wcsValue=copyWString(temp);
+	dst->set(src);
 	return NONS_NO_ERROR;
 }
 
@@ -268,14 +264,12 @@ ErrorCode NONS_ScriptInterpreter::command_intlimit(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
 		return NONS_NOT_IN_DEFINE_MODE;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
 	long lower,upper;
 	_GETINTVALUE(lower,1,)
 	_GETINTVALUE(upper,2,)
-	dst->_long_lower_limit=lower;
-	dst->_long_upper_limit=upper;
+	dst->setlimits(lower,upper);
 	return NONS_NO_ERROR;
 }
 
@@ -286,11 +280,10 @@ ErrorCode NONS_ScriptInterpreter::command_end(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_date(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *year=this->store->retrieve(line.parameters[0]);
-	NONS_Variable *month=this->store->retrieve(line.parameters[1]);
-	NONS_Variable *day=this->store->retrieve(line.parameters[2]);
-	if (!year || !month || !day)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *year,*month,*day;
+	_GETINTVARIABLE(year,0,)
+	_GETINTVARIABLE(month,0,)
+	_GETINTVARIABLE(day,0,)
 	time_t t=time(0);
 	tm *time=localtime(&t);
 	if (wcscmp(line.line,L"date2"))
@@ -305,9 +298,8 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_getmp3vol(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
 	dst->set(this->everything->audio->musicVolume(-1));
 	return 0;
 }
@@ -351,7 +343,7 @@ ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 	if (f<0)
 		return NONS_MISSING_B_IN_ARRAY_DECLARATION;
 	name=copyWString(name,f-(name-string));
-	if (this->store->arrayVariables.find(name)!=this->store->arrayVariables.end()){
+	if (this->store->arrays.find(name)!=this->store->arrays.end()){
 		delete[] name;
 		return NONS_DUPLICATE_VARIABLE_DEFINITION;
 	}
@@ -386,8 +378,8 @@ ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 	ulong *dimensions=new ulong[size];
 	for (ulong a=0;a<size;a++)
 		dimensions[a]=indices[a];
-	NONS_Variable *var=new NONS_Variable(dimensions,size);
-	this->store->arrayVariables[name]=var;
+	NONS_VariableMember *var=new NONS_VariableMember(dimensions,size);
+	this->store->arrays[name]=var;
 	delete[] dimensions;
 	return NONS_NO_ERROR;
 }
@@ -395,9 +387,8 @@ ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_atoi(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
 	char *val=0;
 	_GETSTRVALUE(val,1,)
 	dst->set(atoi(val));
@@ -408,13 +399,12 @@ ErrorCode NONS_ScriptInterpreter::command_atoi(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_getversion(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
-	dst->set(ONSLAUGHT_BUILD_VERSION);
-	if (dst->wcsValue)
-		delete[] dst->wcsValue;
-	dst->wcsValue=copyWString(ONSLAUGHT_BUILD_VERSION_WSTR);
+	NONS_VariableMember *dst;
+	_GETVARIABLE(dst,0,)
+	if (dst->getType()=='%')
+		dst->set(ONSLAUGHT_BUILD_VERSION);
+	else
+		dst->set(ONSLAUGHT_BUILD_VERSION_WSTR,0);
 	return NONS_NO_ERROR;
 }
 
@@ -474,7 +464,8 @@ ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_getini(NONS_ParsedLine &line){
 	if (line.parameters.size()<4)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
+	NONS_VariableMember *dst;
+	_GETVARIABLE(dst,0,)
 	char *filename=0;
 	wchar_t *section=0,*key=0;
 	_GETSTRVALUE(filename,0,);
@@ -516,9 +507,7 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_ParsedLine &line){
 			dst->set(val->getIntValue());
 			break;
 		case 's':
-			if (dst->wcsValue)
-				delete[] dst->wcsValue;
-			dst->wcsValue=val->getWStrValue();
+			dst->set(val->getWStrValue(),0);
 	}
 	return NONS_NO_ERROR;
 }
@@ -654,9 +643,8 @@ ErrorCode NONS_ScriptInterpreter::command_for(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	if (*line.parameters[0]!='%')
 		return NONS_INVALID_PARAMETER;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	long from,to,step=1;
 	_GETINTVALUE(from,1,)
 	_GETINTVALUE(to,2,)
@@ -664,7 +652,7 @@ ErrorCode NONS_ScriptInterpreter::command_for(NONS_ParsedLine &line){
 		_GETINTVALUE(step,3,)
 	if (!step)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	var->intValue=from;
+	var->set(from);
 	NONS_StackElement *element=new NONS_StackElement(var,this->interpreter_position,from,to,step);
 	this->callStack.push_back(element);
 	if (step>0 && from>to || step<0 && from<to)
@@ -760,10 +748,9 @@ ErrorCode NONS_ScriptInterpreter::command_autoclick(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_gettimer(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
-	var->intValue=this->timer;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
+	var->set(this->timer);
 	return NONS_NO_ERROR;
 }
 
@@ -827,9 +814,8 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	if (!this->imageButtons)
 		return NONS_NO_BUTTON_IMAGE;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	int choice=this->imageButtons->getUserInput(this->imageButtonExpiration);
 	var->set(choice+1);
 	this->btnTimer=SDL_GetTicks();
@@ -843,9 +829,8 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_getbtntimer(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *var=this->store->retrieve(line.parameters[0]);
-	if (!var)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
 	var->set(SDL_GetTicks()-this->btnTimer);
 	return NONS_NO_ERROR;
 }
@@ -938,9 +923,8 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
 	wchar_t *filename=0;
 	_GETWCSVALUE(filename,1,)
 	dst->set(this->everything->archive->exists(filename));

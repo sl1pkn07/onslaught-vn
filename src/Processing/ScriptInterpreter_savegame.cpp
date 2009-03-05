@@ -127,20 +127,20 @@ bool NONS_ScriptInterpreter::load(int file){
 				scr->leftChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			delete[] name;
 		}
-		if (*save->righChar){
-			long semicolon=instr(save->righChar,L";");
+		if (*save->rightChar){
+			long semicolon=instr(save->rightChar,L";");
 			semicolon++;
-			wchar_t *name=copyWString(save->righChar+semicolon);
+			wchar_t *name=copyWString(save->rightChar+semicolon);
 			if (!scr->rightChar)
 				scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			else
 				scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			delete[] name;
 		}
-		if (*save->centChar){
-			long semicolon=instr(save->centChar,L";");
+		if (*save->centerChar){
+			long semicolon=instr(save->centerChar,L";");
 			semicolon++;
-			wchar_t *name=copyWString(save->centChar+semicolon);
+			wchar_t *name=copyWString(save->centerChar+semicolon);
 			if (!scr->rightChar)
 				scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			else
@@ -176,17 +176,11 @@ bool NONS_ScriptInterpreter::load(int file){
 			scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
 		}
 		this->everything->screen->sprite_priority=this->everything->screen->layerStack.size()-1;
-		//variables
+		//aliases
 		for (ulong a=0;a<save->variables.size();a++){
 			NONS_Variable *var=save->variables[a];
 			NONS_Variable *dst=this->store->retrieve(a);
-			dst->intValue=var->intValue;
-			if (dst->wcsValue)
-				delete[] dst->wcsValue;
-			if (var->wcsValue && *var->wcsValue)
-				dst->wcsValue=copyWString(var->wcsValue);
-			else
-				dst->wcsValue=0;
+			(*dst)=(*var);
 		}
 		//stack
 		//flush
@@ -203,7 +197,7 @@ bool NONS_ScriptInterpreter::load(int file){
 				this->callStack.push_back(push);
 			}else{
 				NONS_StackElement *push=new NONS_StackElement(
-					this->store->retrieve(el->variable),
+					this->store->retrieve(el->variable)->intValue,
 					SJISoffset_to_WCSoffset(this->script->script,el->offset),
 					0,el->to,el->step);
 				this->callStack.push_back(push);
@@ -303,7 +297,7 @@ bool NONS_ScriptInterpreter::load(int file){
 				push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0);
 			else{
 				push=new NONS_StackElement(
-					this->store->retrieve(el->variable),
+					this->store->retrieve(el->variable)->intValue,
 					this->script->offsetFromBlock(el->label)+el->offset,
 					0,el->to,el->step);
 			}
@@ -334,13 +328,13 @@ bool NONS_ScriptInterpreter::load(int file){
 				save->variables[a]=0;
 			}
 		}
-		for (std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->store->arrayVariables.begin();i!=this->store->arrayVariables.end();i++){
+		for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++){
 			delete[] i->first;
 			delete i->second;
 		}
-		this->store->arrayVariables.clear();
+		this->store->arrays.clear();
 		for (ulong a=0;a<save->arraynames.size();a++){
-			this->store->arrayVariables[save->arraynames[a]]=save->arrays[a];
+			this->store->arrays[save->arraynames[a]]=save->arrays[a];
 			save->arraynames[a]=0;
 			save->arrays[a]=0;
 		}
@@ -420,28 +414,28 @@ bool NONS_ScriptInterpreter::load(int file){
 			delete[] name;
 		}
 		scr->rightChar->unload();
-		if (save->righChar){
-			long semicolon=instr(save->righChar,L";");
+		if (save->rightChar){
+			long semicolon=instr(save->rightChar,L";");
 			semicolon++;
-			wchar_t *name=copyWString(save->righChar+semicolon);
+			wchar_t *name=copyWString(save->rightChar+semicolon);
 			if (!scr->rightChar)
 				scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			else
 				scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			delete[] name;
-			scr->leftChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
+			scr->rightChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
 		}
 		scr->centerChar->unload();
-		if (save->centChar){
-			long semicolon=instr(save->centChar,L";");
+		if (save->centerChar){
+			long semicolon=instr(save->centerChar,L";");
 			semicolon++;
-			wchar_t *name=copyWString(save->centChar+semicolon);
+			wchar_t *name=copyWString(save->centerChar+semicolon);
 			if (!scr->centerChar)
 				scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			else
 				scr->centerChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
 			delete[] name;
-			scr->leftChar->clip_rect.x=0;
+			scr->centerChar->clip_rect.x=0;
 		}
 		for (ulong a=0;a<save->sprites.size();a++){
 			NONS_SaveFile::Sprite *spr=save->sprites[a];
@@ -515,7 +509,7 @@ bool NONS_ScriptInterpreter::load(int file){
 		if (save->musicTrack>=0){
 			char temp[12];
 			sprintf(temp,"track%02u",save->musicTrack);
-			au->playMusic(temp,save->loopMp3);
+			au->playMusic(temp,save->loopMp3?-1:0);
 		}else if (save->music){
 			long size;
 			char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,(ulong *)&size);
@@ -583,7 +577,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			}else{
 				el->variable=0;
 				for (std::map<ulong,NONS_Variable *>::iterator i=this->store->stack.begin();i!=this->store->stack.end() && !el->variable;i++)
-					if (i->second==el0->var)
+					if (i->second->intValue==el0->var)
 						el->variable=i->first;
 				el->to=el0->to;
 				el->step=el0->step;
@@ -602,19 +596,17 @@ bool NONS_ScriptInterpreter::save(int file){
 	{
 		std::map<ulong,NONS_Variable *> *varStack=&this->store->stack;
 		for (std::map<ulong,NONS_Variable *>::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++){
-			if (!i->second || !i->second->intValue && (!i->second->wcsValue || !*i->second->wcsValue))
+			if (!i->second || !i->second->intValue->getInt() && (!i->second->wcsValue->getWcs() || !*i->second->wcsValue->getWcsCopy()))
 				continue;
 			if (this->saveGame->variables.size()<=i->first)
 				this->saveGame->variables.resize(i->first+1,0);
-			NONS_Variable *var=new NONS_Variable();
-			var->intValue=i->second->intValue;
-			var->wcsValue=copyWString(i->second->wcsValue);
+			NONS_Variable *var=new NONS_Variable(*i->second);
 			this->saveGame->variables[i->first]=var;
 		}
-		for (std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->store->arrayVariables.begin();
-		  i!=this->store->arrayVariables.end();i++){
+		for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->arrays.begin();
+		  i!=this->store->arrays.end();i++){
 			this->saveGame->arraynames.push_back(copyWString(i->first));
-			NONS_Variable *p=new NONS_Variable(*i->second);
+			NONS_VariableMember *p=new NONS_VariableMember(*i->second);
 			this->saveGame->arrays.push_back(p);
 		}
 	}
@@ -677,21 +669,21 @@ bool NONS_ScriptInterpreter::save(int file){
 		}
 		{
 			NONS_Image *i=!!scr->centerChar?ImageLoader->elementFromSurface(scr->centerChar->data):0;
-			if (this->saveGame->centChar)
-				delete[] this->saveGame->centChar;
+			if (this->saveGame->centerChar)
+				delete[] this->saveGame->centerChar;
 			if (i)
-				this->saveGame->centChar=copyWString(i->name);
+				this->saveGame->centerChar=copyWString(i->name);
 			else
-				this->saveGame->centChar=0;
+				this->saveGame->centerChar=0;
 		}
 		{
 			NONS_Image *i=!!scr->rightChar?ImageLoader->elementFromSurface(scr->rightChar->data):0;
-			if (this->saveGame->righChar)
-				delete[] this->saveGame->righChar;
+			if (this->saveGame->rightChar)
+				delete[] this->saveGame->rightChar;
 			if (i)
-				this->saveGame->righChar=copyWString(i->name);
+				this->saveGame->rightChar=copyWString(i->name);
 			else
-				this->saveGame->righChar=0;
+				this->saveGame->rightChar=0;
 		}
 		//update sprite record
 		for (ulong a=0;a<scr->layerStack.size();a++){

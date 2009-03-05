@@ -269,7 +269,7 @@ T *getNormalString(T *exp,ulong *offset){
 template <typename T>
 ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleoperation<T> *> *queue,operand *operandA=0){
 	if (!exp || !queue)
-		return NONS_INVALID_PARAMETER;
+		return NONS_INTERNAL_INVALID_PARAMETER;
 	char step=!!operandA;
 	simpleoperation<T> op;
 	if (operandA)

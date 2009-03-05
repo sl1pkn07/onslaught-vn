@@ -60,6 +60,35 @@
 #define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getIntValue(line.parameters[(src)],&(dst)),extra)
 #define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getStrValue(line.parameters[(src)],&(dst)),extra)
 #define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getWcsValue(line.parameters[(src)],&(dst)),extra)
+#define _GETVARIABLE(varName,src,extra){\
+	(varName)=this->store->retrieve(line.parameters[(src)]);\
+	if (!(varName)){\
+		extra\
+		return NONS_UNDEFINED_VARIABLE;\
+	}\
+	if ((varName)->isConstant()){\
+		extra\
+		return NONS_EXPECTED_VARIABLE;\
+	}\
+	if ((varName)->getType()=='?'){\
+		extra\
+		return NONS_EXPECTED_SCALAR;\
+	}\
+}
+#define _GETINTVARIABLE(varName,src,extra){\
+	_GETVARIABLE(varName,src,extra)\
+	if ((varName)->getType()!='%'){\
+		extra\
+		return NONS_EXPECTED_NUMERIC_VARIABLE;\
+	}\
+}
+#define _GETSTRVARIABLE(varName,src,extra){\
+	_GETVARIABLE(varName,src,extra)\
+	if ((varName)->getType()!='$'){\
+		extra\
+		return NONS_EXPECTED_STRING_VARIABLE;\
+	}\
+}
 
 typedef std::map<char *,INIfile *,strCmp> INIcacheType;
 
@@ -75,14 +104,14 @@ struct NONS_StackElement{
 	//subroutine data
 	wchar_t *first_interpret_string;
 	//for data
-	NONS_Variable *var;
+	NONS_VariableMember *var;
 	long from,
 		to,
 		step;
 	ulong end;
 	NONS_StackElement();
 	NONS_StackElement(ulong offset,wchar_t *string);
-	NONS_StackElement(NONS_Variable *variable,ulong startoffset,long from,long to,long step);
+	NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step);
 	~NONS_StackElement();
 };
 
@@ -90,7 +119,7 @@ class NONS_ScriptInterpreter{
 	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmp> commandListType;
 	//ErrorCode Printer(wchar_t *line);
 	ErrorCode Printer(const wchar_t *line);
-	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_Variable *> *visited=0,std::vector<std::pair<wchar_t *,NONS_Variable *> > *stack=0);
+	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack=0);
 	void uninit();
 	void init();
 

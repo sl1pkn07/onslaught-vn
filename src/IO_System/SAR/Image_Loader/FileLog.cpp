@@ -114,7 +114,7 @@ NONS_FileLog::~NONS_FileLog(){
 bool NONS_FileLog::addString(wchar_t *string,bool takeOwnership){
 	if (this->log.find(string)!=this->log.end())
 		return 0;
-	SDL_LockMutex(exitMutex);
+	//SDL_LockMutex(exitMutex);
 	wchar_t *a;
 	if (takeOwnership)
 		a=string;
@@ -123,7 +123,7 @@ bool NONS_FileLog::addString(wchar_t *string,bool takeOwnership){
 	tolower(a);
 	toforwardslash(a);
 	this->log.insert(a);
-	SDL_UnlockMutex(exitMutex);
+	//SDL_UnlockMutex(exitMutex);
 	return 1;
 }
 

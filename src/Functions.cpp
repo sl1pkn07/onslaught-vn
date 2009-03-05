@@ -925,14 +925,14 @@ void toforwardslash(char *param){
 	toforwardslash_template(param);
 }
 
-bool isanumber(char *a){
+bool isanumber(const char *a){
 	for (;*a;a++)
 		if (!isdigit(*a))
 			return 0;
 	return 1;
 }
 
-bool isanumber(wchar_t *a){
+bool isanumber(const wchar_t *a){
 	for (;*a;a++)
 		if (!isdigit(*a))
 			return 0;
@@ -1022,7 +1022,7 @@ void writeDWord(integer32 a,std::string *str,long offset){
 	}
 }
 
-void writeString(wchar_t *a,std::string *str){
+void writeString(const wchar_t *a,std::string *str){
 	char *utf8=WChar_to_UTF8(a);
 	str->append(utf8);
 	str->push_back(0);

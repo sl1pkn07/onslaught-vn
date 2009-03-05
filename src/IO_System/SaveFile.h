@@ -81,8 +81,8 @@ struct NONS_SaveFile{
 	wchar_t *unknownString_000;
 	wchar_t *background;
 	wchar_t *leftChar;
-	wchar_t *centChar;
-	wchar_t *righChar;
+	wchar_t *centerChar;
+	wchar_t *rightChar;
 	struct Sprite{
 		wchar_t *string;
 		long x,y;
@@ -129,7 +129,7 @@ struct NONS_SaveFile{
 	ulong currentOffset;
 	unsigned hash[5];
 	std::vector<wchar_t *> arraynames;
-	std::vector<NONS_Variable *> arrays;
+	std::vector<NONS_VariableMember *> arrays;
 	wchar_t *currentBuffer;
 	ushort textX,
 		textY;

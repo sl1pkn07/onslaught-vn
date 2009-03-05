@@ -59,7 +59,7 @@
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"\
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"\
 		"All rights reserved.\n\n"\
-		"\"I did it for the lulz.\"\n\n"<<std::endl;\
+		"\"It's just a flesh wound.\"\n\n"<<std::endl;\
 }
 
 int mainThread(void *nothing);
@@ -128,7 +128,11 @@ void usage(){
 		"      Redirect stdout and stderr to \"stdout.txt\" and \"stderr.txt\"\n"
 		"      correspondingly.\n"
 		"      If -debug has been used, it is disabled.\n"
-		"  -!reset-out-files\"\n"
+		"      By default, output is redirected.\n"
+		"  -!redirect\n"
+		"      Sends the output to the console instead of the file system.\n"
+		"      See \"-redirect\" for more info.\n"
+		"  -!reset-out-files\n"
 		"      Only used with \"-redirect\".\n"
 		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
 		"      them and puts the date and time as identification.\n";
@@ -184,6 +188,7 @@ void parseCommandLine(int argc,T **argv){
 		"-?",
 		"-save-directory",
 		"-!reset-out-files",
+		"-!redirect",
 		0
 	};
 	for (long argument=1;argument<argc;argument++){
@@ -397,6 +402,9 @@ void parseCommandLine(int argc,T **argv){
 				break;
 			case 22: //-!reset-out-files
 				CLOptions.reset_redirection_files=0;
+				break;
+			case 23: //-!redirect
+				CLOptions.override_stdout=0;
 				break;
 			case 17://-sdebug
 			default:
@@ -684,7 +692,7 @@ int
 #endif
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	exitMutex=SDL_CreateMutex();
+	//exitMutex=SDL_CreateMutex();
 	screenMutex=SDL_CreateMutex();
 
 #if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
@@ -701,11 +709,11 @@ int
 		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
 	else
 		error=everything->init_script(CLOptions.scriptencoding);
-	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	if (error!=NONS_NO_ERROR){
 		handleErrors(error,-1,"mainThread");
 		exit(error);
 	}
+	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	if (!config_directory)
 		config_directory=getConfigLocation();
 	v_stdout <<"Global files go in \""<<config_directory<<"\"."<<std::endl;
@@ -769,15 +777,19 @@ int debugThread(void *nothing){
 		if (!strcmp(command,"exit") || !strcmp(command,"quit"))
 			return 0;
 		wchar_t *wcommand=copyWString(command);
-		NONS_Variable *var=interpreter->store->retrieve(wcommand);
+		NONS_VariableMember *var=interpreter->store->retrieve(wcommand);
 		if (var){
-			std::cout <<"intValue: "<<var->intValue<<std::endl;
-			if (var->wcsValue){
-				char *copy=WChar_to_UTF8(var->wcsValue);
-				std::cout <<"UTF-8 Value: \""<<copy<<"\""<<std::endl;
-				delete[] copy;
+			if (var->getType()=='%')
+				std::cout <<"intValue: "<<var->getInt()<<std::endl;
+			else if (var->getType()=='$'){
+				if (var->getWcs()){
+					char *copy=WChar_to_UTF8(var->getWcs());
+					std::cout <<"UTF-8 Value: \""<<copy<<"\""<<std::endl;
+					delete[] copy;
+				}else
+					std::cout <<"UTF-8 Value: \"\""<<std::endl;
 			}else
-				std::cout <<"UTF-8 Value: \"\""<<std::endl;
+				std::cout <<"Scalar value."<<std::endl;
 		}else
 			handleErrors(interpreter->interpretString(wcommand),-1,"debugThread");
 		delete[] wcommand;

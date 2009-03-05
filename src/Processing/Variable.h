@@ -31,30 +31,14 @@
 #define NONS_VARIABLE_H
 
 #include "../Common.h"
-#include <climits>
+#include "VariableMember.h"
 
 struct NONS_Variable{
-	long intValue;
-	wchar_t *wcsValue;
-	NONS_Variable **dimension;
-	ulong dimensionSize;
-	//'%' for integer, '$' for string, '?' for array.
-	char type;
-	long _long_upper_limit;
-	long _long_lower_limit;
-	NONS_Variable(ulong *dimensions=0,ulong size=0);
+	NONS_VariableMember *intValue;
+	NONS_VariableMember *wcsValue;
+	NONS_Variable();
 	NONS_Variable(const NONS_Variable &b);
+	NONS_Variable &operator=(const NONS_Variable &b);
 	~NONS_Variable();
-	void inc();
-	void dec();
-	void set(long a);
-	void add(long a);
-	void sub(long a);
-	void mul(long a);
-	void div(long a);
-	void mod(long a);
-private:
-	void fixint();
 };
-
 #endif

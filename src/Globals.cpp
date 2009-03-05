@@ -36,67 +36,135 @@ NONS_CommandLineOptions CLOptions;
 NONS_InputObserver InputObserver;
 bool exitLocked=0;
 const char *errorMessages[]={
+	//NONS_NO_ERROR
 	"",
+	//NONS_INVALID_PARAMETER
 	"Invalid parameter.",
+	//NONS_INVALID_ARCHIVE
 	"Invalid archive.",
+	//NONS_ARCHIVE_UNINIT
 	"Archive uninitialized.",
+	//NONS_NOT_IMPLEMENTED
 	"Command not implemented.",
+	//NONS_NOT_IN_DEFINE_MODE
 	"Attempted variable declaration while not in Define Mode.",
+	//NONS_DUPLICATE_VARIABLE_DEFINITION
 	"Variable redefinition.",
+	//NONS_ALREADY_INITIALIZED
 	"The NSA archive had already been initialized.",
+	//NONS_NO_SUCH_BLOCK
 	"No such block.",
+	//NONS_NO_ERROR_BUT_BREAK
 	"",
+	//NONS_EMPTY_CALL_STACK
 	"A return was found while the call stack was empty.",
+	//NONS_UNDEFINED_SYNTAX_ERROR
 	"Syntax error in expression.",
+	//NONS_DIVISION_BY_ZERO
 	"Division by zero.",
+	//NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION
 	"Non integral variable in expression.",
+	//NONS_UNDEFINED_VARIABLE
 	"Undefined variable.",
+	//NONS_UNRECOGNIZED_COMMAND
 	"Unrecognized command.",
+	//NONS_UNMATCHING_OPERANDS
 	"Operands do not match.",
+	//NONS_INVALID_VARIABLE_NAME
 	"Invalid variable name.",
+	//NONS_INSUFFICIENT_PARAMETERS
 	"Not enough parameters passed to the instruction.",
+	//NONS_FILE_NOT_FOUND
 	"File not found.",
+	//NONS_NO_MUSIC_LOADED
 	"No music loaded.",
+	//NONS_NO_SOUND_EFFECT_LOADED
 	"No sound effect loaded.",
+	//NONS_INTERNAL_INVALID_PARAMETER
 	"Invalid parameter.",
+	//NONS_DUPLICATE_EFFECT_DEFINITION
 	"Effect redefinition.",
+	//NONS_INVALID_RUNTIME_PARAMETER_VALUE
 	"Invalid run time parameter value.",
+	//NONS_UNMATCHED_BRAKETS
 	"Unmatched [].",
+	//NONS_UNRECOGNIZED_OPERATOR
 	"Unrecognized operator.",
+	//NONS_ARRAY_INDEX_OUT_OF_BOUNDS
 	"Array index out of bounds.",
+	//NONS_MISSING_Q_IN_ARRAY_DECLARATION
 	"Missing ? in array declaration.",
+	//NONS_MISSING_B_IN_ARRAY_DECLARATION
 	"Missing [] in array declaration.",
-	"Invalid run time parameter type.",
+	//NONS_EXPECTED_NUMERIC_VARIABLE
+	"A numeric variable was expected.",
+	//NONS_TOO_MANY_PARAMETERS
 	"Too many parameters passed. Some will be ignored.",
+	//NONS_NO_JUMPS
 	"No jumps matching the condition found.",
+	//NONS_UNMATCHED_QUOTES
 	"Unmatched quotes.",
+	//NONS_ZERO_VALUE_IN_SKIP
 	"Zero value in skip.",
+	//NONS_EFFECT_CODE_OUT_OF_RANGE
 	"Effect code is out of range.",
+	//NONS_EMPTY_STRING
 	"Empty string.",
+	//NONS_INVALID_CHANNEL_INDEX
 	"Invalid channel index.",
+	//NONS_SCREEN_UNINIT
 	"Screen is uninitialized.",
+	//NONS_SCRIPT_NOT_FOUND
 	"Could not open script file.",
+	//NONS_INI_SECTION_NOT_FOUND
 	"INI section not found.",
+	//NONS_INI_KEY_NOT_FOUND
 	"INI key not found.",
+	//NONS_INVALID_HEX
 	"Invalid hex integer.",
+	//NONS_UNIMPLEMENTED_COMMAND
 	"This command left unimplemented.",
+	//NONS_NO_EFFECT
 	"Effect not implemented.",
+	//NONS_UNDEFINED_EFFECT
 	"Undefined effect.",
+	//NONS_UNEXPECTED_NEXT
 	"Next or break found without a for inside the current block.",
+	//NONS_NO_NEXT
 	"No next for open for.",
+	//NONS_TRANSPARENCY_METHOD_UNIMPLEMENTED
 	"Transparency method not implemented.",
+	//NONS_NO_TRAP_SET
 	"No trap was set.",
-	"Menu not ininitalized.",
+	//NONS_MENU_UNINITIALIZED
+	"Menu not initialized.",
+	//NONS_NO_BUTTON_IMAGE
 	"There is no source image for the button.",
+	//NONS_NO_BUTTONS_DEFINED
 	"There are not defined buttons at the moment.",
-	"The button layer is too big to fit for the screen.",
+	//NONS_SELECT_TOO_BIG
+	"The button layer is too big for the screen.",
+	//NONS_NO_START_LABEL
 	"There is no \"*start\" label.",
+	//NONS_GOSUB
 	"",
+	//NONS_NO_SPRITE_LOADED_THERE
 	"No sprite is loaded at that index.",
+	//NONS_INVALID_TRANSPARENCY_METHOD
 	"Invalid transparency method.",
+	//NONS_UNSUPPORTED_SAVEGAME_VERSION
 	"Unsupported savegame version.",
+	//NONS_UNDOCUMENTED_COMMAND
 	"Undocumented command. The developer doesn't know at this time what this command does with sufficient detail. "
-		"If you do, please contact him and explain in as much detail as possible."
+		"If you do, please contact him and explain in as much detail as possible.",
+	//NONS_EXPECTED_VARIABLE
+	"A variable was expected, but a constant was passed.",
+	//NONS_EXPECTED_STRING_VARIABLE
+	"A string variable was expected.",
+	//NONS_EXPECTED_SCALAR
+	"A scalar variable was expected, but an array was passed.",
+	//NONS_EXPECTED_ARRAY
+	"An array was expected, but a sclar variable was passed."
 };
 NONS_RedirectedOutput v_stdout(std::cout);
 NONS_RedirectedOutput v_stderr(std::cerr);

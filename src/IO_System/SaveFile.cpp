@@ -306,18 +306,18 @@ NONS_SaveFile::Channel::~Channel(){
 		delete[] this->name;
 }
 
-NONS_Variable *readArray(char *buffer,long *offset){
-	NONS_Variable *var=new NONS_Variable();
-	var->dimensionSize=readDWord(buffer,offset);
-	if (var->dimensionSize){
-		var->type='?';
-		var->dimension=new NONS_Variable*[var->dimensionSize];
-		for (ulong a=0;a<var->dimensionSize;a++)
+NONS_VariableMember *readArray(char *buffer,long *offset){
+	NONS_VariableMember *var;
+	integer32 dim=readDWord(buffer,offset);
+	if (dim){
+		var=new NONS_VariableMember(0,0);
+		var->dimensionSize=dim;
+		var->dimension=new NONS_VariableMember*[dim];
+		for (ulong a=0;a<dim;a++)
 			var->dimension[a]=readArray(buffer,offset);
 	}else{
-		var->type='%';
-		var->intValue=readSignedDWord(buffer,offset);
-		_READ_BINARY_UTF8_STRING(var->wcsValue,buffer,*offset)
+		var=new NONS_VariableMember('%');
+		var->set(readSignedDWord(buffer,offset));
 	}
 	return var;
 }
@@ -379,8 +379,8 @@ void NONS_SaveFile::load(char *filename){
 			this->pageCursorY=readSignedDWord(buffer,&offset);
 			_READ_BINARY_SJIS_STRING(this->background,buffer,offset)
 			_READ_BINARY_SJIS_STRING(this->leftChar,buffer,offset)
-			_READ_BINARY_SJIS_STRING(this->centChar,buffer,offset)
-			_READ_BINARY_SJIS_STRING(this->righChar,buffer,offset)
+			_READ_BINARY_SJIS_STRING(this->centerChar,buffer,offset)
+			_READ_BINARY_SJIS_STRING(this->rightChar,buffer,offset)
 			/*readSignedDWord(buffer,&offset);
 			readSignedDWord(buffer,&offset);
 			readSignedDWord(buffer,&offset);
@@ -406,8 +406,10 @@ void NONS_SaveFile::load(char *filename){
 			}
 			for (ulong a=0;a<200;a++){
 				NONS_Variable *var=new NONS_Variable;
-				var->intValue=readSignedDWord(buffer,&offset);
-				_READ_BINARY_SJIS_STRING(var->wcsValue,buffer,offset)
+				var->intValue->set(readSignedDWord(buffer,&offset));
+				wchar_t *temp=0;
+				_READ_BINARY_SJIS_STRING(temp,buffer,offset)
+				var->wcsValue->set(temp,1);
 				this->variables.push_back(var);
 			}
 			ulong nesting=readDWord(buffer,&offset);
@@ -534,10 +536,11 @@ void NONS_SaveFile::load(char *filename){
 				if (this->variables.size()<a)
 					this->variables.resize(a+b,0);
 				for (ulong c=0;c<b;c++){
-					NONS_Variable *var=new NONS_Variable();
-					var->type='%';
-					var->intValue=readSignedDWord((char *)buffer,&offset);
-					_READ_BINARY_UTF8_STRING(var->wcsValue,buffer,offset)
+					NONS_Variable *var=new NONS_Variable;
+					var->intValue->set(readSignedDWord((char *)buffer,&offset));
+					wchar_t *temp=0;
+					_READ_BINARY_UTF8_STRING(temp,buffer,offset)
+					var->intValue->set(temp,1);
 					this->variables[a++]=var;
 				}
 			}
@@ -605,8 +608,8 @@ void NONS_SaveFile::load(char *filename){
 				this->bgColor.b=readByte(buffer,&offset);
 			}
 			_READ_BINARY_UTF8_STRING(this->leftChar,buffer,offset)
-			_READ_BINARY_UTF8_STRING(this->centChar,buffer,offset)
-			_READ_BINARY_UTF8_STRING(this->righChar,buffer,offset)
+			_READ_BINARY_UTF8_STRING(this->centerChar,buffer,offset)
+			_READ_BINARY_UTF8_STRING(this->rightChar,buffer,offset)
 			n=readDWord(buffer,&offset);
 			std::vector<ulong> intervals;
 			for (ulong a=0;a<n;a++){
@@ -649,8 +652,10 @@ void NONS_SaveFile::load(char *filename){
 			if (this->musicTrack<0)
 				_READ_BINARY_UTF8_STRING(this->music,buffer,offset)
 			char vol=readByte(buffer,&offset);
+			if (vol>127)
+				vol=127;
 			this->musicVolume=(vol&0x7F);
-			this->loopMp3=!!(vol&0x80);
+			this->loopMp3=CHECK_FLAG(vol,0x80);
 			this->channels.resize(readWord(buffer,&offset),0);
 			for (ushort a=0;a<this->channels.size();a++){
 				Channel *b=new Channel();
@@ -673,8 +678,8 @@ NONS_SaveFile::NONS_SaveFile(){
 	this->unknownString_000=0;
 	this->background=0;
 	this->leftChar=0;
-	this->centChar=0;
-	this->righChar=0;
+	this->centerChar=0;
+	this->rightChar=0;
 	this->midi=0;
 	this->wav=0;
 	this->music=0;
@@ -699,10 +704,10 @@ NONS_SaveFile::~NONS_SaveFile(){
 		delete[] this->background;
 	if (this->leftChar)
 		delete[] this->leftChar;
-	if (this->centChar)
-		delete[] this->centChar;
-	if (this->righChar)
-		delete[] this->righChar;
+	if (this->centerChar)
+		delete[] this->centerChar;
+	if (this->rightChar)
+		delete[] this->rightChar;
 	if (this->midi)
 		delete[] this->midi;
 	if (this->wav)
@@ -742,15 +747,13 @@ NONS_SaveFile::~NONS_SaveFile(){
 			delete this->channels[a];
 }
 
-void writeArray(NONS_Variable *var,std::string *buffer){
+void writeArray(NONS_VariableMember *var,std::string *buffer){
 	writeDWord(var->dimensionSize,buffer);
 	if (var->dimensionSize){
 		for (ulong a=0;a<var->dimensionSize;a++)
 			writeArray(var->dimension[a],buffer);
-	}else{
-		writeDWord(var->intValue,buffer);
-		writeString(var->wcsValue,buffer);
-	}
+	}else
+		writeDWord(var->getInt(),buffer);
 }
 
 bool NONS_SaveFile::save(char *filename){
@@ -828,8 +831,8 @@ bool NONS_SaveFile::save(char *filename){
 				NONS_Variable *var=this->variables[a];
 				if (!var)
 					continue;
-				writeDWord(var->intValue,&buffer);
-				writeString(var->wcsValue,&buffer);
+				writeDWord(var->intValue->getInt(),&buffer);
+				writeString(var->wcsValue->getWcs(),&buffer);
 			}
 		}else
 			writeDWord(0,&buffer);
@@ -895,8 +898,8 @@ bool NONS_SaveFile::save(char *filename){
 			writeByte(this->bgColor.b,&buffer);
 		}
 		writeString(this->leftChar,&buffer);
-		writeString(this->centChar,&buffer);
-		writeString(this->righChar,&buffer);
+		writeString(this->centerChar,&buffer);
+		writeString(this->rightChar,&buffer);
 		std::vector<ulong> intervals;
 		ulong last;
 		bool set=0;
@@ -957,7 +960,9 @@ bool NONS_SaveFile::save(char *filename){
 		writeByte(this->musicTrack,&buffer);
 		if (this->musicTrack<0)
 			writeString(this->music,&buffer);
-		writeByte(this->musicVolume|(this->loopMp3?0:0x80),&buffer);
+		if (this->musicVolume>127)
+			this->musicVolume=127;
+		writeByte(this->musicVolume|(this->loopMp3?0x80:0),&buffer);
 		writeWord(this->channels.size(),&buffer);
 		for (ulong a=0;a<this->channels.size();a++){
 			Channel *c=this->channels[a];

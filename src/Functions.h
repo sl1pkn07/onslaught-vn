@@ -55,6 +55,7 @@
 }
 
 #define NONS_NEWSURFACE(w,h,d) SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,(w),(h),(d),rmask,gmask,bmask,amask)
+#define CHECK_FLAG(x,y) (((x)&(y))==(y))
 
 //string functions
 wchar_t *copyWString(const wchar_t *str,ulong len=0);
@@ -81,8 +82,8 @@ bool multicomparison(char character,const wchar_t *characters);
 bool multicomparison(wchar_t character,const wchar_t *characters);
 void toforwardslash(wchar_t *param);
 void toforwardslash(char *param);
-bool isanumber(char *a);
-bool isanumber(wchar_t *a);
+bool isanumber(const char *a);
+bool isanumber(const wchar_t *a);
 std::vector<char *> *getParameterList(const char *string,char delim=' ');
 std::vector<wchar_t *> *getParameterList(const wchar_t *string,wchar_t delim=' ');
 
@@ -105,7 +106,7 @@ char *readString(char *buffer,long *offset);
 void writeByte(integer8 a,std::string *str,long offset=-1);
 void writeWord(integer16 a,std::string *str,long offset=-1);
 void writeDWord(integer32 a,std::string *str,long offset=-1);
-void writeString(wchar_t *a,std::string *str);
+void writeString(const wchar_t *a,std::string *str);
 
 #ifndef BARE_FILE
 //bitmap processing functions
