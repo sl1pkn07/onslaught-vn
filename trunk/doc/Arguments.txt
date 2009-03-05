@@ -131,6 +131,11 @@ categories is sent to stdout.
 This option also unconditionally disables debug.
 
 
+-!redirect
+Sends the output to the console instead of the file system.
+See "-redirect" for more info.
+
+
 -!reset-out-files
 Only used with "-redirect".
 Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens them

@@ -104,11 +104,10 @@ ErrorCode NONS_ScriptInterpreter::command_wait(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_time(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *h=this->store->retrieve(line.parameters[0]),
-		*m=this->store->retrieve(line.parameters[1]),
-		*s=this->store->retrieve(line.parameters[2]);
-	if (!h || !m || !s)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *h,*m,*s;
+	_GETINTVARIABLE(h,0,)
+	_GETINTVARIABLE(m,1,)
+	_GETINTVARIABLE(s,2,)
 	time_t t=time(0);
 	tm *time=localtime(&t);
 	h->set(time->tm_hour);
@@ -365,24 +364,12 @@ ErrorCode NONS_ScriptInterpreter::command_unalias(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
 	wchar_t *name=line.parameters[0];
-	if (*name=='%' || *name=='$'){
-		for (;*name=='%' || *name=='$';name++);
-		std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->store->variables.find(name);
-		if (i==this->store->variables.end())
-			return NONS_UNDEFINED_VARIABLE;
-		delete[] i->first;
-		delete i->second;
-		this->store->variables.erase(i);
-	}else if (*name=='?'){
-		for (;*name=='?';name++);
-		std::map<wchar_t *,NONS_Variable *,wstrCmpCI>::iterator i=this->store->arrayVariables.find(name);
-		if (i==this->store->arrayVariables.end())
-			return NONS_UNDEFINED_VARIABLE;
-		delete[] i->first;
-		delete i->second;
-		this->store->arrayVariables.erase(i);
-	}else
-		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->aliases.find(name);
+	if (i==this->store->aliases.end())
+		return NONS_UNDEFINED_VARIABLE;
+	delete[] i->first;
+	delete i->second;
+	this->store->aliases.erase(i);
 	return NONS_NO_ERROR;
 }
 
@@ -449,12 +436,9 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 			return this->bad_select(line);
 		selnum=0;
 	}
-	NONS_Variable *var;
-	if (selnum){
-		var=this->store->retrieve(line.parameters[0]);
-		if (!var)
-			return NONS_UNDEFINED_VARIABLE;
-	}
+	NONS_VariableMember *var;
+	if (selnum)
+		_GETINTVARIABLE(var,0,)
 	std::vector<wchar_t *> strings,jumps;
 	for (ulong a=selnum;a<line.parameters.size();a++){
 		wchar_t *temp=0;
@@ -799,9 +783,8 @@ ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *dst=this->store->retrieve(line.parameters[0]);
-	if (!dst)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
 	long file;
 	_GETINTVALUE(file,1,)
 	if (file<1)
@@ -829,12 +812,11 @@ ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_ParsedLine &line){
 	if (line.parameters.size()<5)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *month=this->store->retrieve(line.parameters[1]),
-		*day=this->store->retrieve(line.parameters[2]),
-		*hour=this->store->retrieve(line.parameters[3]),
-		*minute=this->store->retrieve(line.parameters[4]);
-	if (!month || !day || !hour || !minute)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *month,*day,*hour,*minute;
+	_GETINTVARIABLE(month,1,)
+	_GETINTVARIABLE(day,2,)
+	_GETINTVARIABLE(hour,3,)
+	_GETINTVARIABLE(minute,4,)
 	long file;
 	_GETINTVALUE(file,0,)
 	if (file<1)
@@ -864,14 +846,13 @@ ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_ParsedLine &line){
 	if (line.parameters.size()<7)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_Variable *year=this->store->retrieve(line.parameters[1]),
-		*month=this->store->retrieve(line.parameters[2]),
-		*day=this->store->retrieve(line.parameters[3]),
-		*hour=this->store->retrieve(line.parameters[4]),
-		*minute=this->store->retrieve(line.parameters[5]),
-		*second=this->store->retrieve(line.parameters[6]);
-	if (!year || !month || !day || !hour || !minute || !second)
-		return NONS_UNDEFINED_VARIABLE;
+	NONS_VariableMember *year,*month,*day,*hour,*minute,*second;
+	_GETINTVARIABLE(year,1,)
+	_GETINTVARIABLE(month,2,)
+	_GETINTVARIABLE(day,3,)
+	_GETINTVARIABLE(hour,4,)
+	_GETINTVARIABLE(minute,5,)
+	_GETINTVARIABLE(second,6,)
 	long file;
 	_GETINTVALUE(file,0,)
 		if (file<1)

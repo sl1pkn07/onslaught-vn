@@ -40,11 +40,6 @@
             non-whitespace character in a line.
         Arrays: They have the same constraints as variables.
             Arrays may have any number of dimensions.
-            Arrays can have mixed types (e.g. ?a[0] may be an integer while
-            ?a[1] may be a string). As this is hard to keep track of (by a
-            human, that is), it's not recommendable.
-            Arrays use a different name space than variables, so "?a" is
-            different from "%a".
             Array indices are now interpreted as complete expressions
             (e.g. ?a[%a*%b+4][?b[%c]] is valid to use in any part of the script
             [as long as all the variables used are defined, of course]).

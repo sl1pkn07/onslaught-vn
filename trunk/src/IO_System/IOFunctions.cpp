@@ -32,20 +32,21 @@
 
 #include "IOFunctions.h"
 #include "../Globals.h"
+#include "../Functions.h"
 #include <cstdlib>
 
 ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller){
-	if ((error&NONS_END)==NONS_END)
+	if (CHECK_FLAG(error,NONS_END))
 		return error;
-	if (!(error&NONS_NO_ERROR_FLAG)){
+	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		if (caller)
 			v_stderr <<caller<<"(): ";
-		if ((error&NONS_INTERNAL_ERROR)==NONS_INTERNAL_ERROR)
+		if (CHECK_FLAG(error,NONS_INTERNAL_ERROR))
 			v_stderr <<"Internal error. ";
 		else{
-			if ((error&NONS_FATAL_ERROR)==NONS_FATAL_ERROR)
+			if (CHECK_FLAG(error,NONS_FATAL_ERROR))
 				v_stderr <<"Fatal error";
-			else if ((error&NONS_WARNING)==NONS_WARNING)
+			else if (CHECK_FLAG(error,NONS_WARNING))
 				v_stderr <<"Warning";
 			else
 				v_stderr <<"Error";
@@ -54,11 +55,11 @@ ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller){
 			else
 				v_stderr <<". ";
 		}
-		if ((error&NONS_UNDEFINED_ERROR)==NONS_UNDEFINED_ERROR)
+		if (CHECK_FLAG(error,NONS_UNDEFINED_ERROR))
 			v_stderr <<"Unspecified error."<<std::endl;
 		else
 			v_stderr <<errorMessages[error&0xFFFF]<<std::endl;
-		if ((error&NONS_FATAL_ERROR)==NONS_FATAL_ERROR){
+		if (CHECK_FLAG(error,NONS_FATAL_ERROR)){
 			v_stderr <<"I'll just go ahead and kill myself."<<std::endl;
 			exit(error);
 		}

@@ -54,7 +54,7 @@ NONS_StackElement::NONS_StackElement(ulong offset,wchar_t *string){
 	this->first_interpret_string=copyWString(string);
 }
 
-NONS_StackElement::NONS_StackElement(NONS_Variable *variable,ulong startoffset,long from,long to,long step){
+NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step){
 	this->type=FOR_NEST;
 	this->var=variable;
 	this->offset=startoffset;
@@ -639,7 +639,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 						ErrorCode error=(this->*temp)(line);
 						if (error==NONS_END)
 							return 0;
-						if (!(handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine")&NONS_NO_ERROR_FLAG)){
+						handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine");
+						if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 							v_stderr <<"\"";
 							v_stderr.writeWideString(line.line);
 							v_stderr <<"\""<<std::endl;
@@ -762,8 +763,8 @@ wchar_t *getArray(const wchar_t *string){
 void NONS_ScriptInterpreter::reduceString(
 		const wchar_t *src,
 		std::wstring &dst,
-		std::set<NONS_Variable *> *visited,
-		std::vector<std::pair<wchar_t *,NONS_Variable *> > *stack
+		std::set<NONS_VariableMember *> *visited,
+		std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack
 	){
 	if (!src)
 		return;
@@ -777,18 +778,20 @@ void NONS_ScriptInterpreter::reduceString(
 				}
 			case '%':
 				if (*str=='%'){
-						ulong l;
-						for (l=0;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
+						ulong l=0;
+						while (1){
+							for (;str[l+1] && (str[l+1]=='%' || str[l+1]=='$');l++);
+							for (;str[l+1] && iswhitespace(str[l+1]);l++);
+							if (str[l+1]!='%' && str[l+1]!='$')
+								break;
+						}
+						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
 						if (l){
 							wchar_t *name=copyWString(str,l+1);
-							NONS_Variable *var=this->store->retrieve(name);
+							NONS_VariableMember *var=this->store->retrieve(name);
 							delete[] name;
 							if (var){
-								char repr[30];
-								sprintf(repr,"%d",var->intValue);
-								wchar_t *copy=copyWString(repr);
-								dst.append(copy);
-								delete[] copy;
+								dst.append(var->getWcs());
 								str+=l+1;
 								break;
 							}
@@ -796,42 +799,48 @@ void NONS_ScriptInterpreter::reduceString(
 				}
 			case '$':
 				if (*str=='$'){
-						ulong l;
-						for (l=0;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
+						ulong l=0;
+						while (1){
+							for (;str[l+1] && (str[l+1]=='%' || str[l+1]=='$');l++);
+							for (;str[l+1] && iswhitespace(str[l+1]);l++);
+							if (str[l+1]!='%' && str[l+1]!='$')
+								break;
+						}
+						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
 						if (l){
 							wchar_t *name=copyWString(str,l+1);
-							NONS_Variable *var=this->store->retrieve(name);
+							NONS_VariableMember *var=this->store->retrieve(name);
 							if (!!var){
 								if (!!visited && visited->find(var)!=visited->end()){
 									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
 										"    Reduction stack contents:"<<std::endl;
-									for (std::vector<std::pair<wchar_t *,NONS_Variable *> >::iterator i=stack->begin();i!=stack->end();i++){
+									for (std::vector<std::pair<wchar_t *,NONS_VariableMember *> >::iterator i=stack->begin();i!=stack->end();i++){
 										v_stderr <<"        [";
 										v_stderr.writeWideString(i->first);
 										v_stderr <<"] = \"";
-										v_stderr.writeWideString(i->second->wcsValue);
+										v_stderr.writeWideString(i->second->getWcs());
 										v_stderr <<"\""<<std::endl;
 									}
 									v_stderr <<" (last) [";
 									v_stderr.writeWideString(name);
 									v_stderr <<"] = \"";
-									v_stderr.writeWideString(var->wcsValue);
+									v_stderr.writeWideString(var->getWcs());
 									v_stderr <<"\""<<std::endl;
-									dst.append(var->wcsValue);
+									dst.append(var->getWcs());
 								}else{
-									std::set<NONS_Variable *> *temp_visited;
-									std::vector<std::pair<wchar_t *,NONS_Variable *> > *temp_stack;
+									std::set<NONS_VariableMember *> *temp_visited;
+									std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *temp_stack;
 									if (!visited)
-										temp_visited=new std::set<NONS_Variable *>;
+										temp_visited=new std::set<NONS_VariableMember *>;
 									else
 										temp_visited=visited;
 									temp_visited->insert(var);
 									if (!stack)
-										temp_stack=new std::vector<std::pair<wchar_t *,NONS_Variable *> >;
+										temp_stack=new std::vector<std::pair<wchar_t *,NONS_VariableMember *> >;
 									else
 										temp_stack=stack;
-									temp_stack->push_back(std::pair<wchar_t *,NONS_Variable *>(name,var));
-									reduceString(var->wcsValue,dst,temp_visited,temp_stack);
+									temp_stack->push_back(std::pair<wchar_t *,NONS_VariableMember *>(name,var));
+									reduceString(var->getWcs(),dst,temp_visited,temp_stack);
 									if (!visited)
 										delete temp_visited;
 									else
@@ -852,26 +861,26 @@ void NONS_ScriptInterpreter::reduceString(
 				if (*str=='?'){
 					wchar_t *name=getArray(str);
 					if (name){
-						NONS_Variable *var=this->store->retrieve(name);
+						NONS_VariableMember *var=this->store->retrieve(name);
 						long l=wcslen(name);
 						if (var){
-							if (var->type=='%'){
+							if (var->getType()=='%'){
 								delete[] name;
 								char repr[30];
-								sprintf(repr,"%d",var->intValue);
+								sprintf(repr,"%d",var->getInt());
 								wchar_t *copy=copyWString(repr);
 								dst.append(copy);
 								delete[] copy;
 								str+=l+1;
 								break;
-							}else if (var->type=='$'){
-								if (instr(var->wcsValue,name)>=0){
+							}else if (var->getType()=='$'){
+								if (instr(var->getWcs(),name)>=0){
 									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided. The variable [";
 									v_stderr.writeWideString(name);
 									v_stderr <<"] contained a reference to itself while trying to print it.";
-									dst.append(var->wcsValue);
+									dst.append(var->getWcs());
 								}else
-									reduceString(var->wcsValue,dst);
+									reduceString(var->getWcs(),dst);
 								delete[] name;
 								str+=l+1;
 								break;
@@ -1133,7 +1142,7 @@ ErrorCode NONS_ScriptInterpreter::getStrValue(wchar_t *str,char **value){
 		else
 			*value=copyString(str+1,endstr);
 	}else{
-		NONS_Variable *var=0;
+		NONS_VariableMember *var=0;
 		if (*str=='?'){
 			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
 		}else
@@ -1142,10 +1151,10 @@ ErrorCode NONS_ScriptInterpreter::getStrValue(wchar_t *str,char **value){
 			return NONS_UNDEFINED_VARIABLE;
 		if (*value)
 			delete[] *value;
-		if (!var->wcsValue)
+		if (!var->getWcs())
 			*value=copyString("");
 		else
-			*value=copyString(var->wcsValue);
+			*value=var->getStrCopy();
 	}
 	return NONS_NO_ERROR;
 }
@@ -1165,7 +1174,7 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 		else
 			*value=copyWString(str+1,endstr);
 	}else{
-		NONS_Variable *var=0;
+		NONS_VariableMember *var=0;
 		if (*str=='?'){
 			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
 		}else
@@ -1174,10 +1183,10 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 			return NONS_UNDEFINED_VARIABLE;
 		if (*value)
 			delete[] *value;
-		if (!var->wcsValue)
+		if (!var->getWcs())
 			*value=copyWString("");
 		else
-			*value=copyWString(var->wcsValue);
+			*value=var->getWcsCopy();
 	}
 	return NONS_NO_ERROR;
 }
@@ -1185,7 +1194,7 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std::wstring &string){
 	string.clear();
 	for (ulong a=0;a<line.parameters.size();a++){
-		NONS_Variable *var=this->store->retrieve(line.parameters[a]);
+		NONS_VariableMember *var=this->store->retrieve(line.parameters[a]);
 		if (!var){
 			wchar_t *str=line.parameters[a];
 			for (str+=(*str=='"')?1:0;*str && *str!='"';str++){
@@ -1224,15 +1233,15 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 				}else
 					string.push_back(*str);
 			}
-		}else if (var->type=='%'){
+		}else if (var->getType()=='%'){
 			char temp[100];
-			sprintf(temp,"%d",var->intValue);
+			sprintf(temp,"%d",var->getInt());
 			wchar_t *representation=copyWString(temp);
 			string.append(representation);
 			delete[] representation;
-		}else if (var->type=='$'){
-			string.append(var->wcsValue);
-		}else if (var->type=='?')
+		}else if (var->getType()=='$'){
+			string.append(var->getWcs());
+		}else if (var->getType()=='?')
 			continue;
 convertParametersToString_000:;
 	}

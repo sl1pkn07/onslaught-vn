@@ -27,61 +27,46 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_STDOUT_CPP
-#define NONS_STDOUT_CPP
+#ifndef NONS_VARIABLEMEMBER_H
+#define NONS_VARIABLEMEMBER_H
 
-#include "StdOut.h"
-#include "../UTF.h"
-#include <ctime>
+#include "../Common.h"
+#include <climits>
 
-NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
-	this->file=0;
-}
-
-void NONS_RedirectedOutput::writeWideString(const wchar_t *str){
-	char *temp=WChar_to_UTF8(str);
-	*this <<temp;
-	delete[] temp;
-}
-
-NONS_RedirectedOutput::~NONS_RedirectedOutput(){
-	if (this->file)
-		this->file->close();
-}
-
-std::ostream &NONS_RedirectedOutput::getstream(){
-	if (CLOptions.override_stdout)
-		return *(this->file);
-	else
-		return this->cout;
-}
-
-void NONS_RedirectedOutput::redirect(){
-	if (!!this->file)
-		delete[] this->file;
-	if (!CLOptions.override_stdout){
-		this->file=0;
-		return;
-	}
-	if (this->cout==std::cout)
-		this->file=new std::ofstream("stdout.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	else if (this->cout==std::cerr)
-		this->file=new std::ofstream("stderr.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	else
-		this->file=new std::ofstream("stdlog.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	if (!this->file->is_open())
-		delete this->file;
-	else if (!CLOptions.reset_redirection_files){
-		char str[25];
-		time_t secs=time(0);
-		tm *t=localtime(&secs);
-		sprintf(str,"%04d-%02d-%02d %02d:%02d:%02d",
-			t->tm_year+1900,t->tm_mon+1,t->tm_mday,
-			t->tm_hour,t->tm_min,t->tm_sec);
-		*(this->file) <<"\n\n"
-			"--------------------------------------------------------------------------------\n"
-			"Session "<<str<<"\n"
-			"--------------------------------------------------------------------------------"<<std::endl;
-	}
-}
+class NONS_VariableMember{
+	long intValue;
+	wchar_t *wcsValue;
+	bool constant;
+	//'%' for integer, '$' for string, '?' for array.
+	char type;
+	long _long_upper_limit;
+	long _long_lower_limit;
+public:
+	NONS_VariableMember **dimension;
+	ulong dimensionSize;
+	NONS_VariableMember(char type);
+	NONS_VariableMember(ulong *dimensions,ulong size);
+	NONS_VariableMember(const NONS_VariableMember &b);
+	~NONS_VariableMember();
+	void makeConstant();
+	bool isConstant();
+	//'%' for integer, '$' for string.
+	char getType();
+	long getInt();
+	const wchar_t *getWcs();
+	wchar_t *getWcsCopy();
+	char *getStrCopy();
+	void set(long a);
+	void set(const wchar_t *a,bool takeOwnership);
+	void inc();
+	void dec();
+	void add(long a);
+	void sub(long a);
+	void mul(long a);
+	void div(long a);
+	void mod(long a);
+	void setlimits(long lower,long upper);
+private:
+	void fixint();
+};
 #endif

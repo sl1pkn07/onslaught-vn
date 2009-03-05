@@ -93,6 +93,10 @@ long getUTF8size(const wchar_t *string);
 	char *tempString=readString((char*)(from),&(offset));\
 	to =SJIS_to_WChar(tempString);\
 	delete[] tempString;\
+	if (!*to){\
+		delete[] to;\
+		to=0;\
+	}\
 }
 #define _READ_BINARY_UTF8_STRING(to,from,offset)\
 {\

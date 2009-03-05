@@ -57,7 +57,7 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->cacheSize=0;
 	this->scriptPath=0;
 	this->scriptEncryption=NO_ENCRYPTION;
-	this->override_stdout=0;
+	this->override_stdout=1;
 	this->reset_redirection_files=1;
 	this->debugMode=0;
 	this->noconsole=0;
