@@ -40,6 +40,7 @@ struct NONS_SoundEffect{
 	//void freeCacheElement(int chan);
 	int channel;
 	bool playingHasStarted;
+	bool isplaying;
 	long loops;
 	NONS_SoundEffect(int chan=0);
 	~NONS_SoundEffect();

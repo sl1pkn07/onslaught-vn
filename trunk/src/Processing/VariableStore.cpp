@@ -173,35 +173,6 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 	if (CLOptions.verbosity>=2)
 		v_stdlog <<"Expression: \""<<exp2<<"\""<<std::endl;
 	delete[] exp2;
-	if (CLOptions.verbosity>=2){
-		for (ulong a=0;a<operations.size();a++){
-			v_stdlog <<a<<": "<<(operations[a]->function?operations[a]->function:"NOP")<<"(";
-			switch (operations[a]->operandA->type){
-				case 0:
-					v_stdlog <<operations[a]->operandA->constant;
-					break;
-				case 1:
-					v_stdlog <<operations[a]->operandA->symbol;
-					break;
-				case 2:
-					v_stdlog <<"&"<<operations[a]->operandA->position;
-			}
-			if (operations[a]->operandB){
-				v_stdlog <<",";
-				switch (operations[a]->operandB->type){
-					case 0:
-						v_stdlog <<operations[a]->operandB->constant;
-						break;
-					case 1:
-						v_stdlog <<operations[a]->operandB->symbol;
-						break;
-					case 2:
-						v_stdlog <<"&"<<operations[a]->operandB->position;
-				}
-			}
-			v_stdlog <<")"<<std::endl;
-		}
-	}
 	long *results=new long[operations.size()];
 	static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
 	for (ulong a=0;a<operations.size();a++){
@@ -226,8 +197,8 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 							delete[] results;)
 						delete[] temp;
 					}
-					if (var->getType()!='%')
-						return NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION;
+					/*if (var->getType()!='%')
+						return NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION;*/
 					opA=var->getInt();
 				}
 				break;
@@ -367,8 +338,36 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 	}
 	if (result){
 		*result=results[operations.size()-1];
-		if (CLOptions.verbosity>=2)
+		if (CLOptions.verbosity>=2){
+			for (ulong a=0;a<operations.size();a++){
+				v_stdlog <<a<<": "<<(operations[a]->function?operations[a]->function:"NOP")<<"(";
+				switch (operations[a]->operandA->type){
+				case 0:
+					v_stdlog <<operations[a]->operandA->constant;
+					break;
+				case 1:
+					v_stdlog <<operations[a]->operandA->symbol;
+					break;
+				case 2:
+					v_stdlog <<"&"<<operations[a]->operandA->position;
+				}
+				if (operations[a]->operandB){
+					v_stdlog <<",";
+					switch (operations[a]->operandB->type){
+					case 0:
+						v_stdlog <<operations[a]->operandB->constant;
+						break;
+					case 1:
+						v_stdlog <<operations[a]->operandB->symbol;
+						break;
+					case 2:
+						v_stdlog <<"&"<<operations[a]->operandB->position;
+					}
+				}
+				v_stdlog <<")"<<std::endl;
+			}
 			v_stdlog <<"Result: "<<results[operations.size()-1]<<std::endl;
+		}
 	}
 	delete[] results;
 	for (ulong a=0;a<operations.size();a++)

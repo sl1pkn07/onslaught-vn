@@ -58,7 +58,7 @@ Note: For the classic method, only the red component is used. Not only this is
 useful for creating human-understandable images, but it also greatly
 simplifies the code.
 */
-SDL_Surface *NONS_Image::LoadLayerImage(wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method=CLASSIC_METHOD){
+SDL_Surface *NONS_Image::LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method=CLASSIC_METHOD){
 	if (!name || !buffer || !bufferSize || !screen || this->image && this->refCount)
 		return 0;
 	if (this->image)
@@ -240,7 +240,7 @@ SDL_Surface *NONS_Image::LoadCursorImage(uchar *buffer,ulong bufferSize,int meth
 	return this->image;
 }
 
-SDL_Surface *NONS_Image::LoadSpriteImage(wchar_t *string,wchar_t *name,uchar *buffer,ulong bufferSize,int method){
+SDL_Surface *NONS_Image::LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method){
 	if (!buffer || !bufferSize)
 		return 0;
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);

@@ -70,19 +70,12 @@ NONS_VariableMember::NONS_VariableMember(ulong *dimensions,ulong size){
 }
 
 NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
-	if (!!this->wcsValue)
-		delete[] this->wcsValue;
 	this->constant=b.constant;
 	this->intValue=b.intValue;
 	this->_long_upper_limit=b._long_upper_limit;
 	this->_long_lower_limit=b._long_lower_limit;
 	this->wcsValue=(b.type=='$')?copyWString(b.wcsValue):0;
 	this->type=b.type;
-	if (!!this->dimension){
-		for (ulong a=0;a<this->dimensionSize;a++)
-			delete this->dimension[a];
-		delete[] this->dimension;
-	}
 	this->dimensionSize=b.dimensionSize;
 	if (this->type!='?')
 		this->dimension=0;

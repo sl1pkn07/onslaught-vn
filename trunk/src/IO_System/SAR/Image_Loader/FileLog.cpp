@@ -51,8 +51,7 @@ NONS_FileLog::NONS_FileLog(){
 	char *buffer=(char *)readfile(filename,&l);
 	if (!buffer){
 		delete[] filename;
-		filename=LOG_FILENAME_OLD;
-		buffer=(char *)readfile(filename,&l);
+		buffer=(char *)readfile(LOG_FILENAME_OLD,&l);
 	}else
 		delete[] filename;
 	if (!buffer)
@@ -111,13 +110,13 @@ NONS_FileLog::~NONS_FileLog(){
 		delete[] *i;
 }
 
-bool NONS_FileLog::addString(wchar_t *string,bool takeOwnership){
-	if (this->log.find(string)!=this->log.end())
+bool NONS_FileLog::addString(const wchar_t *string,bool takeOwnership){
+	if (this->log.find((wchar_t *)string)!=this->log.end())
 		return 0;
 	//SDL_LockMutex(exitMutex);
 	wchar_t *a;
 	if (takeOwnership)
-		a=string;
+		a=(wchar_t *)string;
 	else
 		a=copyWString(string);
 	tolower(a);

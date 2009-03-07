@@ -437,10 +437,14 @@ bool NONS_ScriptInterpreter::load(int file){
 			delete[] name;
 			scr->centerChar->clip_rect.x=0;
 		}
+		for (ulong a=0;a<scr->layerStack.size();a++){
+			if (!scr->layerStack[a])
+				continue;
+			scr->layerStack[a]->unload();
+		}
 		for (ulong a=0;a<save->sprites.size();a++){
 			NONS_SaveFile::Sprite *spr=save->sprites[a];
 			if (!spr){
-				scr->layerStack[a]->unload();
 				continue;
 			}
 			wchar_t *str=spr->string;
@@ -736,7 +740,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		SDL_LockMutex(au->soundcache->mutex);
 		for (std::list<NONS_SoundEffect *>::iterator i=au->soundcache->channelWatch.begin();i!=au->soundcache->channelWatch.end();i++){
 			NONS_SoundEffect *ch=*i;
-			if (!ch || !ch->sound)
+			if (!ch || !ch->sound || !ch->isplaying)
 				continue;
 			NONS_SaveFile::Channel *cha=new NONS_SaveFile::Channel();
 			cha->name=copyWString(ch->sound->name);

@@ -55,7 +55,7 @@ ulong NONS_ImageLoader::getCacheSize(){
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchImage(wchar_t *name,SDL_Rect *screen,int method){
+SDL_Surface *NONS_ImageLoader::fetchImage(const wchar_t *name,SDL_Rect *screen,int method){
 	if (!name || !screen)
 		return 0;
 	wchar_t *tempname=copyWString(name);
@@ -101,7 +101,7 @@ SDL_Surface *NONS_ImageLoader::fetchImage(wchar_t *name,SDL_Rect *screen,int met
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchCursor(wchar_t *name,int method){
+SDL_Surface *NONS_ImageLoader::fetchCursor(const wchar_t *name,int method){
 	if (!name)
 		return 0;
 	long l;
@@ -113,7 +113,7 @@ SDL_Surface *NONS_ImageLoader::fetchCursor(wchar_t *name,int method){
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchSprite(wchar_t *string,wchar_t *name,int method){
+SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,const wchar_t *name,int method){
 	if (!name)
 		return 0;
 	wchar_t *tempname=copyWString(name);

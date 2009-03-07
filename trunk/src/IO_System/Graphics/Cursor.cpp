@@ -47,7 +47,7 @@ NONS_Cursor::NONS_Cursor(){
 	this->loop=0;
 }
 
-NONS_Cursor::NONS_Cursor(wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method){
+NONS_Cursor::NONS_Cursor(const wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method){
 	this->data=ImageLoader->fetchCursor(name,method);
 	if (this->data)
 		this->data->clip_rect.w/=length;
@@ -58,7 +58,7 @@ NONS_Cursor::NONS_Cursor(wchar_t *name,long length,long speed,long x,long y,long
 	this->loop=(loop<0 || loop>2)?0:loop;
 }
 
-NONS_Cursor::NONS_Cursor(wchar_t *str,long x,long y,long absolute){
+NONS_Cursor::NONS_Cursor(const wchar_t *str,long x,long y,long absolute){
 	METHODS method=ALPHA_METHOD;
 	//Unused:
 	//ErrorCode error=NONS_NO_ERROR;
@@ -210,7 +210,7 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 							break;
 						switch (event.key.keysym.sym){
 							case SDLK_ESCAPE:
-								if (menu && menu->rightClickMode==1 && menu->buttons){
+								/*if (menu && menu->rightClickMode==1 && menu->buttons){
 									if (anim){
 										LOCKSCREEN;
 										manualBlit(copyDst,0,screen->screen->virtualScreen,&dstRect);
@@ -231,6 +231,10 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 									UNLOCKSCREEN;
 									//SDL_UpdateRect(screen->screen,0,0,0,0);
 									screen->screen->updateWholeScreen();
+								}*/
+								if (!this->callMenu(screen,menu,&srcRect,&dstRect,copyDst,queue)){
+									ret=-1;
+									goto animate_000;
 								}
 								break;
 							case SDLK_UP:
@@ -260,7 +264,13 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 						}
 						break;
 					case SDL_MOUSEBUTTONDOWN:
-						done=1;
+						if (event.button.button==SDL_BUTTON_RIGHT){
+							if (!this->callMenu(screen,menu,&srcRect,&dstRect,copyDst,queue)){
+								ret=-1;
+								goto animate_000;
+							}
+						}else
+							done=1;
 						break;
 					default:
 						break;
@@ -286,5 +296,30 @@ animate_000:
 	}
 	InputObserver.detach(queue);
 	return ret;
+}
+
+bool NONS_Cursor::callMenu(NONS_ScreenSpace *screen,NONS_Menu *menu,SDL_Rect *srcRect,SDL_Rect *dstRect,SDL_Surface *copyDst,NONS_EventQueue *queue){
+	bool anim=!!this->data;
+	if (menu && menu->rightClickMode==1 && menu->buttons){
+		if (anim){
+			LOCKSCREEN;
+			manualBlit(copyDst,0,screen->screen->virtualScreen,dstRect);
+			UNLOCKSCREEN;
+		}
+		if (menu->callMenu()==-1)
+			return 0;
+		while (!queue->data.empty())
+			queue->pop();
+		//SDL_BlitSurface(copyDst,0,screen->screen,0);
+		screen->BlendAll(0);
+		LOCKSCREEN;
+		manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+		if (anim)
+			manualBlit(this->data,srcRect,screen->screen->virtualScreen,dstRect);
+		UNLOCKSCREEN;
+		//SDL_UpdateRect(screen->screen,0,0,0,0);
+		screen->screen->updateWholeScreen();
+	}
+	return 1;
 }
 #endif

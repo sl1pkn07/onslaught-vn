@@ -39,7 +39,7 @@ struct NONS_FileLog{
 	bool commit;
 	NONS_FileLog();
 	~NONS_FileLog();
-	bool addString(wchar_t *string,bool takeOwnership=0);
+	bool addString(const wchar_t *string,bool takeOwnership=0);
 	bool addString(char *string);
 	bool check(wchar_t *string);
 	bool check(char *string);

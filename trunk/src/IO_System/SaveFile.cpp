@@ -540,7 +540,7 @@ void NONS_SaveFile::load(char *filename){
 					var->intValue->set(readSignedDWord((char *)buffer,&offset));
 					wchar_t *temp=0;
 					_READ_BINARY_UTF8_STRING(temp,buffer,offset)
-					var->intValue->set(temp,1);
+					var->wcsValue->set(temp,1);
 					this->variables[a++]=var;
 				}
 			}
@@ -651,7 +651,7 @@ void NONS_SaveFile::load(char *filename){
 			this->musicTrack=(char)readByte(buffer,&offset);
 			if (this->musicTrack<0)
 				_READ_BINARY_UTF8_STRING(this->music,buffer,offset)
-			char vol=readByte(buffer,&offset);
+			uchar vol=readByte(buffer,&offset);
 			if (vol>127)
 				vol=127;
 			this->musicVolume=(vol&0x7F);
