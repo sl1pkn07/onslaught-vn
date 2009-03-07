@@ -86,7 +86,7 @@ void NONS_Audio::freeCacheElement(int chan){
 }
 
 ErrorCode NONS_Audio::playMusic(const char *filename,long times){
-	static char *formats[]={"ogg","mp3","it","xm","s3m","mod",0};
+	static const char *formats[]={"ogg","mp3","it","xm","s3m","mod",0};
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	if (!filename){
@@ -287,8 +287,11 @@ int NONS_Audio::musicVolume(int vol){
 	if (this->uninitialized)
 		return 0;
 	SDL_LockMutex(this->mutex);
-	if (!music)
-		return this->mvol;
+	if (!music){
+		int ret=this->mvol;
+		SDL_UnlockMutex(this->mutex);
+		return ret;
+	}
 	if (this->notmute)
 		this->mvol=this->music->volume(vol);
 	else if (vol>=0)

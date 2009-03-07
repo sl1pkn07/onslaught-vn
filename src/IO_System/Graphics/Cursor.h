@@ -44,10 +44,12 @@ struct NONS_Cursor{
 	long speed;
 	short loop;
 	NONS_Cursor();
-	NONS_Cursor(wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method);
-	NONS_Cursor(wchar_t *string,long x,long y,long absolute);
+	NONS_Cursor(const wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method);
+	NONS_Cursor(const wchar_t *string,long x,long y,long absolute);
 	~NONS_Cursor();
 	int animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expiration);
+private:
+	bool callMenu(NONS_ScreenSpace *screen,NONS_Menu *menu,SDL_Rect *srcRect,SDL_Rect *dstRect,SDL_Surface *copyDst,NONS_EventQueue *queue);
 };
 
 struct NONS_CursorPair{

@@ -49,8 +49,8 @@ struct NONS_Image{
 	ulong refCount;
 	NONS_Image();
 	~NONS_Image();
-	SDL_Surface *LoadLayerImage(wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method);
-	SDL_Surface *LoadSpriteImage(wchar_t *string,wchar_t *name,uchar *buffer,ulong bufferSize,int method);
+	SDL_Surface *LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method);
+	SDL_Surface *LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method);
 	SDL_Surface *LoadCursorImage(uchar *buffer,ulong bufferSize,int method);
 };
 #endif

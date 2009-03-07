@@ -37,6 +37,7 @@ NONS_SoundEffect::NONS_SoundEffect(int chan){
 	this->channel=chan;
 	this->sound=0;
 	this->playingHasStarted=0;
+	this->isplaying=0;
 	this->loops=0;
 }
 
@@ -54,12 +55,14 @@ void NONS_SoundEffect::play(bool synchronous,long times){
 	this->stop();
 	Mix_PlayChannel(this->channel,this->sound->chunk,times);
 	this->playingHasStarted=1;
+	this->isplaying=1;
 	this->loops=times;
 }
 
 void NONS_SoundEffect::stop(){
 	if (Mix_Playing(this->channel))
 		Mix_HaltChannel(this->channel);
+	this->isplaying=0;
 }
 
 bool NONS_SoundEffect::loaded(){

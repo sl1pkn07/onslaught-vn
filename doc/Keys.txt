@@ -3,6 +3,7 @@ The following controls are in effect:
 Mouse: General interaction.
 Clicking while a text line is being drawn forces it to be completed immediately.
 Clicking while in "click wait state" -- whenever there's a @ or \ in the script -- resumes execution.
+Right clicking while in click wait state calls the menu.
 
 Keyboard:
 F5, F6, F7: Sets the text speed to slow, medium (default), and fast. "Speed" means "a wait of X milliseconds between the rendering of each character". Unless these speeds are manually set with the defaultspeed command, slow waits twice as much as medium, which waits twice as much as fast. The text speed setting is engine-wide. I.e. Changing it in one game will be reflected in all others
