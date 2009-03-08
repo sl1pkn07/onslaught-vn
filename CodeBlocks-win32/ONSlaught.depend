@@ -1801,3 +1801,538 @@
 	<tchar.h>
 	<windows.h>
 
+1235029976 source:f:\onslaught\sourceforge-svn\trunk\src\commandlineoptions.cpp
+	"CommandLineOptions.h"
+	"Globals.h"
+
+1233288155 f:\onslaught\sourceforge-svn\trunk\src\commandlineoptions.h
+	"enums.h"
+	"CommonTypes.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\enums.h
+
+1233181335 f:\onslaught\sourceforge-svn\trunk\src\commontypes.h
+	<SDL/SDL_stdinc.h>
+
+1233328170 f:\onslaught\sourceforge-svn\trunk\src\globals.h
+	"CommandLineOptions.h"
+	"IO_System/InputHandler.h"
+	"IO_System/StdOut.h"
+	"IO_System/SAR/Image_Loader/ImageLoader.h"
+	<map>
+	<vector>
+	<cassert>
+	"Parallelization.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\inputhandler.h
+	<SDL/SDL.h>
+	<queue>
+	"../Common.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\common.h
+	<iostream>
+	"CommonTypes.h"
+	<cwchar>
+
+1235358968 f:\onslaught\sourceforge-svn\trunk\src\io_system\stdout.h
+	"../Common.h"
+	"../CommandLineOptions.h"
+	<fstream>
+	<SDL/SDL.h>
+
+1236452634 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\imageloader.h
+	"../../../Common.h"
+	"../GeneralArchive.h"
+	"FileLog.h"
+	"Image.h"
+	<vector>
+
+1233540372 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\generalarchive.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"Archive.h"
+
+1235400102 f:\onslaught\sourceforge-svn\trunk\src\errorcodes.h
+	"CommonTypes.h"
+
+1233540368 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\archive.h
+	"../../Common.h"
+	"TreeNode.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\treenode.h
+	"../../Common.h"
+	"ArchivedFile.h"
+	<vector>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\archivedfile.h
+	"../../Common.h"
+
+1236452810 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\filelog.h
+	"../../../Common.h"
+	"../../../strCmpT.h"
+	<set>
+
+1233181335 f:\onslaught\sourceforge-svn\trunk\src\strcmpt.h
+
+1236452897 f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\image.h
+	"../../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+
+1233181335 f:\onslaught\sourceforge-svn\trunk\src\parallelization.h
+	"CommonTypes.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\encryption.cpp
+	"Encryption.h"
+	"Globals.h"
+	"IO_System/FileIO.h"
+
+1233181335 f:\onslaught\sourceforge-svn\trunk\src\encryption.h
+	"Common.h"
+	"ErrorCodes.h"
+	<iostream>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\fileio.h
+	"../Common.h"
+	<fstream>
+
+1235361539 source:f:\onslaught\sourceforge-svn\trunk\src\everything.cpp
+	"Everything.h"
+	"Globals.h"
+
+1233181335 f:\onslaught\sourceforge-svn\trunk\src\everything.h
+	"Common.h"
+	"ErrorCodes.h"
+	"IO_System/Graphics/ScreenSpace.h"
+	"IO_System/Audio/Audio.h"
+	"IO_System/Graphics/ButtonLayer.h"
+	"IO_System/SAR/GeneralArchive.h"
+	"IO_System/Script/Script.h"
+
+1233363830 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\screenspace.h
+	<vector>
+	"StandardOutput.h"
+	"../../Common.h"
+	"GFX.h"
+	"../../ErrorCodes.h"
+	"Lookback.h"
+	"VirtualScreen.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\standardoutput.h
+	"../InputHandler.h"
+	"Layer.h"
+	"../../Common.h"
+	"GFX.h"
+	"VirtualScreen.h"
+	<string>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\layer.h
+	<SDL/SDL_image.h>
+	"FontCache.h"
+	"../../Common.h"
+	"../SAR/Image_Loader/ImageLoader.h"
+	"../../enums.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\fontcache.h
+	<vector>
+	"Glyph.h"
+	"Font.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\glyph.h
+	<SDL/SDL.h>
+	"SDL_ttf.h"
+	"Font.h"
+	"../../Common.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\sdl_ttf.h
+	<SDL/SDL.h>
+	<SDL/begin_code.h>
+	<SDL/close_code.h>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\font.h
+	"SDL_ttf.h"
+	"../../Common.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\gfx.h
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	"VirtualScreen.h"
+	<SDL/SDL.h>
+	<set>
+	<map>
+
+1233541859 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\virtualscreen.h
+	"../../Common.h"
+	<SDL/SDL.h>
+
+1233361282 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\lookback.h
+	"../../Common.h"
+	"StandardOutput.h"
+	<SDL/SDL.h>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\audio.h
+	"SoundEffect.h"
+	"Music.h"
+	"SoundCache.h"
+	"../../Common.h"
+	"../../ErrorCodes.h"
+	<map>
+	<string>
+
+1236312281 f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\soundeffect.h
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	"CachedSound.h"
+	"../../Common.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\cachedsound.h
+	"../../Common.h"
+	<SDL/SDL.h>
+	<SDL/SDL_mixer.h>
+	<ctime>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\music.h
+	<SDL/SDL_mixer.h>
+	"../../Common.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\soundcache.h
+	"../../Common.h"
+	"../../strCmpT.h"
+	"SoundEffect.h"
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_thread.h>
+	<map>
+	<list>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\buttonlayer.h
+	"../../Common.h"
+	<vector>
+	"Button.h"
+	"ScreenSpace.h"
+	"../Audio/Audio.h"
+	"../SAR/GeneralArchive.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\button.h
+	"../../Common.h"
+	"ScreenSpace.h"
+	<vector>
+
+1233328170 f:\onslaught\sourceforge-svn\trunk\src\io_system\script\script.h
+	"../../Common.h"
+	"ScriptBlock.h"
+	"../../Encryption.h"
+	"../../ErrorCodes.h"
+	"../../enums.h"
+	"../SAR/GeneralArchive.h"
+	<vector>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\script\scriptblock.h
+	"../../Common.h"
+
+1235355230 source:f:\onslaught\sourceforge-svn\trunk\src\functions.cpp
+	"Functions.h"
+	<bzlib.h>
+	"Globals.h"
+	"UTF.h"
+	<cmath>
+
+1235356927 f:\onslaught\sourceforge-svn\trunk\src\functions.h
+	"Common.h"
+	"ErrorCodes.h"
+	<SDL/SDL.h>
+	<vector>
+	<string>
+	<ctime>
+
+1235354940 f:\onslaught\sourceforge-svn\trunk\src\utf.h
+	"Common.h"
+	"Functions.h"
+	<fstream>
+	<cstring>
+
+1235400102 source:f:\onslaught\sourceforge-svn\trunk\src\globals.cpp
+	"Globals.h"
+	<SDL/SDL.h>
+
+1236452994 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\audio.cpp
+	"Audio.h"
+	"../FileIO.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\cachedsound.cpp
+	"CachedSound.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\music.cpp
+	"Music.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\soundcache.cpp
+	"SoundCache.h"
+	"../../Functions.h"
+	"../InputHandler.h"
+	"../../Globals.h"
+
+1236312281 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\audio\soundeffect.cpp
+	"SoundEffect.h"
+	"../../Functions.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\configfile.cpp
+	"ConfigFile.h"
+	"../Functions.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\configfile.h
+	<map>
+	<cstring>
+	"../strCmpT.h"
+	"../UTF.h"
+	"../enums.h"
+	"FileIO.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\fileio.cpp
+	"FileIO.h"
+	"../Globals.h"
+	<windows.h>
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\button.cpp
+	"Button.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	<climits>
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\buttonlayer.cpp
+	"ButtonLayer.h"
+	"../../Globals.h"
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\menu.h
+	"../../Common.h"
+	"ButtonLayer.h"
+	"Layer.h"
+	<SDL/SDL.h>
+	<vector>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\iofunctions.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"InputHandler.h"
+	"Graphics/VirtualScreen.h"
+
+1236452496 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\cursor.cpp
+	"Cursor.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	"ScreenSpace.h"
+	<climits>
+	<vector>
+
+1236452469 f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\cursor.h
+	"../../Common.h"
+	"../../enums.h"
+	"StandardOutput.h"
+	"Menu.h"
+	<SDL/SDL.h>
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\font.cpp
+	"Font.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\fontcache.cpp
+	"FontCache.h"
+	"../../Common.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\gfx.cpp
+	"GFX.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	<cmath>
+
+1233456336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\glyph.cpp
+	"Glyph.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233348857 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\layer.cpp
+	"Layer.h"
+	"../../Globals.h"
+
+1233456738 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\lookback.cpp
+	"Lookback.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"Button.h"
+	"../IOFunctions.h"
+
+1233329932 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\menu.cpp
+	"Menu.h"
+	"../../Functions.h"
+	"../IOFunctions.h"
+	"../../Globals.h"
+	"../../Processing/ScriptInterpreter.h"
+	"../SaveFile.h"
+
+1235400838 f:\onslaught\sourceforge-svn\trunk\src\processing\scriptinterpreter.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"ParsedLine.h"
+	"VariableStore.h"
+	"../Everything.h"
+	"../IO_System/Script/Script.h"
+	"../IO_System/Graphics/GFX.h"
+	"../IO_System/INIfile.h"
+	"../IO_System/SAR/Image_Loader/ImageLoader.h"
+	"../IO_System/Graphics/Cursor.h"
+	"../IO_System/Graphics/Menu.h"
+	"../IO_System/SaveFile.h"
+	"../IO_System/ConfigFile.h"
+	"../enums.h"
+	<set>
+	<stack>
+	<cmath>
+	<cstdlib>
+	<ctime>
+	"../version.h"
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\processing\parsedline.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1235357545 f:\onslaught\sourceforge-svn\trunk\src\processing\variablestore.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../strCmpT.h"
+	"Variable.h"
+	"ExpressionParser.h"
+	<vector>
+	<map>
+	<set>
+
+1235356664 f:\onslaught\sourceforge-svn\trunk\src\processing\variable.h
+	"../Common.h"
+	"VariableMember.h"
+
+1235430653 f:\onslaught\sourceforge-svn\trunk\src\processing\variablemember.h
+	"../Common.h"
+	<climits>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\processing\expressionparser.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	<vector>
+
+1233181336 f:\onslaught\sourceforge-svn\trunk\src\io_system\inifile.h
+	"../Common.h"
+	"../UTF.h"
+	"../strCmpT.h"
+	"../ErrorCodes.h"
+	"../enums.h"
+	<map>
+
+1236293978 f:\onslaught\sourceforge-svn\trunk\src\io_system\savefile.h
+	"../Common.h"
+	"../ErrorCodes.h"
+	"../Processing/Variable.h"
+	<vector>
+	<ctime>
+	<SDL/SDL.h>
+	"../UTF.h"
+
+1236452317 f:\onslaught\sourceforge-svn\trunk\src\version.h
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\sdl_ttf.c
+	<math.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<alloca.h>
+	<ft2build.h>
+	<SDL/SDL.h>
+	<SDL/SDL_endian.h>
+	"SDL_ttf.h"
+	<freetype/fterrors.h>
+
+1233457832 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\screenspace.cpp
+	"ScreenSpace.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233456738 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\standardoutput.cpp
+	"StandardOutput.h"
+	"../../Functions.h"
+	"../../UTF.h"
+	"../../Globals.h"
+	<cstdlib>
+
+1233541860 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\graphics\virtualscreen.cpp
+	"VirtualScreen.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\inifile.cpp
+	"INIfile.h"
+	"../Functions.h"
+	"../Globals.h"
+	"FileIO.h"
+
+1235271768 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\iofunctions.cpp
+	"IOFunctions.h"
+	"../Globals.h"
+	"../Functions.h"
+	<cstdlib>
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\inputhandler.cpp
+	"InputHandler.h"
+	"../Globals.h"
+
+1233540370 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\archive.cpp
+	"Archive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+	<bzlib.h>
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\archivedfile.cpp
+	"ArchivedFile.h"
+	"../../Globals.h"
+
+1235361539 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\generalarchive.cpp
+	"GeneralArchive.h"
+	"../../Functions.h"
+	"../../Globals.h"
+	"../FileIO.h"
+
+1236453124 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\filelog.cpp
+	"FileLog.h"
+	"../../../Encryption.h"
+	"../../FileIO.h"
+	"../../SaveFile.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+	"../../../UTF.h"
+	<cstring>
+
+1236452897 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\image.cpp
+	"Image.h"
+	"../../../Globals.h"
+	"../../../Functions.h"
+
+1236452810 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\image_loader\imageloader.cpp
+	"ImageLoader.h"
+	"../../../Functions.h"
+	"../../../Globals.h"
+
+1233181336 source:f:\onslaught\sourceforge-svn\trunk\src\io_system\sar\treenode.cpp
+	"TreeNode.h"
+	"../../Functions.h"
+	"../../Globals.h"
+
