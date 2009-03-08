@@ -84,7 +84,7 @@ bool output(NONS_Archive *archive,std::vector<NONS_TreeNode *> *stack,bool write
 				if (write)
 					std::cout <<"Writing ";
 				std::cout <<"\""<<temp<<"\""<<std::endl
-					<<"\tOffset "<<node->data.offset<<"\n\tcomp "<<node->data.length<<"\n\tdecomp "<<node->data.original_length<<std::endl;
+					/*<<"\tOffset "<<node->data.offset<<"\n\tcomp "<<node->data.length<<"\n\tdecomp "<<node->data.original_length<<std::endl*/;
 				delete[] temp;
 			}
 			if (write){
@@ -186,7 +186,7 @@ void usage(){
 		"        Set to \"arc.sar\" by default.\n"
 		"    -f {sar|nsa}\n"
 		"        Sets the format of the created archive. If not used, the format will be\n"
-		"        guessed from the file name passed to -f.\n"
+		"        guessed from the file name passed to -o.\n"
 		"    -nbz <wildcard pattern>\n"
 		"    -lzss <wildcard pattern>\n"
 		"    -spb <wildcard pattern>\n"

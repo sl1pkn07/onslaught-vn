@@ -4,7 +4,7 @@
 	<File name="..\src\Functions.cpp" open="0" top="0" tabpos="1">
 		<Cursor position="15314" topLine="564" />
 	</File>
-	<File name="..\src\Globals.cpp" open="1" top="0" tabpos="5">
+	<File name="..\src\Globals.cpp" open="0" top="0" tabpos="5">
 		<Cursor position="4225" topLine="98" />
 	</File>
 	<File name="..\src\Globals.h" open="0" top="0" tabpos="0">
@@ -13,16 +13,16 @@
 	<File name="..\src\IO_System\Graphics\SDL_ttf.h" open="0" top="0" tabpos="0">
 		<Cursor position="2277" topLine="52" />
 	</File>
-	<File name="..\src\IO_System\SaveFile.cpp" open="1" top="0" tabpos="1">
+	<File name="..\src\IO_System\SaveFile.cpp" open="0" top="0" tabpos="1">
 		<Cursor position="25072" topLine="774" />
 	</File>
-	<File name="..\src\IO_System\StdOut.cpp" open="1" top="0" tabpos="4">
+	<File name="..\src\IO_System\StdOut.cpp" open="0" top="0" tabpos="4">
 		<Cursor position="2469" topLine="30" />
 	</File>
-	<File name="..\src\IO_System\StdOut.h" open="1" top="1" tabpos="3">
+	<File name="..\src\IO_System\StdOut.h" open="0" top="0" tabpos="3">
 		<Cursor position="2144" topLine="4" />
 	</File>
-	<File name="..\src\ONSlaught.cpp" open="1" top="0" tabpos="2">
+	<File name="..\src\ONSlaught.cpp" open="0" top="0" tabpos="2">
 		<Cursor position="19606" topLine="657" />
 	</File>
 	<File name="..\src\Processing\ScriptInterpreter.h" open="0" top="0" tabpos="0">

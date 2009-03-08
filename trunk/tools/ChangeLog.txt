@@ -1,3 +1,7 @@
+20090208
+    * Nearly no changes. Last release until I can crack this SPB compression
+      thing.
+
 20080126
     * First release separate from the main archive.
     * Added nsaio to replace the old ONScripter programs. Don't expect this to

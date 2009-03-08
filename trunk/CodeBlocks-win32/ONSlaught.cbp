@@ -149,6 +149,8 @@
 		<Unit filename="..\src\Processing\ScriptInterpreter_savegame.cpp" />
 		<Unit filename="..\src\Processing\Variable.cpp" />
 		<Unit filename="..\src\Processing\Variable.h" />
+		<Unit filename="..\src\Processing\VariableMember.cpp" />
+		<Unit filename="..\src\Processing\VariableMember.h" />
 		<Unit filename="..\src\Processing\VariableStore.cpp" />
 		<Unit filename="..\src\Processing\VariableStore.h" />
 		<Unit filename="..\src\SJIS.table.cpp" />
