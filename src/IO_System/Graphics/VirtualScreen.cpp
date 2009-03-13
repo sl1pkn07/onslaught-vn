@@ -1026,16 +1026,16 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 	Uint16 pitch1=dst->pitch;
 	uchar *pos0=pixels0;
 	uchar *pos1=pixels1;
-	integer32 sizeX=(src->clip_rect.w<<16)/dst->clip_rect.w,
+	Uint32 sizeX=(src->clip_rect.w<<16)/dst->clip_rect.w,
 		sizeY=(src->clip_rect.h<<16)/dst->clip_rect.h;
 	srcRect0.w+=srcRect0.x;
 	dstRect0.w+=dstRect0.x;
 	srcRect0.h+=srcRect0.y;
 	dstRect0.h+=dstRect0.y;
-	integer32 Y0=dstRect0.y*sizeY,Y1=Y0+sizeY,
+	Uint32 Y0=dstRect0.y*sizeY,Y1=Y0+sizeY,
 	//integer32 Y1=dstRect0.y*sizeY,Y0=Y1+sizeY,
 		X0,X1;
-	integer32 area=((sizeX>>8)*sizeY)>>8;
+	Uint32 area=((sizeX>>8)*sizeY)>>8;
 	uchar *pixel1=pos1+pitch1*dstRect0.y+advance1*dstRect0.x;
 	for (long y1=dstRect0.y;y1<dstRect0.h;y1++){
 		X0=dstRect0.x*sizeX;
@@ -1045,8 +1045,8 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 		for (long x1=dstRect0.x;x1<dstRect0.w;x1++){
 			uchar *pixel0=row+advance0*(X0>>16);
 			unsigned r=0,g=0,b=0;
-			for (integer32 y2=Y0;y2<Y1;){
-				integer32 ymultiplier;
+			for (Uint32 y2=Y0;y2<Y1;){
+				Uint32 ymultiplier;
 				uchar *pixel00=pixel0;
 				if (Y1-y2<0x10000)
 					ymultiplier=Y1-y2;
@@ -1054,15 +1054,15 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 					ymultiplier=FLOOR(Y0)+0x10000-Y0;
 				else
 					ymultiplier=0x10000;
-				for (integer32 x2=X0;x2<X1;){
-					integer32 xmultiplier;
+				for (Uint32 x2=X0;x2<X1;){
+					Uint32 xmultiplier;
 					if (X1-x2<0x10000)
 						xmultiplier=X1-x2;
 					else if (x2==X0)
 						xmultiplier=FLOOR(X0)+0x10000-X0;
 					else
 						xmultiplier=0x10000;
-					integer32 compound_mutiplier=((ymultiplier>>8)*xmultiplier)>>8;
+					Uint32 compound_mutiplier=((ymultiplier>>8)*xmultiplier)>>8;
 					r+=pixel0[Roffset0]*compound_mutiplier;
 					g+=pixel0[Goffset0]*compound_mutiplier;
 					b+=pixel0[Boffset0]*compound_mutiplier;

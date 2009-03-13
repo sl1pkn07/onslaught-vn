@@ -47,10 +47,8 @@ enum{
 };
 
 struct NONS_ParsedLine{
-	//It's not a very descriptive name (or rather, it's a misleading one) but
-	//this actually holds the command C string.
-	wchar_t *line;
-	wchar_t *param;
+	wchar_t *commandName;
+	wchar_t *CstringParameters;
 	std::vector<wchar_t *> parameters;
 	ulong type;
 	ErrorCode error;

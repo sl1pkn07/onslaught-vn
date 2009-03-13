@@ -32,7 +32,7 @@
 
 #include "CommonTypes.h"
 
-typedef integer32 ErrorCode;
+typedef Uint32 ErrorCode;
 
 #define NONS_FATAL_ERROR							0x40000000
 #define NONS_BREAK_WORTHY_ERROR						0x20000000
@@ -40,7 +40,7 @@ typedef integer32 ErrorCode;
 #define NONS_INTERNAL_ERROR							(0x08000000|NONS_FATAL_ERROR)
 #define NONS_SYNTAX_ERROR							0x04000000
 #define NONS_WARNING								0x02000000
-#define NONS_END									0x01000000
+#define NONS_END									(0x01000000|NONS_NO_ERROR_FLAG)
 #define NONS_UNDEFINED_ERROR						0x00010000
 
 #define NONS_NO_ERROR								(0|NONS_NO_ERROR_FLAG)
@@ -49,7 +49,7 @@ typedef integer32 ErrorCode;
 #define NONS_ARCHIVE_UNINIT							3
 #define NONS_NOT_IMPLEMENTED						4
 #define NONS_NOT_IN_DEFINE_MODE						5
-#define NONS_DUPLICATE_VARIABLE_DEFINITION			6
+#define NONS_DUPLICATE_CONSTANT_DEFINITION			6
 #define NONS_ALREADY_INITIALIZED					7
 #define NONS_NO_SUCH_BLOCK							8
 #define NONS_NO_ERROR_BUT_BREAK						(9|NONS_NO_ERROR_FLAG|NONS_BREAK_WORTHY_ERROR)
@@ -57,10 +57,10 @@ typedef integer32 ErrorCode;
 #define NONS_UNDEFINED_SYNTAX_ERROR					(11|NONS_SYNTAX_ERROR)
 #define NONS_DIVISION_BY_ZERO						12
 #define NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION	13
-#define NONS_UNDEFINED_VARIABLE						14
+#define NONS_UNDEFINED_CONSTANT						14
 #define NONS_UNRECOGNIZED_COMMAND					15
 #define NONS_UNMATCHING_OPERANDS					16
-#define NONS_INVALID_VARIABLE_NAME					17
+#define NONS_INVALID_ID_NAME						17
 #define NONS_INSUFFICIENT_PARAMETERS				18
 #define NONS_FILE_NOT_FOUND							19
 #define NONS_NO_MUSIC_LOADED						20
@@ -107,6 +107,9 @@ typedef integer32 ErrorCode;
 #define NONS_EXPECTED_STRING_VARIABLE				61
 #define NONS_EXPECTED_SCALAR						62
 #define NONS_EXPECTED_ARRAY							63
+#define NONS_VARIABLE_OUT_OF_RANGE					64
+#define NONS_UNDEFINED_ARRAY						65
+#define NONS_OUT_OF_BOUNDS							66
 
 extern const char *errorMessages[];
 #endif

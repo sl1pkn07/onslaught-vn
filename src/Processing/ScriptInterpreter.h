@@ -61,10 +61,11 @@
 #define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getStrValue(line.parameters[(src)],&(dst)),extra)
 #define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getWcsValue(line.parameters[(src)],&(dst)),extra)
 #define _GETVARIABLE(varName,src,extra){\
-	(varName)=this->store->retrieve(line.parameters[(src)]);\
+	ErrorCode error;\
+	(varName)=this->store->retrieve(line.parameters[(src)],&error);\
 	if (!(varName)){\
 		extra\
-		return NONS_UNDEFINED_VARIABLE;\
+		return error;\
 	}\
 	if ((varName)->isConstant()){\
 		extra\
@@ -297,8 +298,8 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_savescreenshot(NONS_ParsedLine &line);
 	ErrorCode command_savetime(NONS_ParsedLine &line);
 	ErrorCode command_savetime2(NONS_ParsedLine &line);
+	ErrorCode command_split(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);

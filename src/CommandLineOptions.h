@@ -52,6 +52,7 @@ struct NONS_CommandLineOptions{
 	uchar verbosity;
 	bool no_sound;
 	char *savedir;
+	bool stopOnFirstError;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions();
 };

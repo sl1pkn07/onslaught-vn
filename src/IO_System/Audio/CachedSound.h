@@ -39,7 +39,7 @@ struct NONS_CachedSound{
 	SDL_RWops *RWop;
 	Mix_Chunk *chunk;
 	long references;
-	integer32 lastused;
+	Uint32 lastused;
 	char *name;
 	NONS_CachedSound(char *databuffer,long size);
 	~NONS_CachedSound();

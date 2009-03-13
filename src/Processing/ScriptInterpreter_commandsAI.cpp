@@ -55,11 +55,12 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
 		return NONS_NOT_IN_DEFINE_MODE;
-	if (!this->store->retrieve(line.parameters[0])){
-		_CHECK_VARIABLE_NAME(line.parameters[0])
+	NONS_VariableMember *var=this->store->retrieve(line.parameters[0],0);
+	if (!var){
+		_CHECK_ID_NAME(line.parameters[0])
 		NONS_VariableMember *val;
 		if (line.parameters.size()>1){
-			if (!wcscmp(line.line,L"numalias")){
+			if (!wcscmp(line.commandName,L"numalias")){
 				long temp;
 				_GETINTVALUE(temp,1,)
 				val=new NONS_VariableMember('%');
@@ -72,10 +73,12 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 			}
 			val->makeConstant();
 		}
-		this->store->aliases[copyWString(line.parameters[0])]=val;
+		this->store->constants[copyWString(line.parameters[0])]=val;
 		return NONS_NO_ERROR;
-	}else
-		return NONS_DUPLICATE_VARIABLE_DEFINITION;
+	}
+	if (var->isConstant())
+		return NONS_DUPLICATE_CONSTANT_DEFINITION;
+	return NONS_INVALID_ID_NAME;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_game(NONS_ParsedLine &line){
@@ -113,7 +116,7 @@ ErrorCode NONS_ScriptInterpreter::command_gosub(NONS_ParsedLine &line){
 	ErrorCode error=this->command_goto(line);
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		this->callStack.pop_back();
-		handleErrors(error,this->current_line,"NONS_ScriptInterpreter::command_gosub");
+		handleErrors(error,this->current_line,"NONS_ScriptInterpreter::command_gosub",1);
 		return error;
 	}else
 		return NONS_GOSUB;
@@ -123,7 +126,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	long res=0;
-	bool notif=!wcscmp(line.line,L"notif");
+	bool notif=!wcscmp(line.commandName,L"notif");
 	ErrorCode ret=this->store->evaluate(line.parameters[0],&res,notif && !this->new_if);
 	if (!CHECK_FLAG(ret,NONS_NO_ERROR_FLAG))
 		return ret;
@@ -154,7 +157,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 			if (error==NONS_GOSUB && ifblock[a+1])
 				(*(this->callStack.end()-1))->first_interpret_string=copyWString(ifblock+a+1);
 			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if");
+				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
 				ret=NONS_UNDEFINED_ERROR;
 			}
 			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || ifblock[a]==';')
@@ -167,7 +170,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	if (error==NONS_END)
 		return error;
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-		handleErrors(error,-1,"NONS_ScriptInterpreter::command_if");
+		handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
 		ret=NONS_UNDEFINED_ERROR;
 	}
 	delete[] copy;
@@ -182,37 +185,37 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_ParsedLine &line){
 	long val;
 	_GETINTVALUE(val,1,)
 	while (1){
-		if (!wcscmp(line.line,L"add")){
+		if (!wcscmp(line.commandName,L"add")){
 			var->add(val);
 			break;
 		}
-		if (!wcscmp(line.line,L"sub")){
+		if (!wcscmp(line.commandName,L"sub")){
 			var->sub(val);
 			break;
 		}
-		if (!wcscmp(line.line,L"mul")){
+		if (!wcscmp(line.commandName,L"mul")){
 			var->mul(val);
 			break;
 		}
-		if (!wcscmp(line.line,L"div")){
+		if (!wcscmp(line.commandName,L"div")){
 			if (!val)
 				return NONS_DIVISION_BY_ZERO;
 			var->div(val);
 			break;
 		}
-		if (!wcscmp(line.line,L"sin")){
+		if (!wcscmp(line.commandName,L"sin")){
 			var->set(sin(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.line,L"cos")){
+		if (!wcscmp(line.commandName,L"cos")){
 			var->set(cos(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.line,L"tan")){
+		if (!wcscmp(line.commandName,L"tan")){
 			var->set(tan(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.line,L"mod")){
+		if (!wcscmp(line.commandName,L"mod")){
 			if (!val)
 				return NONS_DIVISION_BY_ZERO;
 			var->mod(val);
@@ -227,7 +230,7 @@ ErrorCode NONS_ScriptInterpreter::command_inc(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *var;
 	_GETINTVARIABLE(var,0,)
-	if (!wcscmp(line.line,L"inc"))
+	if (!wcscmp(line.commandName,L"inc"))
 		var->inc();
 	else
 		var->dec();
@@ -286,7 +289,7 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_ParsedLine &line){
 	_GETINTVARIABLE(day,0,)
 	time_t t=time(0);
 	tm *time=localtime(&t);
-	if (wcscmp(line.line,L"date2"))
+	if (wcscmp(line.commandName,L"date2"))
 		year->set(time->tm_year%100);
 	else
 		year->set(time->tm_year+1900);
@@ -338,16 +341,16 @@ ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 	for (;*name!='?';name++);
 	for (;*name=='?';name++);
 	if (*name<=' ' || *name=='[')
-		return NONS_INVALID_VARIABLE_NAME;
+		return NONS_INVALID_ID_NAME;
 	long f=instr(string,L"[");
 	if (f<0)
 		return NONS_MISSING_B_IN_ARRAY_DECLARATION;
 	name=copyWString(name,f-(name-string));
 	if (this->store->arrays.find(name)!=this->store->arrays.end()){
 		delete[] name;
-		return NONS_DUPLICATE_VARIABLE_DEFINITION;
+		return NONS_DUPLICATE_CONSTANT_DEFINITION;
 	}
-	_CHECK_VARIABLE_NAME(name)
+	_CHECK_ID_NAME(name)
 	std::vector<ulong> indices;
 	do{
 		f++;
@@ -420,7 +423,7 @@ ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_ParsedLine &line){
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
-	long loop=!wcscmp(line.line,L"dwave")?0:-1;
+	long loop=!wcscmp(line.commandName,L"dwave")?0:-1;
 	if (this->everything->audio->bufferIsLoaded(name))
 		error=this->everything->audio->playSoundAsync(name,0,0,channel,loop);
 	else{
@@ -612,7 +615,7 @@ ErrorCode NONS_ScriptInterpreter::command_csp(NONS_ParsedLine &line){
 	if (n>0 && n>=this->everything->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (n<0){
-		for (long a=0;a<this->everything->screen->layerStack.size();a++)
+		for (ulong a=0;a<this->everything->screen->layerStack.size();a++)
 			if (this->everything->screen->layerStack[a] && this->everything->screen->layerStack[a]->data)
 				this->everything->screen->layerStack[a]->unload();
 	}else if (this->everything->screen->layerStack[n] && this->everything->screen->layerStack[n]->data)
@@ -819,7 +822,7 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_ParsedLine &line){
 	int choice=this->imageButtons->getUserInput(this->imageButtonExpiration);
 	var->set(choice+1);
 	this->btnTimer=SDL_GetTicks();
-	if (choice>=0 && wcscmp(line.line,L"btnwait2")){
+	if (choice>=0 && wcscmp(line.commandName,L"btnwait2")){
 		delete this->imageButtons;
 		this->imageButtons=0;
 	}

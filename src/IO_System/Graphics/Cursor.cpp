@@ -240,7 +240,7 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 							case SDLK_UP:
 							case SDLK_PAGEUP:
 								{
-									screen->BlendNoText(0);
+									/*screen->BlendNoText(0);
 									LOCKSCREEN;
 									manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
 									multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
@@ -254,7 +254,8 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 									if (anim)
 										manualBlit(this->data,&srcRect,screen->screen->virtualScreen,&dstRect);
 									UNLOCKSCREEN;
-									screen->screen->updateWholeScreen();
+									screen->screen->updateWholeScreen();*/
+									this->callLookback(screen,&srcRect,&dstRect,copyDst,queue);
 									break;
 								}
 							case SDLK_MENU:
@@ -269,7 +270,9 @@ int NONS_Cursor::animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expirati
 								ret=-1;
 								goto animate_000;
 							}
-						}else
+						}else if (event.button.button==SDL_BUTTON_WHEELUP)
+							this->callLookback(screen,&srcRect,&dstRect,copyDst,queue);
+						else
 							done=1;
 						break;
 					default:
@@ -321,5 +324,24 @@ bool NONS_Cursor::callMenu(NONS_ScreenSpace *screen,NONS_Menu *menu,SDL_Rect *sr
 		screen->screen->updateWholeScreen();
 	}
 	return 1;
+}
+
+void NONS_Cursor::callLookback(NONS_ScreenSpace *screen,SDL_Rect *srcRect,SDL_Rect *dstRect,SDL_Surface *copyDst,NONS_EventQueue *queue){
+	bool anim=!!this->data;
+	screen->BlendNoText(0);
+	LOCKSCREEN;
+	manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+	multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
+	UNLOCKSCREEN;
+	screen->lookback->display(screen->screen);
+	while (!queue->data.empty())
+		queue->pop();
+	screen->BlendAll(0);
+	LOCKSCREEN;
+	manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+	if (anim)
+		manualBlit(this->data,srcRect,screen->screen->virtualScreen,dstRect);
+	UNLOCKSCREEN;
+	screen->screen->updateWholeScreen();
 }
 #endif

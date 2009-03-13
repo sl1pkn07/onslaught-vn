@@ -33,11 +33,42 @@
 #include "IOFunctions.h"
 #include "../Globals.h"
 #include "../Functions.h"
+#include <SDL/SDL.h>
+#include <stack>
 #include <cstdlib>
 
-ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller){
-	if (CHECK_FLAG(error,NONS_END))
+struct reportedError{
+	ErrorCode error;
+	long original_line;
+	std::string caller;
+	reportedError(ErrorCode error,long original_line,const char *caller){
+		this->error=error;
+		this->original_line=original_line;
+		this->caller=caller;
+	}
+	reportedError(const reportedError &b){
+		this->error=b.error;
+		this->original_line=b.original_line;
+		this->caller=b.caller;
+	}
+};
+
+typedef std::map<Uint32,std::stack<reportedError> > errorManager;
+
+ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,bool queue){
+	static errorManager manager;
+	Uint32 currentThread=SDL_ThreadID();
+	errorManager::iterator currentStack=manager.find(currentThread);
+	/*if (error==NONS_END){
+		if (currentStack!=manager.end())
+			while (!currentStack->second.empty())
+				currentStack->second.pop();
 		return error;
+	}*/
+	if (queue){
+		(currentStack!=manager.end()?currentStack->second:manager[currentThread]).push(reportedError(error,original_line,caller));
+		return error;
+	}
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		if (caller)
 			v_stderr <<caller<<"(): ";
@@ -59,10 +90,43 @@ ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller){
 			v_stderr <<"Unspecified error."<<std::endl;
 		else
 			v_stderr <<errorMessages[error&0xFFFF]<<std::endl;
-		if (CHECK_FLAG(error,NONS_FATAL_ERROR)){
-			v_stderr <<"I'll just go ahead and kill myself."<<std::endl;
-			exit(error);
+	}
+	if (currentStack!=manager.end()){
+		while (!currentStack->second.empty() && CHECK_FLAG(currentStack->second.top().error,NONS_NO_ERROR_FLAG))
+			currentStack->second.pop();
+		if (!currentStack->second.empty())
+			v_stderr <<"Contents of the error queue: "<<std::endl;
+		while (!currentStack->second.empty()){
+			reportedError &topError=currentStack->second.top();
+			if (!CHECK_FLAG(topError.error,NONS_NO_ERROR_FLAG)){
+				v_stderr <<"    ";
+				if (topError.caller.size()>0)
+					v_stderr <<topError.caller<<"(): ";
+				if (CHECK_FLAG(topError.error,NONS_INTERNAL_ERROR))
+					v_stderr <<"Internal error. ";
+				else{
+					if (CHECK_FLAG(topError.error,NONS_FATAL_ERROR))
+						v_stderr <<"Fatal error";
+					else if (CHECK_FLAG(topError.error,NONS_WARNING))
+						v_stderr <<"Warning";
+					else
+						v_stderr <<"Error";
+					if (topError.original_line>0)
+						v_stderr <<" near line "<<topError.original_line<<". ";
+					else
+						v_stderr <<". ";
+				}
+				if (CHECK_FLAG(topError.error,NONS_UNDEFINED_ERROR))
+					v_stderr <<"Unspecified error."<<std::endl;
+				else
+					v_stderr <<"("<<(topError.error&0xFFFF)<<")"<<errorMessages[topError.error&0xFFFF]<<std::endl;
+			}
+			currentStack->second.pop();
 		}
+	}
+	if (CHECK_FLAG(error,NONS_FATAL_ERROR)){
+		v_stderr <<"I'll just go ahead and kill myself."<<std::endl;
+		exit(error);
 	}
 	return error;
 }

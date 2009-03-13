@@ -46,7 +46,9 @@ struct NONS_Lookback{
 	NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b);
 	~NONS_Lookback();
 	bool setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wchar_t *downoff);
-	void callLookback(NONS_VirtualScreen *dst);
+	void display(NONS_VirtualScreen *dst);
 	void reset(NONS_StandardOutput *output);
+private:
+	bool changePage(int dir,long &currentPage,SDL_Surface *copyDst,NONS_VirtualScreen *dst,SDL_Surface *preBlit,uchar &visibility,int &mouseOver);
 };
 #endif

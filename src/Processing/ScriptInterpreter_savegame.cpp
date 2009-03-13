@@ -176,10 +176,10 @@ bool NONS_ScriptInterpreter::load(int file){
 			scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
 		}
 		this->everything->screen->sprite_priority=this->everything->screen->layerStack.size()-1;
-		//aliases
-		for (ulong a=0;a<save->variables.size();a++){
-			NONS_Variable *var=save->variables[a];
-			NONS_Variable *dst=this->store->retrieve(a);
+		//variables
+		for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
+			NONS_Variable *var=i->second;
+			NONS_Variable *dst=this->store->retrieve(i->first,0);
 			(*dst)=(*var);
 		}
 		//stack
@@ -197,7 +197,7 @@ bool NONS_ScriptInterpreter::load(int file){
 				this->callStack.push_back(push);
 			}else{
 				NONS_StackElement *push=new NONS_StackElement(
-					this->store->retrieve(el->variable)->intValue,
+					this->store->retrieve(el->variable,0)->intValue,
 					SJISoffset_to_WCSoffset(this->script->script,el->offset),
 					0,el->to,el->step);
 				this->callStack.push_back(push);
@@ -297,7 +297,7 @@ bool NONS_ScriptInterpreter::load(int file){
 				push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0);
 			else{
 				push=new NONS_StackElement(
-					this->store->retrieve(el->variable)->intValue,
+					this->store->retrieve(el->variable,0)->intValue,
 					this->script->offsetFromBlock(el->label)+el->offset,
 					0,el->to,el->step);
 			}
@@ -308,25 +308,16 @@ bool NONS_ScriptInterpreter::load(int file){
 			delete[] this->saveGame->currentLabel;
 		this->saveGame->currentLabel=copyWString(save->currentLabel);
 		//variables
-		for (ulong a=0;a<save->variables.size();a++){
-			if (!save->variables[a]){
-				NONS_Variable *v=this->store->retrieve(a);
-				if (!!v){
-					this->store->stack.erase(a);
-					delete v;
-				}
-				continue;
-			}
-			std::map<ulong,NONS_Variable *>::iterator i=this->store->stack.find(a);
-			if (i!=this->store->stack.end()){
-				NONS_Variable **b=&(i->second);
-				delete *b;
-				*b=save->variables[a];
-				save->variables[a]=0;
-			}else{
-				this->store->stack[a]=save->variables[a];
-				save->variables[a]=0;
-			}
+		variables_map_T::iterator first=this->store->variables.begin(),last=first;
+		if (first->first<200){
+			for (;last!=this->store->variables.end() && last->first<200;last++)
+				delete last->second;
+			this->store->variables.erase(first,last);
+		}
+		for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
+			NONS_Variable *var=i->second;
+			NONS_Variable *dst=this->store->retrieve(i->first,0);
+			(*dst)=(*var);
 		}
 		for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++){
 			delete[] i->first;
@@ -544,9 +535,8 @@ bool NONS_ScriptInterpreter::save(int file){
 	for (ulong a=0;a<this->saveGame->stack.size();a++)
 		delete this->saveGame->stack[a];
 	this->saveGame->stack.clear();
-	for (ulong a=0;a<this->saveGame->variables.size();a++)
-		if (this->saveGame->variables[a])
-			delete this->saveGame->variables[a];
+	for (variables_map_T::iterator i=this->saveGame->variables.begin();i!=this->saveGame->variables.end();i++)
+		delete i->second;
 	this->saveGame->variables.clear();
 	for (ulong a=0;a<this->saveGame->arraynames.size();a++){
 		delete[] this->saveGame->arraynames[a];
@@ -580,7 +570,7 @@ bool NONS_ScriptInterpreter::save(int file){
 				el->leftovers=copyWString(el0->first_interpret_string);
 			}else{
 				el->variable=0;
-				for (std::map<ulong,NONS_Variable *>::iterator i=this->store->stack.begin();i!=this->store->stack.end() && !el->variable;i++)
+				for (variables_map_T::iterator i=this->store->variables.begin();i!=this->store->variables.end() && !el->variable;i++)
 					if (i->second->intValue==el0->var)
 						el->variable=i->first;
 				el->to=el0->to;
@@ -598,12 +588,10 @@ bool NONS_ScriptInterpreter::save(int file){
 	}
 	//variables
 	{
-		std::map<ulong,NONS_Variable *> *varStack=&this->store->stack;
-		for (std::map<ulong,NONS_Variable *>::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++){
-			if (!i->second || !i->second->intValue->getInt() && (!i->second->wcsValue->getWcs() || !*i->second->wcsValue->getWcsCopy()))
+		variables_map_T *varStack=&this->store->variables;
+		for (variables_map_T::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++){
+			if (VARIABLE_HAS_NO_DATA(i->second))
 				continue;
-			if (this->saveGame->variables.size()<=i->first)
-				this->saveGame->variables.resize(i->first+1,0);
 			NONS_Variable *var=new NONS_Variable(*i->second);
 			this->saveGame->variables[i->first]=var;
 		}

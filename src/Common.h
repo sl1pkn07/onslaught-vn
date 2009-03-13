@@ -34,9 +34,9 @@
 #include "CommonTypes.h"
 
 extern bool ctrlIsPressed;
-extern bool softwareCtrlIsPressed;
+//extern bool softwareCtrlIsPressed;
 
-#define CURRENTLYSKIPPING (ctrlIsPressed || softwareCtrlIsPressed)
+#define CURRENTLYSKIPPING (ctrlIsPressed /*|| softwareCtrlIsPressed*/)
 
 #define STRLITERAL(x) ((char*)(x))
 #define WSTRLITERAL(x) ((wchar_t*)(x))
@@ -57,6 +57,11 @@ extern bool softwareCtrlIsPressed;
 
 #include <cwchar>
 #if WCHAR_MAX<0xFFFF
-#error "Wide characters on this platform are too narrow."
+#error "Wide characters on this implementation are too narrow."
+#endif
+
+#include <climits>
+#if ULONG_MAX<0xFFFFFFFF
+#error "longs on this implementation are too small."
 #endif
 #endif

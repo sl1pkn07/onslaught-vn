@@ -69,6 +69,7 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->verbosity=0;
 	this->no_sound=0;
 	this->savedir=0;
+	this->stopOnFirstError=0;
 }
 
 NONS_CommandLineOptions::~NONS_CommandLineOptions(){

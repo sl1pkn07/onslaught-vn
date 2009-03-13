@@ -171,7 +171,7 @@ void NONS_Lookback::reset(NONS_StandardOutput *output){
 	//((NONS_Button *)this->down)->posy=((NONS_Button *)this->down)->onLayer->clip_rect.y/*+thirdofscreen*2*/;
 }
 
-void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
+void NONS_Lookback::display(NONS_VirtualScreen *dst){
 	if (!this->output->log.size())
 		return;
 	NONS_EventQueue *queue=InputObserver.attach();
@@ -194,8 +194,10 @@ void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
 		bmask,
 		amask);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
-	long currentPage=this->output->log.size()-1,
-		end=currentPage+1;
+	/*long currentPage=this->output->log.size()-1,
+		end=currentPage+1;*/
+	long end=this->output->log.size(),
+		currentPage=end-1;
 	this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
 	manualBlit(dst->virtualScreen,0,preBlit,0);
 	int mouseOver=-1;
@@ -243,39 +245,26 @@ void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					{
-						if (event.button.button!=SDL_BUTTON_LEFT || mouseOver<0 || !visibility)
-							break;
-						manualBlit(copyDst,0,dst->virtualScreen,0);
-						if (!mouseOver)
-							currentPage--;
-						else
-							currentPage++;
-						if (currentPage==end)
-							goto callLookback_000;
-						this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
-						manualBlit(dst->virtualScreen,0,preBlit,0);
-						visibility=(!!currentPage<<1)|(currentPage!=end-1);
-						getCorrectedMousePosition(dst,&x,&y);
-						if (visibility){
-							if (visibility&2 && ((NONS_Button *)this->up)->MouseOver(x,y)){
-								((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-								mouseOver=0;
-								((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,1,1);
-							}else{
-								if (visibility&2)
-									((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,0,1);
-								if (visibility&1 && ((NONS_Button *)this->down)->MouseOver(x,y)){
-									mouseOver=1;
-									((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,1,1);
-								}else{
-									mouseOver=-1;
-									if (visibility&1)
-										((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-								}
-							}
+						if (event.button.button==SDL_BUTTON_LEFT){
+							if (mouseOver<0 || !visibility)
+								break;
+							manualBlit(copyDst,0,dst->virtualScreen,0);
+							int dir;
+							if (!mouseOver)
+								dir=-1;
+							else
+								dir=1;
+							if (!this->changePage(dir,currentPage,copyDst,dst,preBlit,visibility,mouseOver))
+								goto callLookback_000;
+						}else if (event.button.button==SDL_BUTTON_WHEELUP || event.button.button==SDL_BUTTON_WHEELDOWN){
+							int dir;
+							if (event.button.button==SDL_BUTTON_WHEELUP)
+								dir=-1;
+							else
+								dir=1;
+							if (!this->changePage(dir,currentPage,copyDst,dst,preBlit,visibility,mouseOver))
+								goto callLookback_000;
 						}
-						//SDL_UpdateRect(dst,0,0,0,0);
-						dst->updateWholeScreen();
 					}
 					break;
 				case SDL_KEYDOWN:
@@ -295,36 +284,8 @@ void NONS_Lookback::callLookback(NONS_VirtualScreen *dst){
 							default:
 								break;
 						}
-						if (!dir || -dir>currentPage)
-							break;
-						manualBlit(copyDst,0,dst->virtualScreen,0);
-						currentPage+=dir;
-						if (currentPage==end)
+						if (!this->changePage(dir,currentPage,copyDst,dst,preBlit,visibility,mouseOver))
 							goto callLookback_000;
-						this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
-						manualBlit(dst->virtualScreen,0,preBlit,0);
-						visibility=(!!currentPage<<1)|(currentPage!=end-1);
-						getCorrectedMousePosition(dst,&x,&y);
-						if (visibility){
-							if (visibility&2 && ((NONS_Button *)this->up)->MouseOver(x,y)){
-								((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-								mouseOver=0;
-								((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,1,1);
-							}else{
-								if (visibility&2)
-									((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,0,1);
-								if (visibility&1 && ((NONS_Button *)this->down)->MouseOver(x,y)){
-									mouseOver=1;
-									((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,1,1);
-								}else{
-									mouseOver=-1;
-									if (visibility&1)
-										((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-								}
-							}
-						}
-						//SDL_UpdateRect(dst,0,0,0,0);
-						dst->updateWholeScreen();
 					}
 					break;
 			}
@@ -335,5 +296,41 @@ callLookback_000:
 	InputObserver.detach(queue);
 	SDL_FreeSurface(copyDst);
 	SDL_FreeSurface(preBlit);
+}
+
+bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NONS_VirtualScreen *dst,SDL_Surface *preBlit,uchar &visibility,int &mouseOver){
+	long end=this->output->log.size();
+	if (!dir || -dir>currentPage)
+		return 1;
+	manualBlit(copyDst,0,dst->virtualScreen,0);
+	currentPage+=dir;
+	if (currentPage==end)
+		return 0;
+	this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
+	manualBlit(dst->virtualScreen,0,preBlit,0);
+	visibility=(!!currentPage<<1)|(currentPage!=end-1);
+	int x,y;
+	getCorrectedMousePosition(dst,&x,&y);
+	if (visibility){
+		if (visibility&2 && ((NONS_Button *)this->up)->MouseOver(x,y)){
+			((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
+			mouseOver=0;
+			((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,1,1);
+		}else{
+			if (visibility&2)
+				((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,0,1);
+			if (visibility&1 && ((NONS_Button *)this->down)->MouseOver(x,y)){
+				mouseOver=1;
+				((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,1,1);
+			}else{
+				mouseOver=-1;
+				if (visibility&1)
+					((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
+			}
+		}
+	}
+	//SDL_UpdateRect(dst,0,0,0,0);
+	dst->updateWholeScreen();
+	return 1;
 }
 #endif
