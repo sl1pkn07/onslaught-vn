@@ -35,7 +35,7 @@
 #include "InputHandler.h"
 #include "Graphics/VirtualScreen.h"
 
-ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller);
+ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,bool queue);
 void waitUntilClick(NONS_EventQueue *queue=0);
 void waitCancellable(long delay,NONS_EventQueue *queue=0);
 void waitNonCancellable(long delay);

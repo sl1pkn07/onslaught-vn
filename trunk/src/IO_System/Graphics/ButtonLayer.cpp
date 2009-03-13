@@ -206,7 +206,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 								&(this->screen->output->shadeLayer->clip_rect),
 								this->screen->screen->virtualScreen,
 								0);
-							this->screen->lookback->callLookback(this->screen->screen);
+							this->screen->lookback->display(this->screen->screen);
 							while (!queue->data.empty())
 								queue->pop();
 							manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);

@@ -34,6 +34,7 @@
 #include "../ErrorCodes.h"
 #include "../Processing/Variable.h"
 #include <vector>
+#include <map>
 #include <ctime>
 #include <SDL/SDL.h>
 #include "../UTF.h"
@@ -45,6 +46,8 @@ std::vector<tm *> *existing_files(wchar_t *location=L"./");
 char *getConfigLocation();
 char *getSaveLocation(unsigned hash[5]);
 tm *getDate(const char *filename);
+
+typedef std::map<Sint32,NONS_Variable *> variables_map_T;
 
 struct NONS_SaveFile{
 	char format;
@@ -93,13 +96,13 @@ struct NONS_SaveFile{
 		~Sprite();
 	};
 	std::vector<Sprite *> sprites;
-	std::vector<NONS_Variable *> variables;
+	variables_map_T variables;
 	ushort fontSize;
 	struct stackEl{
 		bool type;
 		wchar_t *label;
 		ulong offset;
-		ulong variable;
+		Sint32 variable;
 		long to;
 		long step;
 		wchar_t *leftovers;

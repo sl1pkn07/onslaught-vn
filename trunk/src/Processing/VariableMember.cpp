@@ -128,7 +128,7 @@ long NONS_VariableMember::getInt(){
 }
 
 const wchar_t *NONS_VariableMember::getWcs(){
-	return (this->type=='$')?this->wcsValue:0;
+	return (this->type=='$' && !!this->wcsValue)?this->wcsValue:L"";
 }
 
 wchar_t *NONS_VariableMember::getWcsCopy(){
@@ -137,9 +137,7 @@ wchar_t *NONS_VariableMember::getWcsCopy(){
 	else{
 		std::stringstream stream;
 		stream <<this->intValue;
-		std::string string;
-		std::getline(stream,string);
-		return copyWString(string.c_str());
+		return copyWString(stream.str().c_str());
 	}
 }
 
@@ -149,9 +147,7 @@ char *NONS_VariableMember::getStrCopy(){
 	else{
 		std::stringstream stream;
 		stream <<this->intValue;
-		std::string string;
-		std::getline(stream,string);
-		return copyString(string.c_str());
+		return copyString(stream.str().c_str());
 	}
 }
 
@@ -167,19 +163,22 @@ void NONS_VariableMember::set(long a){
 			delete[] this->wcsValue;
 		std::stringstream stream;
 		stream <<a;
-		std::string string;
-		std::getline(stream,string);
-		this->wcsValue=copyWString(string.c_str());
+		this->wcsValue=copyWString(stream.str().c_str());
 	}
 	//SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::set(const wchar_t *a,bool takeOwnership){
-	if (this->constant)
+	if (this->constant){
+		if (takeOwnership)
+			delete[] (wchar_t *)a;
 		return;
+	}
 	if (this->type=='%'){
 		this->intValue=atoi2(a);
 		this->fixint();
+		if (takeOwnership)
+			delete[] (wchar_t *)a;
 	}else{
 		if (!!this->wcsValue)
 			delete[] this->wcsValue;

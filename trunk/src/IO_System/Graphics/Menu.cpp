@@ -411,13 +411,13 @@ int NONS_Menu::call(wchar_t *string){
 			&(scr->output->shadeLayer->clip_rect),
 			scr->screen->virtualScreen,
 			0);
-		scr->lookback->callLookback(scr->screen);
+		scr->lookback->display(scr->screen);
 	}else if (!wcscmp(string,L"skip")){
 		this->skip();
 	}else{
 		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string);
 		if (error!=NONS_NO_ERROR)
-			handleErrors(error,-1,"NONS_Menu::call");
+			handleErrors(error,-1,"NONS_Menu::call",1);
 	}
 	return ret;
 }

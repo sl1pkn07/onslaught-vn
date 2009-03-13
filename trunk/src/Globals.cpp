@@ -48,8 +48,8 @@ const char *errorMessages[]={
 	"Command not implemented.",
 	//NONS_NOT_IN_DEFINE_MODE
 	"Attempted variable declaration while not in Define Mode.",
-	//NONS_DUPLICATE_VARIABLE_DEFINITION
-	"Variable redefinition.",
+	//NONS_DUPLICATE_CONSTANT_DEFINITION
+	"Constant redefinition.",
 	//NONS_ALREADY_INITIALIZED
 	"The NSA archive had already been initialized.",
 	//NONS_NO_SUCH_BLOCK
@@ -64,14 +64,14 @@ const char *errorMessages[]={
 	"Division by zero.",
 	//NONS_NON_INTEGRAL_VARIABLE_IN_EXPRESSION
 	"Non integral variable in expression.",
-	//NONS_UNDEFINED_VARIABLE
-	"Undefined variable.",
+	//NONS_UNDEFINED_CONSTANT
+	"Undefined constant.",
 	//NONS_UNRECOGNIZED_COMMAND
 	"Unrecognized command.",
 	//NONS_UNMATCHING_OPERANDS
 	"Operands do not match.",
-	//NONS_INVALID_VARIABLE_NAME
-	"Invalid variable name.",
+	//NONS_INVALID_ID_NAME
+	"Invalid identifier name. Only upper and lower case Latin alphabet characters, underscores, and numerals.",
 	//NONS_INSUFFICIENT_PARAMETERS
 	"Not enough parameters passed to the instruction.",
 	//NONS_FILE_NOT_FOUND
@@ -164,7 +164,13 @@ const char *errorMessages[]={
 	//NONS_EXPECTED_SCALAR
 	"A scalar variable was expected, but an array was passed.",
 	//NONS_EXPECTED_ARRAY
-	"An array was expected, but a sclar variable was passed."
+	"An array was expected, but a scalar variable was passed.",
+	//NONS_VARIABLE_OUT_OF_RANGE
+	"The variable index is out of range. Variable indices may only be in the range -1073741824 to 1073741823.",
+	//NONS_UNDEFINED_ARRAY
+	"Undefined array.",
+	//NONS_OUT_OF_BOUNDS
+	"The subindex is outside the boundaries of the array."
 };
 NONS_RedirectedOutput v_stdout(std::cout);
 NONS_RedirectedOutput v_stderr(std::cerr);

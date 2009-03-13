@@ -45,13 +45,13 @@
 #endif
 
 #define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
-#define _CHECK_VARIABLE_NAME(pointertostring)\
+#define _CHECK_ID_NAME(pointertostring)\
 {\
 	if (!isalpha(*(pointertostring)) && *(pointertostring)!='_')\
-		return NONS_INVALID_VARIABLE_NAME;\
+		return NONS_INVALID_ID_NAME;\
 	for (wchar_t *a=(pointertostring)+1;*a;a++)\
 		if (!isalnum(*a) && *a!='_')\
-			return NONS_INVALID_VARIABLE_NAME;\
+			return NONS_INVALID_ID_NAME;\
 }
 
 #define NONS_NEWSURFACE(w,h,d) SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,(w),(h),(d),rmask,gmask,bmask,amask)
@@ -97,15 +97,15 @@ char *tagValue(const char *string);
 //binary parsing functions
 bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset);
 ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
-integer8 readByte(char *buffer,long *offset);
-Sinteger16 readSignedWord(char *buffer,long *offset);
-integer16 readWord(char *buffer,long *offset);
-Sinteger32 readSignedDWord(char *buffer,long *offset);
-integer32 readDWord(char *buffer,long *offset);
+Uint8 readByte(char *buffer,long *offset);
+Sint16 readSignedWord(char *buffer,long *offset);
+Uint16 readWord(char *buffer,long *offset);
+Sint32 readSignedDWord(char *buffer,long *offset);
+Uint32 readDWord(char *buffer,long *offset);
 char *readString(char *buffer,long *offset);
-void writeByte(integer8 a,std::string *str,long offset=-1);
-void writeWord(integer16 a,std::string *str,long offset=-1);
-void writeDWord(integer32 a,std::string *str,long offset=-1);
+void writeByte(Uint8 a,std::string *str,long offset=-1);
+void writeWord(Uint16 a,std::string *str,long offset=-1);
+void writeDWord(Uint32 a,std::string *str,long offset=-1);
 void writeString(const wchar_t *a,std::string *str);
 
 #ifndef BARE_FILE
@@ -115,7 +115,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 #endif
 
 //other functions
-integer32 secondsSince1900();
+Uint32 secondsSince1900();
 #ifndef BARE_FILE
 /*
 Compresses src[0..srcl-1].

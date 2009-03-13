@@ -303,22 +303,22 @@ void parseCommandParameters(T *string,std::vector<T *> *vec,T delim=' '){
 NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 	this->lineNo=number;
 	this->error=NONS_NO_ERROR;
-	this->param=0;
-	this->line=getLine(buffer+*offset);
+	this->CstringParameters=0;
+	this->commandName=getLine(buffer+*offset);
 	//(*offset)+=STRLEN(buffer+*offset);
 	//for (;buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-	long len=wcslen(this->line);
-	wchar_t *string=this->line;
-	if (iswhitespace((char)this->line[0])){
+	long len=wcslen(this->commandName);
+	wchar_t *string=this->commandName;
+	if (iswhitespace((char)this->commandName[0])){
 		long start=0;
 		for (;iswhitespace((char)string[start]) && string[start];start++);
 		string=copyWString(string+start);
-		delete[] this->line;
-		this->line=string;
+		delete[] this->commandName;
+		this->commandName=string;
 	}
-	if (multicomparison(*this->line,";*~`?%$!\\@#") || *this->line>0x7F){
-		this->param=0;
-		switch (*this->line){
+	if (multicomparison(*this->commandName,";*~`?%$!\\@#") || *this->commandName>0x7F){
+		this->CstringParameters=0;
+		switch (*this->commandName){
 			case ';':
 				this->type=PARSEDLINE_COMMENT;
 				break;
@@ -363,8 +363,8 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 			if (multicomparison(string[a],":\\")){
 				len=a;
 				/*string=copyWString(string,a);
-				delete[] this->line;
-				this->line=string;*/
+				delete[] this->commandName;
+				this->commandName=string;*/
 				string[a]=0;
 				break;
 			}
@@ -391,8 +391,8 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 			if (multicomparison(string[a],":\\")){
 				len=a;
 				/*string=copyWString(string,a);
-				delete[] this->line;
-				this->line=string;*/
+				delete[] this->commandName;
+				this->commandName=string;*/
 				string[a]=0;
 				break;
 			}
@@ -408,25 +408,25 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 	}
 	if (!len){
 		this->type=PARSEDLINE_EMPTY;
-		delete[] this->line;
-		this->line=0;
+		delete[] this->commandName;
+		this->commandName=0;
 		return;
 	}
-	for (this->param=this->line;*this->param && !iswhitespace((char)*this->param);this->param++);
-	if (*this->param){
-		*this->param=0;
-		this->param++;
-		for (;*this->param && iswhitespace((char)*this->param);this->param++);
+	for (this->CstringParameters=this->commandName;*this->CstringParameters && !iswhitespace((char)*this->CstringParameters);this->CstringParameters++);
+	if (*this->CstringParameters){
+		*this->CstringParameters=0;
+		this->CstringParameters++;
+		for (;*this->CstringParameters && iswhitespace((char)*this->CstringParameters);this->CstringParameters++);
 	}
-	char *tempCopy=copyString(this->line);
+	char *tempCopy=copyString(this->commandName);
 	if (!strcmp(tempCopy,"if") || !strcmp(tempCopy,"notif"))
-		preparseIf(this->param,&this->parameters);
+		preparseIf(this->CstringParameters,&this->parameters);
 	else if (!strcmp(tempCopy,"for"))
-		parseFor(this->param,&this->parameters);
+		parseFor(this->CstringParameters,&this->parameters);
 	else if (!strcmp(tempCopy,"literal_print"))
-		parseLiteral_print(this->param,&this->parameters);
+		parseLiteral_print(this->CstringParameters,&this->parameters);
 	else
-		parseCommandParameters<wchar_t>(this->param,&this->parameters,',');
+		parseCommandParameters<wchar_t>(this->CstringParameters,&this->parameters,',');
 	delete[] tempCopy;
 }
 
@@ -437,19 +437,19 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *string,ulong number){
 		return;
 	}
 	this->type=PARSEDLINE_COMMAND;
-	this->line=copyWString(string);
-	for (this->param=this->line;*this->param && *this->param!=' ' && *this->param!='\t';this->param++);
-	if (*this->param){
-		*this->param=0;
-		this->param++;
-		for (;*this->param && (*this->param==' ' || *this->param=='\t');this->param++);
+	this->commandName=copyWString(string);
+	for (this->CstringParameters=this->commandName;*this->CstringParameters && *this->CstringParameters!=' ' && *this->CstringParameters!='\t';this->CstringParameters++);
+	if (*this->CstringParameters){
+		*this->CstringParameters=0;
+		this->CstringParameters++;
+		for (;*this->CstringParameters && (*this->CstringParameters==' ' || *this->CstringParameters=='\t');this->CstringParameters++);
 	}
-	parseCommandParameters<wchar_t>(this->param,&this->parameters,',');
+	parseCommandParameters<wchar_t>(this->CstringParameters,&this->parameters,',');
 }
 
 NONS_ParsedLine::~NONS_ParsedLine(){
-	if (this->line)
-		delete[] this->line;
+	if (this->commandName)
+		delete[] this->commandName;
 	for (ulong a=0;a<this->parameters.size();a++)
 		delete[] this->parameters[a];
 }

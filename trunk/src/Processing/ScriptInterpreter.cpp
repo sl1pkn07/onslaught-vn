@@ -36,6 +36,7 @@
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 //#include "../UTF.h"
+#include <sstream>
 
 NONS_StackElement::NONS_StackElement(){
 	this->type=UNDEFINED;
@@ -295,8 +296,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"itoa2"]=&NONS_ScriptInterpreter::command_itoa;
 	this->commandList[L"jumpb"]=&NONS_ScriptInterpreter::command_jumpf;
 	this->commandList[L"jumpf"]=&NONS_ScriptInterpreter::command_jumpf;
-	this->commandList[L"kidokumode"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_kidokuskip;
+	this->commandList[L"kidokumode"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"labellog"]=0;
 	this->commandList[L"layermessage"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"ld"]=&NONS_ScriptInterpreter::command_ld;
@@ -381,8 +382,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"rnd"]=&NONS_ScriptInterpreter::command_rnd;
 	this->commandList[L"rnd2"]=&NONS_ScriptInterpreter::command_rnd;
 	this->commandList[L"roff"]=&NONS_ScriptInterpreter::command_rmode;
-	this->commandList[L"rubyoff"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"rubyon"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"rubyoff"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"rubyon"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"sar"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"savefileexist"]=&NONS_ScriptInterpreter::command_savefileexist;
 	this->commandList[L"savegame"]=&NONS_ScriptInterpreter::command_savegame;
@@ -409,13 +410,13 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"shadedistance"]=0;
 	this->commandList[L"sin"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"skip"]=&NONS_ScriptInterpreter::command_skip;
-	this->commandList[L"skipoff"]=&NONS_ScriptInterpreter::command_skipoff;
+	this->commandList[L"skipoff"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"soundpressplgin"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"sp_rgb_gradation"]=0;
 	this->commandList[L"spbtn"]=0;
 	this->commandList[L"spclclk"]=0;
 	this->commandList[L"spi"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"split"]=0;
+	this->commandList[L"split"]=&NONS_ScriptInterpreter::command_split;
 	this->commandList[L"splitstring"]=0;
 	this->commandList[L"spreload"]=0;
 	this->commandList[L"spstr"]=0;
@@ -606,8 +607,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			case PARSEDLINE_BLOCK:
 				if (this->saveGame->currentLabel)
 					delete[] this->saveGame->currentLabel;
-				this->saveGame->currentLabel=copyWString(line.line);
-				if (!wcscmp(line.line,L"*define"))
+				this->saveGame->currentLabel=copyWString(line.commandName);
+				if (!wcscmp(line.commandName,L"*define"))
 					this->interpreter_mode=DEFINE;
 				break;
 			case PARSEDLINE_JUMP:
@@ -615,46 +616,56 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 				break;
 			case PARSEDLINE_PRINTER:
 				if (this->printed_lines.find(this->current_line)==this->printed_lines.end()){
-					softwareCtrlIsPressed=0;
+					//softwareCtrlIsPressed=0;
 					this->printed_lines.insert(this->current_line);
 				}
-				this->Printer(line.line);
+				this->Printer(line.commandName);
 				break;
 			case PARSEDLINE_COMMAND:
 				{
-					commandListType::iterator i=this->commandList.find(line.line);
+					commandListType::iterator i=this->commandList.find(line.commandName);
 					if (i!=this->commandList.end()){
 						ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
 						if (!temp){
 							if (this->implementationErrors.find(i->first)==this->implementationErrors.end()){
 								v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error near line "<<this->current_line<<". Command \"";
-								v_stderr.writeWideString(line.line);
+								v_stderr.writeWideString(line.commandName);
 								v_stderr <<"\" is not implemented yet.\n"
 										 <<"    Implementation errors are reported only once."<<std::endl;
 								this->implementationErrors.insert(i->first);
 							}
+							if (CLOptions.stopOnFirstError)
+								return 0;
 							this->errored_lines.insert(this->current_line);
 							break;
 						}
 						ErrorCode error=(this->*temp)(line);
-						if (error==NONS_END)
-							return 0;
-						handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine");
 						if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 							v_stderr <<"\"";
-							v_stderr.writeWideString(line.line);
-							v_stderr <<"\""<<std::endl;
-							for (ulong a=0;a<line.parameters.size();a++){
+							v_stderr.writeWideString(line.commandName);
+							v_stderr <<"\" {\n";
+							for (ulong a=0;;a++){
 								v_stderr <<"    \"";
 								v_stderr.writeWideString(line.parameters[a]);
-								v_stderr <<"\""<<std::endl;
+								v_stderr <<"\"";
+								if (a==line.parameters.size()-1){
+									v_stderr <<"\n";
+									break;
+								}
+								v_stderr <<",\n";
 							}
+							v_stderr <<"}\n";
 							this->errored_lines.insert(this->current_line);
 						}
+						handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+						if (CLOptions.stopOnFirstError && error!=NONS_UNIMPLEMENTED_COMMAND || error==NONS_END)
+							return 0;
 					}else{
 						v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error near line "<<this->current_line<<". Command \"";
-						v_stderr.writeWideString(line.line);
+						v_stderr.writeWideString(line.commandName);
 						v_stderr <<"\" could not be recognized."<<std::endl;
+						if (CLOptions.stopOnFirstError)
+							return 0;
 						this->errored_lines.insert(this->current_line);
 					}
 				}
@@ -676,20 +687,20 @@ ErrorCode NONS_ScriptInterpreter::interpretString(wchar_t *string){
 			break;
 		case PARSEDLINE_COMMAND:
 			{
-				commandListType::iterator i=this->commandList.find(line.line);
+				commandListType::iterator i=this->commandList.find(line.commandName);
 				if (i!=(this->commandList.end())){
 					ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
 					if (!temp){
 						if (this->implementationErrors.find(i->first)!=this->implementationErrors.end()){
-							v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error. Command \""<<line.line<<"\" is not implemented.\n"
+							v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error. Command \""<<line.commandName<<"\" is not implemented.\n"
 									  <<"    Implementation errors are reported only once."<<std::endl;
 							this->implementationErrors.insert(i->first);
 						}
 						return NONS_NOT_IMPLEMENTED;
 					}
-					return handleErrors((this->*temp)(line),line.lineNo,"NONS_ScriptInterpreter::interpretString");
+					return handleErrors((this->*temp)(line),line.lineNo,"NONS_ScriptInterpreter::interpretString",1);
 				}else{
-					v_stderr <<"NONS_ScriptInterpreter::interpretString(): Error. Command \""<<line.line<<"\" could not be recognized."<<std::endl;
+					v_stderr <<"NONS_ScriptInterpreter::interpretString(): Error. Command \""<<line.commandName<<"\" could not be recognized."<<std::endl;
 					return NONS_UNRECOGNIZED_COMMAND;
 				}
 			}
@@ -788,10 +799,18 @@ void NONS_ScriptInterpreter::reduceString(
 						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
 						if (l){
 							wchar_t *name=copyWString(str,l+1);
-							NONS_VariableMember *var=this->store->retrieve(name);
+							NONS_VariableMember *var=this->store->retrieve(name,0);
 							delete[] name;
-							if (var){
-								dst.append(var->getWcs());
+							if (!!var){
+								/*if (var->getType()=='$')
+									dst.append(var->getWcs());
+								else*/{
+									std::stringstream stream;
+									stream <<var->getInt();
+									wchar_t *temp=copyWString(stream.str().c_str());
+									dst.append(temp);
+									delete[] temp;
+								}
 								str+=l+1;
 								break;
 							}
@@ -809,7 +828,7 @@ void NONS_ScriptInterpreter::reduceString(
 						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
 						if (l){
 							wchar_t *name=copyWString(str,l+1);
-							NONS_VariableMember *var=this->store->retrieve(name);
+							NONS_VariableMember *var=this->store->retrieve(name,0);
 							if (!!var){
 								if (!!visited && visited->find(var)!=visited->end()){
 									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
@@ -861,7 +880,7 @@ void NONS_ScriptInterpreter::reduceString(
 				if (*str=='?'){
 					wchar_t *name=getArray(str);
 					if (name){
-						NONS_VariableMember *var=this->store->retrieve(name);
+						NONS_VariableMember *var=this->store->retrieve(name,0);
 						long l=wcslen(name);
 						if (var){
 							if (var->getType()=='%'){
@@ -1069,7 +1088,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 						ulong len=wcslen(str+reduced+1);
 						if (len>=6){
 							reduced++;
-							integer32 parsed=0;
+							Uint32 parsed=0;
 							short a;
 							for (a=0;a<6;a++){
 								char hex=toupper(str[reduced+a]);
@@ -1145,10 +1164,12 @@ ErrorCode NONS_ScriptInterpreter::getStrValue(wchar_t *str,char **value){
 		NONS_VariableMember *var=0;
 		if (*str=='?'){
 			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
-		}else
-			var=this->store->retrieve(str);
-		if (!var)
-			return NONS_UNDEFINED_VARIABLE;
+		}else{
+			ErrorCode error;
+			var=this->store->retrieve(str,&error);
+			if (!var)
+				return error;
+		}
 		if (*value)
 			delete[] *value;
 		if (!var->getWcs())
@@ -1177,10 +1198,12 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 		NONS_VariableMember *var=0;
 		if (*str=='?'){
 			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
-		}else
-			var=this->store->retrieve(str);
-		if (!var)
-			return NONS_UNDEFINED_VARIABLE;
+		}else{
+			ErrorCode error;
+			var=this->store->retrieve(str,&error);
+			if (!var)
+				return error;
+		}
 		if (*value)
 			delete[] *value;
 		if (!var->getWcs())
@@ -1194,7 +1217,7 @@ ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
 void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std::wstring &string){
 	string.clear();
 	for (ulong a=0;a<line.parameters.size();a++){
-		NONS_VariableMember *var=this->store->retrieve(line.parameters[a]);
+		NONS_VariableMember *var=this->store->retrieve(line.parameters[a],0);
 		if (!var){
 			wchar_t *str=line.parameters[a];
 			for (str+=(*str=='"')?1:0;*str && *str!='"';str++){

@@ -104,8 +104,8 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 	for (ulong a=0;a<this->blocks.size();a++){
 		wchar_t *b=this->blocks[a]->name;
 		ulong l=wcslen(b);
-		integer16 *temp=new integer16[l];
-		for (integer16 *c=temp;*b;b++,c++)
+		Uint16 *temp=new Uint16[l];
+		for (Uint16 *c=temp;*b;b++,c++)
 			*c=*b;
 		hash.Input((char *)temp,l*2);
 		delete[] temp;

@@ -50,6 +50,7 @@ struct NONS_Cursor{
 	int animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expiration);
 private:
 	bool callMenu(NONS_ScreenSpace *screen,NONS_Menu *menu,SDL_Rect *srcRect,SDL_Rect *dstRect,SDL_Surface *copyDst,NONS_EventQueue *queue);
+	void callLookback(NONS_ScreenSpace *screen,SDL_Rect *srcRect,SDL_Rect *dstRect,SDL_Surface *copyDst,NONS_EventQueue *queue);
 };
 
 struct NONS_CursorPair{

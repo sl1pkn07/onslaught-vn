@@ -271,7 +271,7 @@ void tolower(char *param){
 	return tolower_template<char>(param);
 }
 
-integer32 secondsSince1900(){
+Uint32 secondsSince1900(){
 	return time(0)+2208986640;
 }
 
@@ -939,14 +939,14 @@ bool isanumber(const wchar_t *a){
 	return 1;
 }
 
-integer8 readByte(char *buffer,long *offset){
-	integer8 r=buffer[*offset];
+Uint8 readByte(char *buffer,long *offset){
+	Uint8 r=buffer[*offset];
 	(*offset)++;
 	return r;
 }
 
-Sinteger16 readSignedWord(char *buffer,long *offset){
-	Sinteger16 r=0;
+Sint16 readSignedWord(char *buffer,long *offset){
+	Sint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
 		r|=(uchar)(buffer[*offset+a]);
@@ -955,8 +955,8 @@ Sinteger16 readSignedWord(char *buffer,long *offset){
 	return r;
 }
 
-integer16 readWord(char *buffer,long *offset){
-	integer16 r=0;
+Uint16 readWord(char *buffer,long *offset){
+	Uint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
 		r|=(uchar)buffer[*offset+a];
@@ -965,8 +965,8 @@ integer16 readWord(char *buffer,long *offset){
 	return r;
 }
 
-Sinteger32 readSignedDWord(char *buffer,long *offset){
-	Sinteger32 r=0;
+Sint32 readSignedDWord(char *buffer,long *offset){
+	Sint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
 		r|=(uchar)(buffer[*offset+a]);
@@ -975,8 +975,8 @@ Sinteger32 readSignedDWord(char *buffer,long *offset){
 	return r;
 }
 
-integer32 readDWord(char *buffer,long *offset){
-	integer32 r=0;
+Uint32 readDWord(char *buffer,long *offset){
+	Uint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
 		r|=(uchar)buffer[*offset+a];
@@ -991,14 +991,14 @@ char *readString(char *buffer,long *offset){
 	return r;
 }
 
-void writeByte(integer8 a,std::string *str,long offset){
+void writeByte(Uint8 a,std::string *str,long offset){
 	if (offset<0)
 		str->push_back(a&0xFF);
 	else
 		(*str)[offset]=a&0xFF;
 }
 
-void writeWord(integer16 a,std::string *str,long offset){
+void writeWord(Uint16 a,std::string *str,long offset){
 	if (offset<0)
 		offset=str->size();
 	for (char b=0;b<2;b++,offset++){
@@ -1010,7 +1010,7 @@ void writeWord(integer16 a,std::string *str,long offset){
 	}
 }
 
-void writeDWord(integer32 a,std::string *str,long offset){
+void writeDWord(Uint32 a,std::string *str,long offset){
 	if (offset<0)
 		offset=str->size();
 	for (char b=0;b<4;b++,offset++){

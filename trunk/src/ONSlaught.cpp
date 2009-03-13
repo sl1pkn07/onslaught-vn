@@ -135,7 +135,10 @@ void usage(){
 		"  -!reset-out-files\n"
 		"      Only used with \"-redirect\".\n"
 		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
-		"      them and puts the date and time as identification.\n";
+		"      them and puts the date and time as identification.\n"
+		"   -stop-on-first-error\n"
+		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
+		"      command\" (when the command will not be implemented) errors don't count.\n";
 	exit(0);
 }
 
@@ -189,6 +192,7 @@ void parseCommandLine(int argc,T **argv){
 		"-save-directory",
 		"-!reset-out-files",
 		"-!redirect",
+		"-stop-on-first-error",
 		0
 	};
 	for (long argument=1;argument<argc;argument++){
@@ -406,6 +410,9 @@ void parseCommandLine(int argc,T **argv){
 			case 23: //-!redirect
 				CLOptions.override_stdout=0;
 				break;
+			case 24: //-stop-on-first-error
+				CLOptions.stopOnFirstError=1;
+				break;
 			case 17://-sdebug
 			default:
 				std::cout <<"Unrecognized command line option: \""<<argv[argument]<<"\""<<std::endl;
@@ -585,21 +592,21 @@ void writeEvent(SDL_Event *event,uchar *buffer){
 			*buffer++=event->key.state;
 			*buffer++=event->key.keysym.scancode;
 			{
-				integer32 x=event->key.keysym.sym;
+				Uint32 x=event->key.keysym.sym;
 				for (int a=0;a<4;a++){
 					*buffer++=x&0xFF;
 					x>>=8;
 				}
 			}
 			{
-				integer32 x=event->key.keysym.mod;
+				Uint32 x=event->key.keysym.mod;
 				for (int a=0;a<4;a++){
 					*buffer++=x&0xFF;
 					x>>=8;
 				}
 			}
 			{
-				integer16 x=event->key.keysym.unicode;
+				Uint16 x=event->key.keysym.unicode;
 				for (int a=0;a<2;a++){
 					*buffer++=x&0xFF;
 					x>>=8;
@@ -710,7 +717,7 @@ int
 	else
 		error=everything->init_script(CLOptions.scriptencoding);
 	if (error!=NONS_NO_ERROR){
-		handleErrors(error,-1,"mainThread");
+		handleErrors(error,-1,"mainThread",0);
 		exit(error);
 	}
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
@@ -723,7 +730,7 @@ int
 	else
 		error=everything->init_audio();
 	if (error!=NONS_NO_ERROR){
-		handleErrors(error,-1,"mainThread");
+		handleErrors(error,-1,"mainThread",0);
 		exit(error);
 	}
 	if (CLOptions.musicFormat)
@@ -777,7 +784,8 @@ int debugThread(void *nothing){
 		if (!strcmp(command,"exit") || !strcmp(command,"quit"))
 			return 0;
 		wchar_t *wcommand=copyWString(command);
-		NONS_VariableMember *var=interpreter->store->retrieve(wcommand);
+		ErrorCode error;
+		NONS_VariableMember *var=interpreter->store->retrieve(wcommand,&error);
 		if (var){
 			if (var->getType()=='%')
 				std::cout <<"intValue: "<<var->getInt()<<std::endl;
@@ -790,8 +798,10 @@ int debugThread(void *nothing){
 					std::cout <<"UTF-8 Value: \"\""<<std::endl;
 			}else
 				std::cout <<"Scalar value."<<std::endl;
-		}else
-			handleErrors(interpreter->interpretString(wcommand),-1,"debugThread");
+		}else if (error!=NONS_NO_ERROR)
+			handleErrors(error,-1,"debugThread",0);
+		else
+			handleErrors(interpreter->interpretString(wcommand),-1,"debugThread",0);
 		delete[] wcommand;
 		delete[] command;
 	}

@@ -1,4 +1,12 @@
-20080207
+2009????
+    Sofware-related changes:
+      * Implemented: split.
+      * Unimplemented: kidokumode, kidokuskip, skipoff
+      * Serious bug in the string reduction algorithm fixed.
+      * Implemented mouse wheel.
+      * Variable indices can now be negative.
+
+20090307
     Sofware-related changes:
       * Several bug fixes.
       * Implemented the following commands: blt, fileexist, menu_full, mp3stop,
@@ -13,7 +21,7 @@
       * Added CompatibilityList.txt
       * Added doc/ThingsThatAreNoLongerLegal.txt
 
-20080126
+20090126
     Sofware-related changes:
       * Major bugs in the Linux version fixed. Now ONSlaught works correctly in
         both Windows and Linux.

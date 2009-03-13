@@ -308,7 +308,7 @@ NONS_SaveFile::Channel::~Channel(){
 
 NONS_VariableMember *readArray(char *buffer,long *offset){
 	NONS_VariableMember *var;
-	integer32 dim=readDWord(buffer,offset);
+	Uint32 dim=readDWord(buffer,offset);
 	if (dim){
 		var=new NONS_VariableMember(0,0);
 		var->dimensionSize=dim;
@@ -410,7 +410,7 @@ void NONS_SaveFile::load(char *filename){
 				wchar_t *temp=0;
 				_READ_BINARY_SJIS_STRING(temp,buffer,offset)
 				var->wcsValue->set(temp,1);
-				this->variables.push_back(var);
+				this->variables[a]=var;
 			}
 			ulong nesting=readDWord(buffer,&offset);
 			if (nesting){
@@ -518,14 +518,19 @@ void NONS_SaveFile::load(char *filename){
 		offset=header[1];
 		{
 			ulong n=readDWord(buffer,&offset);
-			std::vector<ulong> intervals;
+			std::vector<Sint32> intervals;
 			for (ulong a=0;a<n;a++){
-				ulong b=readDWord(buffer,&offset);
+				Uint32 b=readDWord(buffer,&offset);
 				if (b&0x80000000){
-					intervals.push_back(b&0x7FFFFFFF);
+					b&=0x7FFFFFFF;
+					if (b&0x40000000)
+						b|=0x80000000;
+					intervals.push_back((Sint32)b);
 					intervals.push_back(1);
 				}else{
-					intervals.push_back(b);
+					if (b&0x40000000)
+						b|=0x80000000;
+					intervals.push_back((Sint32)b);
 					intervals.push_back(readDWord(buffer,&offset));
 				}
 			}
@@ -533,8 +538,6 @@ void NONS_SaveFile::load(char *filename){
 				ulong a=intervals[currentInterval],
 					b=intervals[currentInterval+1];
 				currentInterval+=2;
-				if (this->variables.size()<a)
-					this->variables.resize(a+b,0);
 				for (ulong c=0;c<b;c++){
 					NONS_Variable *var=new NONS_Variable;
 					var->intValue->set(readSignedDWord((char *)buffer,&offset));
