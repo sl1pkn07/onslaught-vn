@@ -52,6 +52,10 @@
         spi: Not portable.
         getreg: Not portable.
         killmenu: Not portable.
+        kidokuskip: Doesn't seem to do anything useful.
+        kidokumode: Doesn't seem to do anything useful.
+        skipoff: Doesn't seem to do anything useful.
+        isskip: Related to kidokumode.
     Changed behaviors:
         if: Expression syntax has changed. See the changed syntax section.
         arc: No longer uses a dynamic link library due to portability issues.
@@ -133,4 +137,12 @@
         savescreenshot $file:
         savescreenshot2 $file:
             Save the contents of the screen to the $file.
-        
+        isdown %var:
+            Sets %var to 1 if the left mouse button is being pressed, and to 0
+            otherwise.
+        isfull %var:
+            Sets %var to 1 if the engine is in fullscreen, and to 0 otherwise.
+        getcursorpos %x,%y:
+            Sets %x and %y to the horizontal and vertical pixel coordinates
+            where the next character will be printed. The coordinates refer to
+            the top left corner of the glyph.

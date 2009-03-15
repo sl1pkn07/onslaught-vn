@@ -299,10 +299,10 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_savetime(NONS_ParsedLine &line);
 	ErrorCode command_savetime2(NONS_ParsedLine &line);
 	ErrorCode command_split(NONS_ParsedLine &line);
+	ErrorCode command_isdown(NONS_ParsedLine &line);
+	ErrorCode command_isfull(NONS_ParsedLine &line);
+	ErrorCode command_getcursorpos(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);

@@ -145,7 +145,7 @@ const char *errorMessages[]={
 	//NONS_SELECT_TOO_BIG
 	"The button layer is too big for the screen.",
 	//NONS_NO_START_LABEL
-	"There is no \"*start\" label.",
+	"The *start block was not found."
 	//NONS_GOSUB
 	"",
 	//NONS_NO_SPRITE_LOADED_THERE
@@ -170,7 +170,9 @@ const char *errorMessages[]={
 	//NONS_UNDEFINED_ARRAY
 	"Undefined array.",
 	//NONS_OUT_OF_BOUNDS
-	"The subindex is outside the boundaries of the array."
+	"The subindex is outside the boundaries of the array.",
+	//NONS_NO_DEFINE_LABEL
+	"The *define block was not found."
 };
 NONS_RedirectedOutput v_stdout(std::cout);
 NONS_RedirectedOutput v_stderr(std::cerr);

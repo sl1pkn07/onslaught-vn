@@ -1,51 +1,28 @@
 2009????
-    Sofware-related changes:
-      * Implemented: split.
-      * Unimplemented: kidokumode, kidokuskip, skipoff
-      * Serious bug in the string reduction algorithm fixed.
-      * Implemented mouse wheel.
-      * Variable indices can now be negative.
+    * Implemented: split, isdown, isfull, getcursorpos.
+    * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
+    * Serious bug in the string reduction algorithm fixed.
+    * Implemented mouse wheel.
+    * Variable indices can now be negative.
+    * Fixed bug related to text speed.
+    * Added automatic encoding detection.
+	* Added "auto" to the possible encodings list. This is now the default.
 
 20090307
-    Sofware-related changes:
-      * Several bug fixes.
-      * Implemented the following commands: blt, fileexist, menu_full, mp3stop,
-            savefileexist, savescreenshot, savescreenshot2, savetime.
-      * New commands: savetime2.
-      * New command line arguments: -!reset-out-files -!redirect
-      * Improved redirection files behavior.
-      * Unimplemented commands: killmenu
-      * global.sav and nonsflog.dat moved to the save directory.
-    
-    Documentation changes:
-      * Added CompatibilityList.txt
-      * Added doc/ThingsThatAreNoLongerLegal.txt
+    * Several bug fixes.
+    * Implemented the following commands: blt, fileexist, menu_full, mp3stop,
+        savefileexist, savescreenshot, savescreenshot2, savetime.
+    * New commands: savetime2.
+    * New command line arguments: -!reset-out-files -!redirect
+    * Improved redirection files behavior.
+    * Unimplemented commands: killmenu
+    * global.sav and nonsflog.dat moved to the save directory.
 
 20090126
-    Sofware-related changes:
-      * Major bugs in the Linux version fixed. Now ONSlaught works correctly in
+    * Major bugs in the Linux version fixed. Now ONSlaught works correctly in
         both Windows and Linux.
-      * New commands: centerh, centerv
-      * New convenience command line argument: -save-directory
-    
-    Distribution-related additions:
-      * Added an installation script for Windows.
-      * Added .tar.bz2 and .tar.gz archives
-      * Added distro-independent Linux binaries for x86 and x86-64. The x86-64
-        binary is HUGE, but I'm sure in this day and age that's not a problem,
-        and the current compression algorithms do wonders.
-      * The tools are now in archives of their own.
-    
-    Documentation changes:
-      * Updated Changes.txt.
-      * Updated Arguments.txt.
-      * Added Keys.txt, documenting controls.
-      * README.txt cleaned up.
-    
-    Miscellanea:
-      * Copyright notices updated.
-      * Added two more conditions to the licence. Added licences of included
-        files.
+    * New commands: centerh, centerv
+    * New convenience command line argument: -save-directory
 
 20081231
     Minor problems in the initial release corrected.
