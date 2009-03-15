@@ -935,16 +935,36 @@ ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_isdown(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
+	var->set(CHECK_FLAG(SDL_GetMouseState(0,0),SDL_BUTTON(SDL_BUTTON_LEFT)));
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_isfull(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_VariableMember *var;
+	_GETINTVARIABLE(var,0,)
+	var->set(this->everything->screen->screen->fullscreen);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getcursorpos(NONS_ParsedLine &line){
+	if (line.parameters.size()<2)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_VariableMember *x,*y;
+	_GETINTVARIABLE(x,0,)
+	_GETINTVARIABLE(y,1,)
+	x->set(this->everything->screen->output->x);
+	y->set(this->everything->screen->output->y);
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

@@ -91,16 +91,16 @@ wchar_t *ISO88591_to_WChar(const char *buffer,long initialSize,long *finalSize){
 wchar_t *UTF8_to_WChar(const char *buffer,long initialSize,long *finalSize){
 	long c=0;
 	long b=0,init=(uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C?3:0;
+	uchar *unsigned_buffer=(uchar *)buffer;
 	/*
 	Predict size of resulting buffer. This is a ridiculously simple operation,
 	as all it requires is to find the starting bytes of the characters.
 	*/
 	for (long a=init;a<initialSize;a++)
-		if (uchar(buffer[a])<128 || (buffer[a]&192)==192)
+		if (unsigned_buffer[a]<128 || (unsigned_buffer[a]&192)==192)
 			c++;
 	wchar_t *res;
 	res=new wchar_t[c];
-	uchar *unsigned_buffer=(uchar *)buffer;
 	for (long a=init;a<initialSize;a++){
 		if (!(unsigned_buffer[a]&128))
 			//Byte represents an ASCII character. Direct copy will do.
@@ -110,20 +110,21 @@ wchar_t *UTF8_to_WChar(const char *buffer,long initialSize,long *finalSize){
 			continue;
 		else if ((unsigned_buffer[a]&224)==192)
 			//Byte represents the start of an encoded character in the range
-			//U+0080 to U+07FF
+			//[U+0080;U+07FF]
 			res[b]=(wchar_t(unsigned_buffer[a]&31)<<6)|wchar_t(unsigned_buffer[a+1]&63);
 		else if ((unsigned_buffer[a]&240)==224)
 			//Byte represents the start of an encoded character in the range
-			//U+07FF to U+FFFF
+			//[U+0800;U+FFFF]
 			res[b]=(wchar_t(unsigned_buffer[a]&15)<<12)|(wchar_t(unsigned_buffer[a+1]&63)<<6)|wchar_t(unsigned_buffer[a+2]&63);
-		else if ((buffer[a]&248)==240){
+		else if ((unsigned_buffer[a]&248)==240){
 			//Byte represents the start of an encoded character beyond the
 			//U+FFFF limit of 16-bit integer
 			res[b]='?';
 		}
 		b++;
 	}
-	*finalSize=c;
+	if (!!finalSize)
+		*finalSize=c;
 	return res;
 }
 
@@ -146,11 +147,11 @@ wchar_t *UTF8_to_WChar(const char *string){
 			continue;
 		else if ((*a&224)==192)
 			//Byte represents the start of an encoded character in the range
-			//U+0080 to U+07FF
+			//[U+0080;U+07FF]
 			res[b]=((*a&31)<<6)|a[1]&63;
 		else if ((*a&240)==224)
 			//Byte represents the start of an encoded character in the range
-			//U+07FF to U+FFFF
+			//[U+0800;U+FFFF]
 			res[b]=((*a&15)<<12)|((a[1]&63)<<6)|a[2]&63;
 		else if ((*a&248)==240){
 			//Byte represents the start of an encoded character beyond the
@@ -325,7 +326,7 @@ char *WChar_to_UTF8(const wchar_t *string){
 	long b=0;
 	for (;*string;string++,b++){
 		if (*string<0x80)
-			res[b]=(char)*string;
+			res[b]=*string;
 		else if (*string<0x800){
 			res[b++]=(*string>>6)|192;
 			res[b]=*string&63|128;
@@ -484,5 +485,67 @@ bool isbreakspace(char character){
 
 bool isbreakspaceASCIIe(char character){
 	return character==0x20;
+}
+
+bool isValidUTF8(const char *buffer,long size){
+	const uchar *unsigned_buffer=(const uchar *)buffer;
+	for (ulong a=0;a<size;a++){
+		char char_len;
+		if (!(*unsigned_buffer&128))
+			char_len=1;
+		else if ((*unsigned_buffer&224)==192)
+			char_len=2;
+		else if ((*unsigned_buffer&240)==224)
+			char_len=3;
+		else if ((*unsigned_buffer&248)==240)
+			char_len=4;
+		else
+			return 0;
+		unsigned_buffer++;
+		if (char_len<2)
+			continue;
+		a++;
+		for (ulong b=1;b<char_len;b++,a++,unsigned_buffer++)
+			if (*unsigned_buffer<0x80 || (*unsigned_buffer&0xC0)!=0x80)
+				return 0;
+	}
+	return 1;
+}
+
+bool isValidSJIS(const char *buffer,long size){
+	const uchar *unsigned_buffer=(const uchar *)buffer;
+	for (ulong a=0;a<size;a++,unsigned_buffer++){
+		if (!isSJISWide(*unsigned_buffer)){
+			if (*unsigned_buffer>=0x80 && *unsigned_buffer<=0xA0 || *unsigned_buffer>=0xE0)
+				return 0;
+			continue;
+		}
+		bool even=!(*unsigned_buffer&1);
+		a++;
+		unsigned_buffer++;
+		if (*unsigned_buffer<0x40 || *unsigned_buffer>0xFC || *unsigned_buffer==0x7F)
+			return 0;
+	}
+	return 1;
+}
+
+bool isValidUCS2(const char *buffer,long size){
+	return !(size&1);
+}
+
+bool ISO88591_or_UCS2(const char *buffer,long size){
+	if (!isValidUCS2(buffer,size))
+		return 0;
+	ulong nuls=0;
+	for (ulong a=0;a<size-6;a++,buffer++)
+		if (buffer[0]=='*' &&
+			buffer[1]=='d' &&
+			buffer[2]=='e' &&
+			buffer[3]=='f' &&
+			buffer[4]=='i' &&
+			buffer[5]=='n' &&
+			buffer[6]=='e')
+			return 0;
+	return 1;
 }
 #endif

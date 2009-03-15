@@ -46,32 +46,47 @@ NONS_Script::NONS_Script(){
 
 ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
 	long l;
-	uchar *temp=archive->getFileBuffer(scriptname,(ulong *)&l);
+	char *temp=(char *)archive->getFileBuffer(scriptname,(ulong *)&l);
 	if (!temp){
 		this->script=0;
 		this->length=0;
 		return NONS_FILE_NOT_FOUND;
 	}
 	{
-		int error_code=inPlaceDecryption((char *)temp,l,encryption);
+		int error_code=inPlaceDecryption(temp,l,encryption);
 		if (error_code!=NONS_NO_ERROR)
 			return error_code;
 	}
 	wchar_t *buffer=0;
 	switch (encoding){
+		case DETECT_ENCODING:
+			if (isValidUTF8(temp,l)){
+				v_stdlog <<"The script seems to be a valid UTF-8 stream. Using it as such."<<std::endl;
+				buffer=UTF8_to_WChar(temp,l,&l);
+			}else if (isValidSJIS(temp,l)){
+				v_stdlog <<"The script seems to be a valid Shift JIS stream. Using it as such."<<std::endl;
+				buffer=SJIS_to_WChar(temp,l,&l);
+			}else if (!ISO88591_or_UCS2(temp,l)){
+				v_stdlog <<"The script seems to be a valid ISO-8859-1 stream. Using it as such."<<std::endl;
+				buffer=ISO88591_to_WChar(temp,l,&l);
+			}else{
+				v_stdlog <<"The script seems to be a valid UCS-2 stream. Using it as such."<<std::endl;
+				buffer=UCS2_to_WChar(temp,l,&l);
+			}
+			break;
 		case ISO_8859_1_ENCODING:
-			buffer=ISO88591_to_WChar((char *)temp,l,&l);
+			buffer=ISO88591_to_WChar(temp,l,&l);
 			break;
 		case UCS2_ENCODING:
 			if (l%2)
 				v_stderr <<"WARNING: input text has odd length. It may not be valid UCS-2 text."<<std::endl;
-			buffer=UCS2_to_WChar((char *)temp,l,&l);
+			buffer=UCS2_to_WChar(temp,l,&l);
 			break;
 		case UTF8_ENCODING:
-			buffer=UTF8_to_WChar((char *)temp,l,&l);
+			buffer=UTF8_to_WChar(temp,l,&l);
 			break;
 		case SJIS_ENCODING:
-			buffer=SJIS_to_WChar((char *)temp,l,&l);
+			buffer=SJIS_to_WChar(temp,l,&l);
 			break;
 		default:
 			break;
@@ -100,6 +115,8 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 		for (;a<l && buffer[a]!=13 && buffer[a]!=10;a++);
 		for (;a<l && (buffer[a]==13 || buffer[a]==10);a++);
 	}
+	if (!this->offsetFromBlock(L"*define"))
+		return NONS_NO_DEFINE_LABEL;
 	SHA1 hash;
 	for (ulong a=0;a<this->blocks.size();a++){
 		wchar_t *b=this->blocks[a]->name;

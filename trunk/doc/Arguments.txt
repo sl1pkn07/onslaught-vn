@@ -85,8 +85,8 @@ Mode 2, or rotating xor: Given an array ring[]={0x79,0x57,0x0D,0x80,0x04},
 Mode 3, or transform and xor: Not supported.
 
 
--encoding {sjis|iso-8859-1|utf8|ucs2}
-Selects the encoding to be used on the script file. Default is sjis.
+-encoding {auto|sjis|iso-8859-1|utf8|ucs2}
+Selects the encoding to be used on the script file. Default is auto.
 
 
 -dump-text <file name>

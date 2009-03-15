@@ -110,6 +110,7 @@ typedef Uint32 ErrorCode;
 #define NONS_VARIABLE_OUT_OF_RANGE					64
 #define NONS_UNDEFINED_ARRAY						65
 #define NONS_OUT_OF_BOUNDS							66
+#define NONS_NO_DEFINE_LABEL						(67|NONS_FATAL_ERROR)
 
 extern const char *errorMessages[];
 #endif

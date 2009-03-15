@@ -94,9 +94,9 @@ void usage(){
 		"          4. \"nscript.___\", method 3\n"
 		"          5. \"nscript.dat\", method 1\n"
 		"      The documentation contains a detailed description on each of the modes.\n"
-		"  -encoding {sjis|iso-8859-1|utf8|ucs2}\n"
+		"  -encoding {auto|sjis|iso-8859-1|utf8|ucs2}\n"
 		"      Select the encoding to be used for the script.\n"
-		"      Default is \'sjis\'. This encoding is not recommended.\n"
+		"      Default is \'auto\'.\n"
 		"  -s\n"
 		"      No sound.\n"
 		"  -music-format {auto|mp3|ogg}\n"
@@ -240,6 +240,10 @@ void parseCommandLine(int argc,T **argv){
 					break;
 				}
 				argument++;
+				if (!strcmp2(argv[argument],"sjis")){
+					CLOptions.scriptencoding=DETECT_ENCODING;
+					break;
+				}
 				if (!strcmp2(argv[argument],"sjis")){
 					CLOptions.scriptencoding=SJIS_ENCODING;
 					break;

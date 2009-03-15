@@ -55,6 +55,32 @@ typedef unsigned char uchar;
 #define NONS_LITTLE_ENDIAN 1
 #define UNDEFINED_ENDIANNESS 2
 
+#ifndef BARE_FILE
+#define _READ_BINARY_SJIS_STRING(to,from,offset)\
+{\
+	char *tempString=readString((char*)(from),&(offset));\
+	to =SJIS_to_WChar(tempString);\
+	delete[] tempString;\
+	if (!*to){\
+		delete[] to;\
+		to=0;\
+	}\
+}
+#define _READ_BINARY_UTF8_STRING(to,from,offset)\
+{\
+	char *tempString=readString((char*)(from),&(offset));\
+	to=UTF8_to_WChar(tempString);\
+	delete[] tempString;\
+	if (!*to){\
+		delete[] to;\
+		to=0;\
+	}\
+}
+#else
+uchar *readfile(const char *name,long *len);
+char writefile(const char *name,char *buffer,long size);
+#endif
+
 char checkEnd(wchar_t a);
 //Determines the system's endianness.
 bool checkNativeEndianness();
@@ -87,31 +113,10 @@ char *WChar_to_SJIS(const wchar_t *buffer,long initialSize,long *finalSize);
 long getUTF8size(const wchar_t *buffer,long size);
 long getUTF8size(const wchar_t *string);
 
-#ifndef BARE_FILE
-#define _READ_BINARY_SJIS_STRING(to,from,offset)\
-{\
-	char *tempString=readString((char*)(from),&(offset));\
-	to =SJIS_to_WChar(tempString);\
-	delete[] tempString;\
-	if (!*to){\
-		delete[] to;\
-		to=0;\
-	}\
-}
-#define _READ_BINARY_UTF8_STRING(to,from,offset)\
-{\
-	char *tempString=readString((char*)(from),&(offset));\
-	to=UTF8_to_WChar(tempString);\
-	delete[] tempString;\
-	if (!*to){\
-		delete[] to;\
-		to=0;\
-	}\
-}
-#else
-uchar *readfile(const char *name,long *len);
-char writefile(const char *name,char *buffer,long size);
-#endif
+bool isValidUTF8(const char *buffer,long size);
+bool isValidSJIS(const char *buffer,long size);
+bool isValidUCS2(const char *buffer,long size);
+bool ISO88591_or_UCS2(const char *buffer,long size);
 
 bool iswhitespace(char character);
 bool iswhitespace(wchar_t character);

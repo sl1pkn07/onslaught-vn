@@ -254,7 +254,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"getcselnum"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getcselstr"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getcursor"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getcursorpos"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getcursorpos"]=&NONS_ScriptInterpreter::command_getcursorpos;
 	this->commandList[L"getenter"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getfunction"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getinsert"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -288,10 +288,10 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"input"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit;
-	this->commandList[L"isdown"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"isfull"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"isdown"]=&NONS_ScriptInterpreter::command_isdown;
+	this->commandList[L"isfull"]=&NONS_ScriptInterpreter::command_isfull;
 	this->commandList[L"ispage"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"isskip"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"isskip"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"itoa"]=&NONS_ScriptInterpreter::command_itoa;
 	this->commandList[L"itoa2"]=&NONS_ScriptInterpreter::command_itoa;
 	this->commandList[L"jumpb"]=&NONS_ScriptInterpreter::command_jumpf;
@@ -552,14 +552,16 @@ ulong countLines(wchar_t *buffer,ulong byte_pos){
 			if (event.key.keysym.sym==SDLK_F5){\
 				this->default_speed=this->default_speed_slow;\
 				this->current_speed_setting=0;\
+				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
 			}else if (event.key.keysym.sym==SDLK_F6){\
 				this->default_speed=this->default_speed_med;\
 				this->current_speed_setting=1;\
+				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
 			}else if (event.key.keysym.sym==SDLK_F7){\
 				this->default_speed=this->default_speed_fast;\
 				this->current_speed_setting=2;\
+				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
 			}\
-			this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
 			break;\
 		}\
 }

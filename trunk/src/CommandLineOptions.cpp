@@ -49,7 +49,7 @@
 #endif
 
 NONS_CommandLineOptions::NONS_CommandLineOptions(){
-	this->scriptencoding=SJIS_ENCODING;
+	this->scriptencoding=DETECT_ENCODING;
 	this->musicFormat=0;
 	this->musicDirectory=0;
 	this->layerMethod=CLASSIC_METHOD;
