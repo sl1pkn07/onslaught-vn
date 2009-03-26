@@ -117,7 +117,7 @@ struct NONS_StackElement{
 };
 
 class NONS_ScriptInterpreter{
-	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmp> commandListType;
+	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmpCI> commandListType;
 	//ErrorCode Printer(wchar_t *line);
 	ErrorCode Printer(const wchar_t *line);
 	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack=0);
@@ -127,14 +127,7 @@ class NONS_ScriptInterpreter{
 	ulong interpreter_position;
 	ulong previous_interpreter_position;
 	commandListType commandList;
-	/*
-	This set contains all lines that, for any reason, should only be ran once.
-	The most common situation is that the line produced an error, so it has been
-	blacklisted, so to speak.
-	Some commands produce an error if ran more than once in the same script, so
-	they should add the current line to the set.
-	*/
-	std::set<ulong> errored_lines;
+	//std::set<ulong> errored_lines;
 	std::set<ulong> printed_lines;
 	std::set<const wchar_t *,wstrCmp> implementationErrors;
 	ulong interpreter_mode;
@@ -143,7 +136,6 @@ class NONS_ScriptInterpreter{
 	bool mp3_save;
 	bool mp3_loop;
 	bool wav_loop;
-	bool language_extensions;
 	long default_speed;
 	long default_speed_slow;
 	long default_speed_med;
@@ -206,7 +198,6 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_getmp3vol(NONS_ParsedLine &line);
 	ErrorCode command_effect(NONS_ParsedLine &line);
 	ErrorCode command_mid(NONS_ParsedLine &line);
-	ErrorCode command_onslaught_language_extensions(NONS_ParsedLine &line);
 	ErrorCode command_dim(NONS_ParsedLine &line);
 	ErrorCode command_movl(NONS_ParsedLine &line);
 	ErrorCode command_time(NONS_ParsedLine &line);
@@ -264,7 +255,7 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_gettimer(NONS_ParsedLine &line);
 	ErrorCode command_rmenu(NONS_ParsedLine &line);
 	ErrorCode command_menusetwindow(NONS_ParsedLine &line);
-	ErrorCode command_kidokuskip(NONS_ParsedLine &line);
+	//ErrorCode command_kidokuskip(NONS_ParsedLine &line);
 	ErrorCode command_menuselectcolor(NONS_ParsedLine &line);
 	ErrorCode command_savename(NONS_ParsedLine &line);
 	ErrorCode command_menuselectvoice(NONS_ParsedLine &line);

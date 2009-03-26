@@ -36,7 +36,7 @@
 
 struct operand{
 	int constant;
-	char *symbol;
+	wchar_t *symbol;
 	long position;
 	char type;
 	operand();
@@ -45,18 +45,16 @@ struct operand{
 	~operand();
 };
 
-template <typename T>
 struct simpleoperation{
-	char *function;
+	wchar_t *function;
 	operand *operandA;
 	operand *operandB;
 	simpleoperation();
 	simpleoperation(const simpleoperation &b);
-	simpleoperation<T> &operator=(const simpleoperation &b);
+	simpleoperation &operator=(const simpleoperation &b);
 	~simpleoperation();
 	void clear();
 };
 
-ErrorCode parse_expression(char *exp,ulong *offset,std::vector<simpleoperation<char> *> *queue,operand *operandA=0);
-//template <typename T> ErrorCode parse_expression(T *exp,ulong *offset,std::vector<simpleoperation<T> *> *queue,operand<T> *operandA)
+ErrorCode parse_expression(const wchar_t *exp,ulong *offset,std::vector<simpleoperation *> *queue,operand *operandA=0);
 #endif

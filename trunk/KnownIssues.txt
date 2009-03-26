@@ -11,4 +11,6 @@
 * Linux
     ???
 * Miscellanea
-    Vertical centering produces incorrect results when the size of a page of text is greater than the size of the screen. This will probably be fixed in future releases.
+    Vertical centering produces incorrect results when the size of a page of
+    text is greater than the size of the screen. This will probably be fixed in
+    future releases.

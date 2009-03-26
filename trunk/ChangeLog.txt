@@ -1,12 +1,15 @@
 2009????
     * Implemented: split, isdown, isfull, getcursorpos.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
-    * Serious bug in the string reduction algorithm fixed.
+    * Fixed serious bug in the string reduction algorithm.
     * Implemented mouse wheel.
     * Variable indices can now be negative.
     * Fixed bug related to text speed.
     * Added automatic encoding detection.
-	* Added "auto" to the possible encodings list. This is now the default.
+    * Added "auto" to the possible encodings list. This is now the default.
+    * Fixed bug in the bilinear interpolation function.
+    * Fixed bug related to !sd and !s# escape sequences.
+    * doc/Changes.txt reformatted.
 
 20090307
     * Several bug fixes.

@@ -36,46 +36,7 @@
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
 #define NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
 ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_ParsedLine &line){
-	this->errored_lines.insert(this->current_line);
-	/*if (!wcscmp(line.line,L"arc")){
-		if (line.parameters.size()<1){
-			ErrorCode error=this->everything->archive->init("arc.sar",0,1);
-			if ((error&NONS_NO_ERROR_FLAG)!=NONS_NO_ERROR_FLAG)
-				return this->everything->archive->init("ARC.SAR",0,0);
-			return error;
-		}
-		char *name=copyString(line.parameters[0]);
-		ErrorCode ret=this->everything->archive->init(name,0,0);
-		delete[] name;
-		return ret;
-	}else{
-		const char *filenames[]={
-			"arc.nsa",
-			"ARC.NSA",
-			"arc1.nsa",
-			"ARC1.NSA",
-			"arc2.nsa",
-			"ARC2.NSA",
-			"arc3.nsa",
-			"ARC3.NSA",
-			"arc4.nsa",
-			"ARC4.NSA",
-			"arc5.nsa",
-			"ARC5.NSA",
-			"arc6.nsa",
-			"ARC6.NSA",
-			"arc7.nsa",
-			"ARC7.NSA",
-			"arc8.nsa",
-			"ARC8.NSA",
-			"arc9.nsa",
-			"ARC9.NSA",
-			0
-		};
-		for (short a=0;filenames[a];a++)
-			this->everything->archive->init(filenames[a],1,1);*/
-		return NONS_NO_ERROR;
-	//}
+	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_ParsedLine &line){
@@ -290,14 +251,6 @@ ErrorCode NONS_ScriptInterpreter::command_mid(NONS_ParsedLine &line){
 		len=len0-start;
 	dst->set(copyWString(src+start,len),1);
 	delete[] src;
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_onslaught_language_extensions(NONS_ParsedLine &line){
-	if (!wcscmp(line.commandName,L"enable_onslaught_language_extensions"))
-		this->language_extensions=1;
-	else
-		this->language_extensions=0;
 	return NONS_NO_ERROR;
 }
 

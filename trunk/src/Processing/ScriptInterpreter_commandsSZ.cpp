@@ -252,21 +252,21 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 	//this->everything->screen->output->extraLineSkip=0;
 	if (forceLineSkip)
 		this->main_font->lineSkip=forceLineSkip;
-	this->default_speed=speed;
 	this->default_speed_slow=speed*2;
 	this->default_speed_med=speed;
 	this->default_speed_fast=speed/2;
 	switch (this->current_speed_setting){
 		case 0:
-			this->everything->screen->output->display_speed=this->default_speed_slow;
+			this->default_speed=this->default_speed_slow;
 			break;
 		case 1:
-			this->everything->screen->output->display_speed=this->default_speed_med;
+			this->default_speed=this->default_speed_med;
 			break;
 		case 2:
-			this->everything->screen->output->display_speed=this->default_speed_fast;
+			this->default_speed=this->default_speed_fast;
 			break;
 	}
+	this->everything->screen->output->display_speed=this->default_speed;
 	if (syntax)
 		delete[] filename;
 	return NONS_NO_ERROR;
