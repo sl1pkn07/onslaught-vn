@@ -59,7 +59,7 @@
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"\
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"\
 		"All rights reserved.\n\n"\
-		"\"It's just a flesh wound.\"\n\n"<<std::endl;\
+		"\"What's all this, then?\"\n\n"<<std::endl;\
 }
 
 int mainThread(void *nothing);

@@ -53,8 +53,8 @@ ErrorCode NONS_ScriptInterpreter::command_caption(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
-		return NONS_NOT_IN_DEFINE_MODE;
+	/*if (this->interpreter_mode!=DEFINE)
+		return NONS_NOT_IN_DEFINE_MODE;*/
 	NONS_VariableMember *var=this->store->retrieve(line.parameters[0],0);
 	if (!var){
 		_CHECK_ID_NAME(line.parameters[0])
@@ -102,8 +102,8 @@ ErrorCode NONS_ScriptInterpreter::command_goto(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_globalon(NONS_ParsedLine &line){
-	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
-		return NONS_NOT_IN_DEFINE_MODE;
+	/*if (this->interpreter_mode!=DEFINE)
+		return NONS_NOT_IN_DEFINE_MODE;*/
 	this->store->commitGlobals=1;
 	return NONS_NO_ERROR;
 }
@@ -265,8 +265,8 @@ ErrorCode NONS_ScriptInterpreter::command_itoa(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_intlimit(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
-		return NONS_NOT_IN_DEFINE_MODE;
+	/*if (this->interpreter_mode!=DEFINE)
+		return NONS_NOT_IN_DEFINE_MODE;*/
 	NONS_VariableMember *dst;
 	_GETINTVARIABLE(dst,0,)
 	long lower,upper;
@@ -310,8 +310,8 @@ ErrorCode NONS_ScriptInterpreter::command_getmp3vol(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (this->interpreter_mode!=DEFINE && !this->language_extensions)
-		return NONS_NOT_IN_DEFINE_MODE;
+	/*if (this->interpreter_mode!=DEFINE)
+		return NONS_NOT_IN_DEFINE_MODE;*/
 	long code,effect,timing=0;
 	wchar_t *rule=0;
 	_GETINTVALUE(code,0,)
@@ -334,8 +334,8 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (line.parameters[0][0]!='?' && !this->language_extensions)
-		return NONS_MISSING_Q_IN_ARRAY_DECLARATION;
+	/*if (line.parameters[0][0]!='?')
+		return NONS_MISSING_Q_IN_ARRAY_DECLARATION;*/
 	wchar_t *name=line.parameters[0];
 	wchar_t *string=name;
 	for (;*name!='?';name++);

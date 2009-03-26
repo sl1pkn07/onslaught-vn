@@ -50,7 +50,7 @@ operand::~operand(){
 operand::operand(const operand &b){
 	this->constant=b.constant;
 	this->position=b.position;
-	this->symbol=b.symbol?copyString(b.symbol):0;
+	this->symbol=copyWString(b.symbol);
 	this->type=b.type;
 }
 
@@ -59,21 +59,19 @@ operand &operand::operator=(const operand &b){
 	this->position=b.position;
 	if (this->symbol)
 		delete[] this->symbol;
-	this->symbol=b.symbol?copyString(b.symbol):0;
+	this->symbol=copyWString(b.symbol);
 	this->type=b.type;
 	return *this;
 }
 
-template <typename T>
-simpleoperation<T>::simpleoperation(){
+simpleoperation::simpleoperation(){
 	this->function=0;
 	this->operandA=0;
 	this->operandB=0;
 }
 
-template <typename T>
-simpleoperation<T>::simpleoperation(const simpleoperation<T> &b){
-	this->function=b.function?copyString(b.function):0;
+simpleoperation::simpleoperation(const simpleoperation &b){
+	this->function=copyWString(b.function);
 	this->operandA=new operand(*b.operandA);
 	if (b.operandB)
 		this->operandB=new operand(*b.operandB);
@@ -81,11 +79,10 @@ simpleoperation<T>::simpleoperation(const simpleoperation<T> &b){
 		this->operandB=0;
 }
 
-template <typename T>
-simpleoperation<T> &simpleoperation<T>::operator=(const simpleoperation &b){
+simpleoperation &simpleoperation::operator=(const simpleoperation &b){
 	if (this->function)
 		delete[] this->function;
-	this->function=b.function?copyString(b.function):0;
+	this->function=copyWString(b.function);
 	if (this->operandA)
 		delete this->operandA;
 	this->operandA=new operand(*b.operandA);
@@ -98,8 +95,7 @@ simpleoperation<T> &simpleoperation<T>::operator=(const simpleoperation &b){
 	return *this;
 }
 
-template <typename T>
-simpleoperation<T>::~simpleoperation(){
+simpleoperation::~simpleoperation(){
 	if (this->function)
 		delete[] this->function;
 	if (this->operandA)
@@ -108,15 +104,13 @@ simpleoperation<T>::~simpleoperation(){
 		delete this->operandB;
 }
 
-template <typename T>
-void simpleoperation<T>::clear(){
+void simpleoperation::clear(){
 	this->function=0;
 	this->operandA=0;
 	this->operandB=0;
 }
 
-template <typename T>
-long getNumber(T *string,ulong *offset){
+long getNumber(const wchar_t *string,ulong *offset){
 	string+=*offset;
 	ulong l;
 	for (l=0;string[l]>='0' && string[l]<='9' || string[l]=='.' || (string[l]=='-' && !l);l++);
@@ -127,29 +121,26 @@ long getNumber(T *string,ulong *offset){
 	return res;
 }
 
-template <typename T>
-T *getSymbol(T *string,ulong *offset){
+wchar_t *getSymbol(const wchar_t *string,ulong *offset){
 	string+=*offset;
 	if (*string!='?'){
 		long l=0;
 		if (string[l]=='%')
 			l++;
-		/*if (!isalpha(string[l]) && string[l]!='_')
-			return 0;*/
 		for (l;string[l] && (isalnum(string[l]) || string[l]=='_');l++);
 		(*offset)+=l;
-		return copyString(string,l);
+		return copyWString(string,l);
 	}else{
 		if (!isalpha(*string) || *string!='_')
 			return 0;
 		long l=1;
 		bool breakerfound=0;
-		for (;string[l] && string[l]!='[' && !iswhitespace((char)string[l]) && !breakerfound;l++)
+		for (;string[l] && string[l]!='[' && !iswhitespace(string[l]) && !breakerfound;l++)
 			if (!isalnum(string[l]) && string[l]!='_')
 				breakerfound=1;
 		if (breakerfound==1)
 			return 0;
-		for (;string[l] && iswhitespace((char)string[l]);l++);
+		for (;string[l] && iswhitespace(string[l]);l++);
 		if (string[l]!='[')
 			return 0;
 		while (1){
@@ -170,29 +161,28 @@ T *getSymbol(T *string,ulong *offset){
 				return 0;
 			l++;
 			long l2=l;
-			for (;string[l] && iswhitespace((char)string[l]);l++);
+			for (;string[l] && iswhitespace(string[l]);l++);
 			if (string[l]!='['){
 				l=l2;
 				break;
 			}
 		}
 		(*offset)+=l;
-		return copyString(string,l);
+		return copyWString(string,l);
 	}
 }
 
-template <typename T>
-T *getOperator(T *string,ulong *offset){
+wchar_t *getOperator(const wchar_t *string,ulong *offset){
 	string+=*offset;
-	char *copy1=copyString(string,1);
-	char *copy2=copyString(string,2);
-	static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
+	wchar_t *copy1=copyWString(string,1);
+	wchar_t *copy2=copyWString(string,2);
+	static const wchar_t *operators[]={L"||",L"&&",L"==",L"!=",L"<>",L">=",L"<=",L"=",L">",L"<",L"+",L"-",L"*",L"/",L"|",L"&",0};
 	for (ushort op=0;operators[op];op++){
-		if (!strcmp(copy1,operators[op]) || !strcmp(copy2,operators[op])){
+		if (!wcscmp(copy1,operators[op]) || !wcscmp(copy2,operators[op])){
 			delete[] copy1;
 			delete[] copy2;
-			(*offset)+=strlen(operators[op]);
-			return copyString(operators[op]);
+			(*offset)+=wcslen(operators[op]);
+			return copyWString(operators[op]);
 		}
 	}
 	delete[] copy1;
@@ -200,24 +190,23 @@ T *getOperator(T *string,ulong *offset){
 	return 0;
 }
 
-template <typename T>
-long getPrecedence(T *string){
+long getPrecedence(const wchar_t *string){
 	if (!string || !*string)
 		return -1;
-	char *copy1=copyString(string,1);
-	char *copy2=copyString(string,2);
-	static const char *operators[][9]={
-		{"||",  "|",   0,   0,   0,   0,  0,  0,  0},
-		{"&&",  "&",   0,   0,   0,   0,  0,  0,  0},
-		{"==",  "!=",  "<>",">=","<=","=",">","<",0},
-		{"+",   "-",   0,   0,   0,   0,  0,  0,  0},
-		{"*",   "/",   0,   0,   0,   0,  0,  0,  0},
-		{"fchk","lchk",0,   0,   0,   0,  0,  0,  0},
+	wchar_t *copy1=copyWString(string,1);
+	wchar_t *copy2=copyWString(string,2);
+	static const wchar_t *operators[][9]={
+		{L"||",  L"|",   0,    0,    0,    0,   0,   0,   0},
+		{L"&&",  L"&",   0,    0,    0,    0,   0,   0,   0},
+		{L"==",  L"!=",  L"<>",L">=",L"<=",L"=",L">",L"<",0},
+		{L"+",   L"-",   0,    0,    0,    0,   0,   0,   0},
+		{L"*",   L"/",   0,    0,    0,    0,   0,   0,   0},
+		{L"fchk",L"lchk",0,    0,    0,    0,   0,   0,   0},
 		0
 	};
 	for (ushort precedence=0;operators[precedence][0];precedence++){
 		for (ushort op=0;operators[precedence][op];op++){
-			if (!strcmp(copy1,operators[precedence][op]) || !strcmp(copy2,operators[precedence][op])){
+			if (!wcscmp(copy1,operators[precedence][op]) || !wcscmp(copy2,operators[precedence][op])){
 				delete[] copy1;
 				delete[] copy2;
 				return precedence;
@@ -229,56 +218,54 @@ long getPrecedence(T *string){
 	return -1;
 }
 
-template <typename T>
-ulong isunaryoperator(T *exp,ulong offset){
+ulong isunaryoperator(const wchar_t *exp,ulong offset){
 	exp+=offset;
-	static const char *operators[]={
-		"fchk",
-		"lchk"
+	static const wchar_t *operators[]={
+		L"fchk",
+		L"lchk",
+		0
 	};
 	ulong l=0;
-	for (;exp[l] && !iswhitespace((char)exp[l]);l++);
-	char *copy=copyString(exp,l);
+	for (;exp[l] && !iswhitespace(exp[l]);l++);
+	wchar_t *copy=copyWString(exp,l);
 	for (ulong a=0;operators[a];a++)
-		if (!strcmp(copy,operators[a]))
+		if (!wcscmp(copy,operators[a]))
 			return a+1;
 	return 0;
 }
 
-template <typename T>
-T *getNormalString(T *exp,ulong *offset){
+wchar_t *getNormalString(const wchar_t *exp,ulong *offset){
 	ulong l=0;
 	if (exp[*offset]=='"' || exp[*offset]=='`'){
-		T quote=exp[*offset];
+		wchar_t quote=exp[*offset];
 		(*offset)++;
 		ulong off2=*offset;
 		for (;exp[off2+l] && exp[off2+l]!=quote;l++);
 		if (exp[*offset+l]!=quote)
 			return 0;
-		T *res=copyString(exp+off2,l);
+		wchar_t *res=copyWString(exp+off2,l);
 		(*offset)+=l+1;
 		return res;
 	}
 	ulong off2=*offset;
-	for (;exp[off2+l] && !iswhitespace((char)exp[off2+l]);l++);
-	T *res=copyString(exp+off2,l);
+	for (;exp[off2+l] && !iswhitespace(exp[off2+l]);l++);
+	wchar_t *res=copyWString(exp+off2,l);
 	(*offset)+=l;
 	return res;
 }
 
-template <typename T>
-ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleoperation<T> *> *queue,operand *operandA=0){
+ErrorCode parse_expression(const wchar_t *exp,ulong *offset,std::vector<simpleoperation *> *queue,operand *operandA){
 	if (!exp || !queue)
 		return NONS_INTERNAL_INVALID_PARAMETER;
 	char step=!!operandA;
-	simpleoperation<T> op;
+	simpleoperation op;
 	if (operandA)
 		op.operandA=operandA;
 	ulong start=!offset?0:*offset;
 	ulong a;
 	for (a=start;exp[a];){
 		//whitespace is ignored
-		for (;iswhitespace((char)exp[a]) && exp[a];a++);
+		for (;iswhitespace(exp[a]) && exp[a];a++);
 		switch (step){
 			case 0:
 				{
@@ -286,8 +273,6 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 					bool unary=0;
 					if (exp[a]=='('){
 						a++;
-						/*while (exp[a]<=' ')
-							a++;*/
 						ErrorCode temp_res=parse_expression(exp,&a,queue);
 						if (temp_res)
 							return temp_res;
@@ -298,33 +283,27 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 							op.operandA->constant=getNumber(exp,&a);
 							op.operandA->type=0;
 						}else{
-							//Unused:
-							if (/*ulong unary_op=*/isunaryoperator(exp,a)){
+							if (isunaryoperator(exp,a)){
 								unary=1;
 								op.function=getSymbol(exp,&a);
-								for (;iswhitespace((char)exp[a]) && exp[a];a++);
+								for (;iswhitespace(exp[a]) && exp[a];a++);
 								if (!(op.operandA->symbol=getNormalString(exp,&a)))
 									return NONS_UNMATCHED_QUOTES;
 								op.operandA->type=1;
 								op.operandB=0;
-								simpleoperation<T> *copyforpush=new simpleoperation<T>;//(op);
-								*copyforpush=op;
+								simpleoperation *copyforpush=new simpleoperation(op);
+								//*copyforpush=op;
 								queue->push_back(copyforpush);
 							}else if (!(op.operandA->symbol=getSymbol(exp,&a)))
 								return NONS_UNMATCHED_BRAKETS;
 							op.operandA->type=1;
 						}
 					}
-					for (;iswhitespace((char)exp[a]) && exp[a];a++);
+					for (;iswhitespace(exp[a]) && exp[a];a++);
 					if (!exp[a] || exp[a]==')'){
 						if (!unary){
-							simpleoperation<T> *copyforpush=new simpleoperation<T>;//(op);
-							*copyforpush=op;
-							/*copyforpush->function=new T[2];
-							copyforpush->function[0]='+';
-							copyforpush->function[1]=0;
-							copyforpush->operandB=new operand();
-							copyforpush->operandB->constant=0;*/
+							simpleoperation *copyforpush=new simpleoperation(op);
+							//*copyforpush=op;
 							queue->push_back(copyforpush);
 						}
 						if (offset)
@@ -336,11 +315,10 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 				}
 			case 1:
 				{
-					T *temp=getOperator(exp,&a);
+					wchar_t *temp=getOperator(exp,&a);
 					if (!temp)
 						return NONS_UNRECOGNIZED_OPERATOR;
-					op.function=copyString(temp);
-					delete[] temp;
+					op.function=temp;
 					step++;
 					break;
 				}
@@ -360,18 +338,19 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 						if (exp[a]!='%' && exp[a]!='?' && !isalpha(exp[a]) && exp[a]!='_'){
 							temp->constant=getNumber(exp,&a);
 							temp->type=0;
-						}else/* if (!isunaryoperator(exp,a))*/{
+						}else{
 							if (!(temp->symbol=getSymbol(exp,&a)))
 								return NONS_UNMATCHED_BRAKETS;
 							temp->type=1;
 						}
 					}
-					for (;iswhitespace((char)exp[a]) && exp[a];a++);
-					long prec0=getPrecedence(exp+a), prec1=getPrecedence(op.function);
+					for (;iswhitespace(exp[a]) && exp[a];a++);
+					long prec0=getPrecedence(exp+a),
+						prec1=getPrecedence(op.function);
 					if (prec0<0){
 						if (exp[a]==')'){
 							op.operandB=temp;
-							simpleoperation<T> *copyforpush=new simpleoperation<T>;
+							simpleoperation *copyforpush=new simpleoperation;
 							*copyforpush=op;
 							queue->push_back(copyforpush);
 							op.clear();
@@ -381,7 +360,7 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 						}
 						if (!exp[a]){
 							op.operandB=temp;
-							simpleoperation<T> *copyforpush=new simpleoperation<T>;
+							simpleoperation *copyforpush=new simpleoperation;
 							*copyforpush=op;
 							queue->push_back(copyforpush);
 							op.clear();
@@ -406,17 +385,17 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 							op.operandB=new operand;
 							op.operandB->position=queue->size()-1;
 							op.operandB->type=2;
-							simpleoperation<T> *copyforpush=new simpleoperation<T>;
+							simpleoperation *copyforpush=new simpleoperation;
 							*copyforpush=op;
 							queue->push_back(copyforpush);
 							op.clear();
 							op.operandA=new operand;
 							op.operandA->position=queue->size()-1;
 							op.operandA->type=2;
-						}else/* if (prec0<prec1)*/{
+						}else{
 							op.operandB=temp;
-							simpleoperation<T> *copyforpush=new simpleoperation<T>;
-							*copyforpush=op;
+							simpleoperation *copyforpush=new simpleoperation(op);
+							//*copyforpush=op;
 							queue->push_back(copyforpush);
 							op.clear();
 							if (prec0<prec1 && operandA){
@@ -437,9 +416,5 @@ ErrorCode parse_expression_template(T *exp,ulong *offset,std::vector<simpleopera
 	if (offset)
 		*offset=a;
 	return NONS_NO_ERROR;
-}
-
-ErrorCode parse_expression(char *exp,ulong *offset,std::vector<simpleoperation<char> *> *queue,operand *operandA){
-	return parse_expression_template<char>(exp,offset,queue,operandA);
 }
 #endif

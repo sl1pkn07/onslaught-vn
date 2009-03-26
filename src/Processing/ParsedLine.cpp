@@ -36,33 +36,65 @@
 #include "../Globals.h"
 #include <climits>
 
-template <typename T>
-T *getLine(T *buffer){
+wchar_t *getLine(wchar_t *buffer,ulong *increment){
 	bool singleline=0;
-	if (*buffer==13 || *buffer==10)
+	if (*buffer==13 || *buffer==10){
+		*increment=0;
 		return copyWString("");
-	if (multicomparison(*buffer,";*`") || *buffer>0x7F)
-		singleline=1;
-	long l=0,finallength;
-	while (1){
-		for (;buffer[l] && buffer[l]!=13 && buffer[l]!=10;l++);
-		finallength=l;
-		if (!l)
-			return copyWString("");
-		for (;(buffer[l-1]==' ' || buffer[l-1]=='\t') && !multicomparison(buffer[l-1],",:/");l--);
-		if (singleline || !buffer[finallength] || !multicomparison(buffer[l-1],",:/"))
-			break;
-		l=finallength;
-		for (;buffer[l]==13 || buffer[l]==10;l++);
 	}
-	T *res=copyWString(buffer,l);
+	if (multicomparison(*buffer,L";*`") || *buffer>0x7F)
+		singleline=1;
+	long l=0,finallength=0;
+	std::wstring res;
+	res.reserve(2048);
+	while (1){
+		while (buffer[l]){
+			if (multicomparison(buffer[l],L"\"`")){
+				l++;
+				for (wchar_t delimiter=buffer[l-1];buffer[l] && buffer[l]!=delimiter && buffer[l]!=13 && buffer[l]!=10;l++);
+			}
+			if (!buffer[l] || buffer[l]==13 || buffer[l]==10 || buffer[l]==';')
+				break;
+			if (buffer[l]==':'){
+				l++;
+				break;
+			}
+			l++;
+		}
+		if (!l){
+			*increment=0;
+			return copyWString("");
+		}
+		for (;iswhitespace(buffer[l-1]);l--);
+		finallength+=l;
+		if (singleline){
+			*increment=finallength;
+			return copyWString(buffer,l);
+		}
+		res.append(buffer,l);
+		if (!buffer[l] || !multicomparison(buffer[l-1],",/")){
+			*increment=finallength;
+			return copyWString(res.c_str());
+		}
+		if (buffer[l-1]=='/')
+			res.erase(res.end());
+		for (;buffer[l] && buffer[l]!=13 && buffer[l]!=10;l++,finallength++);
+		for (;iswhitespace(buffer[l]);l++,finallength++);
+		if (!buffer[l]){
+			*increment=finallength;
+			return copyWString(res.c_str());
+		}
+		buffer+=l;
+		l=0;
+	}
+	/*T *res=copyWString(buffer,l);
 	for (long a=0;a<l;a++){
 		if (res[a]=='/' && (res[a+1]==13 || res[a+1]==10))
 			res[a]=' ';
 		else if (res[a]==13 || res[a]==10)
 			res[a]=' ';
 	}
-	return res;
+	return res;*/
 }
 
 template <typename T>
@@ -112,10 +144,8 @@ void preparseIf(T *string,std::vector<T *> *vec){
 		"textshow","textspeed","time","transmode","trap","underline",
 		"useescspc","usewheel","versionstr","voicevol","vsp","wait","waittimer",
 		"wave","waveloop","wavestop","windowback","windoweffect","zenkakko",
-		"date2","enable_onslaught_language_extensions",
-		"disable_onslaught_language_extensions","getini","new_set_window",
-		"set_default_font_size","unalias","literal_print","use_new_if",
-		"centerh","centerv","killmenu",0
+		"date2","getini","new_set_window","set_default_font_size","unalias",
+		"literal_print","use_new_if","centerh","centerv","killmenu",0
 	};
 	long end=-1,minend=LONG_MAX;
 	for (long a=0;limiters[a];a++){
@@ -252,7 +282,7 @@ std::vector<T *> *parseCommandParameters(T *string,T delim=' '){
 	for (ulong start=0;start<len;){
 		//for (;start<len && string[start];);
 		ulong end;
-		for (;iswhitespace((char)string[start]);start++);
+		for (;iswhitespace(string[start]);start++);
 		if (string[start]==';')
 			return res;
 		if (string[start]=='\"' || string[start]=='`')
@@ -264,28 +294,29 @@ std::vector<T *> *parseCommandParameters(T *string,T delim=' '){
 			mean it's not part of a string constant, and parsing doesn't need to
 			continue.
 			*/
-			for (end=start+1;string[end] && string[end]!=delim;end++)
-				if (string[end]==';')
-					break;
+			for (end=start+1;string[end] && string[end]!=delim;end++);
+				/*if (string[end]==';')
+					break;*/
 		}else{
 			for (end=start+1;string[end] && string[end]!=delim ;end++);
 			end++;
 		}
-		for (;iswhitespace((char)string[end]);end--);
+		ulong comma=end;
+		for (;end>0 && iswhitespace(string[end-1]);end--);
 		bool finishnow=0;
-		if (string[end]==';'){
+		/*if (string[end]==';'){
 			end--;
 			finishnow=1;
 			while (end && string[end]==' ' || string[end]=='\t' || string[end]==13 || string[end]==10)
 				end--;
 			end++;
-		}
+		}*/
 		T *el=copyWString(string+start,end-start);
 		res->push_back(el);
 		if (finishnow)
 			return res;
 		delim=tempDelim;
-		for (start=end;string[start]==delim;start++);
+		for (start=comma;string[start]==delim;start++);
 	}
 	return res;
 }
@@ -304,10 +335,9 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 	this->lineNo=number;
 	this->error=NONS_NO_ERROR;
 	this->CstringParameters=0;
-	this->commandName=getLine(buffer+*offset);
-	//(*offset)+=STRLEN(buffer+*offset);
-	//for (;buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-	long len=wcslen(this->commandName);
+	ulong increment=0;
+	this->commandName=getLine(buffer+*offset,&increment);
+	ulong len=wcslen(this->commandName);
 	wchar_t *string=this->commandName;
 	if (iswhitespace((char)this->commandName[0])){
 		long start=0;
@@ -334,76 +364,88 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 	}else
 		this->type=PARSEDLINE_COMMAND;
 	//if (string starts with "if" or "notif")...
-	if (this->type!=PARSEDLINE_COMMAND || !instr(string,"if") || !instr(string,"notif")){
-		(*offset)+=len;
-		for (;buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-		for (;buffer[*offset]==13 || buffer[*offset]==10;(*offset)++);
+	bool isif=!instr(string,"if") || !instr(string,"notif");
+	if (this->type!=PARSEDLINE_COMMAND || isif){
+		(*offset)+=increment;
+		if (isif){
+			while (this->commandName[len-1]==':'){
+				wchar_t *temp=getLine(buffer+*offset,&increment);
+				addStringsInplace(&this->commandName,temp);
+				string=this->commandName;
+				len+=wcslen(temp);
+				(*offset)+=increment;
+			}
+		}
+		for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
+		for (;iswhitespace(buffer[*offset]);(*offset)++);
 		if (this->type!=PARSEDLINE_COMMAND)
 			return;
-	}else if (!instr(string,"literal_print") || !instr(string,"centerv")){
-		for (ulong a=0;string[a];a++){
-			if (string[a]=='\"' || string[a]=='`'){
-				for (wchar_t quote=string[a++];string[a];a++){
-					if (string[a]=='\\'){
-						a++;
-						if (multicomparison(string[a],"\\`\"nrx"))
-							continue;
-						a--;
-					}
-					if (string[a]==quote)
-						break;
-				}
-				if (!string[a]){
-					this->type=PARSEDLINE_INVALID;
-					this->error=NONS_UNMATCHED_QUOTES;
-					return;
-				}
-				continue;
-			}
-			if (multicomparison(string[a],":\\")){
-				len=a;
-				/*string=copyWString(string,a);
-				delete[] this->commandName;
-				this->commandName=string;*/
-				string[a]=0;
-				break;
-			}
-		}
-		(*offset)+=len;
-		if (buffer[*offset]==':')
-			(*offset)++;
-		else if (buffer[*offset]=='\\');
-		else{
-			for (;buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-			for (;buffer[*offset]==13 || buffer[*offset]==10;(*offset)++);
-		}
 	}else{
-		for (ulong a=0;string[a];a++){
-			if (string[a]=='\"' || string[a]=='`'){
-				for (wchar_t quote=string[a++];string[a] && string[a]!=quote;a++);
-				if (!string[a]){
-					this->type=PARSEDLINE_INVALID;
-					this->error=NONS_UNMATCHED_QUOTES;
-					return;
+		if (!instr(string,"literal_print") || !instr(string,"centerv")){
+			for (ulong a=0;string[a];a++){
+				if (string[a]=='\"' || string[a]=='`'){
+					for (wchar_t quote=string[a++];string[a];a++){
+						if (string[a]=='\\'){
+							a++;
+							if (multicomparison(string[a],"\\`\"nrx"))
+								continue;
+							a--;
+						}
+						if (string[a]==quote)
+							break;
+					}
+					if (!string[a]){
+						this->type=PARSEDLINE_INVALID;
+						this->error=NONS_UNMATCHED_QUOTES;
+						return;
+					}
+					continue;
 				}
-				continue;
+				if (multicomparison(string[a],":\\")){
+					len=a;
+					/*string=copyWString(string,a);
+					delete[] this->commandName;
+					this->commandName=string;*/
+					string[a]=0;
+					break;
+				}
 			}
-			if (multicomparison(string[a],":\\")){
-				len=a;
-				/*string=copyWString(string,a);
-				delete[] this->commandName;
-				this->commandName=string;*/
-				string[a]=0;
-				break;
+			(*offset)+=increment;
+			if (buffer[*offset]==':')
+				(*offset)++;
+			else if (buffer[*offset]=='\\');
+			else{
+				for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
+				for (;iswhitespace(buffer[*offset]);(*offset)++);
 			}
-		}
-		(*offset)+=len;
-		if (buffer[*offset]==':')
-			(*offset)++;
-		else if (buffer[*offset]=='\\');
-		else{
-			for (;buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-			for (;buffer[*offset]==13 || buffer[*offset]==10;(*offset)++);
+		}else{
+			for (ulong a=0;string[a];a++){
+				if (string[a]=='\"' || string[a]=='`'){
+					for (wchar_t quote=string[a++];string[a] && string[a]!=quote;a++);
+					if (!string[a]){
+						this->type=PARSEDLINE_INVALID;
+						this->error=NONS_UNMATCHED_QUOTES;
+						return;
+					}
+					continue;
+				}
+				if (multicomparison(string[a],":\\")){
+					len=a;
+					/*string=copyWString(string,a);
+					delete[] this->commandName;
+					this->commandName=string;*/
+					string[a]=0;
+					break;
+				}
+			}
+			(*offset)+=increment;
+			if (buffer[*offset]==':')
+				(*offset)++;
+			else if (buffer[*offset]=='\\');
+			else{
+				for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
+				for (;iswhitespace(buffer[*offset]);(*offset)++);
+			}
 		}
 	}
 	if (!len){
@@ -455,8 +497,9 @@ NONS_ParsedLine::~NONS_ParsedLine(){
 }
 
 ulong NONS_ParsedLine::nextLine(wchar_t *buffer,ulong offset){
-	wchar_t *temp=getLine(buffer+offset);
-	ulong res=offset+STRLEN(temp);
+	ulong increment=0;
+	wchar_t *temp=getLine(buffer+offset,&increment);
+	ulong res=offset+increment;
 	delete[] temp;
 	for (;buffer[res]!=13 && buffer[res]!=10;res++);
 	for (;buffer[res]==13 || buffer[res]==10;res++);
@@ -464,7 +507,14 @@ ulong NONS_ParsedLine::nextLine(wchar_t *buffer,ulong offset){
 }
 
 ulong NONS_ParsedLine::nextStatement(wchar_t *buffer,ulong offset){
-	wchar_t *line=getLine(buffer+offset),*string=line;
+	ulong previous=offset;
+	while (1){
+		NONS_ParsedLine line(buffer,&offset);
+		if (line.type==PARSEDLINE_COMMAND)
+			return previous;
+		previous=offset;
+	}
+	/*wchar_t *line=getLine(buffer+offset),*string=line;
 	ulong len=wcslen(line);
 	ulong res=offset;
 	if (iswhitespace((char)line[0])){
@@ -505,7 +555,7 @@ ulong NONS_ParsedLine::nextStatement(wchar_t *buffer,ulong offset){
 		}
 	}
 	delete[] line;
-	return res;
+	return res;*/
 }
 
 ulong NONS_ParsedLine::previousLine(wchar_t *buffer,ulong offset){

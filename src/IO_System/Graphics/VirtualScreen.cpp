@@ -970,18 +970,15 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	IF_parameters *parameters=new IF_parameters[cpu_count];
 	ulong division0=float(srcRect0.h)/float(cpu_count);
-	ulong division1=float(division0)*(float(y_factor)/256);
-	ulong total0=0,
-		total1=0;
+	ulong division1=float(dstRect0.h)/float(cpu_count);
+	ulong total1=0;
 	for (ushort a=0;a<cpu_count;a++){
 		rects0[a]=srcRect0;
 		rects1[a]=dstRect0;
 		rects0[a].y+=Sint16(a*division0);
-		//rects0[a].h=Sint16(division0);
 		rects1[a].y+=Sint16(a*division1);
 		rects1[a].h=Sint16(division1);
 		
-		total0+=rects0[a].h;
 		total1+=rects1[a].h;
 		parameters[a].src=src;
 		parameters[a].srcRect=rects0+a;
@@ -990,7 +987,6 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		parameters[a].x_factor=x_factor;
 		parameters[a].y_factor=y_factor;
 	}
-	//rects0[cpu_count-1].h+=srcRect0.h-total0;
 	rects1[cpu_count-1].h+=dstRect0.h-total1;
 
 	SDL_LockSurface(src);
@@ -1001,6 +997,10 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		SDL_WaitThread(threads[a],0);
 	SDL_UnlockSurface(src);
 	SDL_UnlockSurface(dst);
+	delete[] threads;
+	delete[] rects0;
+	delete[] rects1;
+	delete[] parameters;
 }
 
 int bilinearInterpolation2_threaded(void *parameters){
@@ -1032,13 +1032,13 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 	dstRect0.w+=dstRect0.x;
 	srcRect0.h+=srcRect0.y;
 	dstRect0.h+=dstRect0.y;
-	Uint32 Y0=dstRect0.y*sizeY,Y1=Y0+sizeY,
-	//integer32 Y1=dstRect0.y*sizeY,Y0=Y1+sizeY,
+	Uint32 Y0=(dstRect0.y-dst->clip_rect.y)*sizeY,
+		Y1=Y0+sizeY,
 		X0,X1;
 	Uint32 area=((sizeX>>8)*sizeY)>>8;
 	uchar *pixel1=pos1+pitch1*dstRect0.y+advance1*dstRect0.x;
 	for (long y1=dstRect0.y;y1<dstRect0.h;y1++){
-		X0=dstRect0.x*sizeX;
+		X0=(dstRect0.x-dst->clip_rect.x)*sizeX,
 		X1=X0+sizeX;
 		uchar *row=pos0+pitch0*(Y0>>16);
 		uchar *pixel10=pixel1;

@@ -170,17 +170,24 @@ void NONS_VariableStore::saveData(){
 }
 
 ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool invert_terms){
-	std::vector<simpleoperation<char> *> operations;
-	char *exp2=copyString(exp);
-	_HANDLE_POSSIBLE_ERRORS(parse_expression(exp2,0,&operations),
+	//std::vector<simpleoperation<char> *> operations;
+	std::vector<simpleoperation *> operations;
+	//char *exp2=copyString(exp);
+	//_HANDLE_POSSIBLE_ERRORS(parse_expression(exp2,0,&operations),
+	_HANDLE_POSSIBLE_ERRORS(parse_expression(exp,0,&operations),
 		for (ulong a=0;a<operations.size();a++)
 			delete operations[a];
 		)
-	if (CLOptions.verbosity>=2)
-		v_stdlog <<"Expression: \""<<exp2<<"\""<<std::endl;
-	delete[] exp2;
+	if (CLOptions.verbosity>=2){
+		//v_stdlog <<"Expression: \""<<exp2<<"\""<<std::endl;
+		v_stdlog <<"Expression: \"";
+		v_stdlog.writeWideString(exp);
+		v_stdlog <<"\""<<std::endl;
+	}
+	//delete[] exp2;
 	long *results=new long[operations.size()];
-	static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
+	//static const char *operators[]={"||","&&","==","!=","<>",">=","<=","=",">","<","+","-","*","/","|","&",0};
+	static const wchar_t *operators[]={L"||",L"&&",L"==",L"!=",L"<>",L">=",L"<=",L"=",L">",L"<",L"+",L"-",L"*",L"/",L"|",L"&",0};
 	for (ulong a=0;a<operations.size();a++){
 		long opA,opB,res;
 		switch (operations[a]->operandA->type){
@@ -218,7 +225,8 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 				results[a]=!results[a];
 			continue;
 		}
-		if (!strcmp(operations[a]->function,"fchk")){
+		//if (!strcmp(operations[a]->function,"fchk")){
+		if (!wcscmp(operations[a]->function,L"fchk")){
 			char *name=0;
 			_HANDLE_POSSIBLE_ERRORS(this->getStrValue(operations[a]->operandA->symbol,&name),
 				delete[] results;
@@ -230,7 +238,8 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 				results[a]=!results[a];
 			continue;
 		}
-		if (!strcmp(operations[a]->function,"lchk")){
+		//if (!strcmp(operations[a]->function,"lchk")){
+		if (!wcscmp(operations[a]->function,L"lchk")){
 			wchar_t *name=0;
 			char *temp=0;
 			_HANDLE_POSSIBLE_ERRORS(this->getStrValue(operations[a]->operandA->symbol,&temp),
@@ -280,7 +289,8 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 		}
 		short function=-1;
 		for (short b=0;operators[b] && function==-1;b++)
-			if (!strcmp(operations[a]->function,operators[b]))
+			//if (!strcmp(operations[a]->function,operators[b]))
+			if (!wcscmp(operations[a]->function,operators[b]))
 				function=b;
 		switch (function){
 			case 0:
@@ -348,13 +358,19 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 		*result=results[operations.size()-1];
 		if (CLOptions.verbosity>=2){
 			for (ulong a=0;a<operations.size();a++){
-				v_stdlog <<a<<": "<<(operations[a]->function?operations[a]->function:"NOP")<<"(";
+				//v_stdlog <<a<<": "<<(operations[a]->function?operations[a]->function:"NOP")<<"(";
+				v_stdlog <<a<<": ";
+				if (operations[a]->function)
+					v_stdlog.writeWideString(operations[a]->function);
+				else
+					v_stdlog <<"NOP";
+				v_stdlog <<"(";
 				switch (operations[a]->operandA->type){
 				case 0:
 					v_stdlog <<operations[a]->operandA->constant;
 					break;
 				case 1:
-					v_stdlog <<operations[a]->operandA->symbol;
+					v_stdlog.writeWideString(operations[a]->operandA->symbol);
 					break;
 				case 2:
 					v_stdlog <<"&"<<operations[a]->operandA->position;
@@ -366,13 +382,13 @@ ErrorCode NONS_VariableStore::evaluate(const wchar_t *exp,long *result,bool inve
 						v_stdlog <<operations[a]->operandB->constant;
 						break;
 					case 1:
-						v_stdlog <<operations[a]->operandB->symbol;
+						v_stdlog.writeWideString(operations[a]->operandB->symbol);
 						break;
 					case 2:
 						v_stdlog <<"&"<<operations[a]->operandB->position;
 					}
 				}
-				v_stdlog <<")"<<std::endl;
+				v_stdlog <<") = "<<results[a]<<std::endl;
 			}
 			v_stdlog <<"Result: "<<results[operations.size()-1]<<std::endl;
 		}
