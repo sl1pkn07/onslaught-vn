@@ -1,0 +1,34 @@
+2009????
+    * Implemented: split, isdown, isfull, getcursorpos.
+    * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
+    * Fixed serious bug in the string reduction algorithm.
+    * Implemented mouse wheel.
+    * Variable indices can now be negative.
+    * Fixed bug related to text speed.
+    * Added automatic encoding detection.
+    * Added "auto" to the possible encodings list. This is now the default.
+    * Fixed bug in the bilinear interpolation function.
+    * Fixed bug related to !sd and !s# escape sequences.
+    * doc/Changes.txt reformatted.
+
+20090307
+    * Several bug fixes.
+    * Implemented the following commands: blt, fileexist, menu_full, mp3stop,
+        savefileexist, savescreenshot, savescreenshot2, savetime.
+    * New commands: savetime2.
+    * New command line arguments: -!reset-out-files -!redirect
+    * Improved redirection files behavior.
+    * Unimplemented commands: killmenu
+    * global.sav and nonsflog.dat moved to the save directory.
+
+20090126
+    * Major bugs in the Linux version fixed. Now ONSlaught works correctly in
+        both Windows and Linux.
+    * New commands: centerh, centerv
+    * New convenience command line argument: -save-directory
+
+20081231
+    Minor problems in the initial release corrected.
+
+20081230
+    Initial release.
