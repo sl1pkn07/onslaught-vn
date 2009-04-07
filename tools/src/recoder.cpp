@@ -51,8 +51,19 @@ const char *encodings[][2]={
 
 void usage();
 
+void version(){
+	std::cout <<"recoder v0.95 - A simple encoding and code page converter.\n\n"
+		"Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)\n"
+		"All rights reserved."<<std::endl;
+	exit(0);
+}
+
 int main(int argc,char **argv){
-	if (argc>1 && !strcmp(argv[1],"--help") || argc<5)
+	if (argc<2)
+		usage();
+	if (!strcmp(argv[1],"--version"))
+		version();
+	if (argc<5 ||!strcmp(argv[1],"-h") || !strcmp(argv[1],"-?") || !strcmp(argv[1],"--help"))
 		usage();
 	char *ienc=argv[1];
 	char *ifile=argv[2];
@@ -169,8 +180,8 @@ switchOutputEncoding:
 
 void usage(){
 	std::cout <<"Usage: recoder <input encoding> <input file> <output encoding> <output file>\n"
-	            "\n"
-	            "Available encodings:\n"<<std::endl;
+		"\n"
+		"Available encodings:\n"<<std::endl;
 	for (short a=0;encodings[a][0];a++)
 		std::cout <<encodings[a][0]<<" - "<<encodings[a][1]<<std::endl;
 	exit(0);
