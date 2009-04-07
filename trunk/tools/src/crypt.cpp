@@ -32,14 +32,26 @@ const char *methods[][2]={
 	{"none","Do nothing."},
 	{"xor84","Perform an XOR 0x84 on the target."},
 	{"varxor","Perform XORs 0x79, 0x57, 0x0d, 0x80, and 0x04 on the target"},
-	{"table","Perform a table-based transform and then an XOR 0x84. Unsupported for practical reasons."},
+	{"table","Perform a table-based transform and then an XOR 0x84. Unsupported for practical\n"
+		"    reasons."},
 	{0,0},
 };
 
 void usage();
 
+void version(){
+	std::cout <<"crypt v1.05\n\n"
+		"Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)\n"
+		"All rights reserved."<<std::endl;
+	exit(0);
+}
+
 int main(int argc,char **argv){
-    if (argc>1 && !strcmp(argv[1],"--help") || argc<4)
+	if (argc<2)
+		usage();
+	if (!strcmp(argv[1],"--version"))
+		version();
+	if (argc<4 ||!strcmp(argv[1],"-h") || !strcmp(argv[1],"-?") || !strcmp(argv[1],"--help"))
 		usage();
 	char *ifile=argv[1];
 	char *meth=argv[2];
@@ -58,6 +70,19 @@ int main(int argc,char **argv){
 		std::cout <<"Could not make sense of argument. Method defaults to xor84."<<std::endl;
 		method=XOR84_ENCRYPTION;
 	}
+	if (argc>4 && !strcmp(argv[4],"-l")){
+		char *rpointer=buffer,
+			*wpointer=buffer;
+		for (;*rpointer;rpointer++,wpointer++){
+			if (*rpointer==13){
+				*wpointer=10;
+				if (rpointer[1]==10)
+					rpointer++;
+			}else
+				*wpointer=*rpointer;
+		}
+		l-=rpointer-wpointer;
+	}
 	inPlaceDecryption(buffer,l,method);
 	if (writefile(ofile,buffer,l))
 		std::cout <<"Writing to file failed."<<std::endl;
@@ -66,12 +91,20 @@ int main(int argc,char **argv){
 }
 
 void usage(){
-	std::cout <<"Usage: crypt <input file> <method> <output file>\n"
-	            "\n"
-	            "Available methods:\n"<<std::endl;
+	std::cout <<"Usage: crypt <input file> <method> <output file> [-l]\n"
+		"\n"
+		"Available methods:\n"<<std::endl;
 	for (short a=0;methods[a][0];a++)
 		std::cout <<methods[a][0]<<" - "<<methods[a][1]<<std::endl;
- 	std::cout <<"\nXOR encryption is symmetric, so the same algorithm is used both for encryption\n"
-		"and decryption."<<std::endl;
-	exit(0);
+	std::cout <<"\nXOR encryption is symmetric, so the same algorithm is used both for encryption\n"
+		"and decryption.\n\n"
+		"-l option:\n"
+		"    Convert all newlines to LF (UNIX style). The following are recognized as\n"
+		"    newlines: LF, CR (Mac style), CRLF (DOS style).\n"
+		"    USE ONLY WHEN ENCRYPTING. USING WHILE DECRYPTING MAY PRODUCE DATA LOSS.\n"
+		"    This option is included solely for backwards compatibility with an incorrect\n"
+		"    behavior in NSDEC.exe. See http://forums.novelnews.net/showpost.php?p=61427&postcount=55\n"
+		"    for details."<<std::endl;
+ 	exit(0);
 }
+
