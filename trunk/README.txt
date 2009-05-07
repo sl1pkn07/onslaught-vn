@@ -40,15 +40,18 @@ same time maintaining a simple design, and code as portable as possible.
 
 REQUIREMENTS (compilation)
 
-SDL, SDL_image (should have been compiled at least with jpeg and png support),
-SDL_mixer (ogg support heavily recommended), FreeType 2, bz2lib.
+SDL,
+SDL_image (should have been compiled at least with jpeg and png support),
+SDL_mixer (ogg support heavily recommended),
+FreeType 2,
+bz2lib.
 
 
 PORTING
 
-At the moment, ONSlaught is only available for Windows 32-bit, Linux x86, and
-Linux x86_64, but since ONSlaught uses more or less the same libraries as
-ONScripter, it's possible to port it to the same platforms ONScripter can be
+At the moment, ONSlaught binaries are only available for Windows 32-bit, Linux
+x86, and Linux x86_64, but since ONSlaught uses more or less the same libraries
+as ONScripter, it's possible to port it to the same platforms ONScripter can be
 ported to. In particular, MacOS X and above, PSP, and iPod are known to be
 possible options.
 The engine was primarily written in Visual C++ 9.0 (2008), but it can also be
@@ -56,9 +59,9 @@ compiled with MinGW and GCC. GCC compilation has only been tested on versions 3
 and above. Visual C++ 6.0 is not able to compile it.
 Theoretically, any compiler older than 2005 should be able to build ONSlaught.
 
-At the moment, I'm looking for programmers with knowledge of MacOS X, PSP,
-and/or iPod for porting the engine. If you possess any of these skills and are
-interested to contribute, please refer to CONTACT INFORMATION in this document.
+At the moment, I'm looking for programmers with knowledge of PSP, and/or iPod
+for porting the engine. If you possess any of these skills and are interested to
+contribute, please refer to CONTACT INFORMATION in this document.
 
 
 CONTACT INFORMATION

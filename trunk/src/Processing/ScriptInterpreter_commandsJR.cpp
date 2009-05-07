@@ -54,10 +54,15 @@ ErrorCode NONS_ScriptInterpreter::command_return(NONS_ParsedLine &line){
 		return NONS_EMPTY_CALL_STACK;
 	NONS_StackElement *popped;
 	do{
-		popped=*(this->callStack.end()-1);
+		popped=this->callStack.back();
 		this->callStack.pop_back();
-	}while (popped->type!=SUBROUTINE_CALL);
+	}while (popped->type!=SUBROUTINE_CALL && popped->type!=TEXTGOSUB_CALL);
 	this->interpreter_position=popped->offset;
+	if (popped->type==TEXTGOSUB_CALL){
+		this->Printer_support(popped->pages,0,0,0);
+		delete popped;
+		return NONS_NO_ERROR;
+	}
 	if (!popped->first_interpret_string){
 		delete popped;
 		return NONS_NO_ERROR_BUT_BREAK;
@@ -86,7 +91,7 @@ ErrorCode NONS_ScriptInterpreter::command_return(NONS_ParsedLine &line){
 			ErrorCode error=this->interpretString(copy);
 			delete[] copy;
 			if (error==NONS_GOSUB && str[a+1])
-				(*(this->callStack.end()-1))->first_interpret_string=copyWString(str+a+1);
+				(this->callStack.back())->first_interpret_string=copyWString(str+a+1);
 			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
 				handleErrors(error,-1,"NONS_ScriptInterpreter::command_return",1);
 			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || str[a]==';'){
@@ -605,7 +610,7 @@ ErrorCode NONS_ScriptInterpreter::command_next(NONS_ParsedLine &line){
 		return NONS_EMPTY_CALL_STACK;
 	/*std::vector<NONS_StackElement *>::iterator top=;
 	top--;*/
-	NONS_StackElement *element=*(this->callStack.end()-1);
+	NONS_StackElement *element=this->callStack.back();
 	if (element->type!=FOR_NEST)
 		return NONS_UNEXPECTED_NEXT;
 	element->var->add(element->step);

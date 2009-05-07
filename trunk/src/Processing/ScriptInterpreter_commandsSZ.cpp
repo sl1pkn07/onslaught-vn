@@ -39,7 +39,7 @@
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
 #define NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
 ErrorCode NONS_ScriptInterpreter::command_skip(NONS_ParsedLine &line){
-	long count=1;
+	long count=2;
 	if (line.parameters.size()){
 		_GETINTVALUE(count,0,)
 	}
@@ -498,7 +498,7 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 		if (offset<0)
 			return NONS_NO_SUCH_BLOCK;
 		if (!wcscmp(line.commandName,L"selgosub")){
-			NONS_StackElement *p=new NONS_StackElement(this->interpreter_position,0);
+			NONS_StackElement *p=new NONS_StackElement(this->interpreter_position,0,this->insideTextgosub());
 			this->callStack.push_back(p);
 		}
 		this->interpreter_position=offset;
@@ -915,7 +915,55 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_textgosub(NONS_ParsedLine &line){
+	if (!line.parameters.size()){
+		if (!!this->textgosub)
+			delete[] this->textgosub;
+		return NONS_NO_ERROR;
+	}
+	if (this->everything->script->offsetFromBlock(line.parameters[0])<0)
+		return NONS_NO_SUCH_BLOCK;
+	if (!!this->textgosub)
+		delete[] this->textgosub;
+	if (line.parameters.size()<2)
+		this->textgosubRecurses=0;
+	else{
+		long rec;
+		_GETINTVALUE(rec,1,)
+		this->textgosubRecurses=(rec!=0);
+	}
+	this->textgosub=copyWString(line.parameters[0]);
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

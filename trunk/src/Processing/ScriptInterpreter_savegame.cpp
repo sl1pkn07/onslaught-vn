@@ -185,7 +185,7 @@ bool NONS_ScriptInterpreter::load(int file){
 		//stack
 		//flush
 		while (!this->callStack.empty()){
-			NONS_StackElement *p=*(this->callStack.end()-1);
+			NONS_StackElement *p=this->callStack.back();
 			delete p;
 			this->callStack.pop_back();
 		}
@@ -193,13 +193,13 @@ bool NONS_ScriptInterpreter::load(int file){
 			NONS_SaveFile::stackEl *el=save->stack[a];
 
 			if (!el->type){
-				NONS_StackElement *push=new NONS_StackElement(SJISoffset_to_WCSoffset(this->script->script,el->offset),0);
+				NONS_StackElement *push=new NONS_StackElement(SJISoffset_to_WCSoffset(this->script->script,el->offset),0,0);
 				this->callStack.push_back(push);
 			}else{
 				NONS_StackElement *push=new NONS_StackElement(
 					this->store->retrieve(el->variable,0)->intValue,
 					SJISoffset_to_WCSoffset(this->script->script,el->offset),
-					0,el->to,el->step);
+					0,el->to,el->step,0);
 				this->callStack.push_back(push);
 			}
 		}
@@ -286,7 +286,7 @@ bool NONS_ScriptInterpreter::load(int file){
 		//stack
 		//flush
 		while (!this->callStack.empty()){
-			NONS_StackElement *p=*(this->callStack.end()-1);
+			NONS_StackElement *p=this->callStack.back();
 			delete p;
 			this->callStack.pop_back();
 		}
@@ -294,12 +294,12 @@ bool NONS_ScriptInterpreter::load(int file){
 			NONS_SaveFile::stackEl *el=save->stack[a];
 			NONS_StackElement *push;
 			if (!el->type)
-				push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0);
+				push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0,el->textgosubLevel);
 			else{
 				push=new NONS_StackElement(
 					this->store->retrieve(el->variable,0)->intValue,
 					this->script->offsetFromBlock(el->label)+el->offset,
-					0,el->to,el->step);
+					0,el->to,el->step,el->textgosubLevel);
 			}
 			this->callStack.push_back(push);
 		}
@@ -566,6 +566,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			el->type=(el0->type!=SUBROUTINE_CALL);
 			el->label=copyWString(this->script->blockFromOffset(el0->offset));
 			el->offset=el0->offset-this->script->offsetFromBlock(el->label);
+			el->textgosubLevel=el0->textgosubLevel;
 			if (!el->type){
 				el->leftovers=copyWString(el0->first_interpret_string);
 			}else{

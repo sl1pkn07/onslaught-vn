@@ -195,8 +195,8 @@ ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset){
 }
 
 template<typename T,typename T2>
-long instr_template(const T *str0,const T2 *str1){
-	for (long res=0;*str0;res++,str0++){
+long instr_template(const T *str0,const T2 *str1,long max){
+	for (long res=0;*str0 && (max<0 || res<=max);res++,str0++){
 		const T *str2=str0;
 		const T2 *str3=str1;
 		for (;*str3;str2++,str3++){
@@ -211,20 +211,20 @@ instr_000:;
 	return -1;
 }
 
-long instr(const wchar_t *str0,const wchar_t *str1){
-	return instr_template<wchar_t,wchar_t>(str0,str1);
+long instr(const wchar_t *str0,const wchar_t *str1,long max){
+	return instr_template<wchar_t,wchar_t>(str0,str1,max);
 }
 
-long instr(const wchar_t *str0,const char *str1){
-	return instr_template<wchar_t,char>(str0,str1);
+long instr(const wchar_t *str0,const char *str1,long max){
+	return instr_template<wchar_t,char>(str0,str1,max);
 }
 
-long instr(const char *str0,const wchar_t *str1){
-	return instr_template<char,wchar_t>(str0,str1);
+long instr(const char *str0,const wchar_t *str1,long max){
+	return instr_template<char,wchar_t>(str0,str1,max);
 }
 
-long instr(const char *str0,const char *str1){
-	return instr_template<char,char>(str0,str1);
+long instr(const char *str0,const char *str1,long max){
+	return instr_template<char,char>(str0,str1,max);
 }
 
 template<typename T>
@@ -258,7 +258,7 @@ long instrB(const char *str0,const char *str1){
 
 template<typename T>
 void tolower_template(T *param){
-    for (;*param;param++)
+	for (;*param;param++)
 		if (*param>='A' && *param<='Z')
 			*param=*param|32;
 }

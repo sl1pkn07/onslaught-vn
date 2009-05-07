@@ -93,10 +93,24 @@
 
 typedef std::map<char *,INIfile *,strCmp> INIcacheType;
 
+
+struct printingPage{
+	std::wstring print;
+	std::wstring reduced;
+	std::pair<ulong,ulong> startAt;
+	//first: position in the string that is actually printed.
+	//second: position in the reduced string
+	std::vector<std::pair<ulong,ulong> > stops;
+	printingPage();
+	printingPage(const printingPage &b);
+	printingPage &operator=(const printingPage &b);
+};
+
 enum{
 	UNDEFINED=0,
 	SUBROUTINE_CALL=1,
 	FOR_NEST=2,
+	TEXTGOSUB_CALL=3
 };
 
 struct NONS_StackElement{
@@ -110,15 +124,21 @@ struct NONS_StackElement{
 		to,
 		step;
 	ulong end;
-	NONS_StackElement();
-	NONS_StackElement(ulong offset,wchar_t *string);
-	NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step);
+	//textgosub data
+	ulong textgosubLevel;
+	wchar_t textgosubTriggeredBy;
+	std::vector<printingPage> pages;
+
+	NONS_StackElement(ulong level);
+	NONS_StackElement(ulong offset,wchar_t *string,ulong level);
+	NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step,ulong level);
+	NONS_StackElement(std::vector<printingPage> pages,wchar_t trigger,ulong level);
 	~NONS_StackElement();
 };
 
 class NONS_ScriptInterpreter{
 	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmpCI> commandListType;
-	//ErrorCode Printer(wchar_t *line);
+	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const wchar_t *line);
 	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack=0);
 	void uninit();
@@ -167,6 +187,8 @@ class NONS_ScriptInterpreter{
 	ulong imageButtonExpiration;
 	NONS_SaveFile* saveGame;
 	std::wstring currentBuffer;
+	wchar_t *textgosub;
+	bool textgosubRecurses;
 
 	ErrorCode command_caption(NONS_ParsedLine &line);
 	ErrorCode command_alias(NONS_ParsedLine &line);
@@ -260,7 +282,7 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_savename(NONS_ParsedLine &line);
 	ErrorCode command_menuselectvoice(NONS_ParsedLine &line);
 	ErrorCode command_rmode(NONS_ParsedLine &line);
-	ErrorCode command_skipoff(NONS_ParsedLine &line);
+	//ErrorCode command_skipoff(NONS_ParsedLine &line);
 	ErrorCode command_savenumber(NONS_ParsedLine &line);
 	ErrorCode command_systemcall(NONS_ParsedLine &line);
 	ErrorCode command_reset(NONS_ParsedLine &line);
@@ -293,9 +315,9 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_isdown(NONS_ParsedLine &line);
 	ErrorCode command_isfull(NONS_ParsedLine &line);
 	ErrorCode command_getcursorpos(NONS_ParsedLine &line);
+	ErrorCode command_textgosub(NONS_ParsedLine &line);
+	ErrorCode command_ispage(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
@@ -324,6 +346,10 @@ public:
 	bool load(int file);
 	bool save(int file);
 	void convertParametersToString(NONS_ParsedLine &line,std::wstring &string);
+	ulong getCurrentTextgosubLevel();
+	ulong insideTextgosub();
+	bool goto_label(wchar_t *label);
+	bool gosub_label(wchar_t *label);
 };
 
 ulong countLines(wchar_t *buffer,ulong byte_pos);

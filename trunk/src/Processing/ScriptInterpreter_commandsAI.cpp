@@ -93,11 +93,8 @@ ErrorCode NONS_ScriptInterpreter::command_game(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_goto(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	long temp=this->script->offsetFromBlock(line.parameters[0]);
-	if (temp<0)
+	if (!this->goto_label(line.parameters[0]))
 		return NONS_NO_SUCH_BLOCK;
-	labelsUsed.insert(copyWString(line.parameters[0]));
-	this->interpreter_position=temp;
 	return NONS_NO_ERROR_BUT_BREAK;
 }
 
@@ -111,15 +108,11 @@ ErrorCode NONS_ScriptInterpreter::command_globalon(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_gosub(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	NONS_StackElement *el=new NONS_StackElement(this->interpreter_position,0);
-	this->callStack.push_back(el);
-	ErrorCode error=this->command_goto(line);
-	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-		this->callStack.pop_back();
-		handleErrors(error,this->current_line,"NONS_ScriptInterpreter::command_gosub",1);
-		return error;
-	}else
-		return NONS_GOSUB;
+	if (!this->gosub_label(line.parameters[0])){
+		handleErrors(NONS_NO_SUCH_BLOCK,this->current_line,"NONS_ScriptInterpreter::command_gosub",1);
+		return NONS_NO_SUCH_BLOCK;
+	}
+	return NONS_GOSUB;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
@@ -155,7 +148,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 			ErrorCode error=this->interpretString(copy);
 			delete[] copy;
 			if (error==NONS_GOSUB && ifblock[a+1])
-				(*(this->callStack.end()-1))->first_interpret_string=copyWString(ifblock+a+1);
+				(this->callStack.back())->first_interpret_string=copyWString(ifblock+a+1);
 			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
 				ret=NONS_UNDEFINED_ERROR;
@@ -656,7 +649,7 @@ ErrorCode NONS_ScriptInterpreter::command_for(NONS_ParsedLine &line){
 	if (!step)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	var->set(from);
-	NONS_StackElement *element=new NONS_StackElement(var,this->interpreter_position,from,to,step);
+	NONS_StackElement *element=new NONS_StackElement(var,this->interpreter_position,from,to,step,this->insideTextgosub());
 	this->callStack.push_back(element);
 	if (step>0 && from>to || step<0 && from<to)
 		return this->command_break(line);
@@ -666,7 +659,7 @@ ErrorCode NONS_ScriptInterpreter::command_for(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_break(NONS_ParsedLine &line){
 	if (this->callStack.empty())
 		return NONS_EMPTY_CALL_STACK;
-	NONS_StackElement *element=*(this->callStack.end()-1);
+	NONS_StackElement *element=this->callStack.back();
 	if (element->type!=FOR_NEST)
 		return NONS_UNEXPECTED_NEXT;
 	if (element->end!=element->offset){
@@ -964,10 +957,22 @@ ErrorCode NONS_ScriptInterpreter::command_getcursorpos(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_ispage(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return NONS_INSUFFICIENT_PARAMETERS;
+	NONS_VariableMember *dst;
+	_GETINTVARIABLE(dst,0,)
+	if (!this->insideTextgosub())
+		dst->set(0);
+	else{
+		std::vector<NONS_StackElement *>::reverse_iterator i=this->callStack.rbegin();
+		for (;i!=this->callStack.rend() && (*i)->type!=TEXTGOSUB_CALL;i++);
+		dst->set((*i)->textgosubTriggeredBy=='\\');
+	}
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

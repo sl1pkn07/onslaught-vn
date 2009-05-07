@@ -39,7 +39,7 @@
 #include <SDL/SDL.h>
 #include "../UTF.h"
 
-#define NONS_SAVEFILE_VERSION 1
+#define NONS_SAVEFILE_VERSION 2
 
 std::vector<tm *> *existing_files(char *location="./");
 std::vector<tm *> *existing_files(wchar_t *location=L"./");
@@ -106,6 +106,7 @@ struct NONS_SaveFile{
 		long to;
 		long step;
 		wchar_t *leftovers;
+		ulong textgosubLevel;
 		stackEl();
 		~stackEl();
 	};
