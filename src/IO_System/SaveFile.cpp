@@ -288,6 +288,7 @@ NONS_SaveFile::Sprite::~Sprite(){
 NONS_SaveFile::stackEl::stackEl(){
 	this->leftovers=0;
 	this->label=0;
+	this->textgosubLevel=0;
 }
 
 NONS_SaveFile::stackEl::~stackEl(){
@@ -502,6 +503,8 @@ void NONS_SaveFile::load(char *filename){
 				el->type=!!readByte(buffer,&offset);
 				_READ_BINARY_UTF8_STRING(el->label,buffer,offset)
 				el->offset=readDWord(buffer,&offset);
+				if (this->version>1)
+					el->textgosubLevel=readDWord(buffer,&offset);
 				if (!el->type)
 					_READ_BINARY_UTF8_STRING(el->leftovers,buffer,offset)
 				else{
@@ -781,6 +784,7 @@ bool NONS_SaveFile::save(char *filename){
 			writeByte(el->type,&buffer);
 			writeString(el->label,&buffer);
 			writeDWord(el->offset,&buffer);
+			writeDWord(el->textgosubLevel,&buffer);
 			if (!el->type){
 				writeString(el->leftovers,&buffer);
 			}else{

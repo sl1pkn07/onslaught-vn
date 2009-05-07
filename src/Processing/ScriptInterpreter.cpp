@@ -38,7 +38,22 @@
 //#include "../UTF.h"
 #include <sstream>
 
-NONS_StackElement::NONS_StackElement(){
+printingPage::printingPage(){
+}
+
+printingPage::printingPage(const printingPage &b){
+	*this=b;
+}
+
+printingPage &printingPage::operator=(const printingPage &b){
+	this->print=b.print;
+	this->reduced=b.reduced;
+	this->stops=b.stops;
+	return *this;
+}
+
+
+NONS_StackElement::NONS_StackElement(ulong level){
 	this->type=UNDEFINED;
 	this->offset=0;
 	this->first_interpret_string=0;
@@ -47,15 +62,21 @@ NONS_StackElement::NONS_StackElement(){
 	this->to=0;
 	this->step=0;
 	this->end=0;
+	this->textgosubLevel=level;
+	this->end=0;
+	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(ulong offset,wchar_t *string){
+NONS_StackElement::NONS_StackElement(ulong offset,wchar_t *string,ulong level){
 	this->type=SUBROUTINE_CALL;
 	this->offset=offset;
 	this->first_interpret_string=copyWString(string);
+	this->textgosubLevel=level;
+	this->end=0;
+	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step){
+NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step,ulong level){
 	this->type=FOR_NEST;
 	this->var=variable;
 	this->offset=startoffset;
@@ -63,6 +84,17 @@ NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startof
 	this->to=to;
 	this->step=step;
 	this->end=this->offset;
+	this->first_interpret_string=0;
+	this->textgosubLevel=level;
+	this->end=0;
+	this->textgosubTriggeredBy=0;
+}
+
+NONS_StackElement::NONS_StackElement(std::vector<printingPage> pages,wchar_t trigger,ulong level){
+	this->type=TEXTGOSUB_CALL;
+	this->textgosubLevel=level;
+	this->pages=pages;
+	this->textgosubTriggeredBy=trigger;
 	this->first_interpret_string=0;
 }
 
@@ -81,7 +113,7 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_slow=0;
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
-
+	
 	char *settings_filename=addStrings(config_directory,"settings.cfg");
 	ConfigFile settings(settings_filename);
 	if (settings.exists(L"textSpeedMode"))
@@ -131,6 +163,7 @@ void NONS_ScriptInterpreter::init(){
 	this->saveGame->format='N';
 	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	this->printed_lines.clear();
+	this->textgosub=0;
 }
 
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
@@ -288,7 +321,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit;
 	this->commandList[L"isdown"]=&NONS_ScriptInterpreter::command_isdown;
 	this->commandList[L"isfull"]=&NONS_ScriptInterpreter::command_isfull;
-	this->commandList[L"ispage"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"ispage"]=&NONS_ScriptInterpreter::command_ispage;
 	this->commandList[L"isskip"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"itoa"]=&NONS_ScriptInterpreter::command_itoa;
 	this->commandList[L"itoa2"]=&NONS_ScriptInterpreter::command_itoa;
@@ -366,7 +399,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"print"]=&NONS_ScriptInterpreter::command_print;
 	this->commandList[L"prnum"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"prnumclear"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"puttext"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"puttext"]=&NONS_ScriptInterpreter::command_literal_print;
 	this->commandList[L"quake"]=&NONS_ScriptInterpreter::command_quake;
 	this->commandList[L"quakex"]=&NONS_ScriptInterpreter::command_sinusoidal_quake;
 	this->commandList[L"quakey"]=&NONS_ScriptInterpreter::command_sinusoidal_quake;
@@ -430,7 +463,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"texec"]=0;
 	this->commandList[L"textbtnwait"]=0;
 	this->commandList[L"textclear"]=&NONS_ScriptInterpreter::command_textclear;
-	this->commandList[L"textgosub"]=0;
+	this->commandList[L"textgosub"]=&NONS_ScriptInterpreter::command_textgosub;
 	this->commandList[L"texthide"]=0;
 	this->commandList[L"textoff"]=&NONS_ScriptInterpreter::command_textonoff;
 	this->commandList[L"texton"]=&NONS_ScriptInterpreter::command_textonoff;
@@ -506,6 +539,8 @@ void NONS_ScriptInterpreter::uninit(){
 	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
 	settings.writeOut(settings_filename);
 	delete[] settings_filename;
+	if (!!this->textgosub)
+		delete[] this->textgosub;
 }
 
 NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
@@ -1018,86 +1053,108 @@ void findStops(const wchar_t *src,std::vector<std::pair<ulong,ulong> > &stopping
 	stopping_points.push_back(push);
 }
 
-struct printingPage{
-	std::wstring print;
-	std::wstring reduced;
-	//first: position in the string that is actually printed.
-	//second: position in the reduced string
-	std::vector<std::pair<ulong,ulong> > stops;
-	printingPage(){}
-	printingPage(int a){}
-};
-
-ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
-	this->currentBuffer=this->everything->screen->output->currentBuffer;
+bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error){
 	NONS_StandardOutput *out=this->everything->screen->output;
-	if (!*line){
-		if (out->NewLine()){
-			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-				return NONS_NO_ERROR;
-			out->NewLine();
-		}
-		return NONS_NO_ERROR;
-	}
-	bool skip=*line=='`';
-	wchar_t *str=copyWString(line+skip);
-	bool justClicked=0,
-		justTurnedPage=0;
-	std::wstring reducedString;
-	reduceString(str,reducedString);
-	delete[] str;
-	std::vector<printingPage> pages;
-	ulong totalprintedchars=0;
-	for (const wchar_t *str2=reducedString.c_str();*str2;){
-		ulong p=instr(str2,L"\\")+1;
-		wchar_t *str3=copyWString(str2,p);
-		if (!p)
-			str2+=wcslen(str2);
-		else
-			str2+=p;
-		pages.push_back(0);
-		printingPage &page=pages[pages.size()-1];
-		page.reduced=str3;
-		delete[] str3;
-		findStops(page.reduced.c_str(),page.stops,page.print);
-	}
 	this->everything->screen->showText();
+	wchar_t *str;
+	bool justClicked;
 	for (std::vector<printingPage>::iterator i=pages.begin();i!=pages.end();i++){
 		bool clearscr=out->prepareForPrinting(i->print.c_str());
 		if (clearscr){
-			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-				return NONS_NO_ERROR;
+			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+				if (!!error)
+					*error=NONS_NO_ERROR;
+				return 1;
+			}
 			this->everything->screen->clearText();
 		}
 		str=(wchar_t *)i->reduced.c_str();
 		for (ulong reduced=0,printed=0,stop=0;stop<i->stops.size();stop++){
 			ulong printedChars=0;
 			while (justClicked=out->print(printed,i->stops[stop].first,this->everything->screen->screen,&printedChars)){
-				if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-					return NONS_NO_ERROR;
+				if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+					if (!!error)
+						*error=NONS_NO_ERROR;
+					return 1;
+				}
 				this->everything->screen->clearText();
 				justClicked=1;
 			}
 			if (printedChars>0){
-				totalprintedchars+=printedChars;
-				justTurnedPage=0;
+				if (!!totalprintedchars)
+					(*totalprintedchars)+=printedChars;
+				if (!!justTurnedPage)
+					*justTurnedPage=0;
 				justClicked=0;
 			}
 			reduced=i->stops[stop].second;
 			switch (str[reduced]){
 				case '\\':
-					if (!justClicked && this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-						return NONS_NO_ERROR;
+					if (!!this->textgosub && (this->textgosubRecurses || !this->insideTextgosub())){
+						std::vector<printingPage>::iterator i2=i;
+						std::vector<printingPage> temp;
+						printingPage temp2(*i2);
+						temp2.print.erase(temp2.print.begin(),temp2.print.begin()+temp2.stops[stop].first);
+						temp2.reduced.erase(temp2.reduced.begin(),temp2.reduced.begin()+temp2.stops[stop].second+1);
+						std::pair<ulong,ulong> takeOut;
+						takeOut.first=temp2.stops[stop].first+1;
+						takeOut.second=temp2.stops[stop].second+1;
+						temp2.stops.erase(temp2.stops.begin(),temp2.stops.begin()+stop+1);
+						for (std::vector<std::pair<ulong,ulong> >::iterator i=temp2.stops.begin();i<temp2.stops.end();i++){
+							i->first-=takeOut.first;
+							i->second-=takeOut.second;
+						}
+						temp.push_back(temp2);
+						for (i2++;i2!=pages.end();i2++)
+							temp.push_back(*i2);
+						NONS_StackElement *pusher=new NONS_StackElement(temp,'\\',this->insideTextgosub()+1);
+						this->callStack.push_back(pusher);
+						this->goto_label(this->textgosub);
+						out->endPrinting();
+						if (!!error)
+							*error=NONS_NO_ERROR;
+						return 1;
+					}else if (!justClicked && this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+						if (!!error)
+							*error=NONS_NO_ERROR;
+						return 1;
+					}
 					out->endPrinting();
 					this->everything->screen->clearText();
 					reduced++;
-					justTurnedPage=1;
+					if (!!justTurnedPage)
+						*justTurnedPage=1;
 					break;
 				case '@':
-					if (!justClicked && this->arrowCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
-						return NONS_NO_ERROR;
+					if (!!this->textgosub && (this->textgosubRecurses || !this->insideTextgosub())){
+						std::vector<printingPage>::iterator i2=i;
+						std::vector<printingPage> temp;
+						printingPage temp2(*i2);
+						temp2.print.erase(temp2.print.begin(),temp2.print.begin()+temp2.stops[stop].first);
+						temp2.reduced.erase(temp2.reduced.begin(),temp2.reduced.begin()+temp2.stops[stop].second+1);
+						std::pair<ulong,ulong> takeOut;
+						takeOut.first=temp2.stops[stop].first;
+						takeOut.second=temp2.stops[stop].second+1;
+						temp2.stops.erase(temp2.stops.begin(),temp2.stops.begin()+stop+1);
+						for (std::vector<std::pair<ulong,ulong> >::iterator i=temp2.stops.begin();i<temp2.stops.end();i++){
+							i->first-=takeOut.first;
+							i->second-=takeOut.second;
+						}
+						temp.push_back(temp2);
+						for (i2++;i2!=pages.end();i2++)
+							temp.push_back(*i2);
+						NONS_StackElement *pusher=new NONS_StackElement(temp,'@',this->insideTextgosub()+1);
+						this->callStack.push_back(pusher);
+						this->goto_label(this->textgosub);
+						out->endPrinting();
+						if (!!error)
+							*error=NONS_NO_ERROR;
+						return 1;
+					}else if (!justClicked && this->arrowCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+						if (!!error)
+							*error=NONS_NO_ERROR;
+						return 1;
+					}
 					reduced++;
 					break;
 				case '!':
@@ -1170,7 +1227,48 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 		}
 		out->endPrinting();
 	}
-	if (!justTurnedPage && totalprintedchars && out->NewLine() && this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)>=0){
+	return 0;
+}
+
+ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
+	/*if (!this->everything->screen)
+		this->setDefaultWindow();*/
+	this->currentBuffer=this->everything->screen->output->currentBuffer;
+	NONS_StandardOutput *out=this->everything->screen->output;
+	if (!*line){
+		if (out->NewLine()){
+			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
+				return NONS_NO_ERROR;
+			out->NewLine();
+		}
+		return NONS_NO_ERROR;
+	}
+	bool skip=*line=='`';
+	wchar_t *str=copyWString(line+skip);
+	bool justTurnedPage=0;
+	std::wstring reducedString;
+	reduceString(str,reducedString);
+	delete[] str;
+	std::vector<printingPage> pages;
+	ulong totalprintedchars=0;
+	for (const wchar_t *str2=reducedString.c_str();*str2;){
+		ulong p=instr(str2,L"\\")+1;
+		wchar_t *str3=copyWString(str2,p);
+		if (!p)
+			str2+=wcslen(str2);
+		else
+			str2+=p;
+		pages.push_back(printingPage());
+		printingPage &page=pages[pages.size()-1];
+		page.reduced=str3;
+		delete[] str3;
+		findStops(page.reduced.c_str(),page.stops,page.print);
+	}
+	ErrorCode error;
+	if (this->Printer_support(pages,&totalprintedchars,&justTurnedPage,&error))
+		return error;
+	if (!justTurnedPage && totalprintedchars && !this->insideTextgosub() && out->NewLine() &&
+			this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)>=0){
 		this->everything->screen->clearText();
 		//out->NewLine();
 	}
@@ -1323,5 +1421,28 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 			continue;
 convertParametersToString_000:;
 	}
+}
+
+ulong NONS_ScriptInterpreter::insideTextgosub(){
+	return (this->callStack.size() && this->callStack.back()->textgosubLevel)?this->callStack.back()->textgosubLevel:0;
+}
+
+bool NONS_ScriptInterpreter::goto_label(wchar_t *label){
+	long temp=this->script->offsetFromBlock(label);
+	if (temp<0)
+		return 0;
+	labelsUsed.insert(copyWString(label));
+	this->interpreter_position=temp;
+	return 1;
+}
+
+bool NONS_ScriptInterpreter::gosub_label(wchar_t *label){
+	NONS_StackElement *el=new NONS_StackElement(this->interpreter_position,0,this->insideTextgosub());
+	if (!this->goto_label(label)){
+		delete el;
+		return 0;
+	}
+	this->callStack.push_back(el);
+	return 1;
 }
 #endif

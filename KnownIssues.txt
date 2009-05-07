@@ -1,6 +1,7 @@
 * MP3
     smpeg.dll (used for mp3 playback) tends to crash unexpectedly. It's
     encouraged to use OGG, instead. Use MP3 at your own risk.
+    This is officially not a bug. It's a feature.
 * Debug mode
     When running in language debug mode and the debug thread is waiting for
     input, the program will not end until *any* input (including an empty

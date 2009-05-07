@@ -41,26 +41,12 @@
 #include "IO_System/FileIO.h"
 
 #if defined(NONS_SYS_WINDOWS)
-//#define _WIN32_WINNT 0x0600
-/*#ifndef UNICODE
-#define UNICODE
-#endif*/
 #include <tchar.h>
 #include <windows.h>
 #define COMMAND_LINE_ARGUMENT_TYPE wchar_t
 #else
 #define COMMAND_LINE_ARGUMENT_TYPE char
 #endif
-
-#define PRINT_VERSION {\
-	std::cout <<"ONSlaught ";\
-	if (ONSLAUGHT_BUILD_VERSION<99999999)\
-		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";\
-	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"\
-		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"\
-		"All rights reserved.\n\n"\
-		"\"What's all this, then?\"\n\n"<<std::endl;\
-}
 
 int mainThread(void *nothing);
 
@@ -344,8 +330,7 @@ void parseCommandLine(int argc,T **argv){
 				break;
 			case 10: //--version
 				{
-					PRINT_VERSION
-					new NONS_ScriptInterpreter(0);
+					delete new NONS_ScriptInterpreter(0);
 				}
 				exit(0);
 			case 11: //-implementation
@@ -652,7 +637,13 @@ int
 	main(int argc,char **argv)
 #endif
 {
-	PRINT_VERSION
+	std::cout <<"ONSlaught ";
+	if (ONSLAUGHT_BUILD_VERSION<99999999)
+		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";
+	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
+		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
+		"All rights reserved.\n\n"
+		"\"What's all this, then?\"\n\n"<<std::endl;
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
 	if (!useArgumentsFile("arguments.txt"))
