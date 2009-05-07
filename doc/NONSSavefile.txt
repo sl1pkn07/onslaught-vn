@@ -13,9 +13,12 @@ Stack section{
 		Byte. Type of nest. (0 subroutine, 1 for)
 		String. Label.
 		DWord. Offset in wide characters from the label.
-		if (!Type of nest){
+		if (save_version>1){
+			DWord. Level of textgosub recursion.
+		}
+		if (!Type of nest)
 			String. A string that must be interpreted before popping the stack.
-		}else{
+		else{
 			DWord. A variable stack index used to identify the for index variable.
 			sDWord. The final value of the for (for (;var<=val;)).
 			sDWord. The step of the for (for (;;var+=step)).

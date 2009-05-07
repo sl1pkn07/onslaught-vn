@@ -401,3 +401,5 @@ When called inside the block defined by textgosub, if what caused the fork was
 a \, %var is set to non-zero; otherwise, it's set zero.
 When called from anywhere else, %var is set to zero.
 
+puttext c$string
+Has the same behavior as literal_print.
