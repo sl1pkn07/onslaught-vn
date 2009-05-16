@@ -43,10 +43,10 @@ struct ConfigFile{
 	ConfigFile(char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	ConfigFile(wchar_t *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	~ConfigFile();
-	wchar_t *getWString(const wchar_t *index,long subindex=0);
-	long getInt(const wchar_t *index,long subindex=0);
-	void assignWString(const wchar_t *var,const wchar_t *val,long subindex=0);
-	void assignInt(const wchar_t *var,long val,long subindex=0);
+	wchar_t *getWString(const wchar_t *index,ulong subindex=0);
+	long getInt(const wchar_t *index,ulong subindex=0);
+	void assignWString(const wchar_t *var,const wchar_t *val,ulong subindex=0);
+	void assignInt(const wchar_t *var,long val,ulong subindex=0);
 	void writeOut(char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	std::string *writeOut(ENCODINGS encoding=ISO_8859_1_ENCODING);
 	bool exists(const wchar_t *var);

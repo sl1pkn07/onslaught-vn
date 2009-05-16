@@ -84,7 +84,8 @@ char *addStrings(const char *str1,const char *str2){
 	ulong len1=strlen(str1),len2=strlen(str2);
 	ulong len3=len1+len2;
 	char *res=new char[len3+1];
-	sprintf(res,"%s%s",str1,str2);
+	strcpy(res,str1);
+	strcat(res,str2);
 	return res;
 }
 
@@ -256,23 +257,8 @@ long instrB(const char *str0,const char *str1){
 	return instrB_template<char>(str0,str1);
 }
 
-template<typename T>
-void tolower_template(T *param){
-	for (;*param;param++)
-		if (*param>='A' && *param<='Z')
-			*param=*param|32;
-}
-
-void tolower(wchar_t *param){
-	return tolower_template<wchar_t>(param);
-}
-
-void tolower(char *param){
-	return tolower_template<char>(param);
-}
-
-Uint32 secondsSince1900(){
-	return time(0)+2208986640;
+Uint32 secondsSince1970(){
+	return time(0);
 }
 
 #ifndef BARE_FILE
@@ -999,11 +985,10 @@ void writeByte(Uint8 a,std::string *str,long offset){
 }
 
 void writeWord(Uint16 a,std::string *str,long offset){
-	if (offset<0)
-		offset=str->size();
-	for (char b=0;b<2;b++,offset++){
-		if (str->size()>offset)
-			(*str)[offset]=a&0xFF;
+	ulong off=(offset<0)?str->size():offset;
+	for (char b=0;b<2;b++,off++){
+		if (str->size()>off)
+			(*str)[off]=a&0xFF;
 		else
 			str->push_back(a&0xFF);
 		a>>=8;
@@ -1011,11 +996,10 @@ void writeWord(Uint16 a,std::string *str,long offset){
 }
 
 void writeDWord(Uint32 a,std::string *str,long offset){
-	if (offset<0)
-		offset=str->size();
-	for (char b=0;b<4;b++,offset++){
-		if (str->size()>offset)
-			(*str)[offset]=a&0xFF;
+	ulong off=(offset<0)?str->size():offset;
+	for (char b=0;b<4;b++,off++){
+		if (str->size()>off)
+			(*str)[off]=a&0xFF;
 		else
 			str->push_back(a&0xFF);
 		a>>=8;

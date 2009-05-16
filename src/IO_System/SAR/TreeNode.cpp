@@ -32,6 +32,7 @@
 
 #include "TreeNode.h"
 #include "../../Functions.h"
+#include "../../UTF.h"
 #include "../../Globals.h"
 
 NONS_TreeNode::NONS_TreeNode(const wchar_t *name){
@@ -59,11 +60,11 @@ NONS_TreeNode *NONS_TreeNode::getBranch(const wchar_t *name,bool createIfMissing
 	if (pos>=0){
 		name0=copyWString(name,pos);
 		name1=copyWString(name+pos+1);
-		tolower(name0);
-		tolower(name1);
+		NONS_tolower(name0);
+		NONS_tolower(name1);
 	}else{
 		name0=copyWString(name);
-		tolower(name0);
+		NONS_tolower(name0);
 	}
 	for (ulong a=0;a<pBranches->size();a++){
 		if (!wcscmp((*pBranches)[a]->data.name,name0)){

@@ -32,6 +32,7 @@
 
 #include "Archive.h"
 #include "../../Functions.h"
+#include "../../UTF.h"
 #include "../../Globals.h"
 #include "../FileIO.h"
 #include <bzlib.h>
@@ -66,7 +67,7 @@ NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
 	this->path=copyString(filename);
 	pos=instrB(filename,".");
 	char *ext=copyString(filename+pos+1);
-	tolower(ext);
+	NONS_tolower(ext);
 	if (!strcmp(ext,"sar"))
 		this->archive_type=SAR_ARCHIVE;
 	else if (!strcmp(ext,"nsa"))
@@ -122,7 +123,7 @@ bool NONS_Archive::readSAR(){
 		/*for (wchar_t *wstr2=wstr;wstr2;wstr2++)
 			if (wstr2=='\\')
 				*wstr2='/';*/
-		tolower(wstr);
+		NONS_tolower(wstr);
 		NONS_TreeNode *node=this->root->getBranch(wstr,1);
 		delete[] wstr;
 		pos+=strlen((char *)str)+1;
@@ -298,11 +299,12 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong *buffersize){
 				ulong decompressionbufferlen=width*height+4;
 				uchar *decompressionbuffer=new uchar[decompressionbufferlen];
 				uchar bitoffset=0;
+				ulong surface=width*height;
 				for (uchar a=0;a<3;a++){
 					ulong count=0;
 					uchar x=getbits(compressedbuffer,8,&pos,&bitoffset);
 					decompressionbuffer[count++]=x;
-					while (count<(width*height)){
+					while (count<surface){
 						uchar n=getbits(compressedbuffer,3,&pos,&bitoffset);
 						if (!n){
 							decompressionbuffer[count++]=x;

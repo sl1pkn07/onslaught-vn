@@ -31,7 +31,7 @@ Variables section{
 	DWord. Number of intervals (n).
 	n*Interval{
 		if (Size of the interval==1)
-			DWord. (First variable in the interval)&0x80000000.
+			DWord. (First variable in the interval)|0x80000000.
 		else{
 			DWord. First variable in the interval.
 			DWord. Size of the interval.
@@ -42,18 +42,41 @@ Variables section{
 		sDWord. intValue.
 		String. wcsValue.
 	}
-	DWord. Number of arrays (n).
-	n*Array{
-		String. Name.
+	//DWord. Number of arrays (n).
+	//n*Array{
+	//	String. Name.
+	//	*0
+	//	DWord. Size of dimension (n2).
+	//	if (n2){
+	//		n2*Variable{
+	//			sDWord. intValue.
+	//			//Removed on 2009-02-23:
+	//			//String. wcsValue.
+	//			<recursion from *0 to *1>
+	//		}
+	//	}
+	//	*1
+	//}
+	//^Changed on 2009-05-12 to:
+	DWord. Number of intervals (n).
+	n*Interval{
+		if (Size of the interval==1)
+			DWord. (First array in the interval)|0x80000000.
+		else{
+			DWord. First array in the interval.
+			DWord. Size of the interval.
+		}
+	}
+	Array{
+		//Identifier is determined by interval.
 		*0
-		DWord. Size of dimension (n2).
-		if (n2){
-			n2*Variable{
-				sDWord. intValue.
-				//Removed on 2009-02-23:
-				//String. wcsValue.
+		DWord. Size of dimension (n).
+		if (n){
+			n{
 				<recursion from *0 to *1>
 			}
+		}else{
+			sDWord. intValue.
 		}
 		*1
 	}

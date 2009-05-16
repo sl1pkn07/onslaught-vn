@@ -160,7 +160,7 @@ void ConfigFile::init(char *filename,ENCODINGS encoding){
 	for (long pos=0;pos<l;){
 		wchar_t *var,*val;
 		getMembers(decoded+pos,&var,&val);
-		tolower(var);
+		NONS_tolower(var);
 		this->entries[var]=getParameterList(val);
 		for (;pos<l && (decoded[pos]!=13 && decoded[pos]!=10);pos++);
 		for (;pos<l && (decoded[pos]==13 || decoded[pos]==10);pos++);
@@ -178,7 +178,7 @@ ConfigFile::~ConfigFile(){
 	}
 }
 
-wchar_t *ConfigFile::getWString(const wchar_t *index,long subindex){
+wchar_t *ConfigFile::getWString(const wchar_t *index,ulong subindex){
 	if (this->entries.find((wchar_t *)index)==this->entries.end() || getDataType((*this->entries[(wchar_t *)index])[subindex]))
 		return 0;
 	return copyWString((*this->entries[(wchar_t *)index])[subindex]+1,wcslen((*this->entries[(wchar_t *)index])[subindex]+1)-1);
@@ -192,7 +192,7 @@ int atoi2(T *str){
 	return res;
 }
 
-long ConfigFile::getInt(const wchar_t *index,long subindex){
+long ConfigFile::getInt(const wchar_t *index,ulong subindex){
 	if (this->entries.find((wchar_t *)index)==this->entries.end())
 		return 0;
 	wchar_t *in=(*this->entries[(wchar_t *)index])[subindex];
@@ -219,14 +219,10 @@ long ConfigFile::getInt(const wchar_t *index,long subindex){
 	}
 }
 
-void ConfigFile::assignWString(const wchar_t *var,const wchar_t *val,long subindex){
+void ConfigFile::assignWString(const wchar_t *var,const wchar_t *val,ulong subindex){
 	ulong len=wcslen(val);
 	wchar_t *temp=new wchar_t[len+3];
-#ifndef __MINGW32__
 	swprintf(temp,len+3,L"\"%s\"",val);
-#else
-	swprintf(temp,L"\"%s\"",val);
-#endif
 	if (this->exists(var))
 		if (subindex<0 || subindex>=this->entries.size())
 			this->entries[(wchar_t *)var]->push_back(temp);
@@ -239,13 +235,9 @@ void ConfigFile::assignWString(const wchar_t *var,const wchar_t *val,long subind
 	}
 }
 
-void ConfigFile::assignInt(const wchar_t *var,long val,long subindex){
+void ConfigFile::assignInt(const wchar_t *var,long val,ulong subindex){
 	wchar_t *temp=new wchar_t[50];
-#ifndef __MINGW32__
 	swprintf(temp,12,L"%d",val);
-#else
-	swprintf(temp,L"%d",val);
-#endif
 	if (this->exists(var))
 		if (subindex<0 || subindex>=this->entries.size())
 			this->entries[(wchar_t *)var]->push_back(temp);
@@ -270,7 +262,7 @@ std::string *ConfigFile::writeOut(ENCODINGS encoding){
 	for(std::map<wchar_t *,std::vector<wchar_t *> *,wstrCmpCI>::iterator iter=this->entries.begin();iter!=this->entries.end();iter++){
 		buffer.append(iter->first);
 		buffer.push_back('=');
-		for (long a=0;;){
+		for (ulong a=0;;){
 			buffer.append((*(iter->second))[a++]);
 			if (a<iter->second->size())
 				buffer.push_back(' ');

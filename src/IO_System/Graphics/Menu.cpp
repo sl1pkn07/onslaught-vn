@@ -245,17 +245,9 @@ int NONS_Menu::save(){
 			wchar_t *txt=new wchar_t[31];
 			tm *t=(*files)[a];
 			if (t)
-#ifndef __MINGW32__
 				swprintf(txt,31,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-#else
-				swprintf(txt,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-#endif
 			else
-#ifndef __MINGW32__
 				swprintf(txt,31,L" %2d    -------------------",a+1);
-#else
-				swprintf(txt,L" %2d    -------------------",a+1);
-#endif
 			wchar_t *pusher=copyWString(this->stringSlot?this->stringSlot:((wchar_t *)L"Slot"));
 			addStringsInplace(&pusher,txt);
 			delete[] txt;
@@ -312,17 +304,9 @@ int NONS_Menu::load(){
 		for (ulong a=0;a<slots;a++){
 			tm *t=(*files)[a];
 			if (t)
-#ifndef __MINGW32__
 				swprintf(txt,31,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-#else
-				swprintf(txt,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-#endif
 			else
-#ifndef __MINGW32__
 				swprintf(txt,31,L" %2d    -------------------",a+1);
-#else
-				swprintf(txt,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-#endif
 			wchar_t *pusher=copyWString(this->stringSlot?this->stringSlot:((wchar_t *)L"Slot"));
 			addStringsInplace(&pusher,txt);
 			strings.push_back(pusher);

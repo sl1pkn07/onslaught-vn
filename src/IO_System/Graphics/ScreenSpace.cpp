@@ -132,7 +132,7 @@ ErrorCode NONS_ScreenSpace::BlendAll(ulong effect,long timing,wchar_t *rule){
 
 ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 	this->BlendOnlyBG(0);
-	for (long a=this->layerStack.size()-1;a>this->sprite_priority;a--)
+	for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--)
 		if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
 			manualBlit(this->layerStack[a]->data,0,this->screenBuffer,&(this->layerStack[a]->clip_rect),this->layerStack[a]->alpha);
 	if (this->leftChar && this->leftChar->data)

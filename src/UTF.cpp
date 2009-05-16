@@ -60,7 +60,7 @@ bool checkNativeEndianness(){
 	return res;
 }
 
-wchar_t *UCS2_to_WChar(const char *buffer,long initialSize,long *finalSize,uchar end){
+wchar_t *UCS2_to_WChar(const char *buffer,ulong initialSize,long *finalSize,uchar end){
 	wchar_t firstChar=buffer[0]<<8|(wchar_t(buffer[1])&0xFF);
 	char realEnd=checkEnd(firstChar);
 	bool usesBOM=(realEnd!=UNDEFINED_ENDIANNESS);
@@ -74,34 +74,34 @@ wchar_t *UCS2_to_WChar(const char *buffer,long initialSize,long *finalSize,uchar
 	wchar_t *res=new wchar_t[initialSize];
 	memcpy(res,buffer+2*usesBOM,initialSize);
 	if ((uchar)checkNativeEndianness()!=end)
-		for (long a=0;a<initialSize;a++)
+		for (ulong a=0;a<initialSize;a++)
 			res[a]=(res[a]>>8)+(res[a]<<8);
 	*finalSize=initialSize;
 	return res;
 }
 
-wchar_t *ISO88591_to_WChar(const char *buffer,long initialSize,long *finalSize){
+wchar_t *ISO88591_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
 	wchar_t *res=new wchar_t[initialSize];
 	*finalSize=initialSize;
-	for (long a=0;a<initialSize;a++)
+	for (ulong a=0;a<initialSize;a++)
 		res[a]=((wchar_t)buffer[a])&0xFF;
 	return res;
 }
 
-wchar_t *UTF8_to_WChar(const char *buffer,long initialSize,long *finalSize){
-	long c=0;
-	long b=0,init=(uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C?3:0;
+wchar_t *UTF8_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
+	ulong c=0;
+	ulong b=0,init=(uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C?3:0;
 	uchar *unsigned_buffer=(uchar *)buffer;
 	/*
 	Predict size of resulting buffer. This is a ridiculously simple operation,
 	as all it requires is to find the starting bytes of the characters.
 	*/
-	for (long a=init;a<initialSize;a++)
+	for (ulong a=init;a<initialSize;a++)
 		if (unsigned_buffer[a]<128 || (unsigned_buffer[a]&192)==192)
 			c++;
 	wchar_t *res;
 	res=new wchar_t[c];
-	for (long a=init;a<initialSize;a++){
+	for (ulong a=init;a<initialSize;a++){
 		if (!(unsigned_buffer[a]&128))
 			//Byte represents an ASCII character. Direct copy will do.
 			res[b]=buffer[a];
@@ -163,7 +163,7 @@ wchar_t *UTF8_to_WChar(const char *string){
 	return res;
 }
 
-wchar_t *SJIS_to_WChar(const char *buffer,long initialSize,long *finalSize){
+wchar_t *SJIS_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
 	wchar_t *temp=new wchar_t[initialSize];
 	ulong a=0,b=0;
 	uchar *unsigned_buffer=(uchar *)buffer;
@@ -224,7 +224,7 @@ bool isSJISWide(uchar a){
 	return a>=0x81 && a<=0x9F || a>=0xE0 && a<=0xEF;
 }
 
-char *WChar_to_UCS2(const wchar_t *buffer,long initialSize,long *finalSize,uchar end){
+char *WChar_to_UCS2(const wchar_t *buffer,ulong initialSize,long *finalSize,uchar end){
 	bool useBOM=(end<UNDEFINED_ENDIANNESS);
 	if (!useBOM)
 		end=NONS_BIG_ENDIAN;
@@ -240,7 +240,7 @@ char *WChar_to_UCS2(const wchar_t *buffer,long initialSize,long *finalSize,uchar
 	memcpy(res+2*(useBOM),buffer,initialSize);
 	initialSize+=2*useBOM;
 	if ((uchar)checkNativeEndianness()!=end){
-		for (long a=0;a<initialSize;a+=2){
+		for (ulong a=0;a<initialSize;a+=2){
 			char temp=res[a];
 			res[a]=res[a+1];
 			res[a+1]=temp;
@@ -250,7 +250,7 @@ char *WChar_to_UCS2(const wchar_t *buffer,long initialSize,long *finalSize,uchar
 	return res;
 }
 
-char *WChar_to_ISO88591(const wchar_t *buffer,long initialSize,long *finalSize){
+char *WChar_to_ISO88591(const wchar_t *buffer,ulong initialSize,long *finalSize){
 	*finalSize=initialSize;
 	char *res=new char[initialSize];
 	for (ulong a=0;a<initialSize;a++){
@@ -296,11 +296,11 @@ long getUTF8size(const wchar_t *string){
 	return res;
 }
 
-char *WChar_to_UTF8(const wchar_t *buffer,long initialSize,long *finalSize){
+char *WChar_to_UTF8(const wchar_t *buffer,ulong initialSize,long *finalSize){
 	long fSize=getUTF8size(buffer,initialSize);
 	char *res=new char[fSize];
 	long b=0;
-	for (long a=0;a<initialSize;a++,b++){
+	for (ulong a=0;a<initialSize;a++,b++){
 		wchar_t character=buffer[a];
 		if (character<0x80)
 			res[b]=(char)character;
@@ -339,10 +339,10 @@ char *WChar_to_UTF8(const wchar_t *string){
 	return res;
 }
 
-char *WChar_to_SJIS(const wchar_t *buffer,long initialSize,long *finalSize){
+char *WChar_to_SJIS(const wchar_t *buffer,ulong initialSize,long *finalSize){
 	wchar_t *temp=new wchar_t[initialSize];
 	memcpy(temp,buffer,initialSize*sizeof(wchar_t));
-	for (long a=0;a<initialSize;a++){
+	for (ulong a=0;a<initialSize;a++){
 		wchar_t character=Unicode2SJIS[temp[a]];
 		if (character=='?' && temp[a]!='?'){
 #ifndef BARE_FILE
@@ -355,7 +355,7 @@ char *WChar_to_SJIS(const wchar_t *buffer,long initialSize,long *finalSize){
 		temp[a]=character;
 	}
 	long fSize=0;
-	for (long a=0;a<initialSize;a++)
+	for (ulong a=0;a<initialSize;a++)
 		if (temp[a]<0x80)
 			fSize++;
 		else
@@ -363,7 +363,7 @@ char *WChar_to_SJIS(const wchar_t *buffer,long initialSize,long *finalSize){
 	*finalSize=fSize;
 	char *res=new char[fSize];
 	fSize=0;
-	for (long a=0;a<initialSize;a++,fSize++){
+	for (ulong a=0;a<initialSize;a++,fSize++){
 		if (temp[a]<0x80)
 			res[fSize]=(char)temp[a];
 		else{
@@ -487,10 +487,10 @@ bool isbreakspaceASCIIe(char character){
 	return character==0x20;
 }
 
-bool isValidUTF8(const char *buffer,long size){
+bool isValidUTF8(const char *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++){
-		char char_len;
+		ulong char_len;
 		if (!(*unsigned_buffer&128))
 			char_len=1;
 		else if ((*unsigned_buffer&224)==192)
@@ -512,7 +512,7 @@ bool isValidUTF8(const char *buffer,long size){
 	return 1;
 }
 
-bool isValidSJIS(const char *buffer,long size){
+bool isValidSJIS(const char *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++,unsigned_buffer++){
 		if (!isSJISWide(*unsigned_buffer)){
@@ -529,11 +529,11 @@ bool isValidSJIS(const char *buffer,long size){
 	return 1;
 }
 
-bool isValidUCS2(const char *buffer,long size){
+bool isValidUCS2(const char *buffer,ulong size){
 	return !(size&1);
 }
 
-bool ISO88591_or_UCS2(const char *buffer,long size){
+bool ISO88591_or_UCS2(const char *buffer,ulong size){
 	if (!isValidUCS2(buffer,size))
 		return 0;
 	ulong nuls=0;
@@ -547,5 +547,49 @@ bool ISO88591_or_UCS2(const char *buffer,long size){
 			buffer[6]=='e')
 			return 0;
 	return 1;
+}
+
+bool NONS_isdigit(wchar_t character){
+	return character>=0x0030 && character<=0x0039;
+}
+
+bool NONS_isupper(wchar_t character){
+	return character>=0x0041 && character<=0x005A;
+}
+
+bool NONS_islower(wchar_t character){
+	return character>=0x0061 && character<=0x007A;
+}
+
+bool NONS_isalpha(wchar_t character){
+	return character>=0x0041 && character<=0x005A || character>=0x0061 && character<=0x007A;
+}
+
+bool NONS_isalnum(wchar_t character){
+	return NONS_isalpha(character) || NONS_isdigit(character);
+}
+
+bool NONS_ishexa(wchar_t character){
+	return character>=0x0030 && character<=0x0039 || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046;
+}
+
+wchar_t NONS_toupper(wchar_t character){
+	return NONS_islower(character)?character&223:character;
+}
+
+wchar_t NONS_tolower(wchar_t character){
+	return NONS_isupper(character)?character|32:character;
+}
+
+void NONS_tolower(wchar_t *param){
+	for (;*param;param++)
+		if (*param>='A' && *param<='Z')
+			*param=NONS_tolower(*param);
+}
+
+void NONS_tolower(char *param){
+	for (;*param;param++)
+		if (*param>='A' && *param<='Z')
+			*param=NONS_tolower(*param);
 }
 #endif

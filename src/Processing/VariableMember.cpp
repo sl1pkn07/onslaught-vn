@@ -31,42 +31,71 @@
 #define NONS_VARIABLEMEMBER_CPP
 
 #include "VariableMember.h"
+#include "ScriptInterpreter.h"
 #include "../Functions.h"
 #include "../Globals.h"
 #include <SDL/SDL.h>
 #include <sstream>
 
-NONS_VariableMember::NONS_VariableMember(char type){
+NONS_VariableMember::NONS_VariableMember(yytokentype type){
 	this->intValue=0;
 	this->wcsValue=0;
-	this->type=(type=='$')?'$':'%';
+	this->type=type;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
 	this->constant=0;
 	this->dimension=0;
 	this->dimensionSize=0;
+	this->negated=1;
+	this->temporary=0;
 }
 
-NONS_VariableMember::NONS_VariableMember(ulong *dimensions,ulong size){
+NONS_VariableMember::NONS_VariableMember(long value){
+	this->intValue=value;
+	this->wcsValue=0;
+	this->type=INTEGER;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	this->dimension=0;
+	this->dimensionSize=0;
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(const wchar_t *a,bool takeOwnership){
+	this->intValue=0;
+	this->wcsValue=0;
+	this->type=STRING;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	this->dimension=0;
+	this->dimensionSize=0;
+	this->set(a,takeOwnership);
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(std::vector<long> &sizes,size_t startAt){
 	this->intValue=0;
 	this->wcsValue=0;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
-	if (!size && !dimensions){
-		this->type='?';
-		this->dimensionSize=0;
-		this->dimension=0;
-	}else if (size){
-		this->type='?';
-		this->dimensionSize=*dimensions;
-		this->dimension=new NONS_VariableMember*[*dimensions];
-		for (ulong a=0;a<*dimensions;a++)
-			this->dimension[a]=new NONS_VariableMember(dimensions+1,size-1);
+	this->constant=0;
+	if (startAt<sizes.size()){
+		this->type=INTEGER_ARRAY;
+		this->dimensionSize=sizes[startAt];
+		this->dimension=new NONS_VariableMember*[sizes[startAt]+1];
+		for (ulong a=0;a<ulong(sizes[startAt]);a++)
+			this->dimension[a]=new NONS_VariableMember(sizes,startAt+1);
 	}else{
-		this->type='%';
+		this->type=INTEGER;
 		this->dimension=0;
 		this->dimensionSize=0;
 	}
+	this->negated=1;
+	this->temporary=0;
 }
 
 NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
@@ -74,16 +103,18 @@ NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
 	this->intValue=b.intValue;
 	this->_long_upper_limit=b._long_upper_limit;
 	this->_long_lower_limit=b._long_lower_limit;
-	this->wcsValue=(b.type=='$')?copyWString(b.wcsValue):0;
+	this->wcsValue=(b.type==STRING)?copyWString(b.wcsValue):0;
 	this->type=b.type;
 	this->dimensionSize=b.dimensionSize;
-	if (this->type!='?')
+	if (this->type!=INTEGER_ARRAY)
 		this->dimension=0;
 	else{
 		this->dimension=new NONS_VariableMember*[this->dimensionSize];
 		for (ulong a=0;a<this->dimensionSize;a++)
 			this->dimension[a]=new NONS_VariableMember(*b.dimension[a]);
 	}
+	this->negated=b.negated;
+	this->temporary=0;
 }
 
 NONS_VariableMember::~NONS_VariableMember(){
@@ -104,7 +135,7 @@ bool NONS_VariableMember::isConstant(){
 	return this->constant;
 }
 
-char NONS_VariableMember::getType(){
+yytokentype NONS_VariableMember::getType(){
 	return this->type;
 }
 
@@ -115,143 +146,136 @@ void NONS_VariableMember::fixint(){
 		this->intValue=_long_lower_limit;
 }
 
-template <typename T>
-int atoi2(T *str){
-	char *temp=copyString(str);
-	int res=atoi(temp);
-	delete[] temp;
-	return res;
-}
-
 long NONS_VariableMember::getInt(){
-	return (this->type=='%')?this->intValue:atoi2(this->wcsValue);
+	if (this->type==INTEGER || this->type==INTEGER_ARRAY)
+		return this->intValue;
+	return 0;
 }
 
 const wchar_t *NONS_VariableMember::getWcs(){
-	return (this->type=='$' && !!this->wcsValue)?this->wcsValue:L"";
+	return (this->type==STRING && !!this->wcsValue)?this->wcsValue:L"";
 }
 
 wchar_t *NONS_VariableMember::getWcsCopy(){
-	if (this->type=='$')
+	if (this->type==STRING)
 		return copyWString(this->wcsValue);
-	else{
-		std::stringstream stream;
-		stream <<this->intValue;
-		return copyWString(stream.str().c_str());
-	}
+	return copyWString(L"");
 }
 
 char *NONS_VariableMember::getStrCopy(){
-	if (this->type=='$')
+	if (this->type==STRING)
 		return copyString(this->wcsValue);
-	else{
-		std::stringstream stream;
-		stream <<this->intValue;
-		return copyString(stream.str().c_str());
-	}
+	return copyString(L"");
+}
+
+NONS_VariableMember *NONS_VariableMember::getIndex(ulong i){
+	if (this->type==INTEGER_ARRAY && i<this->dimensionSize)
+		return this->dimension[i];
+	return 0;
 }
 
 void NONS_VariableMember::set(long a){
 	if (this->constant)
 		return;
-	//SDL_LockMutex(exitMutex);
-	if (this->type=='%'){
+	SDL_LockMutex(exitMutex);
+	if (this->type==INTEGER){
 		this->intValue=a;
 		this->fixint();
-	}else{
-		if (!!this->wcsValue)
-			delete[] this->wcsValue;
-		std::stringstream stream;
-		stream <<a;
-		this->wcsValue=copyWString(stream.str().c_str());
 	}
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::set(const wchar_t *a,bool takeOwnership){
-	if (this->constant){
+	if (this->constant || this->type==INTEGER || this->type==INTEGER_ARRAY){
 		if (takeOwnership)
 			delete[] (wchar_t *)a;
 		return;
 	}
-	if (this->type=='%'){
-		this->intValue=atoi2(a);
-		this->fixint();
-		if (takeOwnership)
-			delete[] (wchar_t *)a;
-	}else{
+	SDL_LockMutex(exitMutex);
+	if (this->type==STRING){
 		if (!!this->wcsValue)
 			delete[] this->wcsValue;
 		this->wcsValue=takeOwnership?(wchar_t *)a:copyWString(a);
 	}
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::inc(){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue++;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::dec(){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue--;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::add(long a){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue+=a;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::sub(long a){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue-=a;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::mul(long a){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue*=a;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::div(long a){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
-	this->intValue/=a;
+	SDL_LockMutex(exitMutex);
+	if (a)
+		this->intValue/=a;
+	else
+		this->intValue=0;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::mod(long a){
-	if (this->constant || this->type!='%')
+	if (this->constant || this->type!=INTEGER)
 		return;
-	//SDL_LockMutex(exitMutex);
+	SDL_LockMutex(exitMutex);
 	this->intValue%=a;
 	this->fixint();
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::setlimits(long lower,long upper){
 	this->_long_lower_limit=lower;
 	this->_long_upper_limit=upper;
 	this->fixint();
+}
+
+void NONS_VariableMember::negate(bool a){
+	if (this->type==INTEGER && !this->negated && a){
+		this->negated=1;
+		this->intValue=!this->intValue;
+	}
 }
 #endif

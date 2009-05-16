@@ -32,9 +32,14 @@
 
 #include "ImageLoader.h"
 #include "../../../Functions.h"
+#include "../../../UTF.h"
 #include "../../../Globals.h"
 
-NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize){
+#define LOG_FILENAME_OLD "NScrflog.dat"
+#define LOG_FILENAME_NEW "nonsflog.dat"
+
+NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize)
+		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW){
 	this->archive=archive;
 	this->maxCacheSize=maxCacheSize;
 	if (maxCacheSize<0)
@@ -59,7 +64,7 @@ SDL_Surface *NONS_ImageLoader::fetchImage(const wchar_t *name,SDL_Rect *screen,i
 	if (!name || !screen)
 		return 0;
 	wchar_t *tempname=copyWString(name);
-	tolower(tempname);
+	NONS_tolower(tempname);
 	toforwardslash(tempname);
 	for (ulong a=0;a<this->imageCache.size();a++){
 		if (this->imageCache[a] && !wcscmp(this->imageCache[a]->name,name)){
@@ -95,7 +100,7 @@ SDL_Surface *NONS_ImageLoader::fetchImage(const wchar_t *name,SDL_Rect *screen,i
 			this->imageCache[a]->age++;
 	if (this->maxCacheSize>=0){
 		ulong cachesize=this->getCacheSize();
-		if (cachesize>this->maxCacheSize)
+		if (cachesize>ulong(this->maxCacheSize))
 			this->freeOldest(cachesize-this->maxCacheSize);
 	}
 	return res;
@@ -117,7 +122,7 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,const wchar_t *
 	if (!name)
 		return 0;
 	wchar_t *tempname=copyWString(name);
-	tolower(tempname);
+	NONS_tolower(tempname);
 	toforwardslash(tempname);
 	for (ulong a=0;a<this->imageCache.size();a++){
 		if (this->imageCache[a] && !wcscmp(this->imageCache[a]->name,tempname)){
@@ -153,7 +158,7 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,const wchar_t *
 			this->imageCache[a]->age++;
 	if (this->maxCacheSize>=0){
 		ulong cachesize=this->getCacheSize();
-		if (cachesize>this->maxCacheSize)
+		if (cachesize>ulong(this->maxCacheSize))
 			this->freeOldest(cachesize-this->maxCacheSize);
 	}
 	return res;

@@ -34,6 +34,7 @@
 #include "Common.h"
 #include "ErrorCodes.h"
 #include <SDL/SDL.h>
+#include <map>
 #endif
 
 #include <vector>
@@ -74,8 +75,6 @@ long instr(const char *str0,const wchar_t *str1,long max=-1);
 long instr(const char *str0,const char *str1,long max=-1);
 long instrB(const wchar_t *str0,const wchar_t *str1);
 long instrB(const char *str0,const char *str1);
-void tolower(wchar_t *param);
-void tolower(char *param);
 bool multicomparison(char character,const char *characters);
 bool multicomparison(wchar_t character,const char *characters);
 bool multicomparison(char character,const wchar_t *characters);
@@ -107,6 +106,22 @@ void writeByte(Uint8 a,std::string *str,long offset=-1);
 void writeWord(Uint16 a,std::string *str,long offset=-1);
 void writeDWord(Uint32 a,std::string *str,long offset=-1);
 void writeString(const wchar_t *a,std::string *str);
+template <typename T>
+std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
+	std::vector<Sint32> intervals;
+	ulong last=i->first;
+	intervals.push_back(last++);
+	while (++i!=end){
+		if (i->first!=last){
+			intervals.push_back(last-intervals[intervals.size()-1]);
+			last=i->first;
+			intervals.push_back(last++);
+		}else
+			last++;
+	}
+	intervals.push_back(last-intervals[intervals.size()-1]);
+	return intervals;
+}
 
 #ifndef BARE_FILE
 //bitmap processing functions
@@ -115,7 +130,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 #endif
 
 //other functions
-Uint32 secondsSince1900();
+Uint32 secondsSince1970();
 #ifndef BARE_FILE
 /*
 Compresses src[0..srcl-1].

@@ -41,10 +41,10 @@ struct NONS_Cursor{
 	long length;
 	long xpos,ypos;
 	bool absolute;
-	long speed;
+	ulong speed;
 	short loop;
 	NONS_Cursor();
-	NONS_Cursor(const wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method);
+	NONS_Cursor(const wchar_t *name,long length,ulong speed,long x,long y,long absolute,short loop,METHODS method);
 	NONS_Cursor(const wchar_t *string,long x,long y,long absolute);
 	~NONS_Cursor();
 	int animate(NONS_ScreenSpace *screen,NONS_Menu *menu,ulong expiration);

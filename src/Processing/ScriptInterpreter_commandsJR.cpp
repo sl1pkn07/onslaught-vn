@@ -115,7 +115,7 @@ ErrorCode NONS_ScriptInterpreter::command_mov(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *var;
 	_GETVARIABLE(var,0,)
-	if (var->getType()=='%'){
+	if (var->getType()==INTEGER){
 		long val;
 		_GETINTVALUE(val,1,)
 		var->set(val);
@@ -263,8 +263,11 @@ ErrorCode NONS_ScriptInterpreter::command_movl(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
-	_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(line.parameters[0],&dst),)
-	if (dst->getType()!='?')
+	ErrorCode error;
+	dst=this->store->retrieve(line.parameters[0],&error);
+	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
+		return error;
+	if (dst->getType()!=INTEGER_ARRAY)
 		return NONS_EXPECTED_ARRAY;
 	if (line.parameters.size()-1>dst->dimensionSize)
 		handleErrors(NONS_TOO_MANY_PARAMETERS,line.lineNo,"NONS_ScriptInterpreter::command_movl",1);
@@ -323,62 +326,6 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_mpegplay(NONS_ParsedLine &line){
-/*#ifndef __MINGW32__
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
-	if (!this->everything->screen)
-		this->setDefaultWindow();
-	wchar_t *temp=0;
-	long click;
-	_GETWCSVALUE(temp,0,)
-	_GETINTVALUE(click,1,)
-	char *filename=copyString(temp);
-	SDL_RWops *rwops=0;
-	if (fileExists(filename))
-		rwops=SDL_RWFromFile(filename,"r");
-	else{
-		long l;
-		char *buffer=(char *)this->everything->archive->getFileBuffer(temp,(ulong *)&l);
-		if (!buffer){
-			delete[] temp;
-			delete[] filename;
-			return NONS_FILE_NOT_FOUND;
-		}
-		rwops=SDL_RWFromMem((char *)buffer,l);
-	}
-	delete[] temp;
-	delete[] filename;
-	_HANDLE_POSSIBLE_ERRORS(this->everything->audio->stopAllSound(),)
-	SDL_Surface *screen=this->everything->screen->screen->realScreen;
-	{
-		SMPEG_Info info;
-		SMPEG *mpeg=SMPEG_new_rwops(rwops,&info,1);
-		SMPEG_enableaudio(mpeg, 1);
-		SMPEG_enablevideo(mpeg, 1);
-		SMPEG_setvolume(mpeg, 100);
-		//Unused:
-		//const SDL_VideoInfo *video_info=SDL_GetVideoInfo();
-		SMPEG_setdisplay(mpeg, screen, 0, 0);
-		SMPEG_scaleXY(mpeg, screen->w, screen->h);
-		SMPEG_play(mpeg);
-		NONS_EventQueue *queue=InputObserver.attach();
-		bool killvideo=0;
-		while (SMPEG_status(mpeg)==SMPEG_PLAYING && !killvideo){
-			if (click){
-				while (!queue->data.empty() && !killvideo){
-					SDL_Event event=queue->pop();
-					if (event.type==SDL_MOUSEBUTTONDOWN){
-						killvideo=1;
-						SMPEG_stop(mpeg);
-					}
-				}
-			}
-			SDL_Delay(50);
-		}
-		InputObserver.detach(queue);
-		SMPEG_delete(mpeg);
-	}
-#endif*/
 	return NONS_UNIMPLEMENTED_COMMAND;
 }
 
@@ -417,7 +364,7 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 		default:
 			return NONS_INVALID_PARAMETER;
 	}
-	tolower(name);
+	NONS_tolower(name);
 	toforwardslash(name);
 	if (this->hideTextDuringEffect)
 		this->everything->screen->hideText();
@@ -496,7 +443,7 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_ParsedLine &line){
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	tolower(name);
+	NONS_tolower(name);
 	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,string,name,x,y,alpha,method,!wcscmp(line.commandName,L"lsp")),delete[] name;);
 	delete[] string;
 	delete[] name;
@@ -824,7 +771,7 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_ParsedLine &line){
 	_GETINTVALUE(x,1,)
 	_GETINTVALUE(y,2,)
 	_GETINTVALUE(alpha,3,)
-	if (spriten>this->everything->screen->layerStack.size())
+	if (ulong(spriten)>this->everything->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	NONS_Layer *l=this->everything->screen->layerStack[spriten];
 	if (!l)
@@ -933,10 +880,12 @@ ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_labellog(NONS_ParsedLine &line){
+	labellog.commit=1;
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){

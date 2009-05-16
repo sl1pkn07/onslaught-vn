@@ -41,33 +41,74 @@ struct reportedError{
 	ErrorCode error;
 	long original_line;
 	std::string caller;
-	reportedError(ErrorCode error,long original_line,const char *caller){
+	std::wstring extraInfo;
+	reportedError(ErrorCode error,long original_line,const char *caller,std::wstring &extra){
 		this->error=error;
 		this->original_line=original_line;
 		this->caller=caller;
+		this->extraInfo=extra;
 	}
 	reportedError(const reportedError &b){
 		this->error=b.error;
 		this->original_line=b.original_line;
 		this->caller=b.caller;
+		this->extraInfo=b.extraInfo;
 	}
 };
 
-typedef std::map<Uint32,std::stack<reportedError> > errorManager;
+typedef std::map<Uint32,std::queue<reportedError> > errorManager;
 
-ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,bool queue){
+ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,bool queue,std::wstring extraInfo){
 	static errorManager manager;
 	Uint32 currentThread=SDL_ThreadID();
-	errorManager::iterator currentStack=manager.find(currentThread);
+	errorManager::iterator currentQueue=manager.find(currentThread);
 	/*if (error==NONS_END){
-		if (currentStack!=manager.end())
-			while (!currentStack->second.empty())
-				currentStack->second.pop();
+		if (currentQueue!=manager.end())
+			while (!currentQueue->second.empty())
+				currentQueue->second.pop();
 		return error;
 	}*/
 	if (queue){
-		(currentStack!=manager.end()?currentStack->second:manager[currentThread]).push(reportedError(error,original_line,caller));
+		(currentQueue!=manager.end()?currentQueue->second:manager[currentThread]).push(reportedError(error,original_line,caller,extraInfo));
 		return error;
+	}else if (CHECK_FLAG(error,NONS_NO_ERROR_FLAG) && currentQueue!=manager.end()){
+		while (!currentQueue->second.empty())
+			currentQueue->second.pop();
+	}
+	if (currentQueue!=manager.end()){
+		while (!currentQueue->second.empty() && CHECK_FLAG(currentQueue->second.front().error,NONS_NO_ERROR_FLAG))
+			currentQueue->second.pop();
+		while (!currentQueue->second.empty()){
+			reportedError &topError=currentQueue->second.front();
+			if (!CHECK_FLAG(topError.error,NONS_NO_ERROR_FLAG)){
+				if (topError.caller.size()>0)
+					v_stderr <<topError.caller<<"(): ";
+				if (CHECK_FLAG(topError.error,NONS_INTERNAL_ERROR))
+					v_stderr <<"Internal error. ";
+				else{
+					if (CHECK_FLAG(topError.error,NONS_FATAL_ERROR))
+						v_stderr <<"Fatal error";
+					else if (CHECK_FLAG(topError.error,NONS_WARNING))
+						v_stderr <<"Warning";
+					else
+						v_stderr <<"Error";
+					if (topError.original_line>0)
+						v_stderr <<" near line "<<topError.original_line<<". ";
+					else
+						v_stderr <<". ";
+				}
+				if (CHECK_FLAG(topError.error,NONS_UNDEFINED_ERROR))
+					v_stderr <<"Unspecified error."<<std::endl;
+				else
+					v_stderr <<"("<<(topError.error&0xFFFF)<<") "<<errorMessages[topError.error&0xFFFF]<<std::endl;
+				if (topError.extraInfo.size()){
+					v_stderr <<"    Extra information: ";
+					v_stderr.writeWideString(topError.extraInfo.c_str());
+					v_stderr <<"\n";
+				}
+			}
+			currentQueue->second.pop();
+		}
 	}
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		if (caller)
@@ -90,38 +131,10 @@ ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,boo
 			v_stderr <<"Unspecified error."<<std::endl;
 		else
 			v_stderr <<errorMessages[error&0xFFFF]<<std::endl;
-	}
-	if (currentStack!=manager.end()){
-		while (!currentStack->second.empty() && CHECK_FLAG(currentStack->second.top().error,NONS_NO_ERROR_FLAG))
-			currentStack->second.pop();
-		if (!currentStack->second.empty())
-			v_stderr <<"Contents of the error queue: "<<std::endl;
-		while (!currentStack->second.empty()){
-			reportedError &topError=currentStack->second.top();
-			if (!CHECK_FLAG(topError.error,NONS_NO_ERROR_FLAG)){
-				v_stderr <<"    ";
-				if (topError.caller.size()>0)
-					v_stderr <<topError.caller<<"(): ";
-				if (CHECK_FLAG(topError.error,NONS_INTERNAL_ERROR))
-					v_stderr <<"Internal error. ";
-				else{
-					if (CHECK_FLAG(topError.error,NONS_FATAL_ERROR))
-						v_stderr <<"Fatal error";
-					else if (CHECK_FLAG(topError.error,NONS_WARNING))
-						v_stderr <<"Warning";
-					else
-						v_stderr <<"Error";
-					if (topError.original_line>0)
-						v_stderr <<" near line "<<topError.original_line<<". ";
-					else
-						v_stderr <<". ";
-				}
-				if (CHECK_FLAG(topError.error,NONS_UNDEFINED_ERROR))
-					v_stderr <<"Unspecified error."<<std::endl;
-				else
-					v_stderr <<"("<<(topError.error&0xFFFF)<<")"<<errorMessages[topError.error&0xFFFF]<<std::endl;
-			}
-			currentStack->second.pop();
+		if (extraInfo.size()){
+			v_stderr <<"    Extra information: ";
+			v_stderr.writeWideString(extraInfo.c_str());
+			v_stderr <<"\n";
 		}
 	}
 	if (CHECK_FLAG(error,NONS_FATAL_ERROR)){

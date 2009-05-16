@@ -35,8 +35,8 @@
 #include "../Globals.h"
 
 NONS_Variable::NONS_Variable(){
-	this->intValue=new NONS_VariableMember('%');
-	this->wcsValue=new NONS_VariableMember('$');
+	this->intValue=new NONS_VariableMember(INTEGER);
+	this->wcsValue=new NONS_VariableMember(STRING);
 }
 
 NONS_Variable::NONS_Variable(const NONS_Variable &b){

@@ -85,9 +85,9 @@ void usage(){
 		"      Default is \'auto\'.\n"
 		"  -s\n"
 		"      No sound.\n"
-		"  -music-format {auto|mp3|ogg}\n"
+		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}}\n"
 		"      Select the music format to be used.\n"
-		"      Default is \'auto\'. \'auto\' gives priority to ogg.\n"
+		"      Default is \'auto\'.\n"
 		"  -music-directory <directory>\n"
 		"      Set where to look for music files.\n"
 		"      Default is \"./CD\"\n"
@@ -646,7 +646,12 @@ int
 		"\"What's all this, then?\"\n\n"<<std::endl;
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
-	if (!useArgumentsFile("arguments.txt"))
+	if (argc>1 && (
+			!strcmp2(argv[1],"-?") || 
+			!strcmp2(argv[1],"-h") || 
+			!strcmp2(argv[1],"--help") || 
+			!strcmp2(argv[1],"--version")
+			) || !useArgumentsFile("arguments.txt"))
 		parseCommandLine(argc,argv);
 	if (CLOptions.override_stdout){
 		v_stdout.redirect();
@@ -715,6 +720,7 @@ int
 		handleErrors(error,-1,"mainThread",0);
 		exit(error);
 	}
+	labellog.init("NScrllog.dat","nonsllog.dat");
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	if (!config_directory)
 		config_directory=getConfigLocation();
@@ -775,16 +781,16 @@ int debugThread(void *nothing){
 	NONS_ScriptInterpreter *interpreter=(NONS_ScriptInterpreter *)gScriptInterpreter;
 	while (1){
 		char *command=inputstr();
-		tolower(command);
+		NONS_tolower(command);
 		if (!strcmp(command,"exit") || !strcmp(command,"quit"))
 			return 0;
 		wchar_t *wcommand=copyWString(command);
 		ErrorCode error;
 		NONS_VariableMember *var=interpreter->store->retrieve(wcommand,&error);
 		if (var){
-			if (var->getType()=='%')
+			if (var->getType()==INTEGER)
 				std::cout <<"intValue: "<<var->getInt()<<std::endl;
-			else if (var->getType()=='$'){
+			else if (var->getType()==STRING){
 				if (var->getWcs()){
 					char *copy=WChar_to_UTF8(var->getWcs());
 					std::cout <<"UTF-8 Value: \""<<copy<<"\""<<std::endl;

@@ -25,7 +25,7 @@ DOCUMENTATION, AND IS UNRELATED TO THE ONE USED BY THE ENGINE.
 
 Example:
 command %num_var, $str_var, c%num_const, c$str_const, c#hex_color_value
-The indentifier names will be descriptive of the purpose of the parameter.
+The identifier names will be descriptive of the purpose of the parameter.
 When an identifier is preceded by c% or c$, it means that the command expects as
 that parameter either a number or a string that will not be modified, so
 literals (1.1) expressions (1.7), or variables (1.5) may be used.
@@ -55,11 +55,11 @@ literals, and string literals.
 Integral literals are translated into a number. There are two kinds: decimal and
 hexadecimal. A decimal integral literal is just a number. For example, "10"
 (without quotes). A hexadecimal integral literal is a base 16 number prefixed
-with a #. E.g. "#00FF00" (without quotes, capitalization is ignored). They are
+with a #. E.g. "#00FF00" (without quotes, case is ignored). They are
 normally used to represent colors, but a decimal literal can be used in their
 place, and viceversa. When used to represent color, the first two digits are
 red, the third and fourth are green, and the fifth and sixth are blue. So it's
-RRGGBB. Hexadecimal literals have to be at least six digits longs to be
+RRGGBB. Hexadecimal literals have to be at least six digits long to be
 considered valid. The # is not a digit.
 String literals are enclosed by either double quotes (", U+0022), or grave
 accents (`, U+0060). E.g. "<--This `is a` string-->" and
@@ -88,6 +88,9 @@ Invalid:
 Ю_var
 var 126
 
+Update (2009-05-08):
+I've just confirmed through source code that this is the scheme used by, at
+least ONScripter-en, so this rule will never change.
 
 1.3. Constants
 Constants (called aliases in the original documentation) are declared with the
@@ -109,17 +112,14 @@ Strings are Unicode, and are guaranteed to at least hold all values in the range
 Variables are used to store data. They don't need to be declared.
 Variables are accessed with a numerical index. The valid range for this index is
 [-1073741824;1073741823].
-Each index stores an integer-string pair. To access either, prefix % (for
-integer) or $ (for string) to the index. E.g. %0, $0, %1024, $32768. A constant
+Each index stores an integer-string pair. To access either, prefix % for the
+integer or $ for the string to the index. E.g. %0, $0, %1024, $32768. A constant
 can be used instead of a literal: %constant, $constant.
 <Optional reading>
-If the constant is of type $, but contains a representation of a number
-(e.g. the string "124"), the number resulting from its conversion will be used.
-If the string is not a number (e.g. the string "hello0"), the conversion will
-produce the value 0.
-A variable can also be used: %%constant, %%%constant, and so on. As with
-constants, the variable can also be a string: %$constant, $$constant,
-%$%constant, ad nauseam.
+After the %, any expression (see section 1.7) can be used. Keep in mind that,
+since % and $ (they're called reference operators. The third is ?) have a very
+low precedence, you'll have to use parentheses.
+E.g. %%0 is fine, but %%0+1 is the same as (%%0)+1, not %(%0+1).
 </Optional reading>
 Variables with an index lower than 200 (i.e. up to 199) are saved in each
 savegame. Use them to store values such as health, money, etc.
@@ -155,47 +155,140 @@ An expression is a formula. Whenever a command asks for a constant, an
 expression may be used instead (e.g. mov %0, 10*10). Note that decimal numerical
 literals are expressions. Hexadecimal numerical literals may not be used inside
 expressions.
-The following operators are supported:
-Arithmetical operators: +, -, *, /
-Equals: ==, = (This is a check, not an assignment. It returns 1 if the operators
-are equal)
-Not equals: !=,<>,
-Greater than: >
-Lower than: <
-Greater than or equal to: >=
-Lower than or equal to: <=
-Boolean OR: ||, |
-Boolean AND: &&, &
-Unary operators: fchk, lchk. These two operators take strings as parameters.
-Operator precedence (higher means it's executer first. Items at the same level
-are executed as they appear on the expression):
-6. fchk, lchk
-5. *, /
-4. +, -
-3. ==, =, <>, !=, <, <=, >, >=
-2. &&, &
-1. ||, |
+The following operators are supported (ordered from higher to lower precedence):
+9.  _itoa, _atoi, _eval %, $, ?: conversion and dereference operators.
+8.  []: offset operator.
+7.  +, -: unary NOP and sign inversion.
+6.  !: Boolean NOT.
+5.  *, /: multiplication and division.
+4.  +, -: addition and subtraction.
+3.  ==, =, !=, <>, <, >=, >, <=: relational operators.
+2.  &&, &: Boolean AND.
+1.  ||, |: Boolean NOT.
+
+Note: In the following subsections, an {integer} can be any of the following:
+* An integer literal
+* The result of _eval
+* The result of _atoi
+* An integer dereference
+
+1.7.1. 9th order operators
+_itoa{integer} (Lexical string-to-integer cast operator)
+Converts the number to its right to a string. If the number is a variable, it
+doesn't change the its value.
+Example: _itoa 16, _itoa %0
+
+_atoi{string} (Lexical integer-to-string cast operator)
+Converts the string to its right to an integer. If the string is a variable, it
+doesn't change its value.
+Example: _atoi "145", _atoi $12
+
+_eval{string} (String evaluation operator)
+Evaluates the string to its right as an expression and returns the result.
+Example: _eval "1+1", _eval $84
+
+Wrapping the operands of any of the above operators around parentheses
+(e.g. _itoa (0)) is both unnecessary and invalid.
+
+% and $ (Integer dereference and string dereference operators)
+%{integer}
+%({expression})
+${integer}
+$({expression})
+These operators take integers as operands, but can also take expressions wrapped
+around parentheses.
+Variables are allocated in a table and indexed by an integer. What these
+operators do is find the variable that corresponds to the operand and get the
+integer or string component (as mentioned on section 1.5, variables are an 
+integer-string pair) respectively.
+E.g. %0, %%0, $0, $%0, %(%0+1), %_atoi $0 (note: the space between _atoi and $
+is optional. The same applies to all spaces in expressions), $%(_atoi$0+1)
+(note: this has the same meaning as $%((_atoi$0)+1) )
+
+?{integer} (Array dereference operator)
+?({expression})
+Does the same as % and $, except it evaluates to an array, instead of a
+variable (scalar).
+Unlike variables, arrays are not automatically declared, and also, they occupy a
+different namespace (i.e. variable 12 is unrelated to array 12).
+The array cannot be used directly. It has to be indexed with the offset
+operator, which is explained in the next subsection.
+E.g. ?0, ?%0, ?_atoi$0, ?(_atoi$%0+1)
+
+1.7.2. 8th order operators
+[] (Offset operator)
+{array dereference}[{expression}]
+{array obtained from []}[{expression}]
+Placed at the right of an array obtained using the array dereference operator,
+it gets the element determined by the expression inside the brackets. Note that
+matrices (e.g. an array declared as ?84[10][10], or ?165[10][10][10])
+Are arrays of arrays, or arrays of arrays of ..., so just one offset operator
+isn't enough to obtain the final element. Likewise, using the operator after the
+final element has been obtained is also invalid.
 Examples:
-1+2*3 is the same as 1+(2*3)
-1*2*3 is the same as (1*2)*3
-1+2==3 || fchk "some.thing" && 1 || 1/0 || %var*2
-is the same as
-((((1+2)==3) || ((fchk "some.thing") && 1)) || (1/0)) || (%var*2)
-(Expressions as complex as the one above occur very rarely.)
+For an array declared as ?array[10][10]
+?array+10 ;<-- Invalid. Can't get the integer value of an array
+?array[10]+10 ;<-- Same as above
+?array[10][10]+10 ;<-- OK
+?array[10][11] ;<-- The element doesn't exist. This is known as a buffer 
+               ;    overflow
+
+1.7.3. 7th order operators
++ (unary NOP operator)
++{expression}
+Produces the same value as the operand.
+
+- (unary sign inversion)
+-{expression}
+Inverts the sign of the operand.
+
+1.7.4. 6th order operators
+!{expression} (Boolean NOT)
+Evaluates to non-zero if the operand is zero, and to zero otherwise.
+E.g. !$0, !(%0==0), !(%0==0 && %5==4) (note: this is one of the recommendable
+alternatives to notif)
+
+1.7.5. 3rd order operators
+All operators in this subsection take two {expressions} as their operands. All
+operands compare their operands and evaluate to non-zero if the condition is
+met, and zero otherwise.
+== and =: Equals
+!= and <>: Not equals
+>: Greater than
+<=: Lower than or equal to
+<: Lower than
+>= Greater than or equal to
+
+1.7.6. 2nd order operators
+&& or & (Boolean AND)
+{expression}&&{expression}
+Evaluates to non-zero if both operands are non-zero.
+
+1.7.7. 1st order operators
+|| or | (Boolean OR)
+{expression}||{expression}
+Evaluates to non-zero if either operand is non-zero.
+Note: Using || inside a classical notif has undefined behavior. Refer to the
+original documentation to see the kind of expressions notif supports. If you
+want to use advanced expressions, don't use notif, or use use_new_if to force
+using the corrected behavior of notif.
+
 
 1.8. Arrays
 An array is a finite set of integers.
-Arrays use identifiers as names.
+Arrays are allocated in a table and identified by an integer.
 To declare an array, use the dim command.
-E.g. dim ?array[5] ; create a one-dimensional array with elements [0..5].
-Arrays can have any number of dimensions.
-E.g. dim ?array1[5][5]: dim ?array[1][2][5][3]
+E.g. dim ?8[5] ; create a one-dimensional array at poisition 8 i nthe table with
+elements [0..5].
+Arrays can have any number of dimensions, but keep in mind that each element in
+the array uses memory.
+E.g. dim ?3[5][5], dim ?74[1][2][5][3]
 Arrays can be used with the ?[] syntax:
 mov %var,?array[3]
 mov %var2,?array[%var*?array[%var]]
-As you can see, the value between is an expression itself, an arrays can appear
-inside expressions. This allows expressions of arbitrary complexity.
-
+As you can see, the value in [] is an expression itself, and arrays can appear
+inside expressions. This allows expressions of arbitrary complexity. See
+section 1.7 for more information.
 
 
 2. Unimplemented Commands
@@ -403,3 +496,4 @@ When called from anywhere else, %var is set to zero.
 
 puttext c$string
 Has the same behavior as literal_print.
+

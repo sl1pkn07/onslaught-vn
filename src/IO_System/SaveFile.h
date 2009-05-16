@@ -32,7 +32,7 @@
 
 #include "../Common.h"
 #include "../ErrorCodes.h"
-#include "../Processing/Variable.h"
+#include "../Processing/VariableStore.h"
 #include <vector>
 #include <map>
 #include <ctime>
@@ -46,8 +46,6 @@ std::vector<tm *> *existing_files(wchar_t *location=L"./");
 char *getConfigLocation();
 char *getSaveLocation(unsigned hash[5]);
 tm *getDate(const char *filename);
-
-typedef std::map<Sint32,NONS_Variable *> variables_map_T;
 
 struct NONS_SaveFile{
 	char format;
@@ -97,6 +95,7 @@ struct NONS_SaveFile{
 	};
 	std::vector<Sprite *> sprites;
 	variables_map_T variables;
+	arrays_map_T arrays;
 	ushort fontSize;
 	struct stackEl{
 		bool type;
@@ -132,8 +131,6 @@ struct NONS_SaveFile{
 	wchar_t *currentLabel;
 	ulong currentOffset;
 	unsigned hash[5];
-	std::vector<wchar_t *> arraynames;
-	std::vector<NONS_VariableMember *> arrays;
 	wchar_t *currentBuffer;
 	ushort textX,
 		textY;

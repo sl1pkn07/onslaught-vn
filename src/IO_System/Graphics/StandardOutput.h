@@ -53,7 +53,7 @@ struct NONS_StandardOutput{
 	NONS_Layer *foregroundLayer;
 	NONS_Layer *shadowLayer;
 	NONS_Layer *shadeLayer;
-	long display_speed;
+	ulong display_speed;
 	int extraAdvance;
 	bool visible;
 	NONS_GFX *transition;
@@ -80,7 +80,7 @@ struct NONS_StandardOutput{
 private:
 	int predictLineLength(std::wstring *arr,long start,int width);
 	int predictTextHeight(std::wstring *arr);
-	int setLineStart(std::wstring *arr,long start,SDL_Rect *frame,float center);
+	int setLineStart(std::wstring *arr,ulong start,SDL_Rect *frame,float center);
 	int setTextStart(std::wstring *arr,SDL_Rect *frame,float center);
 	float horizontalCenterPolicy;
 	float verticalCenterPolicy;

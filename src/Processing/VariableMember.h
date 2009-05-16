@@ -31,31 +31,38 @@
 #define NONS_VARIABLEMEMBER_H
 
 #include "../Common.h"
+#include "../ErrorCodes.h"
+#include "ExpressionParser.tab.hpp"
 #include <climits>
+#include <vector>
 
 class NONS_VariableMember{
 	long intValue;
 	wchar_t *wcsValue;
 	bool constant;
-	//'%' for integer, '$' for string, '?' for array.
-	char type;
+	yytokentype type;
 	long _long_upper_limit;
 	long _long_lower_limit;
 public:
 	NONS_VariableMember **dimension;
 	ulong dimensionSize;
-	NONS_VariableMember(char type);
-	NONS_VariableMember(ulong *dimensions,ulong size);
+	bool temporary;
+	bool negated;
+	NONS_VariableMember(yytokentype type);
+	NONS_VariableMember(long value);
+	NONS_VariableMember(const wchar_t *a,bool takeOwnership);
+	//Assumes: All dimensions have a non-negative size.
+	NONS_VariableMember(std::vector<long> &sizes,size_t startAt);
 	NONS_VariableMember(const NONS_VariableMember &b);
 	~NONS_VariableMember();
 	void makeConstant();
 	bool isConstant();
-	//'%' for integer, '$' for string.
-	char getType();
+	yytokentype getType();
 	long getInt();
 	const wchar_t *getWcs();
 	wchar_t *getWcsCopy();
 	char *getStrCopy();
+	NONS_VariableMember *getIndex(ulong i);
 	void set(long a);
 	void set(const wchar_t *a,bool takeOwnership);
 	void inc();
@@ -66,6 +73,7 @@ public:
 	void div(long a);
 	void mod(long a);
 	void setlimits(long lower,long upper);
+	void negate(bool a);
 private:
 	void fixint();
 };

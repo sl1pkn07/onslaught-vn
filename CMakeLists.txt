@@ -14,7 +14,6 @@ endif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR MINGW OR MSYS OR C
 set(LIBS
 	${LIBS}
 	SDL
-#	SDLmain
 	SDL_image
 	SDL_mixer
 	bz2
@@ -67,7 +66,7 @@ add_executable(ONSlaught
 	src/IO_System/Script/Script.cpp
 	src/IO_System/Script/ScriptBlock.cpp
 	src/IO_System/Script/sha1.cpp
-	src/Processing/ExpressionParser.cpp
+	src/Processing/ExpressionParser.tab.cpp
 	src/Processing/ParsedLine.cpp
 	src/Processing/ScriptInterpreter.cpp
 	src/Processing/ScriptInterpreter_commandsAI.cpp

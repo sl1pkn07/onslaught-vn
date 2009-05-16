@@ -106,14 +106,15 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 		buffer=temp;
 	}
 	for (long a=0;a<l;){
+		for (;a<l && iswhitespace(buffer[a]);a++);
 		if (buffer[a]=='*'){
-			NONS_ScriptBlock *p=new NONS_ScriptBlock(buffer,a);
+			NONS_ScriptBlock *p=new NONS_ScriptBlock(buffer,a+1);
 			this->blocks.push_back(p);
 		}
 		else if (buffer[a]=='~')
 			this->jumps.push_back(a);
 		for (;a<l && buffer[a]!=13 && buffer[a]!=10;a++);
-		for (;a<l && (buffer[a]==13 || buffer[a]==10);a++);
+		for (;a<l && iswhitespace(buffer[a]);a++);
 	}
 	if (!this->offsetFromBlock(L"*define"))
 		return NONS_NO_DEFINE_LABEL;
@@ -141,6 +142,7 @@ NONS_Script::~NONS_Script(){
 }
 
 long NONS_Script::offsetFromBlock(const wchar_t *name){
+	for (;*name=='*' || iswhitespace(*name);name++);
 	for (ulong a=0;a<this->blocks.size();a++){
 		if (!wcscmp(name,this->blocks[a]->name)){
 			this->blocks[a]->used=1;
