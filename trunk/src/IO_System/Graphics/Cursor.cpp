@@ -47,7 +47,7 @@ NONS_Cursor::NONS_Cursor(){
 	this->loop=0;
 }
 
-NONS_Cursor::NONS_Cursor(const wchar_t *name,long length,long speed,long x,long y,long absolute,short loop,METHODS method){
+NONS_Cursor::NONS_Cursor(const wchar_t *name,long length,ulong speed,long x,long y,long absolute,short loop,METHODS method){
 	this->data=ImageLoader->fetchCursor(name,method);
 	if (this->data)
 		this->data->clip_rect.w/=length;

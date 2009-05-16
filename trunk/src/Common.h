@@ -38,9 +38,6 @@ extern bool ctrlIsPressed;
 
 #define CURRENTLYSKIPPING (ctrlIsPressed /*|| softwareCtrlIsPressed*/)
 
-#define STRLITERAL(x) ((char*)(x))
-#define WSTRLITERAL(x) ((wchar_t*)(x))
-
 #if defined(_WIN32) || defined(_WIN64)
 #define NONS_SYS_WINDOWS
 #endif
@@ -49,7 +46,7 @@ extern bool ctrlIsPressed;
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(disable:4018) //no comparison signed/unsigned mismatch
+//#pragma warning(disable:4018) //no comparison signed/unsigned mismatch
 #pragma warning(disable:4244) //no possible loss of data
 #pragma warning(disable:4996) //no "unsafe" functions
 #pragma warning(disable:4309) //no truncation of constant value

@@ -58,473 +58,255 @@ bool NONS_ScriptInterpreter::load(int file){
 		delete save;
 		return 0;
 	}
-	if (save->format=='O'){
-		this->main_font->lineSkip=save->lineSkip;
-		this->main_font->spacing=save->spacing;
-		//set window
-		NONS_ScreenSpace *scr=this->everything->screen;
-		NONS_StandardOutput *out=scr->output;
-		out->shadeLayer->clip_rect=save->textWindow;
-		out->shadeLayer->setShade(save->windowColor.r,save->windowColor.g,save->windowColor.b);
-		out->x0=save->windowFrame.x;
-		out->y0=save->windowFrame.y;
-		out->w=save->windowFrame.w;
-		out->h=save->windowFrame.h;
-		if (save->fontShadow){
-			if (!out->shadowLayer){
-				out->shadowLayer=new NONS_Layer(&(out->foregroundLayer->data->clip_rect),0);
-				SDL_Color a={0,0,0,0};
-				out->shadowLayer->MakeTextLayer(this->main_font,&a,1);
-			}
-		}else if (out->shadowLayer){
-			delete out->shadowLayer;
-			out->shadowLayer=0;
-		}
-		out->foregroundLayer->fontCache->foreground=save->windowTextColor;
-		if (*save->arrowCursorString){
-			if (this->arrowCursor)
-				delete this->arrowCursor;
-			this->arrowCursor=new NONS_Cursor(save->arrowCursorString,save->arrowCursorX,save->arrowCursorY,save->arrowCursorAbs);
-		}
-		if (*save->pageCursorString){
-			if (this->pageCursor)
-				delete this->pageCursor;
-			this->pageCursor=new NONS_Cursor(save->pageCursorString,save->pageCursorX,save->pageCursorY,save->pageCursorAbs);
-		}
-		out->transition->effect=save->windowTransition;
-		out->transition->duration=save->windowTransitionDuration;
-		/*if (*save->windowBackgroundImage)
-			out->shadeLayer->usePicAsDefaultShade(save->windowBackgroundImage);*/
-		//out->shadeLayer->visible=!save->transparentWindow;
-		this->hideTextDuringEffect=save->hideWindow;
-		out->display_speed=save->textSpeed;
-		//screen content
-		if (save->monochrome){
-			if (!scr->monochrome)
-				scr->monochrome=new NONS_GFX();
-			scr->monochrome->type=POSTPROCESSING;
-			scr->monochrome->color=save->monochromeColor;
-			scr->monochrome->effect=0;
-		}
-		if (save->negative){
-			if (!scr->negative)
-				scr->negative=new NONS_GFX();
-			scr->negative->type=POSTPROCESSING;
-			scr->negative->effect=1;
-		}
-		scr->clearText();
-		if (*save->background)
-			scr->Background->load(save->background,&scr->screen->virtualScreen->clip_rect,NO_ALPHA);
-		else
-			scr->Background->Clear();
-		if (*save->leftChar){
-			long semicolon=instr(save->leftChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->leftChar+semicolon);
-			if (!scr->leftChar)
-				scr->leftChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->leftChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			delete[] name;
-		}
-		if (*save->rightChar){
-			long semicolon=instr(save->rightChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->rightChar+semicolon);
-			if (!scr->rightChar)
-				scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			delete[] name;
-		}
-		if (*save->centerChar){
-			long semicolon=instr(save->centerChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->centerChar+semicolon);
-			if (!scr->rightChar)
-				scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->centerChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			delete[] name;
-		}
-		for (ulong a=0;a<save->sprites.size();a++){
-			NONS_SaveFile::Sprite *spr=save->sprites[a];
-			if (!spr)
-				continue;
-			wchar_t *str=spr->string;
-			METHODS method=NO_ALPHA;
-			if (*str==':'){
-				str++;
-				for (;*str && iswhitespace((char)*str);str++);
-				switch (*str){
-					case 'a':
-						method=CLASSIC_METHOD;
-						break;
-					case 'c':
-						method=NO_ALPHA;
-						break;
-					default:
-						break;
-				}
-				for (;*str && *str!='/' && *str!=';';str++);
-			}
-			if (*str=='/')
-				for (;*str && *str!=';';str++);
-			if (*str==';')
-				str++;
-			str=copyWString(str);
-			scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
-		}
-		this->everything->screen->sprite_priority=this->everything->screen->layerStack.size()-1;
-		//variables
-		for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
-			NONS_Variable *var=i->second;
-			NONS_Variable *dst=this->store->retrieve(i->first,0);
-			(*dst)=(*var);
-		}
-		//stack
-		//flush
-		while (!this->callStack.empty()){
-			NONS_StackElement *p=this->callStack.back();
-			delete p;
-			this->callStack.pop_back();
-		}
-		for (ulong a=0;a<save->stack.size();a++){
-			NONS_SaveFile::stackEl *el=save->stack[a];
-
-			if (!el->type){
-				NONS_StackElement *push=new NONS_StackElement(SJISoffset_to_WCSoffset(this->script->script,el->offset),0,0);
-				this->callStack.push_back(push);
-			}else{
-				NONS_StackElement *push=new NONS_StackElement(
-					this->store->retrieve(el->variable,0)->intValue,
-					SJISoffset_to_WCSoffset(this->script->script,el->offset),
-					0,el->to,el->step,0);
-				this->callStack.push_back(push);
-			}
-		}
-		{
-			ulong pos=0,
-				len=this->script->length,
-				targetline=save->currentLine-1;
-			wchar_t *buffer=this->script->script;
-			bool break0=0;
-			for (ulong a=0;a<targetline;a++){
-				ulong temppos=pos;
-				for (;pos<len && buffer[pos]!=10 && buffer[pos]!=13;pos++);
-				if (pos==len){
-					pos=temppos;
-					break0=1;
-					break;
-				}
-				if (buffer[pos]==10 || buffer[pos]==13 && (pos+1>=len || buffer[pos+1]!=10))
-					pos++;
-				else
-					pos+=2;
-			}
-			if (!break0){
-				for (ulong sl=save->currentSubline;sl>0;sl--){
-					ulong a=instr(buffer+pos,":");
-					if (a<0)
-						break;
-					pos+=a;
-				}
-			}
-			this->interpreter_position=pos;
-			if (!!this->saveGame->currentLabel)
-				delete[] this->saveGame->currentLabel;
-			this->saveGame->currentLabel=copyWString(this->script->blockFromOffset(this->interpreter_position));
-		}
-		//audio
-		this->everything->audio->stopAllSound();
-		if (*save->music || *save->loopBGM0 || *save->loopBGM1 || *save->midi){
-			wchar_t *name;
-			bool loop=0;
-			if (*save->music){
-				name=save->music;
-				loop=save->loopMp3;
-			}else if (*save->loopBGM0){
-				name=save->loopBGM0;
-				loop=1;
-			}else if (*save->loopBGM1){
-				name=save->loopBGM1;
-				loop=1;
-			}else{
-				name=save->midi;
-				loop=save->loopMidi;
-			}
-			ulong size;
-			char *buffer=(char *)this->everything->archive->getFileBuffer(name,&size);
-			if (buffer)
-				this->everything->audio->playMusic(name,buffer,size,save->loopMidi);
-		}else if (save->musicTrack>=0){
-			char temp[12];
-			sprintf(temp,"track%02u",save->musicTrack);
-			this->everything->audio->playMusic(temp,save->loopMp3);
-		}
-		//right click
-		this->menu->rightClickMode=save->rmode;
-		//log
-		this->everything->screen->output->log.clear();
-		for (ulong a=0;a<save->logPages.size();a++){
-			this->everything->screen->output->log.push_back(save->logPages[a]);
-		}
-	}else{
-		//**********************************************************************
-		//NONS save file
-		//**********************************************************************
-		if (save->version>NONS_SAVEFILE_VERSION){
+	//**********************************************************************
+	//NONS save file
+	//**********************************************************************
+	if (save->version>NONS_SAVEFILE_VERSION){
+		delete save;
+		return 0;
+	}
+	for (ulong a=0;a<5;a++){
+		if (save->hash[a]!=this->script->hash[a]){
 			delete save;
 			return 0;
 		}
-		for (ulong a=0;a<5;a++){
-			if (save->hash[a]!=this->script->hash[a]){
-				delete save;
-				return 0;
-			}
-		}
-		//stack
-		//flush
-		while (!this->callStack.empty()){
-			NONS_StackElement *p=this->callStack.back();
-			delete p;
-			this->callStack.pop_back();
-		}
-		for (ulong a=0;a<save->stack.size();a++){
-			NONS_SaveFile::stackEl *el=save->stack[a];
-			NONS_StackElement *push;
-			if (!el->type)
-				push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0,el->textgosubLevel);
-			else{
-				push=new NONS_StackElement(
-					this->store->retrieve(el->variable,0)->intValue,
-					this->script->offsetFromBlock(el->label)+el->offset,
-					0,el->to,el->step,el->textgosubLevel);
-			}
-			this->callStack.push_back(push);
-		}
-		this->interpreter_position=this->script->offsetFromBlock(save->currentLabel)+save->currentOffset;
-		if (!!this->saveGame->currentLabel)
-			delete[] this->saveGame->currentLabel;
-		this->saveGame->currentLabel=copyWString(save->currentLabel);
-		//variables
-		variables_map_T::iterator first=this->store->variables.begin(),last=first;
-		if (first->first<200){
-			for (;last!=this->store->variables.end() && last->first<200;last++)
-				delete last->second;
-			this->store->variables.erase(first,last);
-		}
-		for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
-			NONS_Variable *var=i->second;
-			NONS_Variable *dst=this->store->retrieve(i->first,0);
-			(*dst)=(*var);
-		}
-		for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++){
-			delete[] i->first;
-			delete i->second;
-		}
-		this->store->arrays.clear();
-		for (ulong a=0;a<save->arraynames.size();a++){
-			this->store->arrays[save->arraynames[a]]=save->arrays[a];
-			save->arraynames[a]=0;
-			save->arrays[a]=0;
-		}
-		//screen
-		//window
-		NONS_ScreenSpace *scr=this->everything->screen;
-		//this->main_font=new NONS_Font("default.ttf",save->fontSize,TTF_STYLE_NORMAL);
-		INIT_NONS_FONT(this->main_font,save->fontSize,this->everything->archive)
-		scr->resetParameters(&save->textWindow,&save->windowFrame,this->main_font,save->fontShadow);
-		NONS_StandardOutput *out=scr->output;
-		/*out->shadeLayer->clip_rect=save->textWindow;
-		out->x0=save->windowFrame.x;
-		out->y0=save->windowFrame.y;
-		out->w=save->windowFrame.w;
-		out->h=save->windowFrame.h;*/
-		out->shadeLayer->setShade(save->windowColor.r,save->windowColor.g,save->windowColor.b);
-		out->shadeLayer->Clear();
-		out->transition->effect=save->windowTransition;
-		out->transition->duration=save->windowTransitionDuration;
-		if (out->transition->rule)
-			delete[] out->transition->rule;
-		out->transition->rule=save->windowTransitionRule;
-		save->windowTransitionRule=0;
-		this->hideTextDuringEffect=save->hideWindow;
-		out->foregroundLayer->fontCache->foreground=save->windowTextColor;
-		out->display_speed=save->textSpeed;
-		this->main_font->spacing=save->spacing;
-		this->main_font->lineSkip=save->lineSkip;
-		out->log.clear();
-		for (ulong a=0;a<save->logPages.size();a++){
-			if (save->logPages[a])
-				out->log.push_back(save->logPages[a]);
-			else
-				out->log.push_back(L"");
-		}
-		if (save->currentBuffer)
-			out->currentBuffer=save->currentBuffer;
-		else
-			out->currentBuffer=L"";
-		out->x=save->textX;
-		out->y=save->textY;
-		if (!save->arrowCursorString){
-			if (this->arrowCursor)
-				delete this->arrowCursor;
-			this->arrowCursor=0;
-		}else{
-			if (this->arrowCursor)
-				delete this->arrowCursor;
-			this->arrowCursor=new NONS_Cursor(save->arrowCursorString,save->arrowCursorX,save->arrowCursorY,save->arrowCursorAbs);
-		}
-		if (!save->pageCursorString){
-			if (this->pageCursor)
-				delete this->pageCursor;
-			this->pageCursor=0;
-		}else{
-			if (this->pageCursor)
-				delete this->pageCursor;
-			this->pageCursor=new NONS_Cursor(save->pageCursorString,save->pageCursorX,save->pageCursorY,save->pageCursorAbs);
-		}
-		//graphics
-		if (save->background)
-			scr->Background->load(save->background,&scr->screen->virtualScreen->clip_rect,NO_ALPHA);
+	}
+	//stack
+	//flush
+	while (!this->callStack.empty()){
+		NONS_StackElement *p=this->callStack.back();
+		delete p;
+		this->callStack.pop_back();
+	}
+	for (ulong a=0;a<save->stack.size();a++){
+		NONS_SaveFile::stackEl *el=save->stack[a];
+		NONS_StackElement *push;
+		if (!el->type)
+			push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0,el->textgosubLevel);
 		else{
-			scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
-			scr->Background->Clear();
+			push=new NONS_StackElement(
+				this->store->retrieve(el->variable,0)->intValue,
+				this->script->offsetFromBlock(el->label)+el->offset,
+				0,el->to,el->step,el->textgosubLevel);
 		}
-		scr->leftChar->unload();
-		if (save->leftChar){
-			long semicolon=instr(save->leftChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->leftChar+semicolon);
-			if (!scr->leftChar)
-				scr->leftChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->leftChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			scr->leftChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/-4;
-			delete[] name;
+		this->callStack.push_back(push);
+	}
+	this->interpreter_position=this->script->offsetFromBlock(save->currentLabel)+save->currentOffset;
+	if (!!this->saveGame->currentLabel)
+		delete[] this->saveGame->currentLabel;
+	this->saveGame->currentLabel=copyWString(save->currentLabel);
+	//variables
+	variables_map_T::iterator first=this->store->variables.begin(),last=first;
+	if (first->first<200){
+		for (;last!=this->store->variables.end() && last->first<200;last++)
+			delete last->second;
+		this->store->variables.erase(first,last);
+	}
+	for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
+		NONS_Variable *var=i->second;
+		NONS_Variable *dst=this->store->retrieve(i->first,0);
+		(*dst)=(*var);
+	}
+	for (arrays_map_T::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++)
+		delete i->second;
+	this->store->arrays.clear();
+	for (arrays_map_T::iterator i=save->arrays.begin();i!=save->arrays.end();i++)
+		this->store->arrays[i->first]=new NONS_VariableMember(*(i->second));
+	//screen
+	//window
+	NONS_ScreenSpace *scr=this->everything->screen;
+	//this->main_font=new NONS_Font("default.ttf",save->fontSize,TTF_STYLE_NORMAL);
+	INIT_NONS_FONT(this->main_font,save->fontSize,this->everything->archive)
+	scr->resetParameters(&save->textWindow,&save->windowFrame,this->main_font,save->fontShadow);
+	NONS_StandardOutput *out=scr->output;
+	/*out->shadeLayer->clip_rect=save->textWindow;
+	out->x0=save->windowFrame.x;
+	out->y0=save->windowFrame.y;
+	out->w=save->windowFrame.w;
+	out->h=save->windowFrame.h;*/
+	out->shadeLayer->setShade(save->windowColor.r,save->windowColor.g,save->windowColor.b);
+	out->shadeLayer->Clear();
+	out->transition->effect=save->windowTransition;
+	out->transition->duration=save->windowTransitionDuration;
+	if (out->transition->rule)
+		delete[] out->transition->rule;
+	out->transition->rule=save->windowTransitionRule;
+	save->windowTransitionRule=0;
+	this->hideTextDuringEffect=save->hideWindow;
+	out->foregroundLayer->fontCache->foreground=save->windowTextColor;
+	out->display_speed=save->textSpeed;
+	this->main_font->spacing=save->spacing;
+	this->main_font->lineSkip=save->lineSkip;
+	out->log.clear();
+	for (ulong a=0;a<save->logPages.size();a++){
+		if (save->logPages[a])
+			out->log.push_back(save->logPages[a]);
+		else
+			out->log.push_back(L"");
+	}
+	if (save->currentBuffer)
+		out->currentBuffer=save->currentBuffer;
+	else
+		out->currentBuffer=L"";
+	out->x=save->textX;
+	out->y=save->textY;
+	if (!save->arrowCursorString){
+		if (this->arrowCursor)
+			delete this->arrowCursor;
+		this->arrowCursor=0;
+	}else{
+		if (this->arrowCursor)
+			delete this->arrowCursor;
+		this->arrowCursor=new NONS_Cursor(save->arrowCursorString,save->arrowCursorX,save->arrowCursorY,save->arrowCursorAbs);
+	}
+	if (!save->pageCursorString){
+		if (this->pageCursor)
+			delete this->pageCursor;
+		this->pageCursor=0;
+	}else{
+		if (this->pageCursor)
+			delete this->pageCursor;
+		this->pageCursor=new NONS_Cursor(save->pageCursorString,save->pageCursorX,save->pageCursorY,save->pageCursorAbs);
+	}
+	//graphics
+	if (save->background)
+		scr->Background->load(save->background,&scr->screen->virtualScreen->clip_rect,NO_ALPHA);
+	else{
+		scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
+		scr->Background->Clear();
+	}
+	scr->leftChar->unload();
+	if (save->leftChar){
+		long semicolon=instr(save->leftChar,L";");
+		semicolon++;
+		wchar_t *name=copyWString(save->leftChar+semicolon);
+		if (!scr->leftChar)
+			scr->leftChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		else
+			scr->leftChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		scr->leftChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/-4;
+		delete[] name;
+	}
+	scr->rightChar->unload();
+	if (save->rightChar){
+		long semicolon=instr(save->rightChar,L";");
+		semicolon++;
+		wchar_t *name=copyWString(save->rightChar+semicolon);
+		if (!scr->rightChar)
+			scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		else
+			scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		delete[] name;
+		scr->rightChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
+	}
+	scr->centerChar->unload();
+	if (save->centerChar){
+		long semicolon=instr(save->centerChar,L";");
+		semicolon++;
+		wchar_t *name=copyWString(save->centerChar+semicolon);
+		if (!scr->centerChar)
+			scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		else
+			scr->centerChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		delete[] name;
+		scr->centerChar->clip_rect.x=0;
+	}
+	for (ulong a=0;a<scr->layerStack.size();a++){
+		if (!scr->layerStack[a])
+			continue;
+		scr->layerStack[a]->unload();
+	}
+	for (ulong a=0;a<save->sprites.size();a++){
+		NONS_SaveFile::Sprite *spr=save->sprites[a];
+		if (!spr){
+			continue;
 		}
-		scr->rightChar->unload();
-		if (save->rightChar){
-			long semicolon=instr(save->rightChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->rightChar+semicolon);
-			if (!scr->rightChar)
-				scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			delete[] name;
-			scr->rightChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
-		}
-		scr->centerChar->unload();
-		if (save->centerChar){
-			long semicolon=instr(save->centerChar,L";");
-			semicolon++;
-			wchar_t *name=copyWString(save->centerChar+semicolon);
-			if (!scr->centerChar)
-				scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			else
-				scr->centerChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
-			delete[] name;
-			scr->centerChar->clip_rect.x=0;
-		}
-		for (ulong a=0;a<scr->layerStack.size();a++){
-			if (!scr->layerStack[a])
-				continue;
-			scr->layerStack[a]->unload();
-		}
-		for (ulong a=0;a<save->sprites.size();a++){
-			NONS_SaveFile::Sprite *spr=save->sprites[a];
-			if (!spr){
-				continue;
+		wchar_t *str=spr->string;
+		METHODS method=NO_ALPHA;
+		if (*str==':'){
+			str++;
+			for (;*str && iswhitespace((char)*str);str++);
+			switch (*str){
+				case 'a':
+					method=CLASSIC_METHOD;
+					break;
+				case 'c':
+					method=NO_ALPHA;
+					break;
+				default:
+					break;
 			}
-			wchar_t *str=spr->string;
-			METHODS method=NO_ALPHA;
-			if (*str==':'){
-				str++;
-				for (;*str && iswhitespace((char)*str);str++);
-				switch (*str){
-					case 'a':
-						method=CLASSIC_METHOD;
-						break;
-					case 'c':
-						method=NO_ALPHA;
-						break;
-					default:
-						break;
-				}
-				for (;*str && *str!='/' && *str!=';';str++);
-			}
-			if (*str=='/')
-				for (;*str && *str!=';';str++);
-			if (*str==';')
-				str++;
-			str=copyWString(str);
-			scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
+			for (;*str && *str!='/' && *str!=';';str++);
 		}
-		scr->sprite_priority=save->spritePriority;
-		if (save->monochrome){
-			if (!scr->monochrome)
-				scr->monochrome=new NONS_GFX();
-			scr->monochrome->type=POSTPROCESSING;
-			scr->monochrome->color=save->monochromeColor;
-			scr->monochrome->effect=0;
-		}else if (!!scr->monochrome){
-			delete scr->monochrome;
-			scr->monochrome=0;
+		if (*str=='/')
+			for (;*str && *str!=';';str++);
+		if (*str==';')
+			str++;
+		str=copyWString(str);
+		scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
+	}
+	scr->sprite_priority=save->spritePriority;
+	if (save->monochrome){
+		if (!scr->monochrome)
+			scr->monochrome=new NONS_GFX();
+		scr->monochrome->type=POSTPROCESSING;
+		scr->monochrome->color=save->monochromeColor;
+		scr->monochrome->effect=0;
+	}else if (!!scr->monochrome){
+		delete scr->monochrome;
+		scr->monochrome=0;
+	}
+	if (save->negative){
+		if (!scr->negative){
+			scr->negative=new NONS_GFX();
 		}
-		if (save->negative){
-			if (!scr->negative){
-				scr->negative=new NONS_GFX();
-			}
-			scr->negative->type=POSTPROCESSING;
-			scr->negative->effect=1;
-		}else if (!!scr->negative){
-			delete scr->negative;
-			scr->negative=0;
-		}
-		//Preparations for audio
-		NONS_Audio *au=this->everything->audio;
-		au->stopAllSound();
-		out->ephemeralOut(&out->currentBuffer,0,0,1,0);
-		{
-			SDL_Surface *srf=SDL_CreateRGBSurface(
-				SDL_HWSURFACE|SDL_SRCALPHA,
-				scr->screen->virtualScreen->w,
-				scr->screen->virtualScreen->h,
-				32,rmask,gmask,bmask,amask);
-			SDL_FillRect(srf,0,amask);
-			NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
-			SDL_FreeSurface(srf);
-		}
-		SDL_Delay(1500);
-		scr->BlendAll(10,1000,0);
-		scr->showText();
-		//audio
-		if (save->musicTrack>=0){
-			char temp[12];
-			sprintf(temp,"track%02u",save->musicTrack);
-			au->playMusic(temp,save->loopMp3?-1:0);
-		}else if (save->music){
+		scr->negative->type=POSTPROCESSING;
+		scr->negative->effect=1;
+	}else if (!!scr->negative){
+		delete scr->negative;
+		scr->negative=0;
+	}
+	//Preparations for audio
+	NONS_Audio *au=this->everything->audio;
+	au->stopAllSound();
+	out->ephemeralOut(&out->currentBuffer,0,0,1,0);
+	{
+		SDL_Surface *srf=SDL_CreateRGBSurface(
+			SDL_HWSURFACE|SDL_SRCALPHA,
+			scr->screen->virtualScreen->w,
+			scr->screen->virtualScreen->h,
+			32,rmask,gmask,bmask,amask);
+		SDL_FillRect(srf,0,amask);
+		NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
+		SDL_FreeSurface(srf);
+	}
+	SDL_Delay(1500);
+	scr->BlendAll(10,1000,0);
+	scr->showText();
+	//audio
+	if (save->musicTrack>=0){
+		char temp[12];
+		sprintf(temp,"track%02u",save->musicTrack);
+		au->playMusic(temp,save->loopMp3?-1:0);
+	}else if (save->music){
+		long size;
+		char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,(ulong *)&size);
+		if (buffer)
+			au->playMusic(save->music,buffer,size,save->loopMp3?-1:0);
+		//delete[] buffer;
+	}
+	au->musicVolume(save->musicVolume);
+	for (ushort a=0;a<save->channels.size();a++){
+		NONS_SaveFile::Channel *c=save->channels[a];
+		if (!c->name)
+			continue;
+		if (au->bufferIsLoaded(c->name))
+			au->playSoundAsync(c->name,0,0,a,c->loop?-1:0);
+		else{
 			long size;
-			char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,(ulong *)&size);
-			if (buffer)
-				au->playMusic(save->music,buffer,size,save->loopMp3?-1:0);
-			//delete[] buffer;
-		}
-		au->musicVolume(save->musicVolume);
-		for (ushort a=0;a<save->channels.size();a++){
-			NONS_SaveFile::Channel *c=save->channels[a];
-			if (!c->name)
-				continue;
-			if (au->bufferIsLoaded(c->name))
-				au->playSoundAsync(c->name,0,0,a,c->loop?-1:0);
-			else{
-				long size;
-				char *buffer=(char *)this->everything->archive->getFileBuffer(c->name,(ulong *)&size);
-				if (!!buffer)
-					this->everything->audio->playSoundAsync(c->name,buffer,size,a,c->loop);
-			}
+			char *buffer=(char *)this->everything->archive->getFileBuffer(c->name,(ulong *)&size);
+			if (!!buffer)
+				this->everything->audio->playSoundAsync(c->name,buffer,size,a,c->loop);
 		}
 	}
 	delete save;
@@ -538,11 +320,8 @@ bool NONS_ScriptInterpreter::save(int file){
 	for (variables_map_T::iterator i=this->saveGame->variables.begin();i!=this->saveGame->variables.end();i++)
 		delete i->second;
 	this->saveGame->variables.clear();
-	for (ulong a=0;a<this->saveGame->arraynames.size();a++){
-		delete[] this->saveGame->arraynames[a];
-		delete this->saveGame->arrays[a];
-	}
-	this->saveGame->arraynames.clear();
+	for (arrays_map_T::iterator i=this->saveGame->arrays.begin();i!=this->saveGame->arrays.end();i++)
+		delete i->second;
 	this->saveGame->arrays.clear();
 	for (ulong a=0;a<this->saveGame->logPages.size();a++)
 		if (this->saveGame->logPages[a])
@@ -590,17 +369,12 @@ bool NONS_ScriptInterpreter::save(int file){
 	//variables
 	{
 		variables_map_T *varStack=&this->store->variables;
-		for (variables_map_T::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++){
-			if (VARIABLE_HAS_NO_DATA(i->second))
-				continue;
-			NONS_Variable *var=new NONS_Variable(*i->second);
-			this->saveGame->variables[i->first]=var;
-		}
-		for (std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->arrays.begin();
-		  i!=this->store->arrays.end();i++){
-			this->saveGame->arraynames.push_back(copyWString(i->first));
-			NONS_VariableMember *p=new NONS_VariableMember(*i->second);
-			this->saveGame->arrays.push_back(p);
+		for (variables_map_T::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++)
+			if (!VARIABLE_HAS_NO_DATA(i->second))
+				this->saveGame->variables[i->first]=new NONS_Variable(*i->second);;
+		for (arrays_map_T::iterator i=this->store->arrays.begin();
+				i!=this->store->arrays.end();i++){
+			this->saveGame->arrays[i->first]=new NONS_VariableMember(*(i->second));
 		}
 	}
 	//screen

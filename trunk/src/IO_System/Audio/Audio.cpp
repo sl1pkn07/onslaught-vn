@@ -34,6 +34,7 @@
 #include "../FileIO.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
+#include <sstream>
 
 NONS_Audio::NONS_Audio(const char *musicDir){
 	this->music=0;
@@ -76,13 +77,14 @@ NONS_Audio::~NONS_Audio(){
 	Mix_CloseAudio();
 }
 
-void NONS_Audio::freeCacheElement(int chan){
+void NONS_Audio::freeCacheElement(int channel){
 	if (this->uninitialized)
 		return;
-	NONS_SoundEffect *se;
-	se=this->asynchronous_seffect[chan];
-	se->sound->references--;
-	se->unload();
+	std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.find(channel);
+	if (i==this->asynchronous_seffect.end() || !i->second)
+		return;
+	i->second->sound->references--;
+	i->second->unload();
 }
 
 ErrorCode NONS_Audio::playMusic(const char *filename,long times){
@@ -95,7 +97,7 @@ ErrorCode NONS_Audio::playMusic(const char *filename,long times){
 		this->music->play(times);
 		return NONS_NO_ERROR;
 	}else{
-		char temp[1024];
+		std::string temp;
 		if (this->music){
 			this->music->stop();
 			delete this->music;
@@ -105,17 +107,21 @@ ErrorCode NONS_Audio::playMusic(const char *filename,long times){
 			while (1){
 				if (!formats[a])
 					break;
-				sprintf(temp,"%s/%s.%s",this->musicDir,filename,formats[a]);
-				if (fileExists(temp))
+				std::stringstream stream;
+				stream <<this->musicDir<<'/'<<filename<<'.'<<formats[a];
+				temp=stream.str();
+				if (fileExists(temp.c_str()))
 					break;
 				a++;
 			}
 		}else{
-			sprintf(temp,"%s/%s.%s",this->musicDir,filename,this->musicFormat);
+			std::stringstream stream;
+			stream <<this->musicDir<<'/'<<filename<<'.'<<this->musicFormat;
+			temp=stream.str();
 		}
-		if (!fileExists(temp))
+		if (!fileExists(temp.c_str()))
 			return NONS_FILE_NOT_FOUND;
-		this->music=new NONS_Music(temp);
+		this->music=new NONS_Music(temp.c_str());
 		if (!this->music->loaded())
 			return NONS_UNDEFINED_ERROR;
 		return this->playMusic((char *)0,times);
@@ -198,7 +204,7 @@ ErrorCode NONS_Audio::playSoundAsync(const char *filename,char *buffer,long l,in
 		se->play(0,times);
 		this->soundcache->channelWatch.insert(this->soundcache->channelWatch.end(),se);
 		if (CLOptions.verbosity>=255)
-			std::cout <<"At "<<secondsSince1900()<<" started "<<se<<"\n"
+			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
 				"    cache item "<<se->sound->chunk<<"\n"
 				"    on channel "<<se->channel<<std::endl;
 		return NONS_NO_ERROR;
@@ -220,12 +226,11 @@ ErrorCode NONS_Audio::playSoundAsync(const wchar_t *filename,char *buffer,long l
 ErrorCode NONS_Audio::stopSoundAsync(int channel){
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
-	NONS_SoundEffect *se=this->asynchronous_seffect[channel];
-	if (se){
-		se->stop();
-		return NONS_NO_ERROR;
-	}
-	return NONS_NO_SOUND_EFFECT_LOADED;
+	std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.find(channel);
+	if (i==this->asynchronous_seffect.end() || !i->second)
+		return NONS_NO_SOUND_EFFECT_LOADED;
+	i->second->stop();
+	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_Audio::stopAllSound(){
@@ -243,7 +248,7 @@ ErrorCode NONS_Audio::loadAsyncBuffer(const char *filename,char *buffer,long l,i
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.find(channel);
-	if (i==this->asynchronous_seffect.end()){
+	if (i==this->asynchronous_seffect.end() || !i->second){
 		this->asynchronous_seffect[channel]=new NONS_SoundEffect(channel);
 		i=this->asynchronous_seffect.find(channel);
 	}

@@ -63,12 +63,12 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 			if (!wcscmp(line.commandName,L"numalias")){
 				long temp;
 				_GETINTVALUE(temp,1,)
-				val=new NONS_VariableMember('%');
+				val=new NONS_VariableMember(INTEGER);
 				val->set(temp);
 			}else{
 				wchar_t *temp=0;
 				_GETWCSVALUE(temp,1,)
-				val=new NONS_VariableMember('$');
+				val=new NONS_VariableMember(STRING);
 				val->set(temp,1);
 			}
 			val->makeConstant();
@@ -120,7 +120,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	long res=0;
 	bool notif=!wcscmp(line.commandName,L"notif");
-	ErrorCode ret=this->store->evaluate(line.parameters[0],&res,notif && !this->new_if);
+	ErrorCode ret=this->store->evaluate(line.parameters[0],&res,notif && !this->new_if,0,0,0);
 	if (!CHECK_FLAG(ret,NONS_NO_ERROR_FLAG))
 		return ret;
 	if (notif && this->new_if)
@@ -131,7 +131,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	wchar_t *ifblock=line.parameters[1];
 	if (instr(ifblock,L":")<0)
 		return this->interpretString(ifblock);
-	long len=wcslen(ifblock);
+	ulong len=wcslen(ifblock);
 	ulong commandstart=0;
 	for (ulong a=0;a<len;a++){
 		if (ifblock[a]=='\"' || ifblock[a]=='`'){
@@ -327,56 +327,14 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_dim(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	/*if (line.parameters[0][0]!='?')
-		return NONS_MISSING_Q_IN_ARRAY_DECLARATION;*/
-	wchar_t *name=line.parameters[0];
-	wchar_t *string=name;
-	for (;*name!='?';name++);
-	for (;*name=='?';name++);
-	if (*name<=' ' || *name=='[')
-		return NONS_INVALID_ID_NAME;
-	long f=instr(string,L"[");
-	if (f<0)
-		return NONS_MISSING_B_IN_ARRAY_DECLARATION;
-	name=copyWString(name,f-(name-string));
-	if (this->store->arrays.find(name)!=this->store->arrays.end()){
-		delete[] name;
-		return NONS_DUPLICATE_CONSTANT_DEFINITION;
-	}
-	_CHECK_ID_NAME(name)
-	std::vector<ulong> indices;
-	do{
-		f++;
-		ulong start=f;
-		ulong nesting=1;
-		for (;string[f];f++){
-			switch (string[f]){
-				case '[':
-					nesting++;
-					break;
-				case ']':
-					nesting--;
-			}
-			if (!nesting)
-				break;
-		}
-		if (nesting)
-			return NONS_UNMATCHED_BRAKETS;
-		wchar_t *copy=copyWString(string+start,f-start);
-		long pusher;
-		_HANDLE_POSSIBLE_ERRORS(this->store->evaluate(copy,&pusher),delete[] copy;)
-		f++;
-		f=instr(copy+f,L"[");
-		delete[] copy;
-		indices.push_back(pusher);
-	}while (f>0);
-	ulong size=indices.size();
-	ulong *dimensions=new ulong[size];
-	for (ulong a=0;a<size;a++)
-		dimensions[a]=indices[a];
-	NONS_VariableMember *var=new NONS_VariableMember(dimensions,size);
-	this->store->arrays[name]=var;
-	delete[] dimensions;
+	std::vector<long> indices;
+	this->store->evaluate(line.parameters[0],0,0,&indices,0,0);
+	if (indices[0]>1)
+		return NONS_UNDEFINED_ARRAY;
+	for (size_t a=2;a<indices.size();a++)
+		if (indices[a]<0)
+			return NONS_NEGATIVE_INDEX_IN_ARRAY_DECLARATION;
+	this->store->arrays[indices[1]]=new NONS_VariableMember(indices,2);
 	return NONS_NO_ERROR;
 }
 
@@ -397,7 +355,7 @@ ErrorCode NONS_ScriptInterpreter::command_getversion(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
 	_GETVARIABLE(dst,0,)
-	if (dst->getType()=='%')
+	if (dst->getType()==INTEGER)
 		dst->set(ONSLAUGHT_BUILD_VERSION);
 	else
 		dst->set(ONSLAUGHT_BUILD_VERSION_WSTR,0);
@@ -413,7 +371,7 @@ ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_ParsedLine &line){
 		return NONS_INVALID_CHANNEL_INDEX;
 	wchar_t *name=0;
 	_GETWCSVALUE(name,1,)
-	tolower(name);
+	NONS_tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
 	long loop=!wcscmp(line.commandName,L"dwave")?0:-1;
@@ -440,7 +398,7 @@ ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_ParsedLine &line){
 		return NONS_INVALID_CHANNEL_INDEX;
 	wchar_t *name=0;
 	_GETWCSVALUE(name,1,)
-	tolower(name);
+	NONS_tolower(name);
 	toforwardslash(name);
 	//Unused:
 	//char *filename=copyString(name);
@@ -521,7 +479,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 	}else if (!wcscmp(line.parameters[0],L"black")){
 		scr->Background->setShade(0,0,0);
 		scr->Background->Clear();
-	}else if (this->getIntValue(line.parameters[0],&color)==NONS_NO_ERROR){
+	}else if (this->store->getIntValue(line.parameters[0],&color)==NONS_NO_ERROR){
 		char r=(color&0xFF0000)>>16,
 			g=(color&0xFF00)>>8,
 			b=(color&0xFF);
@@ -530,7 +488,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 	}else{
 		wchar_t *filename=0;
 		_GETWCSVALUE(filename,0,);
-		tolower(filename);
+		NONS_tolower(filename);
 		scr->hideText();
 		scr->Background->load(filename,&(this->everything->screen->screen->virtualScreen->clip_rect),NO_ALPHA);
 	}
@@ -553,7 +511,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_br(NONS_ParsedLine &line){
-	return this->Printer(WSTRLITERAL(L""));
+	return this->Printer(L"");
 }
 
 ErrorCode NONS_ScriptInterpreter::command_cl(NONS_ParsedLine &line){
@@ -605,7 +563,7 @@ ErrorCode NONS_ScriptInterpreter::command_csp(NONS_ParsedLine &line){
 	long n=-1;
 	if (line.parameters.size()>0)
 		_GETINTVALUE(n,0,)
-	if (n>0 && n>=this->everything->screen->layerStack.size())
+	if (n>0 && ulong(n)>=this->everything->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (n<0){
 		for (ulong a=0;a<this->everything->screen->layerStack.size();a++)
@@ -849,7 +807,7 @@ ErrorCode NONS_ScriptInterpreter::command_humanz(NONS_ParsedLine &line){
 	_GETINTVALUE(z,0,)
 	if (z<-1)
 		z=-1;
-	else if (z>=this->everything->screen->layerStack.size())
+	else if (ulong(z)>=this->everything->screen->layerStack.size())
 		z=this->everything->screen->layerStack.size()-1;
 	this->everything->screen->sprite_priority=z;
 	return NONS_NO_ERROR;

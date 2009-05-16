@@ -24,11 +24,12 @@ A: These are the most prominent changes:
    * Archives with ASCII-only names are read correctly. I believe O/NScripter
      uses Shift JIS to store file names in archive headers. This has yet to be
      implemented.
-   * "nscrflog.dat" and "gloval.sav" are read correctly, but written back in a
-     format O/NScripter can't read. "nscrflog.dat" is written back as
-     "nonsflog.dat". "gloval.sav" is written back as "global.sav".
-   * Only a narrow range of save game files are supported. Namely, versions
-     200-202. Save game files are written in a format O/NScripter can't read.
+   * "nscrflog.dat", "nscrllog.dat", and "gloval.sav" are read correctly, but
+     written back in a format O/NScripter can't read. "nscrflog.dat",
+     "nscrllog.dat", and "gloval.sav" are written back as "nonsflog.dat",
+     "nonsllog.dat", and "global.sav" correspondingly.
+   * O/NScripter save game files are unsupported. Save game files are written in
+     a format O/NScripter can't read.
    * "envdata" (whatever it is) is ignored.
 
 Q: What new features does ONSlaught have that O/NScripter didn't?
@@ -44,14 +45,14 @@ O/NScripter).
      UTF-8 (Unicode encoding)
      Shift JIS (code page)
      Future releases may add more encodings or code pages, and/or the
-     possibility to add more through some interpreted language (probably
+     possibility to add more through some interpreted language (possibly
      Python).
    * Non-monospace font support.
    * A few new commands.
    * Debug mode allows script writers to view the values of variables and to run
-     commands a few commands from the console. The verbosity of the engine can
-     be changed through the command line, or through a file that simulated the
-     command line.
+     a few commands from the console. The verbosity of the engine can be changed
+     through the command line, or through a file that simulated the command
+     line.
    * Images may have an alpha channel. As simple as this sounds, this was not
      supported by O/NScripter. For an image to have transparency, it was
      necessary to add the alpha plane to the right of the bitmap.
@@ -79,16 +80,32 @@ individual glyphs, which is a plus for aesthetics.
 These reasons are, of course, only relevant for script writers. End users have
 no reason to stop using their current engine.
 
+Q: What does "beta" mean?
+A: It means the engine, while not completed, it's advanced to the point where it
+can be used to run some scripts. In fact, it has already been used to translate
+a major game.
+Its beta status is not a measure of its stability. Its a measure of its
+completeness. At the time of writing (2009-05-12) the script interpreter is at
+version 0.65. The number is the percentage of implemented commands. The engine
+will get out of beta when the version number reaches 1.00. That is, when all or
+almost all commands supported by O/NScripter are supported by ONSlaught.
+
+Q: Has ONSlaught been used to translate any games?
+A: Why, yes it has! To my knowledge, ONSlaught has already been used to
+translate Tsukihime to Spanish.
+
 Q: Under what terms is ONSlaught licensed?
 A: ONSlaught is licensed under the terms of a classic 3-clause BSD-style
 licence. It allows the following:
 * All or parts of the code may be used in both closed and open source -- be it
-  as redistributions or derivative works -- or for any other purpose, as long as
-  the copyright notice, the list of conditions, and the disclaimer is included.
+  as redistributions or derivative works -- or for any other purpose. Source and
+  binary distributions of the original are required to display the copyright
+  notice, the list of conditions, and the disclaimer. This requirement doesn't
+  apply to derivative works.
 Additionally:
 * The author's name may only be used to promote derivative works with his prior
   written permission.
-* Derivative works may only include the word "ONSlaught" with the authors prior
+* Derivative works may only include the word "ONSlaught" with the author's prior
   written permission.
 I chose the BSD-style licence because I've always considered the GPL to provide
 only a false sense of freedom, and because I don't feel free software to be a
@@ -114,6 +131,8 @@ depends on the script.
 The engine reports the location at startup. Depending on the options you passed
 to it, you may read it on the console, or in "stdout.txt".
 UPDATE:
+It's possible to tell the engine exactly where to store save data. See
+doc/Arguments.txt for details.
 
 Q: When I set the available save game slots to the maximum and enter the save
 screen, it takes a while to load and then it displays fewer slots than it
@@ -130,5 +149,5 @@ already aware of. Some of them are external to the engine (e.g. a bug in one of
 the libraries), and therefore, I cannot fix them.
 
 Q: My target system doesn't allow passing command line arguments. What do I do?
-A: If there's a file named "arguments.txt" i nthe working directory, the engine
+A: If there's a file named "arguments.txt" in the working directory, the engine
 can use its contents as though they were command line arguments.

@@ -33,6 +33,7 @@
 #include "Image.h"
 #include "../../../Globals.h"
 #include "../../../Functions.h"
+#include "../../../UTF.h"
 
 NONS_Image::NONS_Image(){
 	this->age=0;
@@ -141,7 +142,7 @@ SDL_Surface *NONS_Image::LoadLayerImage(const wchar_t *name,uchar *buffer,ulong 
 	SDL_FreeSurface(surface);
 	//SDL_FreeRW(rwops);
 	this->name=name?copyWString(name):0;
-	tolower(this->name);
+	NONS_tolower(this->name);
 	toforwardslash(this->name);
 	this->refCount=0;
 	return this->image;
@@ -295,10 +296,10 @@ SDL_Surface *NONS_Image::LoadSpriteImage(const wchar_t *string,const wchar_t *na
 	SDL_FreeRW(rwops);
 	this->name=copyWString(name);
 	toforwardslash(this->name);
-	tolower(this->name);
+	NONS_tolower(this->name);
 	this->string=copyWString(string);
 	toforwardslash(this->string);
-	tolower(this->string);
+	NONS_tolower(this->string);
 	this->refCount=0;
 	return this->image;
 }

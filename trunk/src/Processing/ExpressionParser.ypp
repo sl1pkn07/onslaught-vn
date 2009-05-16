@@ -1,0 +1,688 @@
+/*
+* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*     * Redistributions of source code must retain the above copyright notice, 
+*       this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * The name of the author may not be used to endorse or promote products
+*       derived from this software without specific prior written permission. 
+*     * Products derived from this software may not be called "ONSlaught" nor
+*       may "ONSlaught" appear in their names without specific prior written
+*       permission from the author. 
+*
+* THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL HELIOS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+* EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+* OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+%{
+#include "VariableStore.h"
+#include "ScriptInterpreter.h"
+#include "../UTF.h"
+#include "../Globals.h"
+#include "../Functions.h"
+#include "../IO_System/IOFunctions.h"
+
+void freeVM(NONS_VariableMember *p);
+%}
+%parse-param {std::wstringstream *stream}
+%parse-param {NONS_VariableStore *store}
+%parse-param {NONS_FileLog *filelog}
+%parse-param {long *result}
+%parse-param {bool invert_terms}
+%parse-param {std::vector<long> *array_decl}
+%parse-param {NONS_VariableMember **retrievedVar}
+%parse-param {wchar_t **string}
+%lex-param {std::wstringstream *stream}
+%lex-param {NONS_VariableStore *store}
+%lex-param {NONS_VariableMember **retrievedVar}
+%pure-parser
+%defines
+%file-prefix="ExpressionParser"
+%code requires {
+	#include <set>
+	#include <vector>
+	#include "../IO_System/SAR/Image_Loader/FileLog.h"
+	class NONS_VariableMember;
+	struct NONS_VariableStore;
+	struct wstrCmp;
+}
+%code provides {
+	#include <sstream>
+	int yyparse(
+		std::wstringstream *stream,
+		NONS_VariableStore *store,
+		NONS_FileLog *filelog,
+		long *result,
+		bool invert_terms,
+		std::vector<long> *array_decl,
+		NONS_VariableMember **retrievedVar,
+		wchar_t **string
+	);
+	int yylex(YYSTYPE *yylval,
+		std::wstringstream *stream,
+		NONS_VariableStore *store,
+		NONS_VariableMember **retrievedVar
+	);
+	void yyerror(
+		std::wstringstream *,
+		NONS_VariableStore *,
+		NONS_FileLog *,
+		long *,
+		bool,
+		std::vector<long> *,
+		NONS_VariableMember **,
+		wchar_t **string,
+		char const *
+	);
+	long atol(std::wstring &str);
+}
+%union {
+	NONS_VariableMember *obj;
+}
+%token <obj> INTEGER STRING INTEGER_ARRAY ERROR
+%type <obj> expr integer_array operation boolean_operation integer_dereference string_dereference string integer
+%left OR
+%left AND
+%left EQUALS NEQ LOWER LOWEREQ GREATER GREATEREQ
+%left '+' '-'
+%left '*' '/'
+%right '!'
+%right NEG POS
+%left '[' ']'
+%right '%' '$' '?' EVAL FCHK LCHK ATOI ITOA
+//%right 
+%left '(' ')'
+%start eval
+%destructor {
+	freeVM($$);
+} expr integer_array operation boolean_operation integer_dereference string_dereference string integer INTEGER STRING INTEGER_ARRAY
+%%
+
+eval:
+	expr {
+		$1->negate(invert_terms);
+		if (!!result)
+			*result=$1->getInt();
+		if (!!retrievedVar && !$1->temporary)
+			*retrievedVar=$1;
+		if (!!string){
+			if (!!*string)
+				delete[] *string;
+			*string=$1->getWcsCopy();
+		}
+		freeVM($1);
+	}|
+	string {
+		if (!!string){
+			if (!!*string)
+				delete[] *string;
+			*string=$1->getWcsCopy();
+			freeVM($1);
+		}else if (!!retrievedVar && !$1->temporary)
+			*retrievedVar=$1;
+		else{
+			freeVM($1);
+			YYABORT;
+		}
+	}|
+	ERROR {
+		YYABORT;
+	};
+
+expr:
+	integer {
+		$$=$1;
+	}|
+	integer_array {
+		if (!$1){
+			if (!array_decl){
+				handleErrors(NONS_UNDEFINED_ARRAY,0,"yyparse",1);
+				YYABORT;
+			}
+			$$=new NONS_VariableMember((long)0);
+			$$->temporary=1;
+		}else{
+			if ($1->getType()==INTEGER_ARRAY && !retrievedVar){
+				handleErrors(NONS_INSUFFICIENT_DIMENSIONS,0,"yyparse",1);
+				YYABORT;
+			}else
+				$$=$1;
+		}
+	}|
+	operation {
+		$$=$1;
+	};
+
+integer:
+	INTEGER {
+		$$=$1;
+	}|
+	EVAL string {
+		long temp;
+		ErrorCode error=store->evaluate($2->getWcs(),&temp,0,0,0,0);
+		freeVM($2);
+		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
+			handleErrors(error,0,"yyparse",1);
+			YYABORT;
+		}
+		$$=new NONS_VariableMember(temp);
+		$$->temporary=1;
+	}|
+	ATOI string {
+		long temp;
+		std::wstringstream stream;
+		stream <<$2->getWcs();
+		freeVM($2);
+		if (!(stream >>temp)){
+			handleErrors(NONS_LEXICALLY_UNCASTABLE,0,"yyparse",1);
+			YYABORT;
+		}
+		$$=new NONS_VariableMember(temp);
+		$$->temporary=1;
+	}|
+	integer_dereference {
+		$$=$1;
+		if (!$$)
+			YYABORT;
+	};
+
+string:
+	STRING {
+		$$=$1;
+	}|
+	string_dereference {
+		$$=$1;
+	};
+
+integer_array:
+	integer_array '[' expr ']' {
+		long a=$3->getInt();
+		if (!!$1 && $1->getType()==INTEGER_ARRAY){
+			if (!($$=$1->getIndex(a))){
+				std::wstringstream stream;
+				stream <<L"The index is: "<<a;
+				handleErrors(NONS_ARRAY_INDEX_OUT_OF_BOUNDS,0,"yyparse",1,stream.str());
+				$$=$1->getIndex(0);
+			}
+		}else{
+			if (!array_decl){
+				handleErrors(NONS_TOO_MANY_DIMENSIONS,0,"yyparse",1);
+			}else
+				array_decl->push_back(a);
+			$$=0;
+		}
+		freeVM($3);
+	}|
+	'?' integer {
+		long a=$2->getInt();
+		freeVM($2);
+		$$=store->getArray(a);
+		if (!!array_decl && !$$){
+			if (!array_decl->size())
+				array_decl->push_back(1);
+			else
+				(*array_decl)[0]++;
+			array_decl->push_back(a);
+		}
+	}|
+	/*'?' INTEGER {
+		long a=$2->getInt();
+		freeVM($2);
+		$$=store->getArray(a);
+		if (!!array_decl && !$$){
+			if (!array_decl->size())
+				array_decl->push_back(1);
+			else
+				(*array_decl)[0]++;
+			array_decl->push_back(a);
+		}
+	}|
+	'?' integer_dereference {
+		long a=$2->getInt();
+		freeVM($2);
+		$$=store->getArray(a);
+		if (!!array_decl && !$$){
+			if (!array_decl->size())
+				array_decl->push_back(1);
+			else
+				(*array_decl)[0]++;
+			array_decl->push_back(a);
+		}
+	}|*/
+	'?' '(' expr ')' {
+		long a=$3->getInt();
+		freeVM($3);
+		$$=store->getArray(a);
+		if (!!array_decl && !$$){
+			if (!array_decl->size())
+				array_decl->push_back(1);
+			else
+				(*array_decl)[0]++;
+			array_decl->push_back(a);
+		}
+	}|
+	'?' error '[' {
+		handleErrors(NONS_ILLEGAL_ARRAY_SPECIFICATION,0,"yyparse",1);
+		if (!!array_decl)
+			array_decl->clear();
+		$$=0;
+	};
+
+operation:
+	expr '+' expr {
+		$$=new NONS_VariableMember($1->getInt()+$3->getInt());
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr '-' expr {
+		$$=new NONS_VariableMember($1->getInt()-$3->getInt());
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr '*' expr {
+		$$=new NONS_VariableMember($1->getInt()*$3->getInt());
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr '/' expr {
+		long a=$1->getInt(),
+			b=$3->getInt();
+		if (!b){
+			handleErrors(NONS_DIVISION_BY_ZERO,0,"yyparse",1);
+			YYABORT;
+		}
+		$$=new NONS_VariableMember(a+b);
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	boolean_operation {
+		if (!$1->temporary){
+			$$=new NONS_VariableMember($1->getInt());
+			$$->temporary=1;
+			$$->negated=0;
+		}else
+			$$=$1;
+		$$->negate(invert_terms);
+	}|
+	expr OR expr {
+		if (!$1->temporary){
+			$1=new NONS_VariableMember($1->getInt());
+			$1->temporary=1;
+		}
+		if (!$3->temporary){
+			$3=new NONS_VariableMember($3->getInt());
+			$3->temporary=1;
+		}
+		$1->negate(invert_terms);
+		$3->negate(invert_terms);
+		$$=new NONS_VariableMember($1->getInt() || $3->getInt());
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr AND expr {
+		if (!$1->temporary){
+			$1=new NONS_VariableMember($1->getInt());
+			$1->temporary=1;
+		}
+		if (!$3->temporary){
+			$3=new NONS_VariableMember($3->getInt());
+			$3->temporary=1;
+		}
+		$1->negate(invert_terms);
+		$3->negate(invert_terms);
+		$$=new NONS_VariableMember($1->getInt() && $3->getInt());
+		$$->temporary=1;
+		freeVM($1);
+		freeVM($3);
+	}|
+	'+' expr %prec POS {
+		$$=new NONS_VariableMember($2->getInt());
+		$$->temporary=1;
+		freeVM($2);
+	}|
+	'-' expr %prec NEG {
+		$$=new NONS_VariableMember(-($2->getInt()));
+		$$->temporary=1;
+		freeVM($2);
+	}|
+	'(' expr ')' {
+		$$=$2;
+	};
+
+integer_dereference:
+	'%' integer {
+		NONS_Variable *v=store->retrieve($2->getInt(),0);
+		freeVM($2);
+		if (!v){
+			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
+			$$=0;
+		}else
+			$$=v->intValue;
+	}|
+	'%' '(' expr ')' {
+		NONS_Variable *v=store->retrieve($3->getInt(),0);
+		freeVM($3);
+		if (!v){
+			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
+			$$=0;
+		}else
+			$$=v->intValue;
+	};
+
+string_dereference:
+	'$' integer {
+		NONS_Variable *v=store->retrieve($2->getInt(),0);
+		freeVM($2);
+		if (!v){
+			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
+			$$=0;
+		}else
+			$$=v->wcsValue;
+	}|
+	'$' '(' expr ')' {
+		NONS_Variable *v=store->retrieve($3->getInt(),0);
+		freeVM($3);
+		if (!v){
+			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
+			$$=0;
+		}else
+			$$=v->wcsValue;
+	};
+
+boolean_operation:
+	expr EQUALS expr {
+		$$=new NONS_VariableMember($1->getInt()==$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr NEQ expr {
+		$$=new NONS_VariableMember($1->getInt()!=$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr LOWER expr {
+		$$=new NONS_VariableMember($1->getInt()<$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr GREATEREQ expr {
+		$$=new NONS_VariableMember($1->getInt()>=$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr GREATER expr {
+		$$=new NONS_VariableMember($1->getInt()>$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	expr LOWEREQ expr {
+		$$=new NONS_VariableMember($1->getInt()<=$3->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($1);
+		freeVM($3);
+	}|
+	'!' expr {
+		$$=new NONS_VariableMember(!$2->getInt());
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($2);
+	}|
+	FCHK string {
+		$$=new NONS_VariableMember(filelog->check($2->getWcs()));
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($2);
+	}|
+	LCHK string {
+		$$=new NONS_VariableMember(labellog.check($2->getWcs()));/**/
+		$$->temporary=1;
+		freeVM($2);
+	};
+%%
+
+void freeVM(NONS_VariableMember *p){
+	if (!!p && p->temporary)
+		delete p;
+}
+
+/*std::string WChar_to_UTF8(std::wstring &string){
+	std::string res;
+	for (std::wstring::iterator i=string.begin();i!=string.end();i++){
+		if (*i<0x80)
+			res.push_back(*i);
+		else if (*i<0x800){
+			res.push_back((*i>>6)|192);
+			res.push_back((*i&63)|128);
+		}else{
+			res.push_back((*i>>12)|224);
+			res.push_back(((*i&4095)>>6)|128);
+			res.push_back((*i&63)|128);
+		}
+	}
+	return res;
+}*/
+
+long atol(std::wstring &str){
+	long res=0;
+	size_t a=0;
+	for (;a<str.size() && iswhitespace(str[a]);a++);
+	int sign;
+	if (a<str.size() && str[a]=='-'){
+		sign=-1;
+		a++;
+	}else
+		sign=1;
+	for (;a<str.size();a++){
+		if (!NONS_isdigit(str[a]))
+			return 0;
+		res=res*10+(str[a]-'0')*sign;
+	}
+	return res;
+}
+
+template <typename T>
+int strcmpCI(T *a,T *b){
+    for (;*a || *b;a++,b++){
+		char c=(*a>='A' && *a<='Z')?*a|32:*a,
+			d=(*b>='A' && *b<='Z')?*b|32:*b;
+		if (c<d)
+            return -1;
+        if (c>d)
+            return 1;
+    }
+	return 0;
+}
+
+#define DOUBLEOP(character,ret_value) if (c==(character)){\
+	stream->get();\
+	if (stream->peek()==(character)){\
+		stream->get();\
+		return (ret_value);\
+	}\
+	return (ret_value);\
+}
+
+template <typename T>
+T HEX2DEC(T x){
+	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
+}
+
+int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,NONS_VariableMember **retrievedVar){
+	int c;
+	for (;(c=stream->peek())!=EOF && iswhitespace((wchar_t)c);stream->get());
+	if (c==EOF || c==0xFFFF)
+		return 0;
+	if (NONS_isdigit(c)){
+		std::wstring temp;
+		while (NONS_isdigit(stream->peek()))
+			temp.push_back(stream->get());
+		yylval->obj=new NONS_VariableMember(atol(temp));
+		yylval->obj->temporary=1;
+		return INTEGER;
+	}
+	if (c=='#'){
+		stream->get();
+		std::wstring temp;
+		while (NONS_ishexa(stream->peek()))
+			temp.push_back(stream->get());
+		if (temp.size()<6)
+			return ERROR;
+		long a=0;
+		for (size_t b=0;b<temp.size();b++)
+			a=a*16+HEX2DEC(temp[b]);
+		yylval->obj=new NONS_VariableMember(a);
+		yylval->obj->temporary=1;
+		return INTEGER;
+	}
+	if (c=='\"' || c=='`'){
+		c=stream->get();
+		std::wstring temp;
+		while (stream->peek()!=c && stream->peek()!=EOF && stream->peek()!=0xFFFF)
+			temp.push_back(stream->get());
+		if (stream->peek()!=c)
+			handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
+		else
+			stream->get();
+		yylval->obj=new NONS_VariableMember(temp.c_str(),0);
+		yylval->obj->temporary=1;
+		return STRING;
+	}
+	if (c=='*'){
+		std::wstring backup;
+		backup.push_back(stream->get());
+		while (iswhitespace((wchar_t)stream->peek()))
+			backup.push_back(stream->get());
+		std::wstring identifier;
+		c=stream->peek();
+		if (c=='_' || NONS_isalpha(c)){
+			identifier.push_back(c);
+			backup.push_back(stream->get());
+			while ((c=stream->peek())=='_' || NONS_isalnum(c)){
+				identifier.push_back(c);
+				backup.push_back(stream->get());
+			}
+			if (((NONS_ScriptInterpreter *)gScriptInterpreter)->script->offsetFromBlock(identifier.c_str())>=0){
+				yylval->obj=new NONS_VariableMember(identifier.c_str(),0);
+				yylval->obj->temporary=1;
+				return STRING;
+			}
+		}
+		for (std::wstring::reverse_iterator i=backup.rbegin();i!=backup.rend();i++)
+			stream->putback(*i);
+	}
+	if (c=='_' || NONS_isalpha(c)){
+		std::wstring temp;
+		temp.push_back(stream->get());
+		while (NONS_isalnum(c=stream->peek()) || c=='_')
+			temp.push_back(stream->get());
+		if (!strcmpCI(temp.c_str(),L"fchk"))
+			return FCHK;
+		if (!strcmpCI(temp.c_str(),L"lchk"))
+			return LCHK;
+		if (!strcmpCI(temp.c_str(),L"_eval"))
+			return LCHK;
+		if (!strcmpCI(temp.c_str(),L"_itoa"))
+			return ITOA;
+		if (!strcmpCI(temp.c_str(),L"_atoi"))
+			return ATOI;
+		
+		if (!(yylval->obj=store->getConstant(temp.c_str()))){
+			yylval->obj=new NONS_VariableMember((long)0);
+			yylval->obj->temporary=1;
+			if (!retrievedVar)
+				handleErrors(NONS_UNDEFINED_CONSTANT,0,"yylex",1);
+		}else{
+			yylval->obj=new NONS_VariableMember(*yylval->obj);
+			yylval->obj->temporary=1;
+		}
+		return yylval->obj->getType();
+	}
+	DOUBLEOP('=',EQUALS)
+	DOUBLEOP('&',AND)
+	DOUBLEOP('|',OR)
+	if (c=='!'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			//yylloc.last_column=stream.getPosition();
+			return NEQ;
+		}
+		//yylloc.last_column=stream.getPosition();
+		return c;
+	}
+	if (c=='<'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			//yylloc.last_column=stream.getPosition();
+			return LOWEREQ;
+		}
+		if (stream->peek()=='>'){
+			stream->get();
+			//yylloc.last_column=stream.getPosition();
+			return NEQ;
+		}
+		//yylloc.last_column=stream.getPosition();
+		return LOWER;
+	}
+	if (c=='>'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			//yylloc.last_column=stream.getPosition();
+			return GREATEREQ;
+		}
+		//yylloc.last_column=stream.getPosition();
+		return GREATER;
+	}
+	//yylloc.last_column=stream.getPosition();
+	if (!multicomparison((wchar_t)c,"+-*/![]%$?()")){
+		wchar_t temp[]={c,0};
+		handleErrors(NONS_UNRECOGNIZED_OPERATOR,0,"yylex",1,temp);
+	}
+	return stream->get();
+}
+
+void yyerror(
+		std::wstringstream *,
+		NONS_VariableStore *,
+		NONS_FileLog *,
+		long *,
+		bool,
+		std::vector<long> *,
+		NONS_VariableMember **retrievedVar,
+		wchar_t **string,
+		char const *s){
+	wchar_t *temp=copyWString(s);
+	if (!retrievedVar)
+		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,temp);
+	delete[] temp;
+}

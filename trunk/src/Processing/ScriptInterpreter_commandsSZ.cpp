@@ -45,7 +45,7 @@ ErrorCode NONS_ScriptInterpreter::command_skip(NONS_ParsedLine &line){
 	}
 	if (!count)
 		return NONS_ZERO_VALUE_IN_SKIP;
-	long current_line=this->current_line,target=current_line+count-1;
+	ulong current_line=this->current_line,target=current_line+count-1;
 	long pos=0;
 	long len=this->script->length;
 	wchar_t *buffer=this->script->script;
@@ -72,7 +72,7 @@ ErrorCode NONS_ScriptInterpreter::command_wave(NONS_ParsedLine &line){
 	long size;
 	wchar_t *name=0;
 	_GETWCSVALUE(name,0,)
-	tolower(name);
+	NONS_tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
 	this->wav_loop=!!wcscmp(line.commandName,L"wave");
@@ -159,7 +159,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		_GETINTVALUE(shadow,10,)
 		_GETINTVALUE(windowXstart,12,)
 		_GETINTVALUE(windowYstart,13,)
-		if (this->getIntValue(line.parameters[11],&color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(line.parameters[11],&color)!=NONS_NO_ERROR){
 			syntax=1;
 			_GETWCSVALUE(filename,11,)
 			windowXend=windowXstart+1;
@@ -191,7 +191,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		_GETINTVALUE(windowYstart,12,)
 		_GETINTVALUE(windowXend,13,)
 		_GETINTVALUE(windowYend,14,)
-		if (this->getIntValue(line.parameters[10],&color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(line.parameters[10],&color)!=NONS_NO_ERROR){
 			syntax=1;
 			_GETWCSVALUE(filename,10,)
 		}
@@ -208,8 +208,8 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			delete[] filename;
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1};
-	SDL_Rect frameRect={frameXstart,frameYstart,frameXend-frameXstart+1,frameYend-frameYstart+1};
+	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart,windowYend-windowYstart};
+	SDL_Rect frameRect={frameXstart,frameYstart,frameXend-frameXstart,frameYend-frameYstart};
 	{
 		SDL_Surface *scr=this->everything->screen->screen->virtualScreen;
 		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
@@ -379,7 +379,7 @@ ErrorCode NONS_ScriptInterpreter::command_vsp(NONS_ParsedLine &line){
 	long n=-1,visibility;
 	_GETINTVALUE(n,0,)
 	_GETINTVALUE(visibility,1,)
-	if (n>0 && n>=this->everything->screen->layerStack.size())
+	if (n>0 && ulong(n)>=this->everything->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (this->everything->screen->layerStack[n] && this->everything->screen->layerStack[n]->data)
 		this->everything->screen->layerStack[n]->visible=!!visibility;
@@ -560,9 +560,9 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_ParsedLine &line){
 	_GETWCSVALUE(entry,0,)
 	_GETWCSVALUE(mouseover,1,delete[] entry;)
 	_GETWCSVALUE(click,2,delete[] entry; delete[] mouseover;)
-	tolower(entry);
-	tolower(mouseover);
-	tolower(click);
+	NONS_tolower(entry);
+	NONS_tolower(mouseover);
+	NONS_tolower(click);
 	uchar *buffer;
 	if (*entry){
 		long l;
@@ -672,7 +672,7 @@ ErrorCode NONS_ScriptInterpreter::command_waittimer(NONS_ParsedLine &line){
 	if (ms<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	ulong now=SDL_GetTicks();
-	if (ms>now-this->timer)
+	if (ulong(ms)>now-this->timer)
 		SDL_Delay(ms-(now-this->timer));
 	return NONS_NO_ERROR;
 }
@@ -893,7 +893,7 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_ParsedLine &line){
 	for (ulong a=2;a<line.parameters.size();a++){
 		NONS_VariableMember *var;
 		_GETVARIABLE(var,a,delete[] srcStr; delete[] searchStr;)
-		if (var->getType()=='%')
+		if (var->getType()==INTEGER)
 			var->set(0);
 		else
 			var->set(L"",0);

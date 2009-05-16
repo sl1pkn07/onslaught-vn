@@ -133,6 +133,7 @@ bool NONS_StandardOutput::prepareForPrinting(const wchar_t *str){
 			break;
 		}
 	}
+	this->printingStarted=1;
 	if (this->verticalCenterPolicy>0 && this->currentBuffer.size()>0)
 		return 1;
 	SDL_Rect frame={this->x0,this->y0,this->w,this->h};
@@ -141,13 +142,8 @@ bool NONS_StandardOutput::prepareForPrinting(const wchar_t *str){
 	else if (!this->currentBuffer.size())
 		this->y=this->y0;
 	wchar_t tempbuf[100];
-#ifndef __MINGW32__
 	swprintf(tempbuf,100,L"<y=%u>",this->y);
-#else
-	swprintf(tempbuf,L"<y=%u>",this->y);
-#endif
 	this->prebufferedText.append(tempbuf);
-	this->printingStarted=1;
 	return 0;
 }
 
@@ -162,11 +158,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		x0=this->setLineStart(&this->cachedText,start,&frame,this->horizontalCenterPolicy);
 		if (x0!=this->lastStart){
 			wchar_t tempbuf[100];
-#ifndef __MINGW32__
 			swprintf(tempbuf,100,L"<x=%u>",x0);
-#else
-			swprintf(tempbuf,L"<x=%u>",x0);
-#endif
 			this->prebufferedText.append(tempbuf);
 			this->lastStart=x0;
 		}
@@ -200,11 +192,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				x0=this->setLineStart(&this->cachedText,a+1,&frame,this->horizontalCenterPolicy);
 				if (x0!=this->lastStart){
 					wchar_t tempbuf[100];
-#ifndef __MINGW32__
 					swprintf(tempbuf,100,L"<x=%u>",x0);
-#else
-					swprintf(tempbuf,L"<x=%u>",x0);
-#endif
 					this->prebufferedText.append(tempbuf);
 					this->lastStart=x0;
 				}
@@ -216,7 +204,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		}
 		int advance=glyph->getadvance()+this->extraAdvance;
 		if (x0+advance>this->w+this->x0){
-			if (y0+lineSkip>this->h+this->y0){
+			if (y0+lineSkip>=this->h+this->y0){
 				this->resumePrinting=1;
 				this->x=x0;
 				this->y=y0;
@@ -230,11 +218,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				x0=this->setLineStart(&this->cachedText,a,&frame,this->horizontalCenterPolicy);
 				if (x0!=this->lastStart){
 					wchar_t tempbuf[100];
-#ifndef __MINGW32__
 					swprintf(tempbuf,100,L"<x=%u>",x0);
-#else
-					swprintf(tempbuf,L"<x=%u>",x0);
-#endif
 					this->prebufferedText.append(tempbuf);
 					this->lastStart=x0;
 				}
@@ -283,221 +267,12 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 }
 
 void NONS_StandardOutput::endPrinting(){
-	if (!this->printingStarted)
-		return;
-	this->currentBuffer.append(this->prebufferedText);
+	if (this->printingStarted)
+		this->currentBuffer.append(this->prebufferedText);
 	this->prebufferedText.clear();
 	this->cachedText.clear();
 	this->printingStarted=0;
 }
-
-/*std::vector<NONS_Glyph *> *NONS_StandardOutput::Out(wchar_t *str,NONS_VirtualScreen *dst){
-	std::vector<NONS_Glyph *> outputBuffer;
-	std::vector<NONS_Glyph *> outputBuffer2;
-	long lastSpace=-1;
-	int x0=this->x,y0=this->y;
-	int wordL=0;
-	int lineSkip=this->foregroundLayer->fontCache->font->lineSkip;
-	for (wchar_t *str2=str;;str2++){
-		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(*str2);
-		NONS_Glyph *glyph2=0;
-		if (this->shadowLayer)
-			glyph2=this->shadowLayer->fontCache->getGlyph(*str2);
-		if (*str2=='\n'){
-			outputBuffer.push_back(0);
-			outputBuffer2.push_back(0);
-			if (x0+wordL>=this->w+this->x0 && lastSpace>=0){
-				outputBuffer[lastSpace]=0;
-				outputBuffer2[lastSpace]=0;
-				y0+=lineSkip;
-			}
-			lastSpace=-1;
-			x0=this->x0;
-			y0+=lineSkip;
-			wordL=0;
-		}else if (isbreakspace(*str2)){
-			if (x0+wordL>this->w+this->x0 && lastSpace>=0){
-				outputBuffer[lastSpace]=0;
-				outputBuffer2[lastSpace]=0;
-				lastSpace=-1;
-				x0=this->x0;
-				y0+=lineSkip;
-			}
-			x0+=wordL;
-			lastSpace=outputBuffer.size();
-			wordL=glyph->getadvance()+this->extraAdvance;
-			outputBuffer.push_back(glyph);
-			outputBuffer2.push_back(glyph2);
-		}else if (*str2){
-			wordL+=glyph->getadvance()+this->extraAdvance;
-			outputBuffer.push_back(glyph);
-			outputBuffer2.push_back(glyph2);
-		}else{
-			if (x0+wordL>=this->w+this->x0 && lastSpace>=0){
-				outputBuffer[lastSpace]=0;
-				outputBuffer2[lastSpace]=0;
-			}
-			break;
-		}
-	}
-	return this->Out(&outputBuffer,&outputBuffer2,dst);
-}
-
-std::vector<NONS_Glyph *> *NONS_StandardOutput::Out(std::vector<NONS_Glyph *> *outputBuffer,std::vector<NONS_Glyph *> *outputBuffer2,NONS_VirtualScreen *dst){
-	bool oB=!outputBuffer,
-		oB2=!outputBuffer2;
-	if (oB && oB2)
-		return 0;
-	NONS_EventQueue *queue=InputObserver.attach();
-	bool enterPressed=0;
-	if (oB2){
-		outputBuffer2=new std::vector<NONS_Glyph *>();
-		if (this->shadowLayer){
-			outputBuffer2->reserve(outputBuffer->size());
-			for (ulong a=0;a<outputBuffer->size();a++){
-				if ((*outputBuffer)[a])
-					outputBuffer2->push_back(this->shadowLayer->fontCache->getGlyph((*outputBuffer)[a]->getcodePoint()));
-				else
-					outputBuffer2->push_back(0);
-			}
-		}else{
-			outputBuffer2->resize(outputBuffer->size(),0);
-		}
-	}else if (oB){
-		outputBuffer=new std::vector<NONS_Glyph *>();
-		outputBuffer->reserve(outputBuffer2->size());
-		for (ulong a=0;a<outputBuffer2->size();a++){
-			if ((*outputBuffer2)[a])
-				outputBuffer->push_back(this->foregroundLayer->fontCache->getGlyph((*outputBuffer2)[a]->getcodePoint()));
-			else
-				outputBuffer->push_back(0);
-		}
-	}
-	int x0,y0=this->y;
-	SDL_Rect frame={this->x0,this->y0,this->w,this->h};
-	if (this->x==this->x0){
-		x0=this->setLineStart(outputBuffer,0,&frame,this->centerPolicy);
-		if (x0!=this->lastStart){
-			wchar_t tempbuf[100];
-#ifndef __MINGW32__
-			swprintf(tempbuf,100,L"<start=%u>",x0);
-#else
-			swprintf(tempbuf,L"<start=%u>",x0);
-#endif
-			this->currentBuffer.append(tempbuf);
-			this->lastStart=x0;
-		}
-	}else
-		x0=this->x;
-	y0=this->y;
-	int lineSkip=this->foregroundLayer->fontCache->font->lineSkip;
-	int fontLineSkip=this->foregroundLayer->fontCache->font->fontLineSkip;
-	ulong t0,t1;
-	for (ulong a=0;a<outputBuffer->size();a++){
-		t0=SDL_GetTicks();
-		if (!(*outputBuffer)[a]){
-			if (y0+lineSkip>=this->h+this->y0){
-				std::vector<NONS_Glyph *> *ret=new std::vector<NONS_Glyph *>(outputBuffer->begin()+a+1,outputBuffer->end());
-				if (oB)
-					delete outputBuffer;
-				if (oB2)
-					delete outputBuffer2;
-				this->x=x0;
-				this->y=y0;
-				InputObserver.detach(queue);
-				return ret;
-			}
-			if (a<outputBuffer->size()-1){
-				x0=this->setLineStart(outputBuffer,a,&frame,this->centerPolicy);
-				if (x0!=this->lastStart){
-					wchar_t tempbuf[100];
-#ifndef __MINGW32__
-					swprintf(tempbuf,100,L"<start=%u>",x0);
-#else
-					swprintf(tempbuf,L"<start=%u>",x0);
-#endif
-					this->currentBuffer.append(tempbuf);
-					this->lastStart=x0;
-				}
-			}else
-				x0=this->x0;
-			y0+=lineSkip;
-			this->currentBuffer.push_back(10);
-			continue;
-		}
-		int advance=(*outputBuffer)[a]->getadvance()+this->extraAdvance;
-		if (x0+advance>this->w+this->x0){
-			if (y0+lineSkip>this->h+this->y0){
-				std::vector<NONS_Glyph *> *ret=new std::vector<NONS_Glyph *>(outputBuffer->begin()+a,outputBuffer->end());
-				if (oB)
-					delete outputBuffer;
-				if (oB2)
-					delete outputBuffer2;
-				this->x=x0;
-				this->y=y0;
-				InputObserver.detach(queue);
-				return ret;
-			}else{
-				x0=this->setLineStart(outputBuffer,a,&frame,this->centerPolicy);
-				if (x0!=this->lastStart){
-					wchar_t tempbuf[100];
-#ifndef __MINGW32__
-					swprintf(tempbuf,100,L"<start=%u>",x0);
-#else
-					swprintf(tempbuf,L"<start=%u>",x0);
-#endif
-					this->currentBuffer.append(tempbuf);
-					this->lastStart=x0;
-				}
-				y0+=lineSkip;
-				this->currentBuffer.push_back('\n');
-			}
-		}
-		NONS_Glyph *A=(*outputBuffer)[a],
-			*B=(*outputBuffer2)[a];
-		switch (A->codePoint){
-			case '\\':
-				this->currentBuffer.append(L"\\\\");
-				break;
-			case '<':
-				this->currentBuffer.append(L"\\<");
-				break;
-			case '>':
-				this->currentBuffer.append(L"\\>");
-				break;
-			default:
-				this->currentBuffer.push_back(A->codePoint);
-		}
-		if (this->shadowLayer){
-			B->putGlyph(this->shadowLayer->data,x0+1,y0+1,&(this->shadowLayer->fontCache->foreground),1);
-			B->putGlyph(dst->virtualScreen,x0+1,y0+1,0);
-		}
-		A->putGlyph(this->foregroundLayer->data,x0,y0,&(this->foregroundLayer->fontCache->foreground),1);
-		A->putGlyph(dst->virtualScreen,x0,y0,0);
-		//SDL_UpdateRect(dst,x0,y0,advance+1,fontLineSkip+1);
-		dst->updateScreen(x0,y0,advance+1,fontLineSkip+1);
-		//SDL_UpdateRect(dst,x0,y0,advance+1,lineSkip+1);
-		//SDL_UpdateRect(dst,x0,y0,A->box.x+A->box.w+1,B->box.x+B->box.w+1);
-		//SDL_UpdateRect(dst,0,0,0,0);
-		x0+=advance;
-		while (!CURRENTLYSKIPPING && !enterPressed && !queue->data.empty()){
-			SDL_Event event=queue->pop();
-			if (event.type==SDL_KEYDOWN && (event.key.keysym.sym==SDLK_RETURN || event.key.keysym.sym==SDLK_SPACE))
-				enterPressed=1;
-		}
-		t1=SDL_GetTicks();
-		if (!CURRENTLYSKIPPING && !enterPressed && this->display_speed>t1-t0)
-			SDL_Delay(this->display_speed-(t1-t0));
-	}
-	this->x=x0;
-	this->y=y0;
-	if (oB)
-		delete outputBuffer;
-	if (oB2)
-		delete outputBuffer2;
-	InputObserver.detach(queue);
-	return 0;
-}*/
 
 template <typename T>
 int atoi2(T *str){
@@ -586,7 +361,7 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 	return (width/2>pixelcenter)?frame->x+(frame->w-width)*(center>.5):frame->x+frame->w*center-width/2;
 }*/
 
-int NONS_StandardOutput::setLineStart(std::wstring *arr,long start,SDL_Rect *frame,float center){
+int NONS_StandardOutput::setLineStart(std::wstring *arr,ulong start,SDL_Rect *frame,float center){
 	while (start<arr->size() && !(*arr)[start])
 		start++;
 	int width=this->predictLineLength(arr,start,frame->w);
@@ -661,11 +436,7 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 		SDL_Rect frame={this->x0,this->y0,this->w,this->h};
 		this->y=this->setTextStart(&this->cachedText,&frame,this->verticalCenterPolicy);
 		wchar_t tempbuf[100];
-#ifndef __MINGW32__
 		swprintf(tempbuf,100,L"<y=%u>",this->y);
-#else
-		swprintf(tempbuf,L"<y=%u>",this->y);
-#endif
 		this->prebufferedText.append(tempbuf);
 	}
 }
@@ -674,11 +445,7 @@ void NONS_StandardOutput::setPosition(int x,int y){
 	this->x=this->x0+x;
 	this->y=this->y0+y;
 	wchar_t tempbuf[100];
-#ifndef __MINGW32__
 	swprintf(tempbuf,100,L"<x=%u><y=%u>",this->x,this->y);
-#else
-	swprintf(tempbuf,L"<x=%u><y=%u>",this->x,this->y);
-#endif
 	this->currentBuffer.append(tempbuf);
 }
 
@@ -707,7 +474,7 @@ void NONS_StandardOutput::setCenterPolicy(char which,long val){
 
 bool NONS_StandardOutput::NewLine(){
 	int skip=this->foregroundLayer->fontCache->font->lineSkip;
-	if (this->y+skip>this->y0+this->h)
+	if (this->y+skip>=this->y0+this->h)
 		return 1;
 	this->y+=skip;
 	this->x=this->x0;

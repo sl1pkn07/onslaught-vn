@@ -44,7 +44,7 @@ struct NONS_Menu{
 	bool shadow;
 	NONS_ButtonLayer *buttons;
 	NONS_ButtonLayer *files;
-	short slots;
+	ushort slots;
 	void *interpreter;
 	int x,y;
 	NONS_Layer *shade;

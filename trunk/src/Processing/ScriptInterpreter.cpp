@@ -113,6 +113,9 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_slow=0;
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
+	this->selectVoiceEntry=0;
+	this->selectVoiceMouseOver=0;
+	this->selectVoiceClick=0;
 	
 	char *settings_filename=addStrings(config_directory,"settings.cfg");
 	ConfigFile settings(settings_filename);
@@ -145,9 +148,6 @@ void NONS_ScriptInterpreter::init(){
 	this->selectOff.r=0xA9;
 	this->selectOff.g=0xA9;
 	this->selectOff.b=0xA9;
-	this->selectVoiceEntry=0;
-	this->selectVoiceMouseOver=0;
-	this->selectVoiceClick=0;
 	this->inputQueue=InputObserver.attach();
 	this->clickStr=0;
 	this->autoclick=0;
@@ -171,6 +171,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->arrowCursor=0;
 	this->pageCursor=0;
 	this->selectVoiceEntry=0;
+	this->selectVoiceMouseOver=0;
 	this->selectVoiceClick=0;
 	this->inputQueue=0;
 	this->clickStr=0;
@@ -182,6 +183,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->gfx_store=0;
 	this->everything=0;
 	this->main_font=0;
+	this->textgosub=0;
 	if (everything){
 		if (!everything->script){
 			this->everything=0;
@@ -329,7 +331,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"jumpf"]=&NONS_ScriptInterpreter::command_jumpf;
 	this->commandList[L"kidokumode"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"labellog"]=0;
+	this->commandList[L"labellog"]=&NONS_ScriptInterpreter::command_labellog;
 	this->commandList[L"layermessage"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"ld"]=&NONS_ScriptInterpreter::command_ld;
 	this->commandList[L"len"]=&NONS_ScriptInterpreter::command_len;
@@ -534,11 +536,13 @@ void NONS_ScriptInterpreter::uninit(){
 	if (this->imageButtons)
 		delete this->imageButtons;
 	delete this->saveGame;
-	char *settings_filename=addStrings(config_directory,"settings.cfg");
-	ConfigFile settings;
-	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-	settings.writeOut(settings_filename);
-	delete[] settings_filename;
+	if (config_directory){
+		char *settings_filename=addStrings(config_directory,"settings.cfg");
+		ConfigFile settings;
+		settings.assignInt(L"textSpeedMode",this->current_speed_setting);
+		settings.writeOut(settings_filename);
+		delete[] settings_filename;
+	}
 	if (!!this->textgosub)
 		delete[] this->textgosub;
 }
@@ -687,7 +691,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					}
 					ErrorCode error=(this->*temp)(line);
 					if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-						v_stderr <<"\"";
+						v_stderr <<"Line "<<line.lineNo<<": "<<std::endl
+							<<"\"";
 						v_stderr.writeWideString(line.commandName);
 						v_stderr <<"\" ";
 						if (line.parameters.size()){
@@ -803,52 +808,30 @@ wchar_t *insertIntoString(wchar_t *dst,long from,long l,wchar_t *src){
 }
 
 wchar_t *insertIntoString(wchar_t *dst,long from,long l,long src){
-	char temp[100];
-	sprintf(temp,"%d",src);
-	wchar_t *representation=copyWString(temp);
+	std::stringstream temp;
+	temp <<src;
+	wchar_t *representation=copyWString(temp.str().c_str());
 	wchar_t *res=insertIntoString(dst,from,l,representation);
 	delete[] representation;
 	return res;
 }
 
-wchar_t *getArray(const wchar_t *string){
-	long l=0;
-	for (;string[l]!='?';l++);
-	static const char *breakers="\012\015 \t|&=!<>+-*/";
-	bool breakerfound=0;
-	for (;string[l] && string[l]!='[' && !iswhitespace((char)string[l]) && !breakerfound;l++)
-		for (short a=0;breakers[a];a++)
-			if (string[l]==breakers[a])
-				breakerfound=1;
-	if (breakerfound==1)
-		return 0;
-	for (;string[l] && iswhitespace((char)string[l]);l++);
-	if (string[l]!='[')
-		return 0;
-	while (1){
-		l++;
-		ulong nesting=1;
-		for (;string[l];l++){
-			switch (string[l]){
-				case '[':
-					nesting++;
-					break;
-				case ']':
-					nesting--;
-			}
-			if (!nesting)
+wchar_t *getInlineExpression(const wchar_t *string,ulong *len){
+	ulong l=0;
+	while (multicomparison(string[l],"_+-*/!|&%$?<>=()[]\"`") || NONS_isalnum(string[l])){
+		if (string[l]=='\"' || string[l]=='`'){
+			wchar_t quote=string[l];
+			ulong l2=l+1;
+			for (;string[l2] && string[l2]!=quote;l2++);
+			if (string[l2]!=quote)
 				break;
+			else
+				l=l2;
 		}
-		if (nesting)
-			return 0;
 		l++;
-		long l2=l;
-		for (;string[l] && iswhitespace((char)string[l]);l++);
-		if (string[l]!='['){
-			l=l2;
-			break;
-		}
 	}
+	if (!!len)
+		*len=l;
 	return copyWString(string,l);
 }
 
@@ -869,48 +852,21 @@ void NONS_ScriptInterpreter::reduceString(
 					break;
 				}
 			case '%':
-				if (*str=='%'){
-						ulong l=0;
-						while (1){
-							for (;str[l+1] && (str[l+1]=='%' || str[l+1]=='$');l++);
-							for (;str[l+1] && iswhitespace(str[l+1]);l++);
-							if (str[l+1]!='%' && str[l+1]!='$')
-								break;
-						}
-						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
-						if (l){
-							wchar_t *name=copyWString(str,l+1);
-							NONS_VariableMember *var=this->store->retrieve(name,0);
-							delete[] name;
-							if (!!var){
-								/*if (var->getType()=='$')
-									dst.append(var->getWcs());
-								else*/{
-									std::stringstream stream;
-									stream <<var->getInt();
-									wchar_t *temp=copyWString(stream.str().c_str());
-									dst.append(temp);
-									delete[] temp;
-								}
-								str+=l+1;
-								break;
-							}
-						}
-				}
 			case '$':
-				if (*str=='$'){
-						ulong l=0;
-						while (1){
-							for (;str[l+1] && (str[l+1]=='%' || str[l+1]=='$');l++);
-							for (;str[l+1] && iswhitespace(str[l+1]);l++);
-							if (str[l+1]!='%' && str[l+1]!='$')
-								break;
-						}
-						for (l;str[l+1] && (isalnum(str[l+1]) || str[l+1]=='_');l++);
-						if (l){
-							wchar_t *name=copyWString(str,l+1);
-							NONS_VariableMember *var=this->store->retrieve(name,0);
-							if (!!var){
+			case '?':
+				{
+					ulong l;
+					wchar_t *expr=getInlineExpression(str,&l);
+					if (expr){
+						NONS_VariableMember *var=this->store->retrieve(expr,0);
+						if (!!var){
+							str+=l;
+							if (var->getType()==INTEGER){
+								std::wstringstream stream;
+								stream <<var->getInt();
+								dst.append(stream.str());
+							}else if (var->getType()==STRING){
+								wchar_t *copy=var->getWcsCopy();
 								if (!!visited && visited->find(var)!=visited->end()){
 									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
 										"    Reduction stack contents:"<<std::endl;
@@ -922,11 +878,11 @@ void NONS_ScriptInterpreter::reduceString(
 										v_stderr <<"\""<<std::endl;
 									}
 									v_stderr <<" (last) [";
-									v_stderr.writeWideString(name);
+									v_stderr.writeWideString(expr);
 									v_stderr <<"] = \"";
-									v_stderr.writeWideString(var->getWcs());
+									v_stderr.writeWideString(copy);
 									v_stderr <<"\""<<std::endl;
-									dst.append(var->getWcs());
+									dst.append(copy);
 								}else{
 									std::set<NONS_VariableMember *> *temp_visited;
 									std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *temp_stack;
@@ -939,8 +895,8 @@ void NONS_ScriptInterpreter::reduceString(
 										temp_stack=new std::vector<std::pair<wchar_t *,NONS_VariableMember *> >;
 									else
 										temp_stack=stack;
-									temp_stack->push_back(std::pair<wchar_t *,NONS_VariableMember *>(name,var));
-									reduceString(var->getWcs(),dst,temp_visited,temp_stack);
+									temp_stack->push_back(std::pair<wchar_t *,NONS_VariableMember *>(expr,var));
+									reduceString(copy,dst,temp_visited,temp_stack);
 									if (!visited)
 										delete temp_visited;
 									else
@@ -950,43 +906,12 @@ void NONS_ScriptInterpreter::reduceString(
 									else
 										temp_stack->pop_back();
 								}
-								str+=l+1;
-								delete[] name;
-								break;
-							}
-							delete[] name;
-						}
-				}
-			case '?':
-				if (*str=='?'){
-					wchar_t *name=getArray(str);
-					if (name){
-						NONS_VariableMember *var=this->store->retrieve(name,0);
-						long l=wcslen(name);
-						if (var){
-							if (var->getType()=='%'){
-								delete[] name;
-								char repr[30];
-								sprintf(repr,"%d",var->getInt());
-								wchar_t *copy=copyWString(repr);
-								dst.append(copy);
 								delete[] copy;
-								str+=l+1;
-								break;
-							}else if (var->getType()=='$'){
-								if (instr(var->getWcs(),name)>=0){
-									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided. The variable [";
-									v_stderr.writeWideString(name);
-									v_stderr <<"] contained a reference to itself while trying to print it.";
-									dst.append(var->getWcs());
-								}else
-									reduceString(var->getWcs(),dst);
-								delete[] name;
-								str+=l+1;
-								break;
 							}
+							delete[] expr;
+							break;
 						}
-						delete[] name;
+						delete[] expr;
 					}
 				}
 			default:
@@ -1029,8 +954,8 @@ void findStops(const wchar_t *src,std::vector<std::pair<ulong,ulong> > &stopping
 						str2++;
 						short a;
 						for (a=0;a<6;a++){
-							char hex=toupper(str2[a]);
-							if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
+							char hex=str2[a];
+							if (!NONS_ishexa(hex))
 								break;
 						}
 						if (a!=6)
@@ -1051,6 +976,11 @@ void findStops(const wchar_t *src,std::vector<std::pair<ulong,ulong> > &stopping
 	}
 	std::pair<ulong,ulong> push(dst.size(),str2-src);
 	stopping_points.push_back(push);
+}
+
+template <typename T>
+T HEX2DEC(T x){
+	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
 }
 
 bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error){
@@ -1203,11 +1133,11 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 							Uint32 parsed=0;
 							short a;
 							for (a=0;a<6;a++){
-								char hex=toupper(str[reduced+a]);
-								if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
+								int hex=str[reduced+a];
+								if (!NONS_ishexa(hex))
 									break;
 								parsed<<=4;
-								parsed|=(hex>='0' && hex<='9')?hex-'0':hex-'A'+10;
+								parsed|=HEX2DEC(hex);
 							}
 							if (a==6){
 								SDL_Color color=this->everything->screen->output->foregroundLayer->fontCache->foreground;
@@ -1276,97 +1206,6 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::getIntValue(wchar_t *str,long *value){
-	if (*str=='\"' || *str=='`' || *str=='$')
-		return NONS_UNMATCHING_OPERANDS;
-	if (*str=='#'){
-		long res=0;
-		str++;
-		short a;
-		for (a=0;a<6;a++){
-			char hex=toupper(str[a]);
-			if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
-				break;
-			res<<=4;
-			res|=(hex>='0' && hex<='9')?hex-'0':hex-'A'+10;
-		}
-		if (a<6)
-			return NONS_INVALID_HEX;
-		if (!!value)
-			*value=res;
-	}else
-		_HANDLE_POSSIBLE_ERRORS(this->store->evaluate(str,value),)
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::getStrValue(wchar_t *str,char **value){
-	if (*str=='%')
-		return NONS_UNMATCHING_OPERANDS;
-	if (*str=='\"' || *str=='`'){
-		wchar_t find[]={*str,0};
-		long endstr=instr(str+1,find);
-		if (endstr<0)
-			return NONS_UNMATCHED_QUOTES;
-		if (*value)
-			delete[] *value;
-		if (!endstr)
-			*value=copyString("");
-		else
-			*value=copyString(str+1,endstr);
-	}else{
-		NONS_VariableMember *var=0;
-		if (*str=='?'){
-			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
-		}else{
-			ErrorCode error;
-			var=this->store->retrieve(str,&error);
-			if (!var)
-				return error;
-		}
-		if (*value)
-			delete[] *value;
-		if (!var->getWcs())
-			*value=copyString("");
-		else
-			*value=var->getStrCopy();
-	}
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::getWcsValue(wchar_t *str,wchar_t **value){
-	if (*str=='%')
-		return NONS_UNMATCHING_OPERANDS;
-	if (*str=='\"' || *str=='`'){
-		wchar_t find[]={*str,0};
-		long endstr=instr(str+1,find);
-		if (endstr<0)
-			return NONS_UNMATCHED_QUOTES;
-		if (*value)
-			delete[] *value;
-		if (!endstr)
-			*value=copyWString("");
-		else
-			*value=copyWString(str+1,endstr);
-	}else{
-		NONS_VariableMember *var=0;
-		if (*str=='?'){
-			_HANDLE_POSSIBLE_ERRORS(this->store->resolveIndexing(str,&var),)
-		}else{
-			ErrorCode error;
-			var=this->store->retrieve(str,&error);
-			if (!var)
-				return error;
-		}
-		if (*value)
-			delete[] *value;
-		if (!var->getWcs())
-			*value=copyWString("");
-		else
-			*value=var->getWcsCopy();
-	}
-	return NONS_NO_ERROR;
-}
-
 void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std::wstring &string){
 	string.clear();
 	for (ulong a=0;a<line.parameters.size();a++){
@@ -1409,15 +1248,15 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 				}else
 					string.push_back(*str);
 			}
-		}else if (var->getType()=='%'){
-			char temp[100];
-			sprintf(temp,"%d",var->getInt());
-			wchar_t *representation=copyWString(temp);
+		}else if (var->getType()==INTEGER){
+			std::stringstream temp;
+			temp <<var->getInt();
+			wchar_t *representation=copyWString(temp.str().c_str());
 			string.append(representation);
 			delete[] representation;
-		}else if (var->getType()=='$'){
+		}else if (var->getType()==STRING){
 			string.append(var->getWcs());
-		}else if (var->getType()=='?')
+		}else if (var->getType()==INTEGER_ARRAY)
 			continue;
 convertParametersToString_000:;
 	}
@@ -1431,7 +1270,7 @@ bool NONS_ScriptInterpreter::goto_label(wchar_t *label){
 	long temp=this->script->offsetFromBlock(label);
 	if (temp<0)
 		return 0;
-	labelsUsed.insert(copyWString(label));
+	labellog.addString(label,0);
 	this->interpreter_position=temp;
 	return 1;
 }

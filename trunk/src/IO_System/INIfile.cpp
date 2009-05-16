@@ -417,7 +417,7 @@ void INIfile::readFile(const wchar_t *buffer,long l){
 		INIsection *p=new INIsection(buffer,&offset,l);
 		this->sections[copyWString("")]=p;
 	}else
-		this->sections[WSTRLITERAL(L"")]->readFile(buffer,&offset,l);
+		this->sections[(wchar_t *)L""]->readFile(buffer,&offset,l);
 	for (;offset<l;){
 		if (buffer[offset]=='['){
 			long closing=wcspbrk(buffer+offset,L"]")-buffer,

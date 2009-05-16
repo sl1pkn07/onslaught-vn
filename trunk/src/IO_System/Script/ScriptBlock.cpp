@@ -32,15 +32,19 @@
 
 #include "ScriptBlock.h"
 #include "../../Functions.h"
+#include "../../UTF.h"
 
 NONS_ScriptBlock::NONS_ScriptBlock(wchar_t *script,long offset){
 	this->script=script;
 	wchar_t *start=script+offset;
-	long l;
-	for (l=0;start[l]!=13 && start[l]!=10;l++);
+	for (;iswhitespace(*start) && *start!=13 && *start!=10;start++);
+	long l=0;
+	for (;start[l]=='_' || NONS_isalnum(start[l]);l++);
 	this->name=copyWString(start,l);
+	for (;start[l]!=13 && start[l]!=10;l++);
 	offset+=l;
-	for (start+=l;*start==13 || *start==10;start++,offset++);
+	start+=l;
+	for (;*start==13 || *start==10;start++,offset++);
 	this->data=start;
 	this->offset=offset;
 	this->used=0;

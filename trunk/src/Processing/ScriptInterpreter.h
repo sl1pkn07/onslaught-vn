@@ -57,9 +57,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getIntValue(line.parameters[(src)],&(dst)),extra)
-#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getStrValue(line.parameters[(src)],&(dst)),extra)
-#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->getWcsValue(line.parameters[(src)],&(dst)),extra)
+#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(line.parameters[(src)],&(dst)),extra)
+#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getStrValue(line.parameters[(src)],&(dst)),extra)
+#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(line.parameters[(src)],&(dst)),extra)
 #define _GETVARIABLE(varName,src,extra){\
 	ErrorCode error;\
 	(varName)=this->store->retrieve(line.parameters[(src)],&error);\
@@ -71,21 +71,21 @@
 		extra\
 		return NONS_EXPECTED_VARIABLE;\
 	}\
-	if ((varName)->getType()=='?'){\
+	if ((varName)->getType()==INTEGER_ARRAY){\
 		extra\
 		return NONS_EXPECTED_SCALAR;\
 	}\
 }
 #define _GETINTVARIABLE(varName,src,extra){\
 	_GETVARIABLE(varName,src,extra)\
-	if ((varName)->getType()!='%'){\
+	if ((varName)->getType()!=INTEGER){\
 		extra\
 		return NONS_EXPECTED_NUMERIC_VARIABLE;\
 	}\
 }
 #define _GETSTRVARIABLE(varName,src,extra){\
 	_GETVARIABLE(varName,src,extra)\
-	if ((varName)->getType()!='$'){\
+	if ((varName)->getType()!=STRING){\
 		extra\
 		return NONS_EXPECTED_STRING_VARIABLE;\
 	}\
@@ -317,8 +317,8 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_getcursorpos(NONS_ParsedLine &line);
 	ErrorCode command_textgosub(NONS_ParsedLine &line);
 	ErrorCode command_ispage(NONS_ParsedLine &line);
+	ErrorCode command_labellog(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
@@ -340,9 +340,9 @@ public:
 	ErrorCode interpretString(wchar_t *string);
 	ulong totalCommands();
 	ulong implementedCommands();
-	ErrorCode getIntValue(wchar_t *str,long *value);
+	/*ErrorCode getIntValue(wchar_t *str,long *value);
 	ErrorCode getStrValue(wchar_t *str,char **value);
-	ErrorCode getWcsValue(wchar_t *str,wchar_t **value);
+	ErrorCode getWcsValue(wchar_t *str,wchar_t **value);*/
 	bool load(int file);
 	bool save(int file);
 	void convertParametersToString(NONS_ParsedLine &line,std::wstring &string);

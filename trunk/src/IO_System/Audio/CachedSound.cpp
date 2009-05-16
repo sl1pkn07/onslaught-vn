@@ -38,7 +38,7 @@ NONS_CachedSound::NONS_CachedSound(char *databuffer,long size){
 	this->chunk=Mix_LoadWAV_RW(SDL_RWFromMem((void *)databuffer,size),1);
 	delete[] databuffer;
 	this->references=1;
-	this->lastused=secondsSince1900();
+	this->lastused=secondsSince1970();
 	this->name=0;
 }
 

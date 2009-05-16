@@ -1,18 +1,29 @@
 trunk
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,
-        puttext.
+        puttext, labellog.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
-    * Fixed serious bug in the string reduction algorithm.
     * Implemented mouse wheel.
     * Variable indices can now be negative.
-    * Fixed bug related to text speed.
     * Added automatic encoding detection.
     * Added "auto" to the possible encodings list. This is now the default.
-    * Fixed bug in the bilinear interpolation function.
-    * Fixed bug related to !sd and !s# escape sequences.
     * doc/Changes.txt reformatted.
     * Save file version upgraded.
     * Added INSTALL.txt with installation instructions.
+    * Changed implementation of expression evaluator to a Bison-generated
+      parser-evaluator. Because of MinGW's poor implementation, the code can no
+      longer be compiled with it.
+    * Discontinued support for O/NScripter savegames (save*.dat).
+    * The array identification method has changed from C-style identifiers to
+      integers. As a result, all savegames for scripts that use arrays will be
+      incorrectly loaded.
+    * Labels are now C-style identifiers.
+    * Fixed serious bug in the string reduction mechanism.
+    * Fixed bug related to text speed.
+    * Fixed bug in the bilinear interpolation function.
+    * Fixed bug related to !sd and !s# escape sequences.
+    * Fixed a bug that caused loading a sound on channel X to crash if a
+      wavestop had been issued on channel X while no sound was loaded at that
+      channel.
 
 20090307
     * Several bug fixes.

@@ -90,9 +90,9 @@ string, so while it does take BOM into account, it doesn't compensate for
 streams with an odd length, as all valid UCS-2 strings have an even length.
 If the string has an odd length, the last byte will be ignored.
 */
-wchar_t *UCS2_to_WChar(const char *buffer,long initialSize,long *finalSize,uchar end=UNDEFINED_ENDIANNESS);
-wchar_t *ISO88591_to_WChar(const char *buffer,long initialSize,long *finalSize);
-wchar_t *UTF8_to_WChar(const char *buffer,long initialSize,long *finalSize);
+wchar_t *UCS2_to_WChar(const char *buffer,ulong initialSize,long *finalSize,uchar end=UNDEFINED_ENDIANNESS);
+wchar_t *ISO88591_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
+wchar_t *UTF8_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
 wchar_t *UTF8_to_WChar(const char *string);
 /*
 Historical note: If I understood the code correctly, the old ONScripter perfomed
@@ -101,22 +101,22 @@ this conversion in real time in order to output characters to the screen
 not to include Unicode support, despite the fact that he would have to do the
 conversion anyway, is something that eludes me to this day.
 */
-wchar_t *SJIS_to_WChar(const char *buffer,long initialSize,long *finalSize);
+wchar_t *SJIS_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
 wchar_t *SJIS_to_WChar(const char *string);
 //Determine if a byte is the first of a wide Shift JIS character.
 bool isSJISWide(uchar a);
-char *WChar_to_UCS2(const wchar_t *buffer,long initialSize,long *finalSize,uchar end=NONS_BIG_ENDIAN);
-char *WChar_to_ISO88591(const wchar_t *buffer,long initialSize,long *finalSize);
-char *WChar_to_UTF8(const wchar_t *buffer,long initialSize,long *finalSize);
+char *WChar_to_UCS2(const wchar_t *buffer,ulong initialSize,long *finalSize,uchar end=NONS_BIG_ENDIAN);
+char *WChar_to_ISO88591(const wchar_t *buffer,ulong initialSize,long *finalSize);
+char *WChar_to_UTF8(const wchar_t *buffer,ulong initialSize,long *finalSize);
 char *WChar_to_UTF8(const wchar_t *string);
-char *WChar_to_SJIS(const wchar_t *buffer,long initialSize,long *finalSize);
+char *WChar_to_SJIS(const wchar_t *buffer,ulong initialSize,long *finalSize);
 long getUTF8size(const wchar_t *buffer,long size);
 long getUTF8size(const wchar_t *string);
 
-bool isValidUTF8(const char *buffer,long size);
-bool isValidSJIS(const char *buffer,long size);
-bool isValidUCS2(const char *buffer,long size);
-bool ISO88591_or_UCS2(const char *buffer,long size);
+bool isValidUTF8(const char *buffer,ulong size);
+bool isValidSJIS(const char *buffer,ulong size);
+bool isValidUCS2(const char *buffer,ulong size);
+bool ISO88591_or_UCS2(const char *buffer,ulong size);
 
 bool iswhitespace(char character);
 bool iswhitespace(wchar_t character);
@@ -124,4 +124,14 @@ bool iswhitespaceASCIIe(char character);
 bool isbreakspace(char character);
 bool isbreakspace(wchar_t character);
 bool isbreakspaceASCIIe(char character);
+bool NONS_isdigit(wchar_t character);
+bool NONS_isalpha(wchar_t character);
+bool NONS_isalnum(wchar_t character);
+bool NONS_ishexa(wchar_t character);
+bool NONS_isupper(wchar_t character);
+bool NONS_islower(wchar_t character);
+wchar_t NONS_toupper(wchar_t character);
+wchar_t NONS_tolower(wchar_t character);
+void NONS_tolower(wchar_t *param);
+void NONS_tolower(char *param);
 #endif

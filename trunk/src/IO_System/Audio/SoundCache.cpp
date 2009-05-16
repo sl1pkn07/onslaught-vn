@@ -59,13 +59,13 @@ NONS_SoundCache::~NONS_SoundCache(){
 //Sound effects stay in the cache for this amount of seconds
 #define SE_EXPIRATION_TIME 60
 
-int NONS_SoundCache::GarbageCollector(NONS_SoundCache *dis){
+int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 	NONS_EventQueue *queue=InputObserver.attach();
-	while (!dis->kill_thread){
-		SDL_LockMutex(dis->mutex);
-		if (!dis->cache.empty()){
-			ulong now=secondsSince1900();
-			for (std::map<char *,NONS_CachedSound *,strCmp>::iterator i=dis->cache.begin();i!=dis->cache.end();){
+	while (!_this->kill_thread){
+		SDL_LockMutex(_this->mutex);
+		if (!_this->cache.empty()){
+			ulong now=secondsSince1970();
+			for (std::map<char *,NONS_CachedSound *,strCmp>::iterator i=_this->cache.begin();i!=_this->cache.end();){
 				if (!i->second->references){
 					i->second->references=-1;
 					i->second->lastused=now;
@@ -75,24 +75,24 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *dis){
 						std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<i->first<<")"<<std::endl;
 					delete[] i->first;
 					delete i->second;
-					dis->cache.erase(i);
+					_this->cache.erase(i);
 					if (CLOptions.verbosity>=255)
-						std::cout <<"Currently in cache: "<<dis->cache.size()<<" items."<<std::endl;
-					i=dis->cache.begin();
+						std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
+					i=_this->cache.begin();
 				}else
 					i++;
 			}
-			for (ulong a=0;dis->channelWatch.size()>0 && a<10;a++){
-				std::list<NONS_SoundEffect *>::iterator i2=dis->channelWatch.begin();
-				for (;i2!=dis->channelWatch.end();){
+			for (ulong a=0;_this->channelWatch.size()>0 && a<10;a++){
+				std::list<NONS_SoundEffect *>::iterator i2=_this->channelWatch.begin();
+				for (;i2!=_this->channelWatch.end();){
 					if (!Mix_Playing((*i2)->channel) && (*i2)->playingHasStarted){
 						if (CLOptions.verbosity>=255)
 							std::cout <<"At "<<now<<" stopped "<<*i2<<"\n"
 								"    cache item "<<(*i2)->sound->chunk<<"\n"
 								"    on channel "<<(*i2)->channel<<std::endl;
 						(*i2)->unload();
-						dis->channelWatch.erase(i2);
-						i2=dis->channelWatch.begin();
+						_this->channelWatch.erase(i2);
+						i2=_this->channelWatch.begin();
 					}else
 						i2++;
 				}
@@ -104,11 +104,11 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *dis){
 			SDL_Event event=queue->pop();
 			if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F12){
 				if (CLOptions.verbosity>=255)
-					std::cout <<"Currently in cache: "<<dis->cache.size()<<" items."<<std::endl;
+					std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
 				justreported=1;
 			}
 		}
-		SDL_UnlockMutex(dis->mutex);
+		SDL_UnlockMutex(_this->mutex);
 		SDL_Delay(100);
 	}
 	InputObserver.detach(queue);

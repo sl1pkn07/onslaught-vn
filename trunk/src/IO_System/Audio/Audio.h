@@ -40,7 +40,6 @@
 
 struct NONS_Audio{
 	NONS_Music *music;
-	std::map<int,NONS_SoundEffect *> asynchronous_seffect;
 	char *musicDir;
 	char *musicFormat;
 	NONS_SoundCache *soundcache;
@@ -67,6 +66,7 @@ struct NONS_Audio{
 	void freeCacheElement(int chan);
 	bool toggleMute();
 private:
+	std::map<int,NONS_SoundEffect *> asynchronous_seffect;
 	SDL_mutex *mutex;
 	int mvol,
 		svol;

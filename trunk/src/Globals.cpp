@@ -91,7 +91,7 @@ const char *errorMessages[]={
 	//NONS_UNRECOGNIZED_OPERATOR
 	"Unrecognized operator.",
 	//NONS_ARRAY_INDEX_OUT_OF_BOUNDS
-	"Array index out of bounds.",
+	"Array index out of bounds. Defaulting to index 0 and continuing evaluation.",
 	//NONS_MISSING_Q_IN_ARRAY_DECLARATION
 	"Missing ? in array declaration.",
 	//NONS_MISSING_B_IN_ARRAY_DECLARATION
@@ -145,7 +145,7 @@ const char *errorMessages[]={
 	//NONS_SELECT_TOO_BIG
 	"The button layer is too big for the screen.",
 	//NONS_NO_START_LABEL
-	"The *start block was not found."
+	"The *start block was not found.",
 	//NONS_GOSUB
 	"",
 	//NONS_NO_SPRITE_LOADED_THERE
@@ -166,13 +166,24 @@ const char *errorMessages[]={
 	//NONS_EXPECTED_ARRAY
 	"An array was expected, but a scalar variable was passed.",
 	//NONS_VARIABLE_OUT_OF_RANGE
-	"The variable index is out of range. Variable indices may only be in the range -1073741824 to 1073741823.",
+	"The variable or array index is out of range. Variable indices may only be in the range -1073741824 to 1073741823.",
 	//NONS_UNDEFINED_ARRAY
 	"Undefined array.",
 	//NONS_OUT_OF_BOUNDS
 	"The subindex is outside the boundaries of the array.",
 	//NONS_NO_DEFINE_LABEL
-	"The *define block was not found."
+	"The *define block was not found.",
+	//NONS_INSUFFICIENT_DIMENSIONS
+	"Attempting to get the integer value of an array or too few dimensions.",
+	//NONS_TOO_MANY_DIMENSIONS
+	"Attempting to use the [] operator on a scalar or too many dimensions.",
+	//NONS_ILLEGAL_ARRAY_SPECIFICATION
+	"Attempting to dereference with \'?\' something other than a literal or a variable (see section 1.8).",
+	//NONS_NEGATIVE_INDEX_IN_ARRAY_DECLARATION
+	"Negative index in array declaration.",
+	//NONS_LEXICALLY_UNCASTABLE
+	"The string cannot be converted to an integer.",
+	0
 };
 NONS_RedirectedOutput v_stdout(std::cout);
 NONS_RedirectedOutput v_stderr(std::cerr);

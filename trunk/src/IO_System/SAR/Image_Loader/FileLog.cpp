@@ -39,21 +39,20 @@
 #include "../../../UTF.h"
 #include <cstring>
 
-#define LOG_FILENAME_OLD "NScrflog.dat"
-#define LOG_FILENAME_NEW "nonsflog.dat"
+NONS_LogStrings::NONS_LogStrings(const char *oldName,const char *newName){
+	this->init(oldName,newName);
+}
 
-NONS_FileLog::NONS_FileLog(){
+void NONS_LogStrings::init(const char *oldName,const char *newName){
 	this->commit=0;
 	long l;
 	if (!config_directory)
 		config_directory=getConfigLocation();
-	char *filename=addStrings(save_directory,LOG_FILENAME_NEW);;
-	char *buffer=(char *)readfile(filename,&l);
-	if (!buffer){
-		delete[] filename;
-		buffer=(char *)readfile(LOG_FILENAME_OLD,&l);
-	}else
-		delete[] filename;
+	this->saveAs=save_directory;
+	this->saveAs.append(newName);
+	char *buffer=(char *)readfile(this->saveAs.c_str(),&l);
+	if (!buffer)
+		buffer=(char *)readfile(oldName,&l);
 	if (!buffer)
 		return;
 	if (!instr(buffer,"BZh")){
@@ -103,30 +102,53 @@ NONS_FileLog::NONS_FileLog(){
 	delete[] buffer;
 }
 
-NONS_FileLog::~NONS_FileLog(){
+NONS_LogStrings::~NONS_LogStrings(){
 	if (this->commit)
 		this->writeOut();
-	for (std::set<wchar_t *,wstrCmp>::iterator i=this->log.begin();i!=this->log.end();i++)
+	for (logSet_t::iterator i=this->log.begin();i!=this->log.end();i++)
 		delete[] *i;
 }
 
-bool NONS_FileLog::addString(const wchar_t *string,bool takeOwnership){
-	if (this->log.find((wchar_t *)string)!=this->log.end())
+void NONS_LogStrings::writeOut(){
+	std::stringstream stream;
+	stream <<this->log.size();
+	std::string buf(stream.str());
+	buf.append("\x0ANONS\x0A");
+	ulong startEncryption=buf.size();
+	for (logSet_t::iterator i=this->log.begin();i!=this->log.end();i++){
+		char *temp=WChar_to_UTF8(*i);
+		buf.append(temp);
+		buf.push_back(0);
+		delete[] temp;
+	}
+	char *charBuf=new char[buf.size()];
+	memcpy(charBuf,buf.c_str(),buf.size());
+	inPlaceDecryption(charBuf+startEncryption,buf.size()-startEncryption,XOR84_ENCRYPTION);
+	ulong l;
+	char *writebuffer=compressBuffer_BZ2(charBuf,buf.size(),&l);
+	delete[] charBuf;
+	writefile(this->saveAs.c_str(),writebuffer,l);
+	delete[] writebuffer;
+}
+
+bool NONS_LogStrings::addString(const wchar_t *string,bool takeOwnership){
+	if (this->log.find((wchar_t *)string)!=this->log.end()){
+		if (takeOwnership)
+			delete[] string;
 		return 0;
-	//SDL_LockMutex(exitMutex);
+	}
 	wchar_t *a;
 	if (takeOwnership)
 		a=(wchar_t *)string;
 	else
 		a=copyWString(string);
-	tolower(a);
-	toforwardslash(a);
+	SDL_LockMutex(exitMutex);
 	this->log.insert(a);
-	//SDL_UnlockMutex(exitMutex);
+	SDL_UnlockMutex(exitMutex);
 	return 1;
 }
 
-bool NONS_FileLog::addString(char *string){
+bool NONS_LogStrings::addString(const char *string){
 	wchar_t *copy=copyWString(string);
 	if (!this->addString(copy,1)){
 		delete[] copy;
@@ -135,43 +157,113 @@ bool NONS_FileLog::addString(char *string){
 	return 1;
 }
 
-void NONS_FileLog::writeOut(){
-	//First, determine the size of the output buffer (I will not waste a byte).
-	char n[50];
-	sprintf(n,"%u\x0ANONS\x0A",this->log.size());
-	long finalSize=strlen(n),
-		offset=finalSize,
-		startEncryption=offset;
-	for (std::set<wchar_t *,wstrCmp>::iterator i=this->log.begin();i!=this->log.end();i++)
-		finalSize+=getUTF8size(*i)+1;
-	char *buffer=new char[finalSize];
-	memcpy(buffer,n,offset);
-	for (std::set<wchar_t *,wstrCmp>::iterator i=this->log.begin();i!=this->log.end();i++){
-		char *temp=WChar_to_UTF8(*i);
-		strcpy(buffer+offset,temp);
-		offset+=strlen(temp)+1;
-		delete[] temp;
-	}
-	inPlaceDecryption(buffer+startEncryption,finalSize-startEncryption,XOR84_ENCRYPTION);
-	ulong l;
-	char *writebuffer=compressBuffer_BZ2(buffer,finalSize,&l);
-	char *filename=addStrings(save_directory,LOG_FILENAME_NEW);
-	writefile(filename,writebuffer,l);
-	delete[] filename;
-	delete[] writebuffer;
-	delete[] buffer;
+bool NONS_LogStrings::check(const wchar_t *string){
+	return this->log.find((wchar_t *)string)!=this->log.end();
 }
 
-bool NONS_FileLog::check(wchar_t *string){
+bool NONS_LogStrings::check(const char *string){
 	wchar_t *copy=copyWString(string);
-	tolower(copy);
+	bool ret=this->check(copy);
+	delete[] copy;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+
+bool NONS_FileLog::addString(const wchar_t *string,bool takeOwnership){
+	if (this->check(string)){
+		if (takeOwnership)
+			delete[] string;
+		return 0;
+	}
+	wchar_t *a;
+	if (takeOwnership)
+		a=(wchar_t *)string;
+	else
+		a=copyWString(string);
+	NONS_tolower(a);
+	toforwardslash(a);
+	SDL_LockMutex(exitMutex);
+	this->log.insert(a);
+	SDL_UnlockMutex(exitMutex);
+	return 1;
+}
+
+bool NONS_FileLog::addString(const char *string){
+	wchar_t *copy=copyWString(string);
+	if (!this->addString(copy,1)){
+		delete[] copy;
+		return 0;
+	}
+	return 1;
+}
+
+bool NONS_FileLog::check(const wchar_t *string){
+	wchar_t *copy=copyWString(string);
+	NONS_tolower(copy);
 	toforwardslash(copy);
 	bool ret=(this->log.find(copy)!=this->log.end());
 	delete[] copy;
 	return ret;
 }
 
-bool NONS_FileLog::check(char *string){
+bool NONS_FileLog::check(const char *string){
+	wchar_t *copy=copyWString(string);
+	bool ret=this->check(copy);
+	delete[] copy;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+
+bool NONS_LabelLog::addString(const wchar_t *string,bool takeOwnership){
+	if (this->check(string)){
+		if (takeOwnership)
+			delete[] string;
+		return 0;
+	}
+	wchar_t *a;
+	const wchar_t *b=string;
+	for (;*b=='*';b++);
+	if (!*b){
+		if (takeOwnership)
+			delete[] string;
+		return 0;
+	}
+	if (takeOwnership){
+		if (b==string)
+			a=(wchar_t *)string;
+		else{
+			a=copyWString(b);
+			delete[] string;
+		}
+	}else
+		a=copyWString(b);
+	NONS_tolower(a);
+	SDL_LockMutex(exitMutex);
+	this->log.insert(a);
+	SDL_UnlockMutex(exitMutex);
+	return 1;
+}
+
+bool NONS_LabelLog::addString(const char *string){
+	for (;*string=='*';string++);
+	wchar_t *copy=copyWString(string);
+	if (!this->addString(copy,1)){
+		delete[] copy;
+		return 0;
+	}
+	return 1;
+}
+
+bool NONS_LabelLog::check(const wchar_t *string){
+	for (;*string=='*';string++);
+	bool ret=(this->log.find((wchar_t *)string)!=this->log.end());
+	return ret;
+}
+
+bool NONS_LabelLog::check(const char *string){
+	for (;*string=='*';string++);
 	wchar_t *copy=copyWString(string);
 	bool ret=this->check(copy);
 	delete[] copy;
