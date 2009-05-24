@@ -89,7 +89,7 @@ const char *errorMessages[]={
 	//NONS_UNMATCHED_BRAKETS
 	"Unmatched [].",
 	//NONS_UNRECOGNIZED_OPERATOR
-	"Unrecognized operator.",
+	"Unrecognized token.",
 	//NONS_ARRAY_INDEX_OUT_OF_BOUNDS
 	"Array index out of bounds. Defaulting to index 0 and continuing evaluation.",
 	//NONS_MISSING_Q_IN_ARRAY_DECLARATION
@@ -185,9 +185,9 @@ const char *errorMessages[]={
 	"The string cannot be converted to an integer.",
 	0
 };
-NONS_RedirectedOutput v_stdout(std::cout);
-NONS_RedirectedOutput v_stderr(std::cerr);
-NONS_RedirectedOutput v_stdlog(std::clog);
+NONS_RedirectedOutput o_stdout(std::cout);
+NONS_RedirectedOutput o_stderr(std::cerr);
+//NONS_RedirectedOutput o_stdlog(std::clog);
 NONS_ImageLoader *ImageLoader=0;
 bool ctrlIsPressed;
 bool softwareCtrlIsPressed;

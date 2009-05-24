@@ -109,14 +109,6 @@ it, xm, s3m, and then mod.
 Selects where to look for the music. Defaults to "./CD"
 
 
--transparency-method-anim {chroma|alpha}
-Selects the trasparency method for cursors.
-
-
--transparency-method-layer {old|alpha}
-Selects the trasparency method for layer images.
-
-
 -image-cache-size <size>
 Sets the size for the image cache. -1 is infinite, 0 disables the cache
 (default).

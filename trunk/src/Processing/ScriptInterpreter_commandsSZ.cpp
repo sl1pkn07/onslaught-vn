@@ -213,7 +213,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 	{
 		SDL_Surface *scr=this->everything->screen->screen->virtualScreen;
 		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
-			v_stderr <<"Warning: The text frame is larger than the screen"<<std::endl;
+			o_stderr <<"Warning: The text frame is larger than the screen\n";
 		if (this->everything->screen->output->shadeLayer->useDataAsDefaultShade){
 			ImageLoader->unfetchImage(this->everything->screen->output->shadeLayer->data);
 			this->everything->screen->output->shadeLayer->data=0;
@@ -236,11 +236,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			this->everything->screen->output->shadeLayer->Clear();
 		}else{
 			long f=instr(filename,";");
-			pic=ImageLoader->fetchImage(
-				filename+(f>=0?f+1:0),
-				&(this->everything->screen->screen->virtualScreen->clip_rect),
-				CLOptions.layerMethod
-			);
+			pic=ImageLoader->fetchSprite(filename+(f>=0?f+1:0));
 			windowRect.w=pic->w;
 			windowRect.h=pic->h;
 			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
@@ -295,7 +291,7 @@ ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_ParsedLine &line){
 	if (!which){
 		if (this->arrowCursor)
 			delete this->arrowCursor;
-		this->arrowCursor=new NONS_Cursor(string,x,y,absolute);
+		this->arrowCursor=new NONS_Cursor(string,x,y,absolute,this->everything->screen);
 		if (this->saveGame->arrowCursorString)
 			delete[] this->saveGame->arrowCursorString;
 		this->saveGame->arrowCursorString=copyWString(string);
@@ -305,7 +301,7 @@ ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_ParsedLine &line){
 	}else{
 		if (this->pageCursor)
 			delete this->pageCursor;
-		this->pageCursor=new NONS_Cursor(string,x,y,absolute);
+		this->pageCursor=new NONS_Cursor(string,x,y,absolute,this->everything->screen);
 		if (this->saveGame->pageCursorString)
 			delete[] this->saveGame->pageCursorString;
 		this->saveGame->pageCursorString=copyWString(string);
@@ -507,12 +503,11 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::bad_select(NONS_ParsedLine &line){
-	v_stderr <<"NONS_ScriptInterpreter::bad_select(): WARNING: a ";
-	v_stderr.writeWideString(line.commandName);
-	v_stderr <<" without regular parameters was found on line "<<line.lineNo<<". This may indicate that you're using "
+	o_stderr <<"NONS_ScriptInterpreter::bad_select(): WARNING: a "<<line.commandName
+		<<" without regular parameters was found on line "<<line.lineNo<<". This may indicate that you're using "
 		"the irregular syntax. If that's the case, you should consider migrating to the regular syntax.\n"
 		"    I'm going to try and parse the command all the same, so don't be surprised if there are errors.\n"
-		"    Oh, and this is still considered a syntax error, so I'm going to return INSUFFICIENT_PARAMETERS."<<std::endl;
+		"    Oh, and this is still considered a syntax error, so I'm going to return INSUFFICIENT_PARAMETERS.\n";
 	ulong pos=this->previous_interpreter_position;
 	wchar_t *script=this->script->script;
 	for (;!iswhitespace(script[pos]);pos++);

@@ -78,6 +78,6 @@ NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 			return this->glyphCache[a];
 	NONS_Glyph *glyph=new NONS_Glyph(this->font,codePoint,this->font->getascent(),&(this->foreground),this->shadow);
 	this->glyphCache.push_back(glyph);
-	return this->glyphCache[this->glyphCache.size()-1];
+	return this->glyphCache.back();
 }
 #endif

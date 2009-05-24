@@ -102,7 +102,7 @@ ErrorCode NONS_GFX::call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *
 	//ulong t0=SDL_GetTicks();
 	SDL_Surface *ruleFile=0;
 	if (this->rule)
-		ruleFile=ImageLoader->fetchSprite(this->rule,this->rule,NO_ALPHA);
+		ruleFile=ImageLoader->fetchSprite(this->rule);
 	if (this->type==TRANSITION){
 		switch (this->effect){
 			case 0:

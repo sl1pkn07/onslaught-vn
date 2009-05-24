@@ -59,7 +59,7 @@ ErrorCode inPlaceDecryption(char *buffer,long length,ulong mode,char *filename){
 		case TRANSFORM_THEN_XOR84_ENCRYPTION:
 			{
 #ifndef BARE_FILE
-				v_stderr
+				o_stderr
 #else
 				std::cerr
 #endif

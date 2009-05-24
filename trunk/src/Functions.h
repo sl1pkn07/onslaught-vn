@@ -85,6 +85,8 @@ bool isanumber(const char *a);
 bool isanumber(const wchar_t *a);
 std::vector<char *> *getParameterList(const char *string,char delim=' ');
 std::vector<wchar_t *> *getParameterList(const wchar_t *string,wchar_t delim=' ');
+bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1);
+bool filenames_are_equal(const char *str0,const char *str1);
 
 
 //string parsing
@@ -113,13 +115,13 @@ std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typenam
 	intervals.push_back(last++);
 	while (++i!=end){
 		if (i->first!=last){
-			intervals.push_back(last-intervals[intervals.size()-1]);
+			intervals.push_back(last-intervals.back());
 			last=i->first;
 			intervals.push_back(last++);
 		}else
 			last++;
 	}
-	intervals.push_back(last-intervals[intervals.size()-1]);
+	intervals.push_back(last-intervals.back());
 	return intervals;
 }
 

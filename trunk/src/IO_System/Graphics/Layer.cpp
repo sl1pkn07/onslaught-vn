@@ -44,6 +44,10 @@ NONS_Layer::NONS_Layer(SDL_Rect *size,unsigned rgba){
 	this->clip_rect=this->data->clip_rect;
 	this->clip_rect.x=size->x;
 	this->clip_rect.y=size->y;
+	this->position.x=0;
+	this->position.y=0;
+	this->position.w=0;
+	this->position.h=0;
 }
 
 NONS_Layer::NONS_Layer(SDL_Surface *img,unsigned rgba){
@@ -54,27 +58,30 @@ NONS_Layer::NONS_Layer(SDL_Surface *img,unsigned rgba){
 	this->useDataAsDefaultShade=0;
 	this->alpha=0xFF;
 	this->clip_rect=this->data->clip_rect;
+	this->position.x=0;
+	this->position.y=0;
+	this->position.w=0;
+	this->position.h=0;
 }
 
-NONS_Layer::NONS_Layer(wchar_t *name,SDL_Rect *screenSize,METHODS method){
+NONS_Layer::NONS_Layer(const wchar_t *string){
 	this->defaultShade=0;
 	this->fontCache=0;
 	this->visible=1;
 	this->useDataAsDefaultShade=0;
 	this->alpha=0xFF;
-	this->data=ImageLoader->fetchImage(name,screenSize,method);
-	if (this->data){
-		this->clip_rect.x=0;
-		this->clip_rect.y=0;
-		this->clip_rect.w=this->data->clip_rect.w;
-		this->clip_rect.h=this->data->clip_rect.h;
-	}
+	this->data=ImageLoader->fetchSprite(string);
+	this->animation.parse(string);
+	if (this->data)
+		this->clip_rect=this->data->clip_rect;
+	this->position.x=0;
+	this->position.y=0;
+	this->position.w=0;
+	this->position.h=0;
 }
 
 NONS_Layer::~NONS_Layer(){
 	this->unload();
-	/*if (this->data && !ImageLoader->unfetchImage(this->data))
-		SDL_FreeSurface(this->data);*/
 	if (this->fontCache)
 		delete this->fontCache;
 }
@@ -85,7 +92,7 @@ void NONS_Layer::MakeTextLayer(NONS_Font *font,SDL_Color *foreground,bool shadow
 
 void NONS_Layer::Clear(){
 	if (!this->useDataAsDefaultShade){
-		this->load(0,0,NO_ALPHA);
+		this->load(0);
 		SDL_FillRect(this->data,0,this->defaultShade);
 	}
 }
@@ -106,39 +113,24 @@ void NONS_Layer::usePicAsDefaultShade(SDL_Surface *pic){
 	this->useDataAsDefaultShade=1;
 }
 
-bool NONS_Layer::load(wchar_t *name,SDL_Rect *screenSize,METHODS method){
-	if (!name && !screenSize){
+bool NONS_Layer::load(const wchar_t *string){
+	if (!string){
 		int w=this->data->w,h=this->data->h;
 		if (this->unload(1)){
 			this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,w,h,32,rmask,gmask,bmask,amask);
-			if (this->data){
-				this->clip_rect.x=0;
-				this->clip_rect.y=0;
-				this->clip_rect.w=this->data->clip_rect.w;
-				this->clip_rect.h=this->data->clip_rect.h;
-			}
+			this->clip_rect=this->data->clip_rect;
 		}
 		return 1;
 	}
 	this->unload();
-	this->data=ImageLoader->fetchImage(name,screenSize,method);
-	if (!data){
-		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,screenSize->w,screenSize->h,32,rmask,gmask,bmask,amask);
+	this->data=ImageLoader->fetchSprite(string);
+	if (!this->data){
+		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,1,1,24,rmask,gmask,bmask,amask);
 		SDL_FillRect(this->data,0,this->defaultShade);
-		if (this->data){
-			this->clip_rect.x=0;
-			this->clip_rect.y=0;
-			this->clip_rect.w=this->data->clip_rect.w;
-			this->clip_rect.h=this->data->clip_rect.h;
-		}
+		this->clip_rect=this->data->clip_rect;
 		return 0;
 	}
-	if (this->data){
-		this->clip_rect.x=0;
-		this->clip_rect.y=0;
-		this->clip_rect.w=this->data->clip_rect.w;
-		this->clip_rect.h=this->data->clip_rect.h;
-	}
+	this->clip_rect=this->data->clip_rect;
 	return 1;
 }
 
@@ -154,5 +146,13 @@ bool NONS_Layer::unload(bool youCantTouchThis){
 		return 1;
 	}
 	return 0;
+}
+
+bool NONS_Layer::advanceAnimation(ulong msec){
+	long frame=this->animation.advanceAnimation(msec);
+	if (frame<0)
+		return 0;
+	this->clip_rect.x=frame*this->clip_rect.w;
+	return 1;
 }
 #endif

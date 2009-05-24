@@ -626,7 +626,7 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	for (ushort a=0;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	//ulong t1=SDL_GetTicks();
-	//v_stdlog <<"Done in "<<t1-t0<<" ms."<<std::endl;
+	//o_stderr <<"Done in "<<t1-t0<<" ms."<<std::endl;
 	SDL_UnlockSurface(dst);
 	SDL_UnlockSurface(src);
 	delete[] threads;
@@ -1101,5 +1101,31 @@ wchar_t *tagValue(const wchar_t *string){
 
 char *tagValue(const char *string){
 	return tagValue_template<char>(string);
+}
+
+template <typename T1,typename T2>
+bool filenames_are_equal_template(const T1 *str0,const T2 *str1){
+	T1 *copy0=copyString_template<T1>(str0,0);
+	T2 *copy1=copyString_template<T2>(str1,0);
+	toforwardslash_template<T1>(copy0);
+	toforwardslash_template<T2>(copy1);
+	for (;*copy0 || *copy1;copy0++,copy1++){
+		if (*copy0!=*copy1){
+			delete[] copy0;
+			delete[] copy1;
+			return 0;
+		}
+	}
+	delete[] copy0;
+	delete[] copy1;
+	return 1;
+}
+
+bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1){
+	return filenames_are_equal_template<wchar_t,wchar_t>(str0,str1);
+}
+
+bool filenames_are_equal(const char *str0,const char *str1){
+	return filenames_are_equal_template<char,char>(str0,str1);
 }
 #endif

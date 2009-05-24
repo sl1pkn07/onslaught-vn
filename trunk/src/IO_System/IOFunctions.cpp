@@ -82,63 +82,57 @@ ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,boo
 			reportedError &topError=currentQueue->second.front();
 			if (!CHECK_FLAG(topError.error,NONS_NO_ERROR_FLAG)){
 				if (topError.caller.size()>0)
-					v_stderr <<topError.caller<<"(): ";
+					o_stderr <<topError.caller<<"(): ";
 				if (CHECK_FLAG(topError.error,NONS_INTERNAL_ERROR))
-					v_stderr <<"Internal error. ";
+					o_stderr <<"Internal error. ";
 				else{
 					if (CHECK_FLAG(topError.error,NONS_FATAL_ERROR))
-						v_stderr <<"Fatal error";
+						o_stderr <<"Fatal error";
 					else if (CHECK_FLAG(topError.error,NONS_WARNING))
-						v_stderr <<"Warning";
+						o_stderr <<"Warning";
 					else
-						v_stderr <<"Error";
+						o_stderr <<"Error";
 					if (topError.original_line>0)
-						v_stderr <<" near line "<<topError.original_line<<". ";
+						o_stderr <<" near line "<<topError.original_line<<". ";
 					else
-						v_stderr <<". ";
+						o_stderr <<". ";
 				}
 				if (CHECK_FLAG(topError.error,NONS_UNDEFINED_ERROR))
-					v_stderr <<"Unspecified error."<<std::endl;
+					o_stderr <<"Unspecified error.\n";
 				else
-					v_stderr <<"("<<(topError.error&0xFFFF)<<") "<<errorMessages[topError.error&0xFFFF]<<std::endl;
-				if (topError.extraInfo.size()){
-					v_stderr <<"    Extra information: ";
-					v_stderr.writeWideString(topError.extraInfo.c_str());
-					v_stderr <<"\n";
-				}
+					o_stderr <<"("<<(topError.error&0xFFFF)<<") "<<errorMessages[topError.error&0xFFFF]<<'\n';
+				if (topError.extraInfo.size())
+					o_stderr <<"    Extra information: "<<topError.extraInfo.c_str()<<'\n';
 			}
 			currentQueue->second.pop();
 		}
 	}
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 		if (caller)
-			v_stderr <<caller<<"(): ";
+			o_stderr <<caller<<"(): ";
 		if (CHECK_FLAG(error,NONS_INTERNAL_ERROR))
-			v_stderr <<"Internal error. ";
+			o_stderr <<"Internal error. ";
 		else{
 			if (CHECK_FLAG(error,NONS_FATAL_ERROR))
-				v_stderr <<"Fatal error";
+				o_stderr <<"Fatal error";
 			else if (CHECK_FLAG(error,NONS_WARNING))
-				v_stderr <<"Warning";
+				o_stderr <<"Warning";
 			else
-				v_stderr <<"Error";
+				o_stderr <<"Error";
 			if (original_line>0)
-				v_stderr <<" near line "<<original_line<<". ";
+				o_stderr <<" near line "<<original_line<<". ";
 			else
-				v_stderr <<". ";
+				o_stderr <<". ";
 		}
 		if (CHECK_FLAG(error,NONS_UNDEFINED_ERROR))
-			v_stderr <<"Unspecified error."<<std::endl;
+			o_stderr <<"Unspecified error.\n";
 		else
-			v_stderr <<errorMessages[error&0xFFFF]<<std::endl;
-		if (extraInfo.size()){
-			v_stderr <<"    Extra information: ";
-			v_stderr.writeWideString(extraInfo.c_str());
-			v_stderr <<"\n";
-		}
+			o_stderr <<errorMessages[error&0xFFFF]<<'\n';
+		if (extraInfo.size())
+			o_stderr <<"    Extra information: "<<extraInfo.c_str()<<'\n';
 	}
 	if (CHECK_FLAG(error,NONS_FATAL_ERROR)){
-		v_stderr <<"I'll just go ahead and kill myself."<<std::endl;
+		o_stderr <<"I'll just go ahead and kill myself.\n";
 		exit(error);
 	}
 	return error;

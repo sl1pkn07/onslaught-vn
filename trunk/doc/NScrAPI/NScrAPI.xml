@@ -71,6 +71,17 @@
     <category id="getinfo">Data Acquisition</category>
     <category id="windowmenu">Window Menubar</category>
     <category id="systemcustomize">System Customization</category>
+    <category id="screenshot">Screenshot</category>
+    <category id="input">Button Extensions</category>
+    <category id="ruby">Ruby Text</category>
+    <category id="draw">Demo Draw Commands</category>
+    <category id="logcustomize">Log Mode Customization</category>
+    <category id="tag">Pretext Tags</category>
+    <category id="support">Development Support</category>
+    <category id="execute">External Command Execution</category>
+    <category id="csvfile">CSV File Manipulation</category>
+    <category id="textbutton">Text Buttons</category>
+    <category id="sprite_ex">Extended Sprites</category>
   </categories>
   <functions>
 
@@ -327,7 +338,7 @@ return</code>
       </example>
     </command>
 
-    <command name="{}" id="parens" version="2.65" type="T" category="format">
+    <command name="{}" id="curlybraces" version="2.65" type="T" category="format">
       <scr>N</scr><scr>E</scr>
       <simple-desc>set variables within a text block</simple-desc>
       <format>
@@ -820,6 +831,24 @@ end</code>
       <related cmd="english" />
     </command>
 
+    <command name="language" version="ONS-EN-20080823" type="FE" category="drawtext">
+      <scr>E</scr>
+      <simple-desc>set preferred text language</simple-desc>
+      <format>
+        <format-string desc="language {english/japanese}">language {english/japanese}</format-string>
+        <arg type="NAME">english: prefer English, japanese: prefer Japanese</arg>
+      </format>
+      <description>This sets the preferred text display language in ONScripter-EN, more-or-less replacing the FORCE_1BYTE_CHAR compilation option.<br />
+The right-click menu will use the preferred language for display messages, and text display will take preferred language, kinsoku settings, and whether a chunk of text contains single-byte and/or double-byte characters into account when performing linebreaks.<br />
+This command can be used within either the define or program block, and may be set by default from the command line or depending on the executable filename (i.e. "onscripter-en.exe" is assumed to prefer English).<br />
+<br />
+Note that ENABLE_1BYTE_CHAR must be set at ONScripter compile time to be able to use <b>language english</b>.</description>
+      <example type="O">
+        <comment>Sets preferred language to Japanese.</comment>
+        <code>language japanese</code>
+      </example>
+    </command>
+
     <command name="@" id="atsign" version="1.70" type="T" category="click">
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
       <simple-desc>enter click wait state</simple-desc>
@@ -1139,13 +1168,13 @@ If you specify 'a', then that will clear all of them.</description>
 
     <command name="tal" version="1.70" type="E" category="image">
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
-      <simple-desc>modify standing image transparency</simple-desc>
+      <simple-desc>modify standing image opacity</simple-desc>
       <format>
         <format-string desc="tal (standing-pic pos), (transparency)">tal {l,c,r},NUM</format-string>
         <arg type="ENUM">standing pic position (l: left, c: center, r: right)</arg>
-        <arg type="NUM">Transparency value (0 - 255)</arg>
+        <arg type="NUM">Opacity value (0 - 255)</arg>
       </format>
-      <description>Change the transparency of the specified standing picture to the given value.</description>
+      <description>Changes the opacity of the specified standing picture to the given value: 0 is fully transparent, 255 is fully opaque.</description>
       <related cmd="ld" />
     </command>
 
@@ -1197,15 +1226,15 @@ ld "testman.jpg",15,2000,"mask.bmp"</code>
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
       <simple-desc>load sprite into memory</simple-desc>
       <format>
-        <format-string desc="lsp (sprite-num), (image-str), (top-left X-pos), (top-left Y-pos)[, (transparency)]">lsp NUM,STR,NUM,NUM[,NUM]</format-string>
+        <format-string desc="lsp (sprite-num), (image-str), (top-left X-pos), (top-left Y-pos)[, (opacity)]">lsp NUM,STR,NUM,NUM[,NUM]</format-string>
         <arg type="NUM">Sprite number (0 - 999)</arg>
         <arg type="STR">Image filename or processing tag</arg>
         <arg type="NUM">Top-left X-coordinate</arg>
         <arg type="NUM">Top-left Y-coordinate</arg>
-        <arg type="NUM">Transparency value (0 - 255)</arg>
+        <arg type="NUM">Opacity value (0 - 255)</arg>
       </format>
       <description>Loads and displays a sprite. Sprite numbers may range from 0 to 999.<br />
-The other numbers are, from left to right: x coordinate of upper left pixel, y coordinate of upper left pixel, and (optional) transparency value.<br />
+The other numbers are, from left to right: x coordinate of upper left pixel, y coordinate of upper left pixel, and optional opacity value (0 for transparent up to 255 for opaque).<br />
 The only difference between <b>lsp</b> and <b>lsph</b> is the beginning condition of the sprite - <b>lsp</b> displays the sprite, while <b>lsph</b> keeps the sprite hidden (which may later be displayed with <b>vsp</b>).<br />
 <br />
 <b>Image processing tag format:</b><br />
@@ -1270,12 +1299,12 @@ For finer control and/or to make multiple-line string sprites, use the <b>strsp<
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
       <simple-desc>load sprite into memory (hidden)</simple-desc>
       <format>
-        <format-string desc="lsph (sprite-num), (image-str), (top-left X-pos), (top-left Y-pos)[, (transparency)]">lsph NUM,STR,NUM,NUM[,NUM]</format-string>
+        <format-string desc="lsph (sprite-num), (image-str), (top-left X-pos), (top-left Y-pos)[, (opacity)]">lsph NUM,STR,NUM,NUM[,NUM]</format-string>
         <arg type="NUM">Sprite number (0 - 999)</arg>
         <arg type="STR">Image filename or sprite processing string</arg>
         <arg type="NUM">Top-left X-coordinate</arg>
         <arg type="NUM">Top-left Y-coordinate</arg>
-        <arg type="NUM">Transparency value (0 - 255)</arg>
+        <arg type="NUM">Opacity value (0 - 255)</arg>
       </format>
       <description>Loads a sprite in a hidden state.<br />
 The only difference between <b>lsp</b> and <b>lsph</b> is the beginning condition of the sprite - <b>lsp</b> displays the sprite, while <b>lsph</b> keeps the sprite hidden (which may later be displayed with <b>vsp</b>).</description>
@@ -1324,13 +1353,13 @@ Just like with <b>csp</b>, <b>lsp</b> and <b>vsp</b>, you need to call <b>print<
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
       <simple-desc>change sprite position (relative)</simple-desc>
       <format>
-        <format-string desc="msp (sprite-num), (X-offset), (Y-offset)[, (transparency-offset)]">msp NUM,NUM,NUM[,NUM]</format-string>
+        <format-string desc="msp (sprite-num), (X-offset), (Y-offset)[, (opacity-offset)]">msp NUM,NUM,NUM[,NUM]</format-string>
         <arg type="NUM">Sprite number (0 - 999)</arg>
         <arg type="NUM">X-coordinate offset</arg>
         <arg type="NUM">Y-coordinate offset</arg>
-        <arg type="NUM">Transparency offset</arg>
+        <arg type="NUM">Opacity offset</arg>
       </format>
-      <description>Moves the sprite of the designated number, adjusting the position and transparency relative to their current values.<br />
+      <description>Moves the sprite of the designated number, adjusting the position and opacity relative to their current values.<br />
 <br />
 Like the <b>tal</b> command, and other sprite system commands, The results of <b>msp</b> will not show up immediately on screen (this is for ease and speed of batch processing).<br />
 So before you call any text or image display commands after an <b>msp</b>, please call a <b>print</b> command to update the screen before continuing.</description>
@@ -1341,15 +1370,15 @@ So before you call any text or image display commands after an <b>msp</b>, pleas
       <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
       <simple-desc>change sprite position (absolute)</simple-desc>
       <format>
-        <format-string desc="amsp (sprite-num), (X-pos), (Y-pos)[, (transparency)]">amsp NUM,NUM,NUM[,NUM]</format-string>
+        <format-string desc="amsp (sprite-num), (X-pos), (Y-pos)[, (opacity)]">amsp NUM,NUM,NUM[,NUM]</format-string>
         <arg type="NUM">Sprite number (0 - 999)</arg>
         <arg type="NUM">X-coordinate</arg>
         <arg type="NUM">Y-coordinate</arg>
-        <arg type="NUM">Transparency (0 - 255)</arg>
+        <arg type="NUM">Opacity (0 - 255)</arg>
       </format>
       <description>Similar to <b>msp</b>, but moves the sprite to an absolute instead of relative position.</description>
       <example>
-        <comment>This moves Sprite 2 to position (5,2) and gives it 100 (out of 255) transparency.</comment>
+        <comment>This moves Sprite 2 to position (5,2) and gives it an opacity of 100 (out of 255).</comment>
         <code>amsp 2,5,2,100</code>
       </example>
       <related cmd="msp" />
@@ -4904,6 +4933,23 @@ To also change the window size mode, say to 800x600, use ";mode800,value500" as 
       <related cmd="mode320" />
     </command>
 
+    <command name="gameid" version="ONS?" type="F" category="specialmode">
+      <scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>give a name to use for an ONScr game save folder</simple-desc>
+      <format>
+        <format-string desc=";gameid (game-id)">';gameid' STR</format-string>
+        <arg type="STR">Name to use for the game save folder</arg>
+      </format>
+      <description>Sets a name to use for a (P)ONScripter game savedata folder, which is filed in AppData (or similar applicable directory for non-Windows operating systems).<br />
+If a <b>gameid</b> is not specified, (P)Onscripter creates a savedata folder name from a hash of the game script.</description>
+      <notice>Since a <b>;mode</b> directive must be in the first line of a script, a <b>;gameid</b> directive must be in the <b>second</b> line - no exceptions! (by Mion)</notice>
+      <example type="O">
+        <comment>Sets the game folder name to "ToHeart-Extra".</comment>
+        <code>
+;gameid ToHeart-Extra</code>
+      </example>
+    </command>
+
     <command name="soundpressplgin" version="1.70" type="F" category="plugin_archive">
       <scr>N</scr>
       <simple-desc>load compressed audio functionality via plugin/dll (can just use DirectSound instead)</simple-desc>
@@ -5042,7 +5088,7 @@ Messages may be sent to the plugin via <b>layermessage</b>.</description>
         <arg type="STR">Message to send to the layer</arg>
       </format>
       <description>An arbitrary character string is sent to the specified layer.<br />
-This commad can be useful for achieving various effects within a layer.<br />
+This command can be useful for achieving various effects within a layer.<br />
 To use this command, a layer plugin should export a function with this declaration:<br />
 <indent />BOOL Message(char *message, int *returnint, char *returnstr);</description>
       <related cmd="setlayer" />
@@ -5693,6 +5739,1436 @@ textbtnwait %0</code>
         <code>ispage %0</code>
       </example>
       <related cmd="textgosub" />
+    </command>
+
+    <command name="getscreenshot" version="2.25" type="E" category="screenshot">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>grab a screenshot</simple-desc>
+      <format>
+        <format-string desc="getscreenshot (X-size), (Y-size)">getscreenshot NUM,NUM</format-string>
+        <arg type="NUM">Screenshot image width</arg>
+        <arg type="NUM">Screenshot image height</arg>
+      </format>
+      <description>Collects a screenshot.  This only stores the image in memory - you will need to call <b>savescreenshot</b> to save it to a file.</description>
+      <example>
+        <comment>Grabs a screenshot of size 160x120.</comment>
+        <code>getscreenshot 160,120</code>
+      </example>
+      <related cmd="savescreenshot" />
+      <related cmd="savescreenshot2" />
+      <related cmd="deletescreenshot" />
+    </command>
+
+    <command name="savescreenshot" version="2.25" type="E" category="screenshot">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>save a screenshot image</simple-desc>
+      <format>
+        <format-string desc="savescreenshot (filename)">savescreenshot STR</format-string>
+        <arg type="STR">Screenshot filename</arg>
+      </format>
+      <description>Saves a screenshot collected via <b>getscreenshot</b>.<br />
+This also deletes the screenshot image from memory; use <b>savescreenshot2</b> instead if you need to reuse the screenshot image.</description>
+      <example>
+        <comment>Saves the last collected screenshot as "thumb01.bmp".</comment>
+        <code>savescreenshot "thumb01.bmp"</code>
+      </example>
+      <related cmd="getscreenshot" />
+      <related cmd="savescreenshot2" />
+      <related cmd="deletescreenshot" />
+    </command>
+
+    <command name="savescreenshot2" version="2.30" type="E" category="screenshot">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>save a screenshot image</simple-desc>
+      <format>
+        <format-string desc="savescreenshot2 (filename)">savescreenshot2 STR</format-string>
+        <arg type="STR">Screenshot filename</arg>
+      </format>
+      <description>Saves a screenshot collected via <b>getscreenshot</b> as the given filename.<br />
+This does not delete the screenshot image from memory, so please use <b>deletescreenshot</b> to remove it from memory when finished.</description>
+      <related cmd="getscreenshot" />
+      <related cmd="savescreenshot" />
+      <related cmd="deletescreenshot" />
+    </command>
+
+    <command name="deletescreenshot" version="2.30" type="E" category="screenshot">
+      <scr>N</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>remove a screenshot image from memory</simple-desc>
+      <format>
+        <format-string>deletescreenshot</format-string>
+      </format>
+      <description>Removes a screenshot image from memory.<br />
+This command is meant to be used with <b>savescreenshot2</b>.</description>
+      <related cmd="getscreenshot" />
+      <related cmd="savescreenshot" />
+      <related cmd="savescreenshot2" />
+    </command>
+
+    <command name="btnarea" version="1.97" type="E" category="input">
+      <scr>N</scr>
+      <simple-desc>set an area for detecting mouse cursor entry</simple-desc>
+      <format>
+        <format-string desc="btnarea (area Y-axis)">btnarea NUM</format-string>
+        <arg type="NUM">Y-coordinate setting for the area</arg>
+      </format>
+      <description>Use this after a call to <b>btndef</b>. It will set a region of the screen that, during a <b>btnwait</b>, will return -4 upon mouseover.<br />
+If the given Y-value is positive, the mouseover area goes from top of screen to Y; if the Y-value is negative, the mouseover area goes from -Y to bottom of screen.</description>
+      <notice>If there's more than one <b>btnarea</b> command, it seems that only the last one will work. (by senzogawa)</notice>
+      <example>
+        <comment>Sets from Y=400 to the bottom of the screen as a mouseover area for btnwait.</comment>
+        <code>btndef clear
+btnarea -400</code>
+      </example>
+      <related cmd="btndef" />
+      <related cmd="btnwait2" />
+    </command>
+
+    <command name="btndown" version="1.97" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>set to return from button command while mouse button is pressed</simple-desc>
+      <format>
+        <format-string desc="btndown (flag)">btndown NUM</format-string>
+        <arg type="NUM">down-flag (1: return while mouse button pressed, 0: return after click &amp; release)</arg>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+If the given flag value for <b>btndown</b> is 1, then <b>btnwait</b> will return even while the mouse button is down (normally it only returns after the mouse button has been released after a click).</description>
+      <example>
+        <comment>Sets to return from btnwait while a mouse button is pressed.</comment>
+        <code>btndown 1</code>
+      </example>
+      <related cmd="btndef" />
+      <related cmd="btnwait" />
+      <related cmd="isdown" />
+    </command>
+
+    <command name="isdown" version="1.97" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>return whether or not the mouse button is pressed</simple-desc>
+      <format>
+        <format-string desc="isdown %(result-var)">isdown %VAR</format-string>
+        <arg type="VAR">result numeric variable (1: pressed, 0: not pressed)</arg>
+      </format>
+      <description>Sets the result variable based on whether the left mouse button is pressed down.<br />
+It returns 1 if pressed, 0 if not pressed.</description>
+      <example>
+        <comment>This prints a line of "０"s while the left mouse button is pressed, moving to the next line when the button is released.  It exits on right-click.</comment>
+        <code>*waitloop
+btnwait %0
+if %0=0 goto *onlclick
+end
+*onlclick
+isdown %1
+if %1=1 puttext "０/":goto *onlclick
+puttext ""
+goto *waitloop</code>
+      </example>
+      <related cmd="btndown" />
+    </command>
+
+    <command name="getmousepos" version="1.97" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>retrieve mouse cursor position</simple-desc>
+      <format>
+        <format-string desc="getmousepos %(X-pos), %(Y-pos)">getmousepos %VAR,%VAR</format-string>
+        <arg type="VAR">result numeric variable for mouse cursor X-coordinate</arg>
+        <arg type="VAR">result numeric variable for mouse cursor Y-coordinate</arg>
+      </format>
+      <description>Sets the given result variables to the current mouse cursor coordinates.<br />
+Unlike <b>clickpos</b>, this command can collect cursor position without first waiting for a click.</description>
+      <example>
+        <comment>Assign the current mouse cursor coordinates to %0 and %1.</comment>
+        <code>getmousepos %0,%1</code>
+      </example>
+      <related cmd="clickpos" />
+    </command>
+
+    <command name="spclclk" version="1.99" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>set the Spacebar to work the same as a left-click</simple-desc>
+      <format>
+        <format-string>spclclk</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+This will cause a wait command to give the same return value on a pressed Spacebar as for a left-click in the same situation.</description>
+      <related cmd="btndef" />
+      <related cmd="btnwait" />
+    </command>
+
+    <command name="usewheel" version="1.97" type="F" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect mouse wheel movement</simple-desc>
+      <format>
+        <format-string>usewheel</format-string>
+      </format>
+      <description>Sets <b>btnwait</b> commands to detect mouse wheel movement.<br />
+The wait command will return -2 on wheel up, -3 on wheel down.<br />
+Please note that, when <b>usewheel</b> is in effect, a button wait timeout (set by <b>btntime</b>) will return -5 instead of the usual -2.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+    </command>
+
+    <command name="useescspc" version="1.99" type="F" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Esc and Spacebar keypresses</simple-desc>
+      <format>
+        <format-string>useescspc</format-string>
+      </format>
+      <description>Sets <b>btnwait</b> commands to detect when the Esc key or Spacebar is pressed.<br />
+The wait command will return -10 on Esc, -11 on Space.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+    </command>
+
+    <command name="getcursor" version="2.00" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect left/right/up/down arrow keys</simple-desc>
+      <format>
+        <format-string>getcursor</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -40 on up-arrow keypress, -41 on right-arrow, -42 on down-arrow, and -43 on left-arrow.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="getenter" version="2.00" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Enter key</simple-desc>
+      <format>
+        <format-string>getenter</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -19 when the Enter key is pressed.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="gettab" version="2.00" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Tab key</simple-desc>
+      <format>
+        <format-string>gettab</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -20 when the Tab key is pressed.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="getfunction" version="2.00" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Function keys</simple-desc>
+      <format>
+        <format-string>getfunction</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -21 to -32 for presses of keys F1 to F12.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="getpage" version="2.20" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect PageUp/PageDown keys</simple-desc>
+      <format>
+        <format-string>getpage</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -12 on PageUp keypress and -13 on PageDown.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getinsert" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="getinsert" version="2.25" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Insert key</simple-desc>
+      <format>
+        <format-string>getinsert</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -50 when the Insert key is pressed.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getzxc" />
+    </command>
+
+    <command name="getzxc" version="2.25" type="E" category="input">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>have button commands detect Z/X/C keys</simple-desc>
+      <format>
+        <format-string>getzxc</format-string>
+      </format>
+      <description>Use this between <b>btndef</b> and <b>btnwait</b> commands.<br />
+The wait command will return -51 on Z keypress, -52 on X, and -53 on C.</description>
+      <related cmd="btndef" />
+      <related cmd="btntime" />
+      <related cmd="btntime2" />
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="spclclk" />
+      <related cmd="usewheel" />
+      <related cmd="useescspc" />
+      <related cmd="getcursor" />
+      <related cmd="getenter" />
+      <related cmd="gettab" />
+      <related cmd="getfunction" />
+      <related cmd="getpage" />
+      <related cmd="getinsert" />
+    </command>
+
+    <command name="()" id="parens" version="2.03" type="T" category="ruby">
+      <scr>N</scr><scr>O</scr><scr>E</scr>
+      <simple-desc>produce ruby text</simple-desc>
+      <format>
+        <format-string desc="'(main-text/ruby-text)'">'('STR'/'STR')'</format-string>
+        <arg type="STR">Main text to show ruby text above</arg>
+        <arg type="STR">Ruby text (displayed smaller, spread above main text)</arg>
+      </format>
+      <description>This text command produces ruby text, often used for furigana (Japanese phonetic characters that show the pronunciation of a kanji phrase).</description>
+      <example>
+        <comment>Sample script using ruby text</comment>
+        <code>*define
+rubyon
+game
+*start
+setwindow 10,10,20,20,24,24,0,12,0,1,1,#ffffff,0,0,639,479
+ルビ機能の(暫定仕様/ざんていしよう)です。@
+ｒｕｂｙｏｎ時、(文字/もじ)は(下詰/したづめ)で表示されます。@
+(縦/たて)の(字間/じかん)を、ルビが入る分とって下さい。@
+「(承/うけたまわ)」る、とか、「(論理的/ロジカル)」みたいに、文字幅をあわせようとする機能がついてます。
+ルビは折り返し改行されませんのでご注意ください。\
+end</code>
+      </example>
+      <example type="O">
+        <comment>Ruby text example with ONScripter (note the '(', '/', and ')' must be outside single-byte mode).</comment>
+        <code>*define
+rubyon
+game
+*start
+setwindow 10,10,20,20,24,24,0,12,0,1,1,#ffffff,0,0,639,479
+`This is a script that displays ruby text.@
+`You can use it with Japanese examples, `(文字/もじ)`, for example.@
+br
+`In ONScripter-EN you can even do things like `(文字/moji)` or `(`DREADFUL`/horrible)`, if not very well.@
+`Be sure to use vertical spacing or insert a blank line above rubied text, so that the ruby doesn't overlap earlier lines.\
+end</code>
+      </example>
+      <related cmd="rubyoff" />
+      <related cmd="rubyon" />
+    </command>
+
+    <command name="rubyoff" version="2.30" type="FE" category="ruby">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>turn off ruby mode</simple-desc>
+      <format>
+        <format-string>rubyoff</format-string>
+      </format>
+      <description>Turns off ruby mode, thereby disallowing ruby text.</description>
+      <related cmd="parens" />
+      <related cmd="rubyon" />
+    </command>
+
+    <command name="rubyon" version="2.30" type="FE" category="ruby">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>enter ruby mode</simple-desc>
+      <format>
+        <format-string desc="rubyon [(ruby-size-X), (ruby-size-Y), (ruby-font)]">rubyon [NUM,NUM[,STR]]</format-string>
+        <arg type="NUM">Ruby char width (default: half of main text width)</arg>
+        <arg type="NUM">Ruby char height (default: half of main text height)</arg>
+        <arg type="STR">Ruby text font name</arg>
+      </format>
+      <description>Turns on ruby mode.</description>
+      <example>
+        <comment>Enters ruby mode, using the set text font and half the set text sizes for displaying ruby text.</comment>
+        <code>rubyon</code>
+      </example>
+      <example>
+        <comment>Enters ruby mode, using the set text font, width 10, and height 8 for displaying ruby text.  (It is probably best not to use ruby text bigger than 13x13, for anti-aliasing purposes.)</comment>
+        <code>rubyon 10,8</code>
+      </example>
+      <example>
+        <comment>Enters ruby mode, using width 14, height 12, and Japanese font "MS Gothic" for displaying ruby text.</comment>
+        <code>rubyon 14,12,"ＭＳ ゴシック"</code>
+      </example>
+      <related cmd="parens" />
+      <related cmd="rubyoff" />
+    </command>
+
+    <command name="rubyon2" version="2.80" type="E" category="ruby">
+      <scr>N</scr>
+      <simple-desc>enter this ruby mode only when ruby text appears</simple-desc>
+      <format>
+        <format-string desc="rubyon2 (ruby-size-X), (ruby-size-Y)">rubyon2 NUM,NUM</format-string>
+        <arg type="NUM">Ruby char width</arg>
+        <arg type="NUM">Ruby char height</arg>
+      </format>
+      <description>This changes to ruby mode only when ruby appears in the current line. (Assumed to be used for quick-display modes; will also allow ruby text in <b>strsp</b> commands.)</description>
+      <notice>Please note that text may be shifted to make room for ruby text.</notice>
+      <notice>Still not clear to me what this command's documentation means. (by Mion)</notice>
+      <related cmd="rubyoff" />
+      <related cmd="rubyon" />
+      <related cmd="strsp" />
+    </command>
+
+    <command name="draw" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>send images created via demo draw commands to the screen</simple-desc>
+      <format>
+        <format-string>draw</format-string>
+      </format>
+      <description>Sends images created via demo draw commands (e.g. <b>drawbg</b>, <b>drawsp</b>) directly to the screen.<br />
+Otherwise, the results of the draw commands will not be displayed.</description>
+      <example>
+        <comment>Displays "bg.bmp" while rotating it counter-clockwise.</comment>
+        <code>*test
+saveoff
+;Demo image processing is faster with saveoff. Don't forget to reenable saveon when you're done!
+mov %0,0
+bg "bg.bmp",1
+*lp
+resettimer
+drawclear
+drawbg2 320,240,100,100,%0*2
+draw
+wait 5
+;ウェイトを多少いれないと、メッセージ処理が遅れがちになります。
+gettimer %1
+if %1&gt;=50 add %0,%1/50
+if %1&lt;50 waittimer 50:inc %0
+;掛かった処理時間に比例して変数を変化させます。
+goto *lp</code>
+      </example>
+    </command>
+
+    <command name="drawclear" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>paint the screen black</simple-desc>
+      <format>
+        <format-string>drawclear</format-string>
+      </format>
+      <description>Paints over the entire screen with the color black.<br />
+Must be followed by the <b>draw</b> command.</description>
+      <related cmd="draw" />
+    </command>
+
+    <command name="drawfill" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>paint over the screen with a specific color</simple-desc>
+      <format>
+        <format-string desc="drawfill (red-level), (green-level), (blue-level)">drawfill NUM,NUM,NUM</format-string>
+        <arg type="NUM">Red component of RGB color (0-255)</arg>
+        <arg type="NUM">Green component of RGB color (0-255)</arg>
+        <arg type="NUM">Blue component of RGB color (0-255)</arg>
+      </format>
+      <description>Paints over the entire screen with the given color, as provided with separate R,G,B levels.<br />
+Must be followed by the <b>draw</b> command.</description>
+      <example>
+        <comment>Paints over the screen with color #FF0080.</comment>
+        <code>drawfill 255,0,128</code>
+      </example>
+      <related cmd="draw" />
+    </command>
+
+    <command name="drawbg" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw the background to the screen</simple-desc>
+      <format>
+        <format-string>drawbg</format-string>
+      </format>
+      <description>Draws the background image to the screen.<br />
+Must be followed by the <b>draw</b> command.</description>
+      <notice>Note that neither the sprites, standing images, nor text window will be displayed.</notice>
+      <related cmd="draw" />
+    </command>
+
+    <command name="drawbg2" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw the background to the screen in a special manner</simple-desc>
+      <format>
+        <format-string desc="drawbg2 (BG-center-X-pos), (BG-center-Y-pos), (X-scale), (Y-scale), (rotation)">drawbg2 NUM,NUM,NUM,NUM,NUM</format-string>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Width scaling factor (%)</arg>
+        <arg type="NUM">Height scaling factor (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counter-clockwise)</arg>
+      </format>
+      <description>Draws the background image to the screen, using the given center coordinates, scaling factors, and rotation.<br />
+The previous image can still be seen in sections outside the rotated image rectangle; use <b>drawclear</b> beforehand if this is undesirable.<br />
+This command must be followed by the <b>draw</b> command.</description>
+      <notice>Note that neither the sprites, standing images, nor text window will be displayed.<br />
+Also note that this command uses center coordinates, not top-left coordinates like most other commands.</notice>
+      <example>
+        <comment>Draw the background image centered at (320,240), scaled times 2 in width, times 3 in height, and rotated 15 degrees counter-clockwise.</comment>
+        <code>drawbg2 320,240,200,300,15</code>
+      </example>
+      <related cmd="draw" />
+      <related cmd="drawclear" />
+    </command>
+
+    <command name="drawtext" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw the text window</simple-desc>
+      <format>
+        <format-string>drawtext</format-string>
+      </format>
+      <description>Draws the text window.<br />
+Sprites drawn earlier (e.g. with <b>drawsp</b>) will appear below the text, and sprites drawn after this command will appear above the text.<br />
+This command must be followed by the <b>draw</b> command.</description>
+      <related cmd="draw" />
+      <related cmd="drawsp" />
+    </command>
+
+    <command name="drawsp" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw a sprite</simple-desc>
+      <format>
+        <format-string desc="drawsp (sprite-num), (cell-num), (opacity), (top-left-X-pos), (top-left-Y-pos)">drawsp NUM,NUM,NUM,NUM,NUM</format-string>
+        <arg type="NUM">Sprite number</arg>
+        <arg type="NUM">Cell number (of sprite)</arg>
+        <arg type="NUM">Opacity (0-255)</arg>
+        <arg type="NUM">Top-left X-coordinate</arg>
+        <arg type="NUM">Top-left Y-coordinate</arg>
+      </format>
+      <description>Draws a sprite to the screen, using the given sprite number, cell number, opacity, and top-left coordinates.<br />
+The position and show/hide status of the actual sprite are not used, just the image itself.<br />
+The sprite will be drawn on top of previous drawn items, like from other <b>drawsp</b> or <b>drawtext</b>.<br />
+This command must be followed by the <b>draw</b> command.</description>
+      <example>
+        <comment>Draw Sprite 2, Cell 1 with top-left at (20,40) and half-transparency (128).</comment>
+        <code>drawsp 2,1,128,20,40</code>
+      </example>
+      <related cmd="draw" />
+      <related cmd="drawtext" />
+    </command>
+
+    <command name="drawsp2" version="2.31" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw a sprite (scaled and rotated)</simple-desc>
+      <format>
+        <format-string desc="drawsp2 (sprite-num), (cell-num), (opacity), (center-X-pos), (center-Y-pos), (X-scale), (Y-scale), (rotation)">drawsp2 NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM</format-string>
+        <arg type="NUM">Sprite number</arg>
+        <arg type="NUM">Cell number (of sprite)</arg>
+        <arg type="NUM">Opacity (0-255)</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Width scaling factor (%)</arg>
+        <arg type="NUM">Height scaling factor (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counter-clockwise)</arg>
+      </format>
+      <description>Draws a sprite to the screen, using the given sprite number, cell number, opacity, center coordinates, scaling factors, and rotation.<br />
+The position and show/hide status of the actual sprite are not used, just the image itself.<br />
+The sprite will be drawn on top of previous drawn items, like from other <b>drawsp</b> or <b>drawtext</b>.<br />
+This command must be followed by the <b>draw</b> command.</description>
+      <notice>Note that this command uses center coordinates, not top-left coordinates like most other commands.<br />
+In Nscr ver2.51 and earlier, this command had a bug when applying the opacity parameter to sprites with alpha values: 0 was treated as opaque, and 255 as transparent.<br />
+When running a script created using an earlier NScr version, the third parameter of <b>drawsp2</b> must be corrected to work properly with NScr ver2.52 and above.</notice>
+      <example>
+        <comment>Draw Sprite 2, Cell 1 at half-transparency (128), centered at (20,40), with 150% width, 60% height, and rotated 10 degrees clockwise.</comment>
+        <code>drawsp2 2,1,128,20,40,150,60,-10</code>
+      </example>
+      <related cmd="draw" />
+      <related cmd="drawsp" />
+    </command>
+
+    <command name="drawsp3" version="2.60" type="E" category="draw">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>draw a sprite with linear transformation</simple-desc>
+      <format>
+        <format-string desc="drawsp3 (sprite-num), (cell-num), (opacity), (top-left-X-pos), (top-right-Y-pos), (matrix-c11), (matrix-c12), (matrix-c21), (matrix-c22)">drawsp3 NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM,NUM</format-string>
+        <arg type="NUM">Sprite number</arg>
+        <arg type="NUM">Cell number (of sprite)</arg>
+        <arg type="NUM">Opacity (0-255)</arg>
+        <arg type="NUM">Top-left X-coordinate</arg>
+        <arg type="NUM">Top-left Y-coordinate</arg>
+        <arg type="NUM">Matrix top-left coefficient</arg>
+        <arg type="NUM">Matrix top-right coefficient</arg>
+        <arg type="NUM">Matrix bottom-left coefficient</arg>
+        <arg type="NUM">Matrix bottom-right coefficient</arg>
+      </format>
+      <description>Like <b>drawsp</b>, this command draws a sprite to the screen - but it first applies a linear transformation.<br />
+It uses the given sprite number, cell number, opacity, and linear transformation matrix.<br />
+The given matrix coefficients will be divided by 1000 before being applied, so that, for example, a parameter of 1600 yields a coefficient of 1.6.<br />
+This command must be followed by the <b>draw</b> command.</description>
+      <example>
+        <comment>Draw Sprite 2, Cell 1 at half-transparency (128), with top-left at (20,40), after applying the linear transformation [ 1.5, 0.3; 0.8, 1.2 ].</comment>
+        <code>drawsp3 2,1,128,20,40,1500,300,800,1200</code>
+      </example>
+      <related cmd="draw" />
+      <related cmd="drawsp" />
+    </command>
+
+    <command name="checkpage" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>check whether a backlog page is available</simple-desc>
+      <format>
+        <format-string desc="checkpage %(result-var), (backlog-page-num)">checkpage %VAR,NUM</format-string>
+        <arg type="VAR">Result numeric variable</arg>
+        <arg type="NUM">Previous page (number of pages back; 0 = current page)</arg>
+      </format>
+      <description>Checks whether the log string of a backlog page is available (to <b>getlog</b>, for example).<br />
+The second parameter tells the number of pages prior to the current one to check for.<br />
+The first parameter will be set to 1 if the page is available, 0 if not.<br />
+Please provide a value of 1 or more for the second parameter, noting that, since 0 is the current page, it would always be available.</description>
+      <example>
+        <comment>Set %5 based on whether or not the last page backlog is available.</comment>
+        <code>checkpage %5,1</code>
+      </example>
+      <related cmd="getlog" />
+    </command>
+
+    <command name="getlog" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>get the character string for a backlog page</simple-desc>
+      <format>
+        <format-string desc="getlog $(result-var), (backlog-page-num)">getlog $VAR,NUM</format-string>
+        <arg type="VAR">Result variable for backlog string</arg>
+        <arg type="NUM">Number of pages back</arg>
+      </format>
+      <description>Retrieves the character string of the given backlog page, including newlines and ruby text data.<br />
+The second parameter gives the backlog page number, the same as provided to <b>checkpage</b>.</description>
+      <example>
+        <comment>Sets $0 to the backlog string from %5 pages back</comment>
+        <code>getlog $0,%5</code>
+      </example>
+      <related cmd="checkpage" />
+      <related cmd="logsp" />
+    </command>
+
+    <command name="logsp" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>create a sprite from backlog text</simple-desc>
+      <format>
+        <format-string desc="logsp (sprite-num), (log-text), (top-left-X-pos), (top-left-Y-pos)[, (color)[,...]]">logsp NUM,STR,NUM,NUM[,COLOR[,COLOR[,...]]]</format-string>
+        <arg type="NUM">Sprite number</arg>
+        <arg type="NUM">Text string (provided by <b>getlog</b>)</arg>
+        <arg type="NUM">Top-left X-coordinate</arg>
+        <arg type="NUM">Top-left Y-coordinate</arg>
+        <arg type="COLOR">Log Text color (default: #FFFFFF)</arg>
+        <arg type="COLOR">Log Text sprite additional cell color (optional)</arg>
+      </format>
+      <description>Creates a sprite from backlog text retrieved via <b>getlog</b>, positioned at the given coordinates.<br />
+If no color is specified, the sprite text will be white (#FFFFFF).  If only one color is specified, then the sprite will have just one cell - provide additional colors if you need more cells, like for use as a button.</description>
+      <example>
+        <comment>Creates Sprite 8 from backlog text in $0, displayed at (60,90)</comment>
+        <code>logsp 8,$0,60,90</code>
+      </example>
+      <example>
+        <comment>Creates Sprite 8 from backlog text in $0, displayed at (60,90), with color #FFFF88</comment>
+        <code>logsp 8,$0,60,90,#FFFF88</code>
+      </example>
+      <example>
+        <comment>Creates Sprite 8 from backlog text in $0, displayed at (60,90), with Cell 0 of color #888888 and Cell 1 of color #FFFF88</comment>
+        <code>logsp 8,$0,60,90,#888888,#FFFF88</code>
+      </example>
+      <related cmd="getlog" />
+      <related cmd="logsp2" />
+    </command>
+
+    <command name="logsp2" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>create a sprite from backlog text with custom text size</simple-desc>
+      <format>
+        <format-string desc="logsp2 (sprite-num), (log-text), (top-left-X-pos), (top-left-Y-pos), (char-width), (char-height), (spacing-X), (spacing-Y)[, (color)[,...]]">logsp2 NUM,STR,NUM,NUM,NUM,NUM,NUM,NUM[,COLOR[,COLOR[,...]]]</format-string>
+        <arg type="NUM">Sprite number</arg>
+        <arg type="NUM">Text string (provided by <b>getlog</b>)</arg>
+        <arg type="NUM">Top-left X-coordinate</arg>
+        <arg type="NUM">Top-left Y-coordinate</arg>
+        <arg type="NUM">Text font width</arg>
+        <arg type="NUM">Text font height</arg>
+        <arg type="NUM">Text spacing X</arg>
+        <arg type="NUM">Text spacing Y</arg>
+        <arg type="COLOR">Log Text color (default: #FFFFFF)</arg>
+        <arg type="COLOR">Log Text sprite additional cell color (optional)</arg>
+      </format>
+      <description>Same as <b>logsp</b>, but allows specifying the text character size.</description>
+      <example>
+        <comment>Creates Sprite 2 from backlog text in $0 with fullwidth char size 17x17, no horizontal spacing, and 1 pixel vertical spacing, displayed at (150,20)</comment>
+        <code>logsp2 2,$0,150,20,17,17,0,1</code>
+      </example>
+      <related cmd="getlog" />
+      <related cmd="logsp" />
+    </command>
+
+    <command name="getlogtext" version="2.70" type="E" category="logcustomize">
+      <scr>N</scr>
+      <simple-desc>get the character string for a backlog page (for use with <b>strsp</b>)</simple-desc>
+      <format>
+        <format-string desc="getlogtext (string-var), (backlog-page-num)">getlogtext $VAR,NUM</format-string>
+        <arg type="VAR">Result variable for backlog string</arg>
+        <arg type="NUM">Number of pages back</arg>
+      </format>
+      <description>Works the same as <b>getlog</b>, but intended to be used in combination with <b>strsp</b>.<br />
+Later versions of NScr (and ONScripter) have a <b>strsp</b> command that can work with <b>getlog</b> text, so this command is basically unnecessary.</description>
+      <related cmd="getlog" />
+      <related cmd="strsp" />
+    </command>
+
+    <command name="gettaglog" version="2.72" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>get the last pretext tag of a backlog page</simple-desc>
+      <format>
+        <format-string desc="gettaglog (string-var), (backlog-page-num)">gettaglog $VAR,NUM</format-string>
+        <arg type="VAR">Result variable for backlog string</arg>
+        <arg type="NUM">Number of pages back</arg>
+      </format>
+      <description>Retrieves the last pretext tag of the given backlog page.<br />
+This can be convenient for custom backlogs in scripts that provide character name and voice file via tags.<br />
+<br />
+Returns the empty string if no pretext tag was available.<br />
+Note that this command does not split the tag and populate variables automatically, like <b>gettag</b> does; such functionality may be added later.</description>
+      <related cmd="gettag" />
+    </command>
+
+    <command name="texthide" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>hide text while leaving the text window visible</simple-desc>
+      <format>
+        <format-string>texthide</format-string>
+      </format>
+      <description>Hides the textwindow text, while leaving the window itself in place.<br />
+This is important for customized Log Mode display.</description>
+      <related cmd="textshow" />
+    </command>
+
+    <command name="textshow" version="2.49" type="E" category="logcustomize">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>reshow text hidden with <b>texthide</b></simple-desc>
+      <format>
+        <format-string>textshow</format-string>
+      </format>
+      <description>Redisplays text that had been hidden with <b>texthide</b>.</description>
+      <related cmd="texthide" />
+    </command>
+
+    <command name="pretextgosub" version="2.46" type="F" category="tag">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>set a routine to jump to just before text display</simple-desc>
+      <format>
+        <format-string desc="pretextgosub *(label)">pretextgosub LABEL</format-string>
+        <arg type="LABEL">Label to jump to before a text command</arg>
+      </format>
+      <description>Sets a subroutine to jump to immediately before a display text command.<br />
+If this command is used, a script can use a "tag", or data enclosed within square brackets <b>[]</b>, immediately before any line of text.<br />
+For example, in the following code, the <b>[太郎/0001.wav]</b> is a tag:<br />
+<indent /><b>[太郎/0001.wav]テスト用の文章です。</b></description>
+      <example>
+        <comment>Specifies that execution will jump to the *pretext_lb subroutine before each line of text</comment>
+        <code>pretextgosub *pretext_lb</code>
+      </example>
+      <example>
+        <comment>Example pretextgosub routine</comment>
+        <code>pretextgosub *pretext_lb
+
+*pretext_lb
+dwavestop 0
+gettag $0,$1
+;assuming first item is person name, second is voice dialog file
+if $0="" indent 0:goto *next_tag
+mov $2,$0
+add $2,"/"
+puttext $2
+;this displays "(Name)" right before the actual text
+;the "/" is to keep puttext from adding a newline
+indent 3
+;indents text for character dialog
+*next_tag
+if $1="" return
+dwave 0,$1
+;play the voice file
+return</code>
+      </example>
+      <related cmd="squarebrackets" />
+      <related cmd="gettag" />
+      <related cmd="indent" />
+    </command>
+
+    <command name="[]" id="squarebrackets" version="2.46" type="T" category="tag">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>specify tag data available to a <b>pretextgosub</b> routine</simple-desc>
+      <format>
+        <format-string desc="[tag-data]">'['STR']'</format-string>
+        <arg type="STR">Tag data elements, delimited by "/"</arg>
+      </format>
+      <description>Specifies tag data accessible to <b>gettag</b> within a <b>pretextgosub</b> routine, called immediately before the following text is displayed.</description>
+      <example>
+        <comment>This calls a pretextgosub routine before "「太郎の台詞」" is displayed, where <b>gettag</b> will extract "太郎" and "0001.wav".</comment>
+        <code>[太郎/0001.wav]「太郎の台詞」</code>
+      </example>
+      <example type="O">
+        <comment>This calls a pretextgosub routine before "Taro speaking." is displayed, where <b>gettag</b> will extract `Taro Mendo` and "0001.wav".</comment>
+        <code>[`Taro Mendo`/0001.wav]`Taro speaking.`</code>
+      </example>
+      <related cmd="gettag" />
+      <related cmd="pretextgosub" />
+    </command>
+
+    <command name="gettag" version="2.46" type="FE" category="tag">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>use within a <b>pretextgosub</b> routine to get tag data</simple-desc>
+      <format>
+        <format-string desc="gettag (var)[,...]">gettag $VAR|%VAR[,...]</format-string>
+        <arg type="VAR">Numeric or string variable to receive a tag data element</arg>
+      </format>
+      <description>This command is called from within a <b>pretextgosub</b> routine in order to extract data from a pretext tag.<br />
+It is not necessary to use <b>split</b> - the <b>gettag</b> command itself will do the job, delimiting on "/".<br />
+If there is no tag data for a variable (no tag was provided, or there are more parameters to <b>gettag</b> than elements in the tag), then the variable in question is given a null value: "" for strings, 0 for numerics.<br />
+<br />
+If a tag <b>[太郎/0001.wav]</b> is processed via the command <b>gettag $0,$1</b>, then as a result $0 will be "太郎" and $1 will be "0001.wav".<br />
+If <b>gettag $0,$1</b> is called but no tag was provided, then as a result both $0 and $1 will be "".<br />
+<br />
+Pretext tag processing is especially intended for handling names and voice files for dialog text.</description>
+      <example>
+        <comment>Processes a pretext tag, assigning the first two elements to $0 and $1.</comment>
+        <code>gettag $0,$1</code>
+      </example>
+      <related cmd="squarebrackets" />
+      <related cmd="pretextgosub" />
+    </command>
+
+    <command name="indent" version="2.46" type="E" category="tag">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>when linebreaking, indent the next line by the given amount</simple-desc>
+      <format>
+        <format-string desc="indent (num-indent-chars)">indent NUM</format-string>
+        <arg type="NUM">The number of (fullwidth) characters to indent a continuing line</arg>
+      </format>
+      <description>When continuing a line after a line break, it will indent by the amount specified via this command.<br />
+For example, a <b>pretextgosub</b> routine could use this command to add indenting for a line of dialog, but then set the indent level to 0 for regular text.</description>
+      <example>
+        <comment>Indent continuing lines by 2 (fullwidth) spaces</comment>
+        <code>indent 2</code>
+      </example>
+      <related cmd="pretextgosub" />
+    </command>
+
+    <command name="bmpcut" version="1.70" type="E" category="support">
+      <scr>N</scr>
+      <simple-desc>split a BMP file into multiple pieces while preserving the original</simple-desc>
+      <format>
+        <format-string desc="bmpcut (image-file), (num-horiz-pieces), (num-vert-pieces)">bmpcut STR,NUM,NUM</format-string>
+        <arg type="STR">Image filename</arg>
+        <arg type="NUM">Number of horizontal pieces (num. of horiz. cuts + 1)</arg>
+        <arg type="NUM">Number of vertical pieces (num. of vert. cuts + 1)</arg>
+      </format>
+      <description>Splits a BMP image file into multiple pieces (new files) while preserving the original file.  The piece files are named accordingly based on the original filename and the piece position.</description>
+      <example>
+        <comment>Cuts "test.bmp" into three pieces horizontally and in half vertically.</comment>
+        <code>bmpcut "test.bmp",3,2</code>
+      </example>
+    </command>
+
+    <command name="bw2a" version="1.70" type="FE" category="support">
+      <scr>N</scr>
+      <simple-desc>generate an NScripter alpha image</simple-desc>
+      <format>
+        <format-string desc="bw2a (image-filename-without-ext)">bw2a STR</format-string>
+        <arg type="STR">Resulting image filename (without .BMP extension)</arg>
+      </format>
+      <description>When given a string "(imagename)", this generates an NScripter-style alpha image from the two files "(imagename)_w.bmp" and "(imagename)_b.bmp".<br />
+This produces the same output as the <b>bw2aconv.exe</b> program included with the NScr SDK.</description>
+      <example>
+        <comment>Generates an NScr-style alpha image from "test_w.bmp" and "test_b.bmp".</comment>
+        <code>bw2a "test"</code>
+      </example>
+    </command>
+
+    <command name="bw2a3" version="2.49" type="FE" category="support">
+      <scr>N</scr>
+      <simple-desc>generate an NScripter alpha image</simple-desc>
+      <format>
+        <format-string desc="bw2a3 (image-filename)">bw2a3 STR</format-string>
+        <arg type="STR">Resulting image filename</arg>
+      </format>
+      <description>When given an image filename, this looks for image files by that name in folders "w" and "b", then generates an NScripter-style alpha image from them.<br />
+This works much the same as <b>bw2a</b> otherwise.</description>
+      <example>
+        <comment>Generates an NScr-style alpha image from "w\test.bmp" and "b\test.bmp".</comment>
+        <code>bw2a3 "test.bmp"</code>
+      </example>
+    </command>
+
+    <command name="chainbmp" version="2.20" type="FE" category="support">
+      <scr>N</scr>
+      <simple-desc>glue image files together</simple-desc>
+      <format>
+        <format-string desc="chainbmp (image-file)">chainbmp STR</format-string>
+        <arg type="STR">Image filename</arg>
+      </format>
+      <description>Attaches the given image onto the right-side edge of "out.bmp".<br />
+This creates "out.bmp" from the image if it does not already exist.</description>
+      <notice>The image should be the same height as "out.bmp".</notice>
+    </command>
+
+    <command name="createdummy" version="2.20" type="F" category="support">
+      <scr>N</scr>
+      <simple-desc>create a dummy image file</simple-desc>
+      <format>
+        <format-string desc="createdummy (dummy-file)">createdummy STR</format-string>
+        <arg type="STR">Dummy image filename</arg>
+      </format>
+      <description>Creates a dummy 640x480 image file of the given name.<br />
+The image will contain the file name in large black letters on a white background.</description>
+      <notice>The image will be 640x480 even if the screen size was changed, like with <b>mode800</b>. (by senzogawa)</notice>
+      <example>
+        <comment>Creates a dummy image file called "test.bmp".</comment>
+        <code>createdummy "test.bmp"</code>
+      </example>
+    </command>
+
+    <command name="debuglog" version="2.61" type="FE" category="support">
+      <scr>N</scr>
+      <simple-desc>log debug messages</simple-desc>
+      <format>
+        <format-string desc="debuglog (log-use-flag)">debuglog NUM</format-string>
+        <arg type="NUM">Debug logging flag (0: off, 1: on)</arg>
+      </format>
+      <description>If enabled, saves the message displayed in the debug window to "debuglog.txt".</description>
+    </command>
+
+    <command name="shell" version="1.70" type="E" category="execute">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>opens an external program, file, or URL via Explorer</simple-desc>
+      <format>
+        <format-string desc="shell (external-file/url)">shell STR</format-string>
+        <arg type="STR">Name of external file (or URL)</arg>
+      </format>
+      <description>Executes the given file via Explorer, using the ShellExecute API.<br />
+Note that shell execution is asynchronous with the game engine.<br />
+<br />
+ONScripter-EN supports the <b>shell</b> command in Windows builds, and has basic support in Mac and Linux for using it to open a URL in the default web browser.</description>
+    </command>
+
+    <command name="winexec" version="1.70" type="E" category="execute">
+      <scr>N</scr>
+      <simple-desc>execute an external program</simple-desc>
+      <format>
+        <format-string desc="winexec (executable-file), (sync-flag)">winexec STR,NUM</format-string>
+        <arg type="STR">Execution file name</arg>
+        <arg type="STR">Synchronization flag (0: asynchronous, !=0: synchronous)</arg>
+      </format>
+      <description>Executes the given external program using the WinExec API.<br />
+If NScr is in full-screen mode, the call to WinExec will use display option SW_MAXIMIZE, while in windowed mode, it will use SW_SHOWNORMAL.<br />
+For any sync-flag value other than 0, the external program will run synchronously with NScr.<br />
+The executed program will send WM_USER+10 to the NScripter window if it restarted, and WM_USER+20 if the program ended.<br />
+This command is used to launch a demo program in "Dolls Antique".</description>
+    </command>
+
+    <command name="csvopen" version="2.63" type="FE" category="csvfile">
+      <scr>N</scr>
+      <simple-desc>open a CSV file</simple-desc>
+      <format>
+        <format-string desc="csvopen (csv-file), (mode)">csvopen STR,STR</format-string>
+        <arg type="STR">CSV file name</arg>
+        <arg type="STR">file access mode</arg>
+      </format>
+      <description>Opens a given CSV file, using the given file access mode.<br />
+The possible modes are:<br />
+<indent /><b>"r"</b> - read mode; reads a standard CSV file<br />
+<indent /><b>"rc"</b> - read encrypted mode; reads a CSV file written in "wc" mode<br />
+<indent /><b>"w"</b> - write mode; write to a standard CSV file<br />
+<indent /><b>"wc"</b> - write encrypted mode; writes an encrypted CSV file<br />
+<br />
+Note that it's possible to open a CSV file inside an NSA archive, but only for reading.</description>
+      <notice>The CSV file will be closed automatically at a <b>reset</b> command. (by senzogawa)</notice>
+      <example>
+        <comment>Opens "test.csv" for reading.</comment>
+        <code>csvopen "test.csv","r"</code>
+      </example>
+      <example>
+        <comment>Opens "angou.csv" for encrypted writing.</comment>
+        <code>csvopen "angou.csv","wc"</code>
+      </example>
+      <related cmd="csvread" />
+      <related cmd="csvwrite" />
+      <related cmd="csveof" />
+      <related cmd="csvclose" />
+    </command>
+
+    <command name="csvread" version="2.63" type="FE" category="csvfile">
+      <scr>N</scr>
+      <simple-desc>read data from an open CSV file</simple-desc>
+      <format>
+        <format-string desc="csvread (data-var)[,...]">csvread %VAR|$VAR[,...]</format-string>
+        <arg type="VAR">numeric or string variable for extracted CSV item</arg>
+      </format>
+      <description>(For use in read mode only)<br />
+Reads data items from a CSV file, in the specified order.</description>
+      <example>
+        <comment>Reads 4 data items from a CSV file and assigns them to $0, $1, %0, and %2 (in that order).</comment>
+        <code>csvread $0,$1,%0,%2</code>
+      </example>
+      <related cmd="csvopen" />
+    </command>
+
+    <command name="csvwrite" version="2.63" type="FE" category="csvfile">
+      <scr>N</scr>
+      <simple-desc>write data to an open CSV file</simple-desc>
+      <format>
+        <format-string desc="csvwrite (data-value)[,...]">csvwrite STR|NUM[,...]</format-string>
+        <arg type="VAL">numeric or string value to write</arg>
+      </format>
+      <description>(For use in write mode only)<br />
+Writes data items to a CSV file, in the specified order.</description>
+      <example>
+        <comment>Writes 4 data items to a CSV file: 12, "test", %1, and $2.</comment>
+        <code>csvwrite 12,"test",%1,$2</code>
+      </example>
+      <related cmd="csvopen" />
+    </command>
+
+    <command name="csveof" version="2.63" type="FE" category="csvfile">
+      <scr>N</scr>
+      <simple-desc>detect whether or not at the end of an open CSV file</simple-desc>
+      <format>
+        <format-string desc="csveof %(result-var)">csveof %VAR</format-string>
+        <arg type="VAR">numeric result variable (0: not at end of file, 1: at end of file)</arg>
+      </format>
+      <description>(For use in read mode only)<br />
+Detects whether or not the end of a CSV file has been reached.<br />
+Returns 1 if so, 0 if not.</description>
+      <example>
+        <comment>Sets the value of %1 depending on the end status of the CSV file.</comment>
+        <code>csveof %1</code>
+      </example>
+      <related cmd="csvread" />
+    </command>
+
+    <command name="csvclose" version="2.63" type="FE" category="csvfile">
+      <scr>N</scr>
+      <simple-desc>close an open CSV file</simple-desc>
+      <format>
+        <format-string>csvclose</format-string>
+      </format>
+      <description>Closes an open CSV file.  Please use this command when finished with the file; otherwise it will remain open.</description>
+      <related cmd="csvopen" />
+    </command>
+
+    <command name="&lt;&gt;" id="anglebrackets" version="1.70" type="T" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>set a text button</simple-desc>
+      <format>
+        <format-string desc="&lt;[textbtn-num]btn-text&gt;">'&lt;'[NUM]STR'&gt;'</format-string>
+        <arg type="NUM">Textbutton number, must be nonnegative (optional)</arg>
+        <arg type="STR">Textbutton display text</arg>
+      </format>
+      <description>A character string enclosed by '&lt;' and '&gt;' is converted into a text button.</description>
+      <example type="O">
+        <comment>A textbutton numbered 3</comment>
+        <code>`This is a `&lt;3`textbutton`&gt;`.@</code>
+      </example>
+      <related cmd="linkcolor" />
+      <related cmd="textbtnstart" />
+      <related cmd="gettextbtnstr" />
+      <related cmd="erasetextbtn" />
+      <related cmd="textexbtn" />
+    </command>
+
+    <command name="linkcolor" version="2.65" type="FE" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>set textbutton colors</simple-desc>
+      <format>
+        <format-string desc="linkcolor #rrggbb,#rrggbb">linkcolor COLOR,COLOR</format-string>
+        <arg type="COLOR">Textbutton standard color</arg>
+        <arg type="COLOR">Textbutton mouseover color</arg>
+      </format>
+      <description>Sets the button colors for textbuttons.<br />
+The default colors are yellow and cyan.</description>
+      <example>
+        <comment>Sets the standard textbutton color to #FFFF88 and the mouseover color to #88FF88.</comment>
+        <code>linkcolor #FFFF88,#88FF88</code>
+      </example>
+      <related cmd="anglebrackets" />
+    </command>
+
+    <command name="textbtnstart" version="2.65" type="E" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>specify starting number for unnumbered textbuttons</simple-desc>
+      <format>
+        <format-string desc="textbtnstart (start-num)">textbtnstart NUM</format-string>
+        <arg type="NUM">Starting number for unnumbered textbuttons (default: 1)</arg>
+      </format>
+      <description>Specifies the starting number for unnumbered textbuttons; 1 is the default value.</description>
+      <example>
+        <comment>Sets the starting number for unnumbered textbuttons to 3.</comment>
+        <code>textbtnstart 3</code>
+      </example>
+      <related cmd="anglebrackets" />
+    </command>
+
+    <command name="gettextbtnstr" version="2.65" type="E" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>retrieve the text of a particular textbutton</simple-desc>
+      <format>
+        <format-string desc="gettextbtnstr (string-var), (textbtn-num)">gettextbtnstr $VAR,NUM</format-string>
+        <arg type="VAR">Result string variable</arg>
+        <arg type="NUM">Textbutton number</arg>
+      </format>
+      <description>Retrieves the text of the textbutton with the given number.<br />
+Returns a value of "" if the textbutton doesn't exist.</description>
+      <example>
+        <comment>Gets the text of textbutton number 12 and assigns it to $0.</comment>
+        <code>gettextbtnstr $0,12</code>
+      </example>
+      <related cmd="anglebrackets" />
+    </command>
+
+    <command name="erasetextbtn" version="2.65" type="E" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>clear a pressed textbutton</simple-desc>
+      <format>
+        <format-string>erasetextbtn</format-string>
+      </format>
+      <description>After exiting a button wait, if a textbutton was pressed, then this command will set the textbutton back to its original color.</description>
+      <related cmd="anglebrackets" />
+    </command>
+
+    <command name="textexbtn" version="2.65" type="E" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>create a complex textbutton (similar to <b>exbtn</b>)</simple-desc>
+      <format>
+        <format-string desc="textexbtn (textbtn-num), (control-str)">textexbtn NUM,STR</format-string>
+        <arg type="NUM">Textbutton number</arg>
+        <arg type="STR">Sprite control string</arg>
+      </format>
+      <description>Adds complex behavior to a textbutton, in much the same manner as <b>exbtn</b>.</description>
+      <related cmd="exbtn" />
+    </command>
+
+    <command name="textbtnoff" version="2.74" type="E" category="textbutton">
+      <scr>N</scr><scr>E</scr>
+      <simple-desc>inactivate textbuttons</simple-desc>
+      <format>
+        <format-string>textbtnoff</format-string>
+      </format>
+      <description>Textbuttons are usually active during a <b>btnwait</b>.<br />
+Using <b>textbtnoff</b> between <b>btndef</b> and <b>btnwait</b> commands will turn off text buttons during the wait.<br />
+This can be useful if, for example, textbuttons need to be off while other buttons are processed.</description>
+      <example>
+        <comment>Inactivates buttons and textbuttons before waiting for user input.</comment>
+        <code>btndef clear
+textbtnoff
+textbtnwait %0</code>
+      </example>
+      <related cmd="btnwait" />
+      <related cmd="btnwait2" />
+      <related cmd="textbtnwait" />
+    </command>
+
+    <command name="lsp2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>load an extended sprite into memory</simple-desc>
+      <format>
+        <format-string desc="lsp2 (ex_sprite-num), (image-str), (center X-pos), (center Y-pos), (X-scale), (Y-scale), (rotation)[, (opacity)]">lsp2 NUM,STR,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255)</arg>
+        <arg type="STR">Image filename or sprite processing string</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Scaling factor X (%)</arg>
+        <arg type="NUM">Scaling factor Y (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counterclockwise)</arg>
+        <arg type="NUM">Opacity value (optional, default 255)</arg>
+      </format>
+      <description>Loads an extended sprite.  Extended sprites add rotation about center and horizontal/vertical scaling to the existing sprite elements of position and opacity;  it's also possible to flip images with the use of negative scale factors.<br />
+Like <b>lsp</b>, <b>lsp2</b> loads images using the set display transparency mode.<br />
+The scaling factors are percentages; also note that providing a negative scaling factor will reverse the direction of the image.</description>
+      <notice>The <b>lsp2</b> command does not correspond to current animation</notice>
+      <example>
+        <comment>Loads and displays the image "test.bmp" without transparency, centered at (320,240), expanded to 200% vertically, and rotated 36 degrees counterclockwise.</comment>
+        <code>lsp2 0,":c;test.bmp",320,240,100,200,36</code>
+      </example>
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="lsph2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>load an extended sprite into memory (hidden)</simple-desc>
+      <format>
+        <format-string desc="lsph2 (ex_sprite-num), (image-str), (center X-pos), (center Y-pos), (X-scale), (Y-scale), (rotation)[, (opacity)]">lsph2 NUM,STR,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255)</arg>
+        <arg type="STR">Image filename or sprite processing string</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Scaling factor X (%)</arg>
+        <arg type="NUM">Scaling factor Y (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counterclockwise)</arg>
+        <arg type="NUM">Opacity value (optional, default 255)</arg>
+      </format>
+      <description>Loads an extended sprite in a hidden state.<br />
+The only difference between <b>lsp2</b> and <b>lsph2</b> is the beginning condition of the extended sprite - <b>lsp2</b> displays the sprite, while <b>lsph2</b> keeps the sprite hidden (which may later be displayed with <b>vsp2</b>).</description>
+      <related cmd="lsp2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="lsp2add" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr>
+      <simple-desc>load an extended sprite using additive composition</simple-desc>
+      <format>
+        <format-string desc="lsp2add (ex_sprite-num), (image-str), (center X-pos), (center Y-pos), (X-scale), (Y-scale), (rotation)[, (opacity)]">lsp2add NUM,STR,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255)</arg>
+        <arg type="STR">Image filename or sprite processing string</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Scaling factor X (%)</arg>
+        <arg type="NUM">Scaling factor Y (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counterclockwise)</arg>
+        <arg type="NUM">Opacity value (optional, default 255)</arg>
+      </format>
+      <description>Loads an extended sprite using additive composition.<br />
+<b>lsp2add</b> uses additive blending for display, but otherwise it works the same as <b>lsp2</b>.</description>
+      <example>
+        <comment>Loads the image "test.bmp" and displays without transparency using additive blending, centered at (320,240), expanded to 200% vertically, and rotated 36 degrees counterclockwise.</comment>
+        <code>lsp2add 0,":c;test.bmp",320,240,100,200,36</code>
+      </example>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="lsph2add" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr>
+      <simple-desc>load an extended sprite using additive composition (hidden)</simple-desc>
+      <format>
+        <format-string desc="lsph2add (ex_sprite-num), (image-str), (center X-pos), (center Y-pos), (X-scale), (Y-scale), (rotation)[, (opacity)]">lsph2add NUM,STR,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255)</arg>
+        <arg type="STR">Image filename or sprite processing string</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Scaling factor X (%)</arg>
+        <arg type="NUM">Scaling factor Y (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counterclockwise)</arg>
+        <arg type="NUM">Opacity value (optional, default 255)</arg>
+      </format>
+      <description>Loads an extended sprite using additive composition, in a hidden starting state.<br />
+The only difference between <b>lsp2add</b> and <b>lsph2add</b> is the beginning condition of the extended sprite - <b>lsp2add</b> displays the sprite, while <b>lsph2add</b> keeps the sprite hidden (which may later be displayed with <b>vsp2</b>).</description>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="csp2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>delete extended sprite from memory</simple-desc>
+      <format>
+        <format-string desc="csp2 (ex_sprite-num)">csp2 NUM</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255), or -1 for all</arg>
+      </format>
+      <description>Erases the given extended sprite.<br />
+If the given value is -1, it erases all extended sprites.</description>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="vsp2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>toggle display of a loaded extended sprite</simple-desc>
+      <format>
+        <format-string desc="vsp2 (ex_sprite-num), (visible:0=no/1=yes)">vsp2 NUM,NUM</format-string>
+        <arg type="NUM">Extended-sprite number</arg>
+        <arg type="NUM">visibility flag (0: not visible, 1: visible)</arg>
+      </format>
+      <description>Toggles display of specified extended sprite. 0 is off, 1 is on.</description>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="msp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="msp2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>change extended sprite position (relative)</simple-desc>
+      <format>
+        <format-string desc="msp2 (ex_sprite-num), (X-offset), (Y-offset), (X-scale-offset), (Y-scale-offset), (rotation-offset)[, (opacity-offset)]">msp2 NUM,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number</arg>
+        <arg type="NUM">X-coordinate offset</arg>
+        <arg type="NUM">Y-coordinate offset</arg>
+        <arg type="NUM">X scaling factor offset</arg>
+        <arg type="NUM">Y scaling factor offset</arg>
+        <arg type="NUM">Rotation angle offset</arg>
+        <arg type="NUM">Opacity offset</arg>
+      </format>
+      <description>Moves the extended sprite of the designated number, adjusting its position, scale, rotation and opacity relative to their current values.</description>
+      <example>
+        <comment>Takes Extended-Sprite 0 and moves it 10 pixels right and 20 pixels down, while decreasing its X-scale factor by 10, increasing its Y-scale factor by 10, and adding 5 degrees to its rotation.</comment>
+        <code>msp2 0,10,20,-10,10,5</code>
+      </example>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="amsp2" />
+    </command>
+
+    <command name="amsp2" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>change extended sprite position (absolute)</simple-desc>
+      <format>
+        <format-string desc="amsp2 (ex_sprite-num), (center X-pos), (center Y-pos), (X-scale), (Y-scale), (rotation)[, (opacity)]">amsp2 NUM,NUM,NUM,NUM,NUM,NUM[,NUM]</format-string>
+        <arg type="NUM">Extended-sprite number (0 - 255)</arg>
+        <arg type="NUM">Center X-coordinate</arg>
+        <arg type="NUM">Center Y-coordinate</arg>
+        <arg type="NUM">Scaling factor X (%)</arg>
+        <arg type="NUM">Scaling factor Y (%)</arg>
+        <arg type="NUM">Rotation angle (degrees, counterclockwise)</arg>
+        <arg type="NUM">Opacity value (optional, default 255)</arg>
+      </format>
+      <description>Similar to <b>msp2</b>, but this command changes the given extended sprite's position, scale, rotation, and opacity to absolute values instead of relatively.</description>
+      <example>
+        <comment>Takes Extended-Sprite 0 and moves its center to (10,20) while setting its scale factors to 10% and its rotation to 5 degrees.</comment>
+        <code>amsp2 0,10,20,10,10,5</code>
+      </example>
+      <related cmd="lsp2" />
+      <related cmd="lsph2" />
+      <related cmd="lsp2add" />
+      <related cmd="lsph2add" />
+      <related cmd="csp2" />
+      <related cmd="vsp2" />
+      <related cmd="msp2" />
+    </command>
+
+    <command name="allsp2hide" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>hide all extended sprites at the same time</simple-desc>
+      <format>
+        <format-string>allsp2hide</format-string>
+      </format>
+      <description>Hides all extended sprites at the same time.  (Works essentially the same as <b>allsphide</b>.)</description>
+      <related cmd="allsp2resume" />
+      <related cmd="allsphide" />
+      <related cmd="allspresume" />
+    </command>
+
+    <command name="allsp2resume" version="2.80" type="E" category="sprite_ex">
+      <scr>N</scr><scr>O</scr><scr>E</scr><scr>P</scr>
+      <simple-desc>redisplay extended sprites hidden with <b>allsp2hide</b></simple-desc>
+      <format>
+        <format-string>allsp2resume</format-string>
+      </format>
+      <description>Redisplays the extended sprites that were hidden by <b>allsp2hide</b>.  (Works essentially the same as <b>allspresume</b>.)</description>
+      <related cmd="allsp2hide" />
+      <related cmd="allsphide" />
+      <related cmd="allspresume" />
     </command>
 
   </functions>

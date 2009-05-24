@@ -172,11 +172,8 @@ void preparseIf(T *string,std::vector<T *> *vec){
 			minend=end;
 	}
 	if (minend==LONG_MAX){
-		v_stderr <<"ERROR: Could not make sense of if: ";
-		char *temp=copyString(string);
-		v_stderr <<temp<<std::endl;
-		delete[] temp;
-		return;//copyString("");
+		o_stderr <<"ERROR: Could not make sense of if: "<<string<<'\n';
+		return;
 	}
 	end=minend;
 	long start=end;

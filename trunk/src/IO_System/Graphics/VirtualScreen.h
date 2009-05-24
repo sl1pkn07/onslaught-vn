@@ -37,13 +37,13 @@
 	SDL_LockMutex(screenMutex);\
 	char LOCKSCREEN_buf[1000];\
 	sprintf(LOCKSCREEN_buf,"%u - %s (%d) from 0x%08X LOCK.\n",SDL_GetTicks(),__FILE__,__LINE__,SDL_ThreadID());\
-	v_stdlog <<LOCKSCREEN_buf;\
+	o_stderr <<LOCKSCREEN_buf;\
 }
 
 #define UNLOCKSCREEN {\
 	char UNLOCKSCREEN_buf[1000];\
 	sprintf(UNLOCKSCREEN_buf,"%u - %s (%d) from 0x%08X UNLOCK.\n",SDL_GetTicks(),__FILE__,__LINE__,SDL_ThreadID());\
-	v_stdlog <<UNLOCKSCREEN_buf;\
+	o_stderr <<UNLOCKSCREEN_buf;\
 	SDL_UnlockMutex(screenMutex);\
 }*/
 

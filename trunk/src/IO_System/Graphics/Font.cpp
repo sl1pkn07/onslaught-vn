@@ -39,7 +39,7 @@ NONS_Font::NONS_Font(const char *fontname,int size,int style){
 	this->font=TTF_OpenFont(fontname,size);
 	if(!font){
 		this->font=0;
-		v_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<std::endl;
+		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<'\n';
 		return;
 	}
 	TTF_SetFontStyle(this->font,style);
@@ -56,7 +56,7 @@ NONS_Font::NONS_Font(SDL_RWops *rwop,int size,int style){
 	this->font=TTF_OpenFontRW(rwop,1,size);
 	if(!font){
 		this->font=0;
-		v_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<std::endl;
+		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<'\n';
 		return;
 	}
 	TTF_SetFontStyle(this->font,style);

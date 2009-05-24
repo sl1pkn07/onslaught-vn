@@ -39,29 +39,35 @@
 #include "VirtualScreen.h"
 
 struct NONS_ScreenSpace{
-	//The stack of layers that will be blended into the final picture. Layers are blended starting with
-	//the highest indexes.
+	//The stack of layers that will be blended into the final picture. Layers are
+	//blended starting with the highest indexes.
 	std::vector<NONS_Layer *> layerStack;
-	//The bottom layer. This layer is not merged with the screen. Rather, it replaces its contents.
+	//The bottom layer. This layer is not merged with the screen. Rather, it
+	//replaces its contents.
 	NONS_Layer *Background;
 	NONS_Layer *leftChar;
 	NONS_Layer *rightChar;
 	NONS_Layer *centerChar;
-	//The SDL_Surface serving as the screen for all graphical output operations.
+	//The NONS_VirtualScreen serving as the screen for all graphical output
+	//operations.
 	NONS_VirtualScreen *screen;
 	SDL_Surface *screenBuffer;
-	//A StandardOutput serving as an abstraction layer for text output operations.
+	//A StandardOutput serving as an abstraction layer for text output
+	//operations.
 	NONS_StandardOutput *output;
 	NONS_GFXstore *gfx_store;
 	NONS_GFX *monochrome;
 	NONS_GFX *negative;
 	ulong sprite_priority;
 	NONS_Lookback *lookback;
+	NONS_Layer *cursor;
 	NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *store=0);
 	NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store);
 	~NONS_ScreenSpace();
 	ErrorCode BlendAll(ulong effect);
 	ErrorCode BlendAll(ulong effect,long timing,wchar_t *rule);
+	ErrorCode BlendNoCursor(ulong effect);
+	ErrorCode BlendNoCursor(ulong effect,long timing,wchar_t *rule);
 	ErrorCode BlendNoText(ulong effect);
 	ErrorCode BlendNoText(ulong effect,long timing,wchar_t *rule);
 	ErrorCode BlendOnlyBG(ulong effect);
@@ -71,8 +77,7 @@ struct NONS_ScreenSpace{
 	void showText();
 	void resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow);
 	void clear();
-	ErrorCode loadSprite(ulong n,wchar_t *string,wchar_t *name,long x,long y,uchar alpha,METHODS method,bool visibility);
-	/*std::vector<NONS_Glyph *> *NONSOut(wchar_t *str,float center=0);
-	std::vector<NONS_Glyph *> *NONSOut(std::vector<NONS_Glyph *> *str);*/
+	ErrorCode loadSprite(ulong n,const wchar_t *string,long x,long y,uchar alpha,bool visibility);
+	bool advanceAnimations(ulong msecs);
 };
 #endif

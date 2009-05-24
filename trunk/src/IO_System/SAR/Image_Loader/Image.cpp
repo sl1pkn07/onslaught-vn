@@ -34,272 +34,398 @@
 #include "../../../Globals.h"
 #include "../../../Functions.h"
 #include "../../../UTF.h"
+#include <sstream>
+
+void NONS_AnimationInfo::parse(const wchar_t *image_string){
+	if (!!this->mask_filename)
+		delete[] this->mask_filename;
+	if (!!this->filename)
+		delete[] this->filename;
+	if (!!this->string)
+		delete[] this->string;
+	this->string=copyWString(image_string);
+	this->valid=0;
+	this->method=COPY_TRANS;
+	this->animation_length=1;
+	this->animation_time_offset=0;
+	this->animation_direction=1;
+	if (*image_string==':'){
+		image_string++;
+		const wchar_t *semicolon=wcschr(image_string,';');
+		if (!semicolon)
+			return;
+		switch (wchar_t c=NONS_tolower(*image_string++)){
+			case 'l':
+			case 'r':
+			case 'c':
+			case 'a':
+			case 'm':
+				this->method=(TRANSPARENCY_METHODS)c;
+				break;
+			default:
+				return;
+		}
+		const wchar_t *p=wcspbrk(image_string,L"/;");
+		if (this->method==SEPARATE_MASK){
+			if (p==image_string)
+				return;
+			this->mask_filename=copyWString(image_string,p-image_string);
+			NONS_tolower(this->mask_filename);
+			toforwardslash(this->mask_filename);
+		}
+		image_string=p;
+		if (*image_string=='/'){
+			std::wstringstream stream;
+			while (*++image_string!=',' && *image_string!=';')
+				stream <<*image_string;
+			if (!(stream >>this->animation_length) || *image_string!=',')
+				return;
+			stream.clear();
+			if (image_string[1]!='<'){
+				while (*++image_string!=',' && *image_string!=';')
+					stream <<*image_string;
+				ulong delay;
+				if (!(stream >>delay))
+					return;
+				stream.clear();
+				if (this->frame_ends.size())
+					delay+=this->frame_ends.back();
+				this->frame_ends.push_back(delay);
+			}else{
+				image_string++;
+				const wchar_t *gt=wcschr(image_string,'>');
+				if (!gt || gt>semicolon)
+					return;
+				while (*image_string!='>' && *++image_string!='>'){
+					while (*image_string!=',' && *image_string!='>')
+						stream <<*image_string++;
+					ulong delay;
+					if (!(stream >>delay))
+						return;
+					stream.clear();
+					this->frame_ends.push_back(delay);
+				}
+				image_string++;
+			}
+			if (!this->frame_ends.size() || this->frame_ends.size()>1 && this->animation_length!=this->frame_ends.size())
+				return;
+			if (*image_string!=',')
+				return;
+			while (*++image_string!=',' && *image_string!=';')
+				stream <<*image_string;
+			ulong type;
+			if (!(stream >>type))
+				return;
+			this->loop_type=(LOOP_TYPE)type;
+			image_string++;
+		}
+	}
+	if (*image_string==';')
+		image_string++;
+	this->filename=copyWString(image_string);
+	NONS_tolower(this->filename);
+	toforwardslash(this->filename);
+	this->animation_time_offset=0;
+	this->valid=1;
+}
+
+NONS_AnimationInfo::NONS_AnimationInfo(){
+	this->mask_filename=0;
+	this->filename=0;
+	this->string=0;
+	this->parse(L"");
+}
+
+NONS_AnimationInfo::NONS_AnimationInfo(const wchar_t *image_string){
+	this->mask_filename=0;
+	this->filename=0;
+	this->string=0;
+	this->parse(image_string);
+}
+
+NONS_AnimationInfo::NONS_AnimationInfo(const NONS_AnimationInfo &b){
+	this->mask_filename=0;
+	this->filename=0;
+	this->string=0;
+	*this=b;
+}
+
+NONS_AnimationInfo &NONS_AnimationInfo::operator=(const NONS_AnimationInfo &b){
+	if (!!this->mask_filename)
+		delete[] this->mask_filename;
+	if (!!this->filename)
+		delete[] this->filename;
+	if (!!this->string)
+		delete[] this->string;
+	this->method=b.method;
+	this->mask_filename=copyWString(b.mask_filename);
+	this->animation_length=b.animation_length;
+	this->frame_ends=b.frame_ends;
+	this->loop_type=b.loop_type;
+	this->filename=copyWString(b.filename);
+	this->string=copyWString(b.string);
+	this->animation_time_offset=b.animation_time_offset;
+	this->valid=b.valid;
+	return *this;
+}
+
+NONS_AnimationInfo::~NONS_AnimationInfo(){
+	if (!!this->mask_filename)
+		delete[] this->mask_filename;
+	if (!!this->filename)
+		delete[] this->filename;
+	if (!!this->string)
+		delete[] this->string;
+}
+
+void NONS_AnimationInfo::resetAnimation(){
+	this->animation_time_offset=0;
+	this->animation_direction=1;
+}
+
+long NONS_AnimationInfo::advanceAnimation(ulong msecs){
+	if (!this->frame_ends.size() || !this->animation_direction || this->loop_type==NO_CYCLE)
+		return -1;
+	long original=this->getCurrentAnimationFrame();
+	if (this->animation_direction>0)
+		this->animation_time_offset+=msecs;
+	else if (msecs>this->animation_time_offset){
+		this->animation_time_offset=msecs-this->animation_time_offset+this->frame_ends.front();
+		this->animation_direction=1;
+	}else
+		this->animation_time_offset-=msecs;
+	long updated=this->getCurrentAnimationFrame();
+	if (updated==original)
+		return -1;
+	if (updated>=0)
+		return updated;
+	switch (this->loop_type){
+		case SAWTOOTH_WAVE_CYCLE:
+			this->animation_time_offset%=this->frame_ends.back();
+			break;
+		case SINGLE_CYCLE:
+			this->animation_direction=0;
+			return -1;
+		case TRIANGLE_WAVE_CYCLE:
+			if (this->frame_ends.size()==1)
+				this->animation_time_offset=
+					this->frame_ends.back()*(this->animation_length-1)-
+					(this->animation_time_offset-this->frame_ends.back()*this->animation_length)
+					-1;
+			else
+				this->animation_time_offset=
+					this->frame_ends.back()-
+					this->animation_time_offset-1-
+					(this->frame_ends.back()-this->frame_ends[this->frame_ends.size()-2]);
+			this->animation_direction=-1;
+			break;
+	}
+	return this->getCurrentAnimationFrame();
+}
+
+long NONS_AnimationInfo::getCurrentAnimationFrame(){
+	if (this->frame_ends.size()==1){
+		ulong frame=this->animation_time_offset/this->frame_ends.front();
+		if (frame>=this->animation_length)
+			return -1;
+		return frame;
+	}
+	for (size_t a=0;a<this->frame_ends.size();a++)
+		if (this->animation_time_offset<this->frame_ends[a])
+			return a;
+	return -1;
+}
 
 NONS_Image::NONS_Image(){
 	this->age=0;
 	this->image=0;
-	this->name=0;
 	this->refCount=0;
-	this->string=0;
+}
+
+NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary){
+	this->age=0;
+	this->image=0;
+	this->refCount=0;
+	if (!anim || !primary || anim->method==NONS_AnimationInfo::SEPARATE_MASK && !secondary)
+		return;
+	this->animation=*anim;
+	if (this->animation.method==NONS_AnimationInfo::PARALLEL_MASK)
+		this->image=SDL_CreateRGBSurface(
+			SDL_HWSURFACE|SDL_SRCALPHA,
+			primary->image->w/2,
+			primary->image->h,
+			32,rmask,gmask,bmask,amask);
+	else
+		this->image=SDL_CreateRGBSurface(
+			SDL_HWSURFACE|SDL_SRCALPHA,
+			primary->image->w,
+			primary->image->h,
+			32,rmask,gmask,bmask,amask);
+	uchar *pixels0=(uchar *)this->image->pixels;
+	uchar Roffset0=(this->image->format->Rshift)>>3;
+	uchar Goffset0=(this->image->format->Gshift)>>3;
+	uchar Boffset0=(this->image->format->Bshift)>>3;
+	uchar Aoffset0=(this->image->format->Ashift)>>3;
+	unsigned advance0=this->image->format->BytesPerPixel,
+		pitch0=this->image->pitch;
+	uchar *pixels1=(uchar *)primary->image->pixels;
+	uchar Roffset1=(primary->image->format->Rshift)>>3;
+	uchar Goffset1=(primary->image->format->Gshift)>>3;
+	uchar Boffset1=(primary->image->format->Bshift)>>3;
+	unsigned advance1=primary->image->format->BytesPerPixel,
+		pitch1=primary->image->pitch;
+	switch (this->animation.method){
+		case NONS_AnimationInfo::LEFT_UP:
+		case NONS_AnimationInfo::RIGHT_UP:
+			{
+				SDL_LockSurface(this->image);
+				SDL_LockSurface(primary->image);
+				uchar chromaR,chromaG,chromaB;
+				if (this->animation.method==NONS_AnimationInfo::LEFT_UP){
+					chromaR=pixels1[Roffset1];
+					chromaG=pixels1[Goffset1];
+					chromaB=pixels1[Boffset1];
+				}else{
+					uchar *top_right=pixels1+pitch1-advance1;
+					chromaR=top_right[Roffset1];
+					chromaG=top_right[Goffset1];
+					chromaB=top_right[Boffset1];
+				}
+				long w=this->image->w,h=this->image->h;
+				uchar *pos0=pixels0,
+					*pos1=pixels1;
+				for (long y=0;y<h;y++){
+					uchar *pos00=pos0,
+						*pos10=pos1;
+					for (long x=0;x<w;x++){
+						uchar r=pos1[Roffset1],
+							g=pos1[Goffset1],
+							b=pos1[Boffset1];
+						pos0[Roffset0]=r;
+						pos0[Goffset0]=g;
+						pos0[Boffset0]=b;
+						if (r==chromaR && g==chromaG && b==chromaB)
+							pos0[Aoffset0]=0;
+						else
+							pos0[Aoffset0]=255;
+						pos0+=advance0;
+						pos1+=advance1;
+					}
+					pos0=pos00+pitch0;
+					pos1=pos10+pitch1;
+				}
+				SDL_UnlockSurface(this->image);
+				SDL_UnlockSurface(primary->image);
+			}
+			break;
+		case NONS_AnimationInfo::COPY_TRANS:
+			manualBlit(primary->image,0,this->image,0);
+			break;
+		case NONS_AnimationInfo::SEPARATE_MASK:
+			{
+				SDL_LockSurface(this->image);
+				SDL_LockSurface(primary->image);
+				SDL_LockSurface(secondary->image);
+				uchar *pixels2=(uchar *)secondary->image->pixels;
+				uchar Roffset2=(secondary->image->format->Rshift)>>3;
+				uchar Goffset2=(secondary->image->format->Gshift)>>3;
+				uchar Boffset2=(secondary->image->format->Bshift)>>3;
+				unsigned advance2=secondary->image->format->BytesPerPixel,
+					pitch2=secondary->image->pitch;
+				long w=this->image->w,
+					h=this->image->h,
+					w2=secondary->image->w,
+					h2=secondary->image->h;
+				uchar *pos0=pixels0,
+					*pos1=pixels1,
+					*pos2=pixels2;
+				for (long y=0;y<h;y++){
+					if (y && !(y%h2))
+						pos2=pixels2;
+					uchar *pos00=pos0,
+						*pos10=pos1,
+						*pos20=pos2;
+					for (long x=0;x<w;x++){
+						if (x && !(x%w2))
+							pos2=pos20;
+						pos0[Roffset0]=pos1[Roffset1];
+						pos0[Goffset0]=pos1[Goffset1];
+						pos0[Boffset0]=pos1[Boffset1];
+						pos0[Aoffset0]=pos2[Boffset2]^0xFF;
+						pos0+=advance0;
+						pos1+=advance1;
+						pos2+=advance2;
+					}
+					pos0=pos00+pitch0;
+					pos1=pos10+pitch1;
+					pos2=pos20+pitch2;
+				}
+				SDL_UnlockSurface(this->image);
+				SDL_UnlockSurface(primary->image);
+				SDL_UnlockSurface(secondary->image);
+			}
+			break;
+		case NONS_AnimationInfo::PARALLEL_MASK:
+			{
+				SDL_LockSurface(this->image);
+				SDL_LockSurface(primary->image);
+				long w=this->image->w,
+					h=this->image->h,
+					w1=this->image->w/anim->animation_length,
+					h2=primary->image->h;
+				uchar *pos0=pixels0,
+					*pos_pri=pixels1,
+					*pos_mask=pixels1+w1*advance1;
+				for (long y=0;y<h;y++){
+					if (y && !(y%h2)){
+						pos_pri=pixels1;
+						pos_mask=pixels1+w1*advance1;
+					}
+					uchar *pos00=pos0,
+						*pos_pri0=pos_pri,
+						*pos_mask0=pos_mask;
+					for (long x=0;x<w;x++){
+						if (x && !(x%w1)){
+							pos_pri+=w1*advance1;
+							pos_mask+=w1*advance1;
+						}
+						pos0[Roffset0]=pos_pri[Roffset1];
+						pos0[Goffset0]=pos_pri[Goffset1];
+						pos0[Boffset0]=pos_pri[Boffset1];
+						pos0[Aoffset0]=pos_mask[Boffset1]^0xFF;
+						pos0+=advance0;
+						pos_pri+=advance1;
+						pos_mask+=advance1;
+					}
+					pos0=pos00+pitch0;
+					pos_pri=pos_pri0+pitch1;
+					pos_mask=pos_mask0+pitch1;
+				}
+				SDL_UnlockSurface(this->image);
+				SDL_UnlockSurface(primary->image);
+			}
+			break;
+	}
+	this->image->clip_rect.w/=this->animation.animation_length;
 }
 
 NONS_Image::~NONS_Image(){
-	if (this->image){
-		if (!this->refCount)
-			SDL_FreeSurface(this->image);
-		if (this->name)
-			delete[] this->name;
-		if (this->string)
-			delete[] this->string;
-	}
+	if (this->image && !this->refCount)
+		SDL_FreeSurface(this->image);
 }
 
-/*
-Note: For the classic method, only the red component is used. Not only this is
-useful for creating human-understandable images, but it also greatly
-simplifies the code.
-*/
-SDL_Surface *NONS_Image::LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method=CLASSIC_METHOD){
-	if (!name || !buffer || !bufferSize || !screen || this->image && this->refCount)
+SDL_Surface *NONS_Image::LoadImage(const wchar_t *string,const uchar *buffer,ulong bufferSize){
+	if (!string || !buffer || !bufferSize || this->image && this->refCount)
 		return 0;
 	if (this->image)
 		SDL_FreeSurface(this->image);
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
 	SDL_Surface *surface=IMG_Load_RW(rwops,1);
-	switch (method){
-		/*case NO_ALPHA:
-			{
-				int width=surface->clip_rect.w, height=surface->clip_rect.h;
-				int screenWidth=screen->screen->clip_rect.w, screenHeight=screen->screen->clip_rect.h;
-				int xoffset=(width<screenWidth)?0:(screenWidth-width)/2,
-					yoffset=(height<screenHeight)?0:(screenHeight-height)/2;
-				this->image=new NONS_Layer(&(screen->screen->clip_rect),0);
-				SDL_Rect rect={xoffset,yoffset,0,0};
-				SDL_BlitSurface(surface,0,this->image->data,&rect);
-			}
-			break;*/
-		case CLASSIC_METHOD:
-			{
-				int originalWidth=surface->clip_rect.w;
-				int width=originalWidth/2, height=surface->clip_rect.h;
-				int screenWidth=screen->w, screenHeight=screen->h;
-				SDL_Rect srcrect={
-					width<screenWidth?0:(width-screenWidth)/2,
-					height<screenHeight?0:(height-screenHeight)/2,
-					0,0
-				};
-				srcrect.w=width<screenWidth?width:screenWidth;
-				srcrect.h=height<screenHeight?height:screenHeight;
-				SDL_Rect dstrect={
-					(width>=screenWidth)?0:(screenWidth-width)/2,
-					(height>=screenHeight)?0:screenHeight-height,
-					0,0
-				};
-				SDL_Rect alpharect=srcrect;
-				alpharect.x+=width;
-				//alpharect.y+=height;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,screenWidth,screenHeight,32,rmask,gmask,bmask,amask);
-				SDL_BlitSurface(surface,&srcrect,this->image,&dstrect);
-				SDL_Surface *src=surface;
-				SDL_Surface *dst=this->image;
-				uchar Roffset0=(src->format->Rshift)>>3;
-				uchar Aoffset1=(dst->format->Ashift)>>3;
-				unsigned advance0=src->format->BytesPerPixel;
-				unsigned advance1=dst->format->BytesPerPixel;
-				uchar *pos0=(uchar *)src->pixels+alpharect.x*advance0;
-				uchar *pos1=(uchar *)dst->pixels+dstrect.x*advance1+dstrect.y*dst->pitch;
-				width=dstrect.w;
-				height=dstrect.h;
-				for (int y=0;y<height;y++){
-					uchar *temp0=pos0;
-					uchar *temp1=pos1;
-					for (int x=0;x<width;x++){
-						pos1[Aoffset1]=255-pos0[Roffset0];
-						pos0+=advance0;
-						pos1+=advance1;
-					}
-					pos0=temp0+src->pitch;
-					pos1=temp1+dst->pitch;
-				}
-			}
-			break;
-		case NO_ALPHA:
-		case ALPHA_METHOD:
-			{
-				int width=surface->clip_rect.w, height=surface->clip_rect.h;
-				int screenWidth=screen->w, screenHeight=screen->h;
-				int xoffset=(width<screenWidth)?0:(screenWidth-width)/2,
-					yoffset=(height<screenHeight)?0:screenHeight-height;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,screenWidth,screenHeight,32,rmask,gmask,bmask,amask);
-				SDL_Rect rect={xoffset,yoffset,0,0};
-				SDL_BlitSurface(surface,0,this->image,&rect);
-			}
-			break;
-		default:
-			name=0;
-			break;
-	}
+	this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,surface->w,surface->h,32,rmask,gmask,bmask,amask);
+	SDL_BlitSurface(surface,0,this->image,0);
 	SDL_FreeSurface(surface);
 	//SDL_FreeRW(rwops);
-	this->name=name?copyWString(name):0;
-	NONS_tolower(this->name);
-	toforwardslash(this->name);
-	this->refCount=0;
-	return this->image;
-}
-
-/*
-This function is probably very expensive, but since it's not inside a
-time-critical loop and the caller function will probably execute just a few
-times at the beginning of the program, it's okay.
-*/
-bool isChroma(uchar r,uchar g,uchar b){
-	uchar max=r>=g && r>=b?r:(g>=r && g>=b?g:b);
-	uchar min=r<=g && r<=b?r:(g<=r && g<=b?g:b);
-	float ret;
-	if (max==min)
-		ret=0;
-	else if (max==r){
-		ret=60*(float(g-b)/float(max-min));
-	}else if (max==g)
-		ret=60*(float(b-r)/float(max-min))+120;
-	else
-		ret=60*(float(r-g)/float(max-min))+240;
-	while (ret<0)
-		ret+=360;
-	while (ret>=360)
-		ret-=360;
-	return (ret==300.0);
-}
-
-/*
-Note: For the classic method, the chroma hue is 300° (magenta hue).
-*/
-SDL_Surface *NONS_Image::LoadCursorImage(uchar *buffer,ulong bufferSize,int method){
-	if (!buffer || !bufferSize)
-		return 0;
-	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
-	SDL_Surface *surface=IMG_Load_RW(rwops,0);
-	if (!surface){
-		SDL_FreeRW(rwops);
-		return 0;
-	}
-	switch (method){
-		case CLASSIC_METHOD:
-			{
-				int width=surface->clip_rect.w, height=surface->clip_rect.h;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,width,height,32,rmask,gmask,bmask,amask);
-				SDL_BlitSurface(surface,0,this->image,0);
-				SDL_Surface *src=this->image;
-				SDL_Surface *dst=this->image;
-				uchar Roffset0=(src->format->Rshift)>>3;
-				uchar Goffset0=(src->format->Gshift)>>3;
-				uchar Boffset0=(src->format->Bshift)>>3;
-				uchar Roffset1=(dst->format->Rshift)>>3;
-				uchar Goffset1=(dst->format->Gshift)>>3;
-				uchar Boffset1=(dst->format->Bshift)>>3;
-				uchar Aoffset1=(dst->format->Ashift)>>3;
-				unsigned advance0=src->format->BytesPerPixel;
-				unsigned advance1=dst->format->BytesPerPixel;
-				uchar *pos0=(uchar *)src->pixels;
-				uchar *pos1=(uchar *)dst->pixels;
-				for (int y=0;y<height;y++){
-					for (int x=0;x<width;x++){
-						uchar r=pos0[Roffset0];
-						uchar g=pos0[Goffset0];
-						uchar b=pos0[Boffset0];
-						if (isChroma(r,g,b))
-							pos1[Aoffset1]=0;
-						else{
-							pos1[Roffset1]=r;
-							pos1[Goffset1]=g;
-							pos1[Boffset1]=b;
-							pos1[Aoffset1]=0xFF;
-						}
-						pos0+=advance0;
-						pos1+=advance1;
-					}
-				}
-			}
-			break;
-		case NO_ALPHA:
-		case ALPHA_METHOD:
-			{
-				int width=surface->clip_rect.w, height=surface->clip_rect.h;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,width,height,32,rmask,gmask,bmask,amask);
-				SDL_BlitSurface(surface,0,this->image,0);
-			}
-			break;
-		default:
-			SDL_FreeSurface(surface);
-			return 0;
-	}
-	SDL_FreeSurface(surface);
-	SDL_FreeRW(rwops);
-	this->name=copyWString(name);
-	this->refCount=0;
-	return this->image;
-}
-
-SDL_Surface *NONS_Image::LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method){
-	if (!buffer || !bufferSize)
-		return 0;
-	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
-	SDL_Surface *surface;
-	surface=IMG_Load_RW(rwops,0);
-
-	switch (method){
-		case CLASSIC_METHOD:
-			{
-				int originalWidth=surface->clip_rect.w;
-				int width=originalWidth/2, height=surface->clip_rect.h;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,width,height,32,rmask,gmask,bmask,amask);
-				SDL_Rect srcrect={0,0,width,height};
-				SDL_BlitSurface(surface,&srcrect,this->image,&srcrect);
-				SDL_Surface *src=surface;
-				SDL_Surface *dst=this->image;
-				uchar Roffset0=(src->format->Rshift)>>3;
-				uchar Aoffset1=(dst->format->Ashift)>>3;
-				unsigned advance0=src->format->BytesPerPixel;
-				unsigned advance1=dst->format->BytesPerPixel;
-				uchar *pos0=(uchar *)src->pixels+width*advance0;
-				uchar *pos1=(uchar *)dst->pixels;
-				for (int y=0;y<height;y++){
-					//pos0+=width*advance0;
-					uchar *temp0=pos0;
-					uchar *temp1=pos1;
-					//uchar *temp1=pos1;
-					for (int x=0;x<width;x++){
-						pos1[Aoffset1]=255-pos0[Roffset0];
-						pos0+=advance0;
-						pos1+=advance1;
-					}
-					pos0=temp0+src->pitch;
-					pos1=temp1+dst->pitch;
-					//pos1=temp1+dst->pitch;
-				}
-			}
-			break;
-		case NO_ALPHA:
-		case ALPHA_METHOD:
-			{
-				int width=surface->clip_rect.w, height=surface->clip_rect.h;
-				this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,width,height,32,rmask,gmask,bmask,amask);
-				SDL_BlitSurface(surface,0,this->image,0);
-			}
-			break;
-		default:
-			SDL_FreeSurface(surface);
-			return 0;
-	}
-	SDL_FreeSurface(surface);
-	SDL_FreeRW(rwops);
-	this->name=copyWString(name);
-	toforwardslash(this->name);
-	NONS_tolower(this->name);
-	this->string=copyWString(string);
-	toforwardslash(this->string);
-	NONS_tolower(this->string);
+	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;
 }

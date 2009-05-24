@@ -37,8 +37,6 @@ struct NONS_CommandLineOptions{
 	ENCODINGS scriptencoding;
 	char *musicFormat;
 	char *musicDirectory;
-	METHODS layerMethod;
-	METHODS animMethod;
 	long cacheSize;
 	char *scriptPath;
 	ENCRYPTION scriptEncryption;

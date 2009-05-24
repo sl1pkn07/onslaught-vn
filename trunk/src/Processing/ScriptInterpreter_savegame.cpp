@@ -157,7 +157,12 @@ bool NONS_ScriptInterpreter::load(int file){
 	}else{
 		if (this->arrowCursor)
 			delete this->arrowCursor;
-		this->arrowCursor=new NONS_Cursor(save->arrowCursorString,save->arrowCursorX,save->arrowCursorY,save->arrowCursorAbs);
+		this->arrowCursor=new NONS_Cursor(
+			save->arrowCursorString,
+			save->arrowCursorX,
+			save->arrowCursorY,
+			save->arrowCursorAbs,
+			this->everything->screen);
 	}
 	if (!save->pageCursorString){
 		if (this->pageCursor)
@@ -166,11 +171,16 @@ bool NONS_ScriptInterpreter::load(int file){
 	}else{
 		if (this->pageCursor)
 			delete this->pageCursor;
-		this->pageCursor=new NONS_Cursor(save->pageCursorString,save->pageCursorX,save->pageCursorY,save->pageCursorAbs);
+		this->pageCursor=new NONS_Cursor(
+			save->pageCursorString,
+			save->pageCursorX,
+			save->pageCursorY,
+			save->pageCursorAbs,
+			this->everything->screen);
 	}
 	//graphics
 	if (save->background)
-		scr->Background->load(save->background,&scr->screen->virtualScreen->clip_rect,NO_ALPHA);
+		scr->Background->load(save->background);
 	else{
 		scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
 		scr->Background->Clear();
@@ -181,9 +191,9 @@ bool NONS_ScriptInterpreter::load(int file){
 		semicolon++;
 		wchar_t *name=copyWString(save->leftChar+semicolon);
 		if (!scr->leftChar)
-			scr->leftChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->leftChar=new NONS_Layer(name);
 		else
-			scr->leftChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->leftChar->load(name);
 		scr->leftChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/-4;
 		delete[] name;
 	}
@@ -193,9 +203,9 @@ bool NONS_ScriptInterpreter::load(int file){
 		semicolon++;
 		wchar_t *name=copyWString(save->rightChar+semicolon);
 		if (!scr->rightChar)
-			scr->rightChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->rightChar=new NONS_Layer(name);
 		else
-			scr->rightChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->rightChar->load(name);
 		delete[] name;
 		scr->rightChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
 	}
@@ -205,9 +215,9 @@ bool NONS_ScriptInterpreter::load(int file){
 		semicolon++;
 		wchar_t *name=copyWString(save->centerChar+semicolon);
 		if (!scr->centerChar)
-			scr->centerChar=new NONS_Layer(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->centerChar=new NONS_Layer(name);
 		else
-			scr->centerChar->load(name,&(scr->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+			scr->centerChar->load(name);
 		delete[] name;
 		scr->centerChar->clip_rect.x=0;
 	}
@@ -218,32 +228,8 @@ bool NONS_ScriptInterpreter::load(int file){
 	}
 	for (ulong a=0;a<save->sprites.size();a++){
 		NONS_SaveFile::Sprite *spr=save->sprites[a];
-		if (!spr){
-			continue;
-		}
-		wchar_t *str=spr->string;
-		METHODS method=NO_ALPHA;
-		if (*str==':'){
-			str++;
-			for (;*str && iswhitespace((char)*str);str++);
-			switch (*str){
-				case 'a':
-					method=CLASSIC_METHOD;
-					break;
-				case 'c':
-					method=NO_ALPHA;
-					break;
-				default:
-					break;
-			}
-			for (;*str && *str!='/' && *str!=';';str++);
-		}
-		if (*str=='/')
-			for (;*str && *str!=';';str++);
-		if (*str==';')
-			str++;
-		str=copyWString(str);
-		scr->loadSprite(a,spr->string,str,spr->x,spr->y,0xFF,method,spr->visibility);
+		if (spr)
+			scr->loadSprite(a,spr->string,spr->x,spr->y,0xFF,spr->visibility);
 	}
 	scr->sprite_priority=save->spritePriority;
 	if (save->monochrome){
@@ -281,7 +267,7 @@ bool NONS_ScriptInterpreter::load(int file){
 		SDL_FreeSurface(srf);
 	}
 	SDL_Delay(1500);
-	scr->BlendAll(10,1000,0);
+	scr->BlendNoCursor(10,1000,0);
 	scr->showText();
 	//audio
 	if (save->musicTrack>=0){
@@ -414,7 +400,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			if (i){
 				if (this->saveGame->background)
 					delete[] this->saveGame->background;
-				this->saveGame->background=copyWString(i->name);
+				this->saveGame->background=copyWString(i->animation.filename);
 			}else{
 				if (this->saveGame->background)
 					delete[] this->saveGame->background;
@@ -430,7 +416,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			if (this->saveGame->leftChar)
 				delete[] this->saveGame->leftChar;
 			if (i)
-				this->saveGame->leftChar=copyWString(i->name);
+				this->saveGame->leftChar=copyWString(i->animation.string);
 			else
 				this->saveGame->leftChar=0;
 		}
@@ -439,7 +425,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			if (this->saveGame->centerChar)
 				delete[] this->saveGame->centerChar;
 			if (i)
-				this->saveGame->centerChar=copyWString(i->name);
+				this->saveGame->centerChar=copyWString(i->animation.string);
 			else
 				this->saveGame->centerChar=0;
 		}
@@ -448,7 +434,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			if (this->saveGame->rightChar)
 				delete[] this->saveGame->rightChar;
 			if (i)
-				this->saveGame->rightChar=copyWString(i->name);
+				this->saveGame->rightChar=copyWString(i->animation.string);
 			else
 				this->saveGame->rightChar=0;
 		}
@@ -468,7 +454,7 @@ bool NONS_ScriptInterpreter::save(int file){
 					NONS_SaveFile::Sprite *spr=new NONS_SaveFile::Sprite();
 					NONS_Image *i=ImageLoader->elementFromSurface(c->data);
 					if (i){
-						spr->string=copyWString(i->string);
+						spr->string=copyWString(i->animation.string);
 						this->saveGame->sprites[a]=spr;
 						b=spr;
 					}else
@@ -480,7 +466,7 @@ bool NONS_ScriptInterpreter::save(int file){
 					b->visibility=c->visible;
 					b->alpha=c->alpha;
 				}else
-					v_stderr <<"NONS_ScriptInterpreter::save(): unresolvable inconsistent internal state."<<std::endl;
+					o_stderr <<"NONS_ScriptInterpreter::save(): unresolvable inconsistent internal state.\n";
 			}
 		}
 		this->saveGame->spritePriority=this->everything->screen->sprite_priority;

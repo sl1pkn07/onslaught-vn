@@ -52,8 +52,6 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->scriptencoding=DETECT_ENCODING;
 	this->musicFormat=0;
 	this->musicDirectory=0;
-	this->layerMethod=CLASSIC_METHOD;
-	this->animMethod=CLASSIC_METHOD;
 	this->cacheSize=0;
 	this->scriptPath=0;
 	this->scriptEncryption=NO_ENCRYPTION;

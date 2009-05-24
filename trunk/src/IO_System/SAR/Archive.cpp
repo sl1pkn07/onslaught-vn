@@ -45,7 +45,7 @@ NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
 	this->path=0;
 	if (!fileExists(filename)){
 		if (!failSilently)
-			v_stderr <<"Error. Could not open \""<<filename<<"\"."<<std::endl;
+			o_stderr <<"Error. Could not open \""<<filename<<"\".\n";
 		this->file=0;
 		this->path=0;
 		this->loaded=0;

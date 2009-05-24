@@ -139,13 +139,13 @@ void NONS_VariableStore::saveData(){
 				if (VARIABLE_HAS_NO_DATA(i->second))
 					continue;
 				if (i->first!=last){
-					intervals.push_back(last-intervals[intervals.size()-1]);
+					intervals.push_back(last-intervals.back());
 					last=i->first;
 					intervals.push_back(last++);
 				}else
 					last++;
 			}
-			intervals.push_back(last-intervals[intervals.size()-1]);
+			intervals.push_back(last-intervals.back());
 			writeDWord(intervals.size()/2,&buffer);
 			for (ulong a=0;a<intervals.size();){
 				if (intervals[a+1]>1){
@@ -187,10 +187,8 @@ ErrorCode NONS_VariableStore::evaluate(
 		case 0:
 			if (!!result && CLOptions.verbosity>=2){
 				if (invert_terms)
-					v_stdlog <<"notif";
-				v_stdlog <<"(";
-				v_stdlog.writeWideString(exp);
-				v_stdlog <<")=="<<*result<<std::endl;
+					o_stderr <<"notif";
+				o_stderr <<'('<<exp<<")=="<<*result<<'\n';
 			}
 			return NONS_NO_ERROR;
 		case 1:

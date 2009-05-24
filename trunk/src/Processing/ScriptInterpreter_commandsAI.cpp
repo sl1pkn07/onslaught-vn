@@ -490,7 +490,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 		_GETWCSVALUE(filename,0,);
 		NONS_tolower(filename);
 		scr->hideText();
-		scr->Background->load(filename,&(this->everything->screen->screen->virtualScreen->clip_rect),NO_ALPHA);
+		scr->Background->load(filename);
 	}
 	scr->leftChar->unload();
 	scr->rightChar->unload();
@@ -503,10 +503,10 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 		_GETINTVALUE(duration,2,)
 		if (line.parameters.size()>3)
 			_GETWCSVALUE(rule,3,)
-		ret=scr->BlendAll(number,duration,rule);
+		ret=scr->BlendNoCursor(number,duration,rule);
 		delete[] rule;
 	}else
-		ret=scr->BlendAll(number);
+		ret=scr->BlendNoCursor(number);
 	return ret;
 }
 
@@ -551,11 +551,11 @@ ErrorCode NONS_ScriptInterpreter::command_cl(NONS_ParsedLine &line){
 		_GETINTVALUE(duration,2,)
 		if (line.parameters.size()>3)
 			_GETWCSVALUE(rule,3,)
-		ret=this->everything->screen->BlendAll(number,duration,rule);
+		ret=this->everything->screen->BlendNoCursor(number,duration,rule);
 		if (rule)
 			delete[] rule;
 	}else
-		ret=this->everything->screen->BlendAll(number);
+		ret=this->everything->screen->BlendNoCursor(number);
 	return ret;
 }
 
@@ -732,7 +732,7 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_ParsedLine &line){
 		this->imageButtons=new NONS_ButtonLayer(tmpSrf,this->everything->screen);
 		return NONS_NO_ERROR;
 	}
-	SDL_Surface *img=ImageLoader->fetchSprite(filename,filename,NO_ALPHA);
+	SDL_Surface *img=ImageLoader->fetchSprite(filename);
 	if (!img){
 		delete[] filename;
 		return NONS_FILE_NOT_FOUND;
