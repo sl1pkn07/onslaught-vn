@@ -31,17 +31,10 @@
 #define NONS_STDOUT_CPP
 
 #include "StdOut.h"
-#include "../UTF.h"
 #include <ctime>
 
 NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
 	this->file=0;
-}
-
-void NONS_RedirectedOutput::writeWideString(const wchar_t *str){
-	char *temp=WChar_to_UTF8(str);
-	*this <<temp;
-	delete[] temp;
 }
 
 NONS_RedirectedOutput::~NONS_RedirectedOutput(){

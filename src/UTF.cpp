@@ -180,8 +180,8 @@ wchar_t *SJIS_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
 		res[b]=SJIS2Unicode[temp[b]];
 		if (res[b]=='?' && temp[b]!='?'){
 #ifndef BARE_FILE
-			v_stderr.getstream().width(4);
-			v_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<temp[b]<<" is unsupported. Replacing with '?'."<<std::endl;
+			o_stderr.getstream().width(4);
+			o_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<temp[b]<<" is unsupported. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported. Replacing with '?'.\n",temp[b]);
 #endif
@@ -209,8 +209,10 @@ wchar_t *SJIS_to_WChar(const char *string){
 		res[b]=SJIS2Unicode[temp[b]];
 		if (res[b]=='?' && temp[b]!='?'){
 #ifndef BARE_FILE
-			v_stderr.getstream().width(4);
-			v_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<temp[b]<<" is unsupported. Replacing with '?'."<<std::endl;
+			o_stderr <<"ENCODING ERROR: Character SJIS+";
+			o_stderr.getstream().width(4);
+			o_stderr.getstream() <<std::hex<<temp[b];
+			o_stderr <<" is unsupported. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported. Replacing with '?'.\n",temp[b]);
 #endif
@@ -256,8 +258,10 @@ char *WChar_to_ISO88591(const wchar_t *buffer,ulong initialSize,long *finalSize)
 	for (ulong a=0;a<initialSize;a++){
 		if (buffer[a]>0xFF){
 #ifndef BARE_FILE
-			v_stderr.getstream().width(4);
-			v_stderr <<"ENCODING ERROR: Character U+"<<std::hex<<buffer[a]<<" cannot be properly encoded in ISO-8859-1. Replacing with '?'."<<std::endl;
+			o_stderr <<"ENCODING ERROR: Character U+";
+			o_stderr.getstream().width(4);
+			o_stderr.getstream() <<std::hex<<buffer[a];
+			o_stderr <<" cannot be properly encoded in ISO-8859-1. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character U+%04x cannot be properly encoded in ISO-8859-1. Replacing with '?'.\n",buffer[a]);
 #endif
@@ -346,8 +350,10 @@ char *WChar_to_SJIS(const wchar_t *buffer,ulong initialSize,long *finalSize){
 		wchar_t character=Unicode2SJIS[temp[a]];
 		if (character=='?' && temp[a]!='?'){
 #ifndef BARE_FILE
-			v_stderr.getstream().width(4);
-			v_stderr <<"ENCODING ERROR: Character U+"<<std::hex<<temp[a]<<" is unsupported. Replacing with '?'."<<std::endl;
+			o_stderr <<"ENCODING ERROR: Character U+";
+			o_stderr.getstream().width(4);
+			o_stderr.getstream() <<std::hex<<temp[a];
+			o_stderr <<" is unsupported. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character U+%04x is unsupported. Replacing with '?'.\n",temp[a]);
 #endif

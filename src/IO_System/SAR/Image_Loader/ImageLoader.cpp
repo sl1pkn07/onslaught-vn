@@ -60,108 +60,100 @@ ulong NONS_ImageLoader::getCacheSize(){
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchImage(const wchar_t *name,SDL_Rect *screen,int method){
-	if (!name || !screen)
+SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string){
+	if (!string)
 		return 0;
-	wchar_t *tempname=copyWString(name);
-	NONS_tolower(tempname);
-	toforwardslash(tempname);
-	for (ulong a=0;a<this->imageCache.size();a++){
-		if (this->imageCache[a] && !wcscmp(this->imageCache[a]->name,name)){
-			this->imageCache[a]->age=0;
-			this->imageCache[a]->refCount++;
-			SDL_Surface *res=this->imageCache[a]->image;
-			for (a=0;a<this->imageCache.size();a++)
-				if (this->imageCache[a] && this->imageCache[a]->age)
-					this->imageCache[a]->age++;
-			delete[] tempname;
-			return res;
+	NONS_AnimationInfo anim(string);
+	if (!anim.valid)
+		return 0;
+	long bestFit=-1,maskMatch=-1,fileMatch=-1;
+	for (ulong a=0;a<this->imageCache.size() && bestFit<0;a++){
+		NONS_Image *el=this->imageCache[a];
+		if (el){
+			if (el->animation.method==NONS_AnimationInfo::COPY_TRANS){
+				if (!wcscmp(el->animation.filename,anim.filename))
+					fileMatch=a;
+				if (anim.method==NONS_AnimationInfo::SEPARATE_MASK && !wcscmp(el->animation.filename,anim.mask_filename))
+					maskMatch=a;
+			}
+			if (el->animation.method==anim.method){
+				if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
+					if (fileMatch==a && maskMatch==a)
+						bestFit=a;
+				}else if (fileMatch==a)
+					bestFit=a;
+			}
 		}
 	}
-	delete[] tempname;
-	long l;
-	char *buffer=(char *)this->archive->getFileBuffer(name,(ulong *)&l);
-	NONS_Image *img=new NONS_Image();
-	SDL_Surface *res=img->LoadLayerImage(name,(uchar *)buffer,l,screen,method);
-	delete[] buffer;
-	this->filelog.addString(name);
-	if (!res)
+	if (bestFit>=0){
+		NONS_Image *el=this->imageCache[bestFit];
+		el->age=0;
+		el->refCount++;
+		for (ulong a=0;a<this->imageCache.size();a++)
+			if (this->imageCache[a] && this->imageCache[a]->age)
+				this->imageCache[a]->age++;
+		return el->image;
+	}
+	NONS_Image *primary=0;
+	bool freePrimary=0;
+	if (fileMatch>=0){
+		primary=this->imageCache[fileMatch];
+		if (primary->age)
+			primary->age=1;
+	}else{
+		long l;
+		uchar *buffer=this->archive->getFileBuffer(anim.filename,(ulong *)&l);
+		if (!buffer)
+			return 0;
+		primary=new NONS_Image;
+		primary->LoadImage(anim.filename,buffer,l);
+		this->filelog.addString(anim.filename);
+		delete[] buffer;
+		freePrimary=1;
+	}
+	NONS_Image *secondary=0;
+	bool freeSecondary=0;
+	if (maskMatch>=0){
+		secondary=this->imageCache[maskMatch];
+		if (secondary->age)
+			secondary->age=1;
+	}else if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
+		long l;
+		uchar *buffer=this->archive->getFileBuffer(anim.mask_filename,(ulong *)&l);
+		if (!buffer)
+			return 0;
+		secondary=new NONS_Image;
+		secondary->LoadImage(anim.mask_filename,buffer,l);
+		this->filelog.addString(anim.mask_filename);
+		delete[] buffer;
+		freeSecondary=1;
+	}
+	NONS_Image *image=new NONS_Image(&anim,primary,secondary);
+	image->refCount++;
+	this->addElementToCache(image,1);	
+	if (freePrimary && !this->addElementToCache(primary,0))
+		delete primary;
+	if (freeSecondary && !this->addElementToCache(secondary,0))
+		delete secondary;
+	for (ulong a=0;a<this->imageCache.size();a++)
+		if (this->imageCache[a] && this->imageCache[a]->age)
+			this->imageCache[a]->age++;
+	return image->image;
+}
+
+bool NONS_ImageLoader::addElementToCache(NONS_Image *img,bool force){
+	if (!force && !this->maxCacheSize)
 		return 0;
-	ulong append;
-	for (append=0;append<this->imageCache.size() && !!this->imageCache[append];append++);
+	ulong append=0;
+	for (;append<this->imageCache.size() && !!this->imageCache[append];append++);
 	if (append>=this->imageCache.size())
 		this->imageCache.push_back(img);
 	else
 		this->imageCache[append]=img;
-	img->age=0;
-	img->refCount++;
-	for (ulong a=0;a<this->imageCache.size();a++)
-		if (this->imageCache[a] && this->imageCache[a]->age)
-			this->imageCache[a]->age++;
-	if (this->maxCacheSize>=0){
-		ulong cachesize=this->getCacheSize();
-		if (cachesize>ulong(this->maxCacheSize))
-			this->freeOldest(cachesize-this->maxCacheSize);
-	}
-	return res;
-}
-
-SDL_Surface *NONS_ImageLoader::fetchCursor(const wchar_t *name,int method){
-	if (!name)
-		return 0;
-	long l;
-	char *buffer=(char *)this->archive->getFileBuffer(name,(ulong *)&l);
-	NONS_Image *img=new NONS_Image();
-	SDL_Surface *res=img->LoadCursorImage((uchar *)buffer,l,method);
-	delete[] buffer;
-	this->filelog.addString(name);
-	return res;
-}
-
-SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,const wchar_t *name,int method){
-	if (!name)
-		return 0;
-	wchar_t *tempname=copyWString(name);
-	NONS_tolower(tempname);
-	toforwardslash(tempname);
-	for (ulong a=0;a<this->imageCache.size();a++){
-		if (this->imageCache[a] && !wcscmp(this->imageCache[a]->name,tempname)){
-			this->imageCache[a]->age=0;
-			this->imageCache[a]->refCount++;
-			SDL_Surface *res=this->imageCache[a]->image;
-			for (a=0;a<this->imageCache.size();a++)
-				if (this->imageCache[a] && this->imageCache[a]->age)
-					this->imageCache[a]->age++;
-			delete[] tempname;
-			return res;
-		}
-	}
-	delete[] tempname;
-	long l;
-	char *buffer=(char *)this->archive->getFileBuffer(name,(ulong *)&l);
-	NONS_Image *img=new NONS_Image();
-	SDL_Surface *res=img->LoadSpriteImage(string,name,(uchar *)buffer,l,method);
-	delete[] buffer;
-	this->filelog.addString(name);
-	if (!res)
-		return 0;
-	ulong append;
-	for (append=0;append<this->imageCache.size() && !!this->imageCache[append];append++);
-	if (append>=this->imageCache.size())
-		this->imageCache.push_back(img);
-	else
-		this->imageCache[append]=img;
-	img->age=0;
-	this->imageCache[append]->refCount++;
-	for (ulong a=0;a<this->imageCache.size();a++)
-		if (this->imageCache[a] && this->imageCache[a]->age)
-			this->imageCache[a]->age++;
-	if (this->maxCacheSize>=0){
-		ulong cachesize=this->getCacheSize();
-		if (cachesize>ulong(this->maxCacheSize))
-			this->freeOldest(cachesize-this->maxCacheSize);
-	}
-	return res;
+	ulong cachesize=this->getCacheSize();
+	if (this->maxCacheSize>0 && cachesize>this->maxCacheSize)
+		this->freeOldest(cachesize-this->maxCacheSize);
+	return 1;
 }
 
 bool NONS_ImageLoader::unfetchImage(SDL_Surface *which){

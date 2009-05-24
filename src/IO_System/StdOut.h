@@ -34,6 +34,7 @@
 #include "../CommandLineOptions.h"
 #include <fstream>
 #include <SDL/SDL.h>
+#include "../UTF.h"
 
 extern NONS_CommandLineOptions CLOptions;
 
@@ -42,13 +43,19 @@ struct NONS_RedirectedOutput{
 	std::ostream &cout;
 	NONS_RedirectedOutput(std::ostream &a);
 	~NONS_RedirectedOutput();
-	template <typename T> std::ostream &operator<<(T &a){
+	template <typename T> NONS_RedirectedOutput &operator<<(const T &a){
 		if (CLOptions.override_stdout && this->file)
-			return *(this->file) <<a;
+			*this->file <<a;
 		else
-			return this->cout <<a;
+			this->cout <<a;
+		return *this;
 	}
-	void writeWideString(const wchar_t *str);
+	template <> NONS_RedirectedOutput &operator<< <wchar_t *>(wchar_t * const &a){
+		char *temp=WChar_to_UTF8(a);
+		*this <<temp;
+		delete[] temp;
+		return *this;
+	}
 	void redirect();
 	std::ostream &getstream();
 };

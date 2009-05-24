@@ -204,6 +204,11 @@ string:
 	}|
 	string_dereference {
 		$$=$1;
+	}|
+	string '+' string {
+		$$=new NONS_VariableMember(addStrings($1->getWcsCopy(),$3->getWcsCopy()),1);
+		freeVM($1);
+		freeVM($3);
 	};
 
 integer_array:
@@ -237,30 +242,6 @@ integer_array:
 			array_decl->push_back(a);
 		}
 	}|
-	/*'?' INTEGER {
-		long a=$2->getInt();
-		freeVM($2);
-		$$=store->getArray(a);
-		if (!!array_decl && !$$){
-			if (!array_decl->size())
-				array_decl->push_back(1);
-			else
-				(*array_decl)[0]++;
-			array_decl->push_back(a);
-		}
-	}|
-	'?' integer_dereference {
-		long a=$2->getInt();
-		freeVM($2);
-		$$=store->getArray(a);
-		if (!!array_decl && !$$){
-			if (!array_decl->size())
-				array_decl->push_back(1);
-			else
-				(*array_decl)[0]++;
-			array_decl->push_back(a);
-		}
-	}|*/
 	'?' '(' expr ')' {
 		long a=$3->getInt();
 		freeVM($3);
@@ -462,7 +443,7 @@ boolean_operation:
 		freeVM($2);
 	}|
 	LCHK string {
-		$$=new NONS_VariableMember(labellog.check($2->getWcs()));/**/
+		$$=new NONS_VariableMember(labellog.check($2->getWcs()));
 		$$->temporary=1;
 		freeVM($2);
 	};

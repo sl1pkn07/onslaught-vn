@@ -95,10 +95,10 @@ bool NONS_Lookback::setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wc
 	if (first>=0)
 		downoff+=first+1;
 
-	SDL_Surface *temp0=ImageLoader->fetchCursor(upon,CLOptions.animMethod),
-		*temp1=ImageLoader->fetchCursor(upoff,CLOptions.animMethod),
-		*temp2=ImageLoader->fetchCursor(downon,CLOptions.animMethod),
-		*temp3=ImageLoader->fetchCursor(downoff,CLOptions.animMethod);
+	SDL_Surface *temp0=ImageLoader->fetchSprite(upon),
+		*temp1=ImageLoader->fetchSprite(upoff),
+		*temp2=ImageLoader->fetchSprite(downon),
+		*temp3=ImageLoader->fetchSprite(downoff);
 	if (!temp0 || !temp1 || !temp2 || !temp3){
 		if (!!temp0)
 			SDL_FreeSurface(temp0);

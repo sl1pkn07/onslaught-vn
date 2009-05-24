@@ -60,7 +60,7 @@ ErrorCode NONS_Everything::init_screen(){
 		this->archive->getFileBuffer("default.ttf",&l)
 		uchar *buffer=readfile;
 		if (!buffer){
-			v_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"
+			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"
 				"case-sensitive, make sure the file name is capitalized correctly."<<std::endl;
 			exit(0);
 		}
@@ -73,7 +73,7 @@ ErrorCode NONS_Everything::init_screen(){
 	this->screen=new NONS_ScreenSpace(20,font,gfx);
 	this->screen->output->shadeLayer->Clear();
 	this->screen->Background->Clear();
-	this->screen->BlendAll(1);
+	this->screen->BlendNoCursor(1);
 	std::cout <<"Screen initialized."<<std::endl;
 	return NONS_NO_ERROR;
 }

@@ -40,8 +40,8 @@
 		ulong INIT_NONS_FONT_l;\
 		uchar *INIT_NONS_FONT_buffer=(archive)->getFileBuffer("default.ttf",&INIT_NONS_FONT_l);\
 		if (!INIT_NONS_FONT_buffer){\
-			v_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"\
-				"case-sensitive, make sure the file name is capitalized correctly."<<std::endl;\
+			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"\
+				"case-sensitive, make sure the file name is capitalized correctly.\n";\
 			exit(0);\
 		}\
 		SDL_RWops *INIT_NONS_FONT_rw=SDL_RWFromMem(INIT_NONS_FONT_buffer,INIT_NONS_FONT_l);\

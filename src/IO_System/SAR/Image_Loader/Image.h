@@ -33,24 +33,66 @@
 #include "../../../Common.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
+#include <vector>
+
+struct NONS_AnimationInfo{	
+	enum TRANSPARENCY_METHODS{
+		LEFT_UP='l',
+		RIGHT_UP='r',
+		COPY_TRANS='c',
+		PARALLEL_MASK='a',
+		SEPARATE_MASK='m'
+	} method;
+	wchar_t *mask_filename;
+	ulong animation_length;
+	/*
+	If size==1, the first element contains how long each frame will stay on.
+	Otherwise, element i contains how long will frame i stay on, plus the
+	value of element i-1 if i>0.
+	For example, for the string "<10,20,30>", the resulting contents will be
+	{10,30,60}
+	*/
+	std::vector<ulong> frame_ends;
+	enum LOOP_TYPE{
+		SAWTOOTH_WAVE_CYCLE=0,
+		SINGLE_CYCLE,
+		TRIANGLE_WAVE_CYCLE,
+		NO_CYCLE
+	} loop_type;
+	wchar_t *filename;
+	wchar_t *string;
+	ulong animation_time_offset;
+	int animation_direction;
+	bool valid;
+	NONS_AnimationInfo();
+	NONS_AnimationInfo(const wchar_t *image_string);
+	NONS_AnimationInfo(const NONS_AnimationInfo &b);
+	NONS_AnimationInfo &operator=(const NONS_AnimationInfo &b);
+	~NONS_AnimationInfo();
+	void parse(const wchar_t *image_string);
+	void resetAnimation();
+	long advanceAnimation(ulong msecs);
+	long getCurrentAnimationFrame();
+};
 
 struct NONS_Image{
 	SDL_Surface *image;
-	wchar_t *name;
-	wchar_t *string;
+	NONS_AnimationInfo animation;
 	/*
 	How many fetches have passed since this image was last fetched. Zero if it's
 	curretly being used. This variable is used to limit the size of the cache.
 	All images are loaded as 32-bit surfaces, so for a 640x480 surface, each
-	cache element uses ~1.17 MiB, not counting the name. Therefore, limiting the
+	cache element uses ~1.2 MiB, not counting the name. Therefore, limiting the
 	size of the cache can be important on certain systems.
 	*/
 	ulong age;
 	ulong refCount;
 	NONS_Image();
+	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary);
 	~NONS_Image();
-	SDL_Surface *LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method);
-	SDL_Surface *LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method);
-	SDL_Surface *LoadCursorImage(uchar *buffer,ulong bufferSize,int method);
+	//SDL_Surface *LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method);
+	SDL_Surface *LoadImage(const wchar_t *string,const uchar *buffer,ulong bufferSize);
+	//SDL_Surface *LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method);
+	//SDL_Surface *LoadCursorImage(uchar *buffer,ulong bufferSize,int method);
 };
 #endif

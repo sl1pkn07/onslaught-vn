@@ -155,7 +155,7 @@ ErrorCode NONS_Audio::playMusic(const char *filename,char *buffer,long l,long ti
 			this->music->volume(0);
 		return this->playMusic((char *)0,times);
 	}
-	v_stderr <<"int NONS_Audio::playMusic(char *,char *,long): Internal error."<<std::endl;
+	o_stderr <<"int NONS_Audio::playMusic(char *,char *,long): Internal error.\n";
 	return NONS_INTERNAL_INVALID_PARAMETER;
 }
 

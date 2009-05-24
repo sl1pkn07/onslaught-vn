@@ -790,7 +790,7 @@ bool NONS_SaveFile::save(char *filename){
 			intervals.push_back(last++);
 			for (ulong a=last;a<this->sprites.size();a++){
 				if (!this->sprites[a]){
-					intervals.push_back(last-intervals[intervals.size()-1]);
+					intervals.push_back(last-intervals.back());
 					for (a++;a<this->sprites.size() && !this->sprites[a];a++);
 					if (a>=this->sprites.size())
 						break;
@@ -800,7 +800,7 @@ bool NONS_SaveFile::save(char *filename){
 					last++;
 			}
 			if (intervals.size()%2)
-				intervals.push_back(last-intervals[intervals.size()-1]);
+				intervals.push_back(last-intervals.back());
 			writeDWord(intervals.size()/2,&buffer);
 			for (ulong a=0;a<intervals.size();){
 				long start=intervals[a++];

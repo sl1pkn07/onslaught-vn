@@ -130,15 +130,15 @@ void NONS_ScriptInterpreter::init(){
 	this->defaulty=480;
 	this->defaultfs=18;
 	this->legacy_set_window=1;
-	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0);
+	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->everything->screen);
 	if (!this->arrowCursor->data){
 		delete this->arrowCursor;
-		this->arrowCursor=new NONS_Cursor();
+		this->arrowCursor=new NONS_Cursor(this->everything->screen);
 	}
-	this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0);
+	this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0,this->everything->screen);
 	if (!this->pageCursor->data){
 		delete this->pageCursor;
-		this->pageCursor=new NONS_Cursor();
+		this->pageCursor=new NONS_Cursor(this->everything->screen);
 	}
 	this->gfx_store=this->everything->screen->gfx_store;
 	this->hideTextDuringEffect=1;
@@ -627,29 +627,25 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	}
 	this->current_line=countLines(this->script->script,this->interpreter_position);
 	if (CLOptions.verbosity>=1)
-		v_stdlog <<"Interpreting line "<<this->current_line<<std::endl;
+		o_stderr <<"Interpreting line "<<this->current_line<<'\n';
 	this->previous_interpreter_position=this->interpreter_position;
 	//The NONS_ParsedLine constructor needs to be called so that the interpreter position can advance.
 	NONS_ParsedLine line(this->script->script,&this->interpreter_position,this->current_line);
 	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
-		v_stdlog <<"\"";
-		v_stdlog.writeWideString(line.commandName);
-		v_stdlog <<"\" ";
+		o_stderr <<'\"'<<line.commandName<<"\" ";
 		if (line.parameters.size()){
-			v_stdlog <<"{\n";
+			o_stderr <<"{\n";
 			for (ulong a=0;;a++){
-				v_stdlog <<"    \"";
-				v_stdlog.writeWideString(line.parameters[a]);
-				v_stdlog <<"\"";
+				o_stderr <<"    \""<<line.parameters[a]<<'\"';
 				if (a==line.parameters.size()-1){
-					v_stdlog <<"\n";
+					o_stderr <<'\n';
 					break;
 				}
-				v_stdlog <<",\n";
+				o_stderr <<",\n";
 			}
-			v_stdlog <<"}\n";
+			o_stderr <<"}\n";
 		}else
-			v_stdlog <<"{NO PARAMETERS}\n";
+			o_stderr <<"{NO PARAMETERS}\n";
 	}
 	this->saveGame->currentOffset=this->interpreter_position;
 	this->saveGame->textX=this->everything->screen->output->x;
@@ -679,10 +675,9 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
 					if (!temp){
 						if (this->implementationErrors.find(i->first)==this->implementationErrors.end()){
-							v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error near line "<<this->current_line<<". Command \"";
-							v_stderr.writeWideString(line.commandName);
-							v_stderr <<"\" is not implemented yet.\n"
-									 <<"    Implementation errors are reported only once."<<std::endl;
+							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
+								"Error near line "<<this->current_line<<". Command \""<<line.commandName<<"\" is not implemented yet.\n"
+								"    Implementation errors are reported only once.\n";
 							this->implementationErrors.insert(i->first);
 						}
 						if (CLOptions.stopOnFirstError)
@@ -691,33 +686,28 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					}
 					ErrorCode error=(this->*temp)(line);
 					if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-						v_stderr <<"Line "<<line.lineNo<<": "<<std::endl
-							<<"\"";
-						v_stderr.writeWideString(line.commandName);
-						v_stderr <<"\" ";
+						o_stderr <<"Line "<<line.lineNo<<": \n"
+							"\""<<line.commandName<<"\" ";
 						if (line.parameters.size()){
-							v_stderr <<"{\n";
+							o_stderr <<"{\n";
 							for (ulong a=0;;a++){
-								v_stderr <<"    \"";
-								v_stderr.writeWideString(line.parameters[a]);
-								v_stderr <<"\"";
+								o_stderr <<"    \""<<line.parameters[a]<<'\"';
 								if (a==line.parameters.size()-1){
-									v_stderr <<"\n";
+									o_stderr <<'\n';
 									break;
 								}
-								v_stderr <<",\n";
+								o_stderr <<",\n";
 							}
-							v_stderr <<"}\n";
+							o_stderr <<"}\n";
 						}else
-							v_stderr <<"{NO PARAMETERS}\n";
+							o_stderr <<"{NO PARAMETERS}\n";
 					}
 					handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
 					if (CLOptions.stopOnFirstError && error!=NONS_UNIMPLEMENTED_COMMAND || error==NONS_END)
 						return 0;
 				}else{
-					v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error near line "<<this->current_line<<". Command \"";
-					v_stderr.writeWideString(line.commandName);
-					v_stderr <<"\" could not be recognized."<<std::endl;
+					o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
+						"Error near line "<<this->current_line<<". Command \""<<line.commandName<<"\" could not be recognized.\n";
 					if (CLOptions.stopOnFirstError)
 						return 0;
 				}
@@ -736,24 +726,20 @@ ErrorCode NONS_ScriptInterpreter::interpretString(wchar_t *string){
 	ulong offset=0;
 	NONS_ParsedLine line(string,&offset,0);
 	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
-		v_stdlog <<"String: \"";
-		v_stdlog.writeWideString(line.commandName);
-		v_stdlog <<"\" ";
+		o_stderr <<"String: \""<<line.commandName<<"\" ";
 		if (line.parameters.size()){
-			v_stdlog <<"{\n";
+			o_stderr <<"{\n";
 			for (ulong a=0;;a++){
-				v_stdlog <<"    \"";
-				v_stdlog.writeWideString(line.parameters[a]);
-				v_stdlog <<"\"";
+				o_stderr <<"    \""<<line.parameters[a]<<'\"';
 				if (a==line.parameters.size()-1){
-					v_stdlog <<"\n";
+					o_stderr <<'\n';
 					break;
 				}
-				v_stdlog <<",\n";
+				o_stderr <<",\n";
 			}
-			v_stdlog <<"}\n";
+			o_stderr <<"}\n";
 		}else
-			v_stdlog <<"{NO PARAMETERS}\n";
+			o_stderr <<"{NO PARAMETERS}\n";
 	}
 	line.lineNo=-1;
 	switch (line.type){
@@ -773,19 +759,17 @@ ErrorCode NONS_ScriptInterpreter::interpretString(wchar_t *string){
 					ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
 					if (!temp){
 						if (this->implementationErrors.find(i->first)!=this->implementationErrors.end()){
-							v_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): Error. Command \"";
-							v_stderr.writeWideString(line.commandName);
-							v_stderr <<"\" is not implemented.\n"
-									  <<"    Implementation errors are reported only once."<<std::endl;
+							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
+								"Error. Command \""<<line.commandName<<"\" is not implemented.\n"
+								"    Implementation errors are reported only once.\n";
 							this->implementationErrors.insert(i->first);
 						}
 						return NONS_NOT_IMPLEMENTED;
 					}
 					return handleErrors((this->*temp)(line),line.lineNo,"NONS_ScriptInterpreter::interpretString",1);
 				}else{
-					v_stderr <<"NONS_ScriptInterpreter::interpretString(): Error. Command \"";
-					v_stderr.writeWideString(line.commandName);
-					v_stderr <<"\" could not be recognized."<<std::endl;
+					o_stderr <<"NONS_ScriptInterpreter::interpretString(): "
+						"Error. Command \""<<line.commandName<<"\" could not be recognized.\n";
 					return NONS_UNRECOGNIZED_COMMAND;
 				}
 			}
@@ -868,20 +852,11 @@ void NONS_ScriptInterpreter::reduceString(
 							}else if (var->getType()==STRING){
 								wchar_t *copy=var->getWcsCopy();
 								if (!!visited && visited->find(var)!=visited->end()){
-									v_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
-										"    Reduction stack contents:"<<std::endl;
-									for (std::vector<std::pair<wchar_t *,NONS_VariableMember *> >::iterator i=stack->begin();i!=stack->end();i++){
-										v_stderr <<"        [";
-										v_stderr.writeWideString(i->first);
-										v_stderr <<"] = \"";
-										v_stderr.writeWideString(i->second->getWcs());
-										v_stderr <<"\""<<std::endl;
-									}
-									v_stderr <<" (last) [";
-									v_stderr.writeWideString(expr);
-									v_stderr <<"] = \"";
-									v_stderr.writeWideString(copy);
-									v_stderr <<"\""<<std::endl;
+									o_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
+										"    Reduction stack contents:\n";
+									for (std::vector<std::pair<wchar_t *,NONS_VariableMember *> >::iterator i=stack->begin();i!=stack->end();i++)
+										o_stderr <<"        ["<<i->first<<"] = \""<<i->second->getWcs()<<"\"\n";
+									o_stderr <<" (last) ["<<expr<<"] = \""<<copy<<"\"\n";
 									dst.append(copy);
 								}else{
 									std::set<NONS_VariableMember *> *temp_visited;
@@ -991,7 +966,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 	for (std::vector<printingPage>::iterator i=pages.begin();i!=pages.end();i++){
 		bool clearscr=out->prepareForPrinting(i->print.c_str());
 		if (clearscr){
-			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+			if (this->pageCursor->animate(this->menu,this->autoclick)<0){
 				if (!!error)
 					*error=NONS_NO_ERROR;
 				return 1;
@@ -1002,7 +977,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 		for (ulong reduced=0,printed=0,stop=0;stop<i->stops.size();stop++){
 			ulong printedChars=0;
 			while (justClicked=out->print(printed,i->stops[stop].first,this->everything->screen->screen,&printedChars)){
-				if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+				if (this->pageCursor->animate(this->menu,this->autoclick)<0){
 					if (!!error)
 						*error=NONS_NO_ERROR;
 					return 1;
@@ -1044,7 +1019,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						if (!!error)
 							*error=NONS_NO_ERROR;
 						return 1;
-					}else if (!justClicked && this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+					}else if (!justClicked && this->pageCursor->animate(this->menu,this->autoclick)<0){
 						if (!!error)
 							*error=NONS_NO_ERROR;
 						return 1;
@@ -1080,7 +1055,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						if (!!error)
 							*error=NONS_NO_ERROR;
 						return 1;
-					}else if (!justClicked && this->arrowCursor->animate(this->everything->screen,this->menu,this->autoclick)<0){
+					}else if (!justClicked && this->arrowCursor->animate(this->menu,this->autoclick)<0){
 						if (!!error)
 							*error=NONS_NO_ERROR;
 						return 1;
@@ -1167,7 +1142,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 	NONS_StandardOutput *out=this->everything->screen->output;
 	if (!*line){
 		if (out->NewLine()){
-			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
+			if (this->pageCursor->animate(this->menu,this->autoclick)<0)
 				return NONS_NO_ERROR;
 			out->NewLine();
 		}
@@ -1189,7 +1164,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 		else
 			str2+=p;
 		pages.push_back(printingPage());
-		printingPage &page=pages[pages.size()-1];
+		printingPage &page=pages.back();
 		page.reduced=str3;
 		delete[] str3;
 		findStops(page.reduced.c_str(),page.stops,page.print);
@@ -1198,7 +1173,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 	if (this->Printer_support(pages,&totalprintedchars,&justTurnedPage,&error))
 		return error;
 	if (!justTurnedPage && totalprintedchars && !this->insideTextgosub() && out->NewLine() &&
-			this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)>=0){
+			this->pageCursor->animate(this->menu,this->autoclick)>=0){
 		this->everything->screen->clearText();
 		//out->NewLine();
 	}

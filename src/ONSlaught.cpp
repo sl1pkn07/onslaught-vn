@@ -51,7 +51,7 @@
 int mainThread(void *nothing);
 
 void usage(){
-	v_stdout <<"Usage: ONSlaught [options]\n"
+	o_stdout <<"Usage: ONSlaught [options]\n"
 		"Options:\n"
 		"  -h\n"
 		"  -?\n"
@@ -91,14 +91,6 @@ void usage(){
 		"  -music-directory <directory>\n"
 		"      Set where to look for music files.\n"
 		"      Default is \"./CD\"\n"
-		"  -transparency-method-layer {old|alpha}\n"
-		"      Select the trasparency method for animations.\n"
-		"      Default is \'old\'.\n"
-		"      See the documentation for datails.\n"
-		"  -transparency-method-anim {chroma|alpha}\n"
-		"      Select the trasparency method for cursors.\n"
-		"      Default is \'chroma\'.\n"
-		"      See the documentation for datails.\n"
 		"  -image-cache-size <size>\n"
 		"      Set the size for the image cache. -1 is infinite, 0 is do not use.\n"
 		"      Default to -1.\n"
@@ -159,8 +151,8 @@ void parseCommandLine(int argc,T **argv){
 		"-encoding",
 		"-music-format",
 		"-music-directory",
-		"-transparency-method-layer",
-		"-transparency-method-anim",
+		"",
+		"",
 		"-image-cache-size",
 		"-debug",
 		"-redirect",
@@ -281,36 +273,8 @@ void parseCommandLine(int argc,T **argv){
 				CLOptions.musicDirectory=copyString(argv[++argument]);
 				break;
 			case 5: //-transparency-method-layer
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				argument++;
-				if (!strcmp2(argv[argument],"old")){
-					CLOptions.layerMethod=CLASSIC_METHOD;
-					break;
-				}
-				if (!strcmp2(argv[argument],"alpha")){
-					CLOptions.layerMethod=ALPHA_METHOD;
-					break;
-				}
-				std::cerr <<"Unrecognized method: \""<<argv[argument]<<"\""<<std::endl;
 				break;
 			case 6: //-transparency-method-anim
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				argument++;
-				if (!strcmp2(argv[argument],"chroma")){
-					CLOptions.layerMethod=CLASSIC_METHOD;
-					break;
-				}
-				if (!strcmp2(argv[argument],"alpha")){
-					CLOptions.layerMethod=ALPHA_METHOD;
-					break;
-				}
-				std::cerr <<"Unrecognized method: \""<<argv[argument]<<"\""<<std::endl;
 				break;
 			case 7: //-image-cache-size
 				if (argument+1>=argc){
@@ -464,12 +428,12 @@ void enditall(){
 }
 
 void handle_SIGTERM(int){
-	v_stdout <<"SIGTERM received. Terminating properly.";
+	o_stdout <<"SIGTERM received. Terminating properly.";
 	enditall();
 }
 
 void handle_SIGINT(int){
-	v_stderr <<"SIGINT received. Terminating harshly.";
+	o_stderr <<"SIGINT received. Terminating harshly.";
 	exit(0);
 }
 
@@ -654,9 +618,9 @@ int
 			) || !useArgumentsFile("arguments.txt"))
 		parseCommandLine(argc,argv);
 	if (CLOptions.override_stdout){
-		v_stdout.redirect();
-		v_stderr.redirect();
-		v_stdlog.redirect();
+		o_stdout.redirect();
+		o_stderr.redirect();
+		o_stderr.redirect();
 		std::cout <<"Redirecting."<<std::endl;
 	}
 #ifdef NONS_PARALLELIZE
@@ -686,16 +650,16 @@ int
 		cpu_count=IDs.size();
 		cpuinfo.close();*/
 		FILE * fp;
-        char res[128];
-        fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
-        fread(res, 1, sizeof(res)-1, fp);
-        fclose(fp);
-        cpu_count=atoi(res);
+		char res[128];
+		fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
+		fread(res, 1, sizeof(res)-1, fp);
+		fclose(fp);
+		cpu_count=atoi(res);
 	}
 #endif
-	v_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<"."<<std::endl;
+	o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
 #else
-	v_stdout <<"Parallelization disabled."<<std::endl;
+	o_stdout <<"Parallelization disabled."<<std::endl;
 #endif
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -711,6 +675,7 @@ int
 	}
 #endif
 	everything=new NONS_Everything();
+	SDL_WM_SetCaption("ONSlaught ("ONSLAUGHT_BUILD_VERSION_STR")",0);
 	ErrorCode error=NONS_NO_ERROR;
 	if (CLOptions.scriptPath)
 		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
@@ -724,8 +689,8 @@ int
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	if (!config_directory)
 		config_directory=getConfigLocation();
-	v_stdout <<"Global files go in \""<<config_directory<<"\"."<<std::endl;
-	v_stdout <<"Local files go in \""<<save_directory<<"\"."<<std::endl;
+	o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
+	o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
 	if (CLOptions.musicDirectory)
 		error=everything->init_audio(CLOptions.musicDirectory);
 	else

@@ -237,7 +237,7 @@ ErrorCode NONS_ScriptInterpreter::command_mid(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0,)
+	_GETSTRVARIABLE(dst,0,)
 	long start,len0,len;
 	_GETINTVALUE(start,2,)
 	wchar_t *src=0;
@@ -369,9 +369,9 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 	if (this->hideTextDuringEffect)
 		this->everything->screen->hideText();
 	if (!*l)
-		*l=new NONS_Layer(name,&(this->everything->screen->screen->virtualScreen->clip_rect),CLOptions.layerMethod);
+		*l=new NONS_Layer(name);
 	else{
-		if (!(*l)->load(name,&(this->everything->screen->screen->virtualScreen->clip_rect),CLOptions.layerMethod)){
+		if (!(*l)->load(name)){
 			delete[] name;
 			return NONS_FILE_NOT_FOUND;
 		}
@@ -387,11 +387,11 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 		_GETINTVALUE(duration,3,)
 		if (line.parameters.size()>4)
 			_GETWCSVALUE(rule,4,)
-		ret=this->everything->screen->BlendAll(number,duration,rule);
+		ret=this->everything->screen->BlendNoCursor(number,duration,rule);
 		if (rule)
 			delete[] rule;
 	}else
-		ret=this->everything->screen->BlendAll(number);
+		ret=this->everything->screen->BlendNoCursor(number);
 	return ret;
 }
 
@@ -406,68 +406,30 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_ParsedLine &line){
 	if (line.parameters.size()>4)
 		_GETINTVALUE(alpha,4,)
 	_GETWCSVALUE(str,1,)
-	wchar_t *string=str;
 	ErrorCode error=NONS_NO_ERROR;
-	METHODS method=NO_ALPHA;
-	if (*str==':'){
-		str++;
-		for (;*str && iswhitespace((char)*str);str++);
-		switch (*str){
-			case 'a':
-				method=CLASSIC_METHOD;
-				break;
-			case 'l':
-			case 'r':
-				error=NONS_INVALID_TRANSPARENCY_METHOD;
-				break;
-			case 'c':
-				method=NO_ALPHA;
-				break;
-			default:
-				error=NONS_TRANSPARENCY_METHOD_UNIMPLEMENTED;
-				break;
-		}
-		for (;*str && *str!='/' && *str!=';';str++);
-	}
-	if (error!=NONS_NO_ERROR){
-		delete[] string;
-		return error;
-	}
-	if (*str=='/')
-		for (;*str && *str!=';';str++);
-	if (*str==';')
-		str++;
-	str=copyWString(str);
-	wchar_t *name=str;
 	if (alpha>255)
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	NONS_tolower(name);
-	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,string,name,x,y,alpha,method,!wcscmp(line.commandName,L"lsp")),delete[] name;);
-	delete[] string;
-	delete[] name;
-	//this->everything->screen->BlendAll();
+	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,str,x,y,alpha,!wcscmp(line.commandName,L"lsp")),delete[] str;);
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
 	std::wstring string;
 	this->convertParametersToString(line,string);
 	if (string.size()){
 		this->everything->screen->showText();
 		if (this->everything->screen->output->prepareForPrinting(string.c_str())){
-			if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
+			if (this->pageCursor->animate(this->menu,this->autoclick)<0)
 				return NONS_NO_ERROR;
 			this->everything->screen->clearText();
 		}
 		while (this->everything->screen->output->print(0,string.size(),this->everything->screen->screen)){
 			if (this->pageCursor){
-				if (this->pageCursor->animate(this->everything->screen,this->menu,this->autoclick)<0)
+				if (this->pageCursor->animate(this->menu,this->autoclick)<0)
 					return NONS_NO_ERROR;
 			}else
 				waitUntilClick();
@@ -489,11 +451,11 @@ ErrorCode NONS_ScriptInterpreter::command_print(NONS_ParsedLine &line){
 		_GETINTVALUE(duration,1,)
 		if (line.parameters.size()>2)
 			_GETWCSVALUE(rule,2,)
-		ret=this->everything->screen->BlendAll(number,duration,rule);
+		ret=this->everything->screen->BlendNoCursor(number,duration,rule);
 		if (rule)
 			delete[] rule;
 	}else
-		ret=this->everything->screen->BlendAll(number);
+		ret=this->everything->screen->BlendNoCursor(number);
 	return ret;
 }
 
@@ -592,7 +554,7 @@ ErrorCode NONS_ScriptInterpreter::command_resettimer(NONS_ParsedLine &line){
 
 ErrorCode NONS_ScriptInterpreter::command_repaint(NONS_ParsedLine &line){
 	if (this->everything->screen)
-		this->everything->screen->BlendAll(1);
+		this->everything->screen->BlendNoCursor(1);
 	return NONS_NO_ERROR;
 }
 

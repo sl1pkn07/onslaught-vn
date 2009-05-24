@@ -60,6 +60,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *
 	this->sprite_priority=this->layerStack.size()-1;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
+	this->cursor=0;//new NONS_Layer((SDL_Surface *)0,0);
 }
 
 NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store){
@@ -84,6 +85,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 		this->gfx_store=store;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
+	this->cursor=0;//new NONS_Layer((SDL_Surface *)0,0);
 }
 
 NONS_ScreenSpace::~NONS_ScreenSpace(){
@@ -96,6 +98,7 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 	delete this->centerChar;
 	delete this->Background;
 	delete this->screen;
+	//delete this->this->cursor;
 	SDL_FreeSurface(this->screenBuffer);
 	delete this->gfx_store;
 	if (this->monochrome)
@@ -106,6 +109,24 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 }
 
 ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
+	this->BlendNoCursor(0);
+	if (this->cursor && this->cursor->data)
+		manualBlit(this->cursor->data,&this->cursor->clip_rect,this->screenBuffer,&this->cursor->position);
+	if (effect){
+		NONS_GFX *e=this->gfx_store->retrieve(effect);
+		if (!e)
+			return NONS_UNDEFINED_EFFECT;
+		return e->call(this->screenBuffer,0,this->screen);
+	}
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScreenSpace::BlendAll(ulong effect,long timing,wchar_t *rule){
+	this->BlendAll(0);
+	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
+}
+
+ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect){
 	this->BlendNoText(0);
 	if (this->output->visible){
 		if (!this->output->shadeLayer->useDataAsDefaultShade)
@@ -125,8 +146,8 @@ ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScreenSpace::BlendAll(ulong effect,long timing,wchar_t *rule){
-	this->BlendAll(0);
+ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect,long timing,wchar_t *rule){
+	this->BlendNoCursor(0);
 	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
 }
 
@@ -134,16 +155,41 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 	this->BlendOnlyBG(0);
 	for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--)
 		if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
-			manualBlit(this->layerStack[a]->data,0,this->screenBuffer,&(this->layerStack[a]->clip_rect),this->layerStack[a]->alpha);
+			manualBlit(
+				this->layerStack[a]->data,
+				&this->layerStack[a]->clip_rect,
+				this->screenBuffer,
+				&this->layerStack[a]->position,
+				this->layerStack[a]->alpha);
 	if (this->leftChar && this->leftChar->data)
-		manualBlit(this->leftChar->data,0,this->screenBuffer,&(this->leftChar->clip_rect),this->leftChar->alpha);
+		manualBlit(
+			this->leftChar->data,
+			&this->leftChar->clip_rect,
+			this->screenBuffer,
+			&this->leftChar->position,
+			this->leftChar->alpha);
 	if (this->rightChar && this->rightChar->data)
-		manualBlit(this->rightChar->data,0,this->screenBuffer,&(this->rightChar->clip_rect),this->rightChar->alpha);
+		manualBlit(
+			this->rightChar->data,
+			&this->leftChar->clip_rect,
+			this->screenBuffer,
+			&this->rightChar->position,
+			this->rightChar->alpha);
 	if (this->centerChar && this->centerChar->data)
-		manualBlit(this->centerChar->data,0,this->screenBuffer,&(this->centerChar->clip_rect),this->centerChar->alpha);
+		manualBlit(
+			this->centerChar->data,
+			&this->leftChar->clip_rect,
+			this->screenBuffer,
+			&this->centerChar->position,
+			this->centerChar->alpha);
 	for (long a=this->sprite_priority;a>=0;a--)
 		if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
-			manualBlit(this->layerStack[a]->data,0,this->screenBuffer,&(this->layerStack[a]->clip_rect),this->layerStack[a]->alpha);
+			manualBlit(
+				this->layerStack[a]->data,
+				&this->layerStack[a]->clip_rect,
+				this->screenBuffer,
+				&this->layerStack[a]->position,
+				this->layerStack[a]->alpha);
 	if (this->monochrome)
 		this->monochrome->call(0,this->screenBuffer,0);
 	if (this->negative)
@@ -164,7 +210,7 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect,long timing,wchar_t *rule){
 
 ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect){
 	SDL_FillRect(this->screenBuffer,0,amask);
-	manualBlit(this->Background->data,0,this->screenBuffer,0);
+	manualBlit(this->Background->data,&this->Background->clip_rect,this->screenBuffer,&this->Background->position);
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
 		if (!e)
@@ -181,7 +227,7 @@ ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect,long timing,wchar_t *rule){
 
 void NONS_ScreenSpace::clearText(){
 	this->output->Clear();
-	this->BlendAll(1);
+	this->BlendNoCursor(1);
 	//SDL_UpdateRect(this->screen,0,0,0,0);
 }
 
@@ -189,7 +235,7 @@ void NONS_ScreenSpace::hideText(){
 	if (!this->output->visible)
 		return;
 	this->output->visible=0;
-	this->BlendAll(0);
+	this->BlendNoCursor(0);
 	this->output->transition->call(this->screenBuffer,0,this->screen);
 }
 
@@ -197,7 +243,7 @@ void NONS_ScreenSpace::showText(){
 	if (this->output->visible)
 		return;
 	this->output->visible=1;
-	this->BlendAll(0);
+	this->BlendNoCursor(0);
 	this->output->transition->call(this->screenBuffer,0,this->screen);
 }
 
@@ -220,32 +266,23 @@ void NONS_ScreenSpace::resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Fon
 	this->lookback->reset(this->output);
 }
 
-ErrorCode NONS_ScreenSpace::loadSprite(ulong n,wchar_t *string,wchar_t *name,long x,long y,uchar alpha,METHODS method,bool visibility){
-	if (!name)
+ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const wchar_t *string,long x,long y,uchar alpha,bool visibility){
+	if (!string || !*string)
 		return NONS_EMPTY_STRING;
 	if (n>this->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	SDL_Surface *s=ImageLoader->fetchSprite(string,name,method);
-	if (!s)
-		return NONS_UNDEFINED_ERROR;
 	if (!this->layerStack[n])
-		this->layerStack[n]=new NONS_Layer(s,0);
-	else{
-		if (this->layerStack[n]->data)
-			this->layerStack[n]->unload();
-		this->layerStack[n]->data=s;
-		this->layerStack[n]->clip_rect=this->layerStack[n]->data->clip_rect;
-	}
+		this->layerStack[n]=new NONS_Layer(string);
+	else
+		this->layerStack[n]->load(string);
+	if (!this->layerStack[n]->data)
+		return NONS_UNDEFINED_ERROR;
 	this->layerStack[n]->clip_rect.x=x;
 	this->layerStack[n]->clip_rect.y=y;
 	this->layerStack[n]->visible=visibility;
 	this->layerStack[n]->alpha=alpha;
 	return NONS_NO_ERROR;
 }
-
-/*std::vector<NONS_Glyph *> *NONS_ScreenSpace::NONSOut(std::vector<NONS_Glyph *> *str){
-	return this->output->Out(str,0,this->screen);
-}*/
 
 void NONS_ScreenSpace::clear(){
 	this->Background->unload();
@@ -256,6 +293,20 @@ void NONS_ScreenSpace::clear(){
 		if (this->layerStack[a])
 			this->layerStack[a]->unload();
 	this->clearText();
-	this->BlendAll(1);
+	this->BlendNoCursor(1);
+}
+
+bool NONS_ScreenSpace::advanceAnimations(ulong msecs){
+	bool requireRefresh=0;
+#define ADVANCE_ANIM(x) if ((x) && (x)->data) requireRefresh|=(x)->advanceAnimation(msecs)
+	ADVANCE_ANIM(this->Background);
+	ADVANCE_ANIM(this->leftChar);
+	ADVANCE_ANIM(this->rightChar);
+	ADVANCE_ANIM(this->centerChar);
+	for (ulong a=0;a<this->layerStack.size();a++){
+		ADVANCE_ANIM(this->layerStack[a]);
+	}
+	ADVANCE_ANIM(this->cursor);
+	return requireRefresh;
 }
 #endif

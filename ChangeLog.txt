@@ -17,6 +17,13 @@ trunk
       integers. As a result, all savegames for scripts that use arrays will be
       incorrectly loaded.
     * Labels are now C-style identifiers.
+    * Added string concatenation support in expressions.
+    * Added asynchronous animation support for all layers. Optimization is
+        scheduled for a future update.
+    * Added full sprite string support (see doc/NScrAPI/NScrAPI.xml#lsp) for the
+        syntax "[:(trans-mode)[/(animation)];](filename)".
+    * Removed -transparency-method-layer and -transparency-method-anim as
+        command line arguments.
     * Fixed serious bug in the string reduction mechanism.
     * Fixed bug related to text speed.
     * Fixed bug in the bilinear interpolation function.

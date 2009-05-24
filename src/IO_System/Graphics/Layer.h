@@ -31,6 +31,7 @@
 #define NONS_LAYER_H
 
 #include <SDL/SDL_image.h>
+#include <vector>
 #include "FontCache.h"
 #include "../../Common.h"
 #include "../SAR/Image_Loader/ImageLoader.h"
@@ -46,18 +47,22 @@ struct NONS_Layer{
 	//Determines whether this layer will be included in the blend.
 	bool visible;
 	bool useDataAsDefaultShade;
-	SDL_Rect clip_rect;
+	SDL_Rect clip_rect,
+		position;
 	uchar alpha;
+	NONS_AnimationInfo animation;
 	NONS_Layer(SDL_Rect *size,unsigned rgba);
 	NONS_Layer(SDL_Surface *img,unsigned rgba);
-	NONS_Layer(wchar_t *name,SDL_Rect *screenSize,METHODS method);
+	NONS_Layer(const wchar_t *string);
 	~NONS_Layer();
 	void MakeTextLayer(NONS_Font *font,SDL_Color *foreground,bool shadow);
-	bool load(wchar_t *name,SDL_Rect *screenSize,METHODS method);
+	bool load(const wchar_t *string);
 	//if the parameter is true and the image isn't shared, the call has no effect
 	bool unload(bool youCantTouchThis=0);
 	void usePicAsDefaultShade(SDL_Surface *pic);
 	void setShade(uchar r,uchar g,uchar b);
 	void Clear();
+	//1 if the layer should be re-blended.
+	bool advanceAnimation(ulong msec);
 };
 #endif

@@ -256,7 +256,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 									delete[] buffer;
 							}
 						}
-						//v_stdout <<"ButtonLayer::getUserInput(): "<<mouseOver<<std::endl;
+						//o_stdout <<"ButtonLayer::getUserInput(): "<<mouseOver<<std::endl;
 					}
 				}
 				break;

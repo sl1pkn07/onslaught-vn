@@ -93,7 +93,7 @@ char writefile(const char *name,char *buffer,long size){
 	if (!file){
 #ifndef BARE_FILE
 #if defined(NONS_SYS_WINDOWS)
-		v_stderr <<"writefile():"<<GetLastError()<<std::endl;
+		o_stderr <<"writefile(): "<<GetLastError()<<'\n';
 #endif
 #endif
 		return 1;

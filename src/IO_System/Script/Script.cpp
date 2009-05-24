@@ -61,16 +61,16 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 	switch (encoding){
 		case DETECT_ENCODING:
 			if (isValidUTF8(temp,l)){
-				v_stdlog <<"The script seems to be a valid UTF-8 stream. Using it as such."<<std::endl;
+				o_stderr <<"The script seems to be a valid UTF-8 stream. Using it as such.\n";
 				buffer=UTF8_to_WChar(temp,l,&l);
 			}else if (isValidSJIS(temp,l)){
-				v_stdlog <<"The script seems to be a valid Shift JIS stream. Using it as such."<<std::endl;
+				o_stderr <<"The script seems to be a valid Shift JIS stream. Using it as such.\n";
 				buffer=SJIS_to_WChar(temp,l,&l);
 			}else if (!ISO88591_or_UCS2(temp,l)){
-				v_stdlog <<"The script seems to be a valid ISO-8859-1 stream. Using it as such."<<std::endl;
+				o_stderr <<"The script seems to be a valid ISO-8859-1 stream. Using it as such.\n";
 				buffer=ISO88591_to_WChar(temp,l,&l);
 			}else{
-				v_stdlog <<"The script seems to be a valid UCS-2 stream. Using it as such."<<std::endl;
+				o_stderr <<"The script seems to be a valid UCS-2 stream. Using it as such.\n";
 				buffer=UCS2_to_WChar(temp,l,&l);
 			}
 			break;
@@ -79,7 +79,7 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 			break;
 		case UCS2_ENCODING:
 			if (l%2)
-				v_stderr <<"WARNING: input text has odd length. It may not be valid UCS-2 text."<<std::endl;
+				o_stderr <<"WARNING: input text has odd length. It may not be valid UCS-2 text.\n";
 			buffer=UCS2_to_WChar(temp,l,&l);
 			break;
 		case UTF8_ENCODING:
