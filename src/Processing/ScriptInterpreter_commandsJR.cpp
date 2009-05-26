@@ -731,8 +731,8 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_ParsedLine &line){
 	if (!l)
 		return NONS_NO_SPRITE_LOADED_THERE;
 	if (wcscmp(line.commandName,L"amsp")){
-		l->clip_rect.x+=x;
-		l->clip_rect.y+=y;
+		l->position.x+=x;
+		l->position.y+=y;
 		if (long(l->alpha)+alpha>255)
 			l->alpha=255;
 		else if (long(l->alpha)+alpha<0)
@@ -740,8 +740,8 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_ParsedLine &line){
 		else
 			l->alpha+=alpha;
 	}else{
-		l->clip_rect.x=x;
-		l->clip_rect.y=y;
+		l->position.x=x;
+		l->position.y=y;
 		if (alpha>255)
 			alpha=255;
 		else if (alpha<0)
@@ -798,6 +798,19 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_ParsedLine &line){
 	_GETWCSVALUE(B,1,)
 	_GETWCSVALUE(C,2,)
 	_GETWCSVALUE(D,3,)
+	NONS_AnimationInfo anim;
+	anim.parse(A);
+	delete[] A;
+	A=addStrings(L":l;",anim.filename);
+	anim.parse(B);
+	delete[] B;
+	B=addStrings(L":l;",anim.filename);
+	anim.parse(C);
+	delete[] C;
+	C=addStrings(L":l;",anim.filename);
+	anim.parse(D);
+	delete[] D;
+	D=addStrings(L":l;",anim.filename);
 	bool ret=this->everything->screen->lookback->setUpButtons(A,B,C,D);
 	delete[] A;
 	delete[] B;
