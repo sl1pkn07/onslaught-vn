@@ -77,24 +77,6 @@ NONS_Lookback::~NONS_Lookback(){
 }
 
 bool NONS_Lookback::setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wchar_t *downoff){
-	long first;
-	
-	first=instr(upon,";");
-	if (first>=0)
-		upon+=first+1;
-
-	first=instr(upoff,";");
-	if (first>=0)
-		upoff+=first+1;
-
-	first=instr(downon,";");
-	if (first>=0)
-		downon+=first+1;
-
-	first=instr(downoff,";");
-	if (first>=0)
-		downoff+=first+1;
-
 	SDL_Surface *temp0=ImageLoader->fetchSprite(upon),
 		*temp1=ImageLoader->fetchSprite(upoff),
 		*temp2=ImageLoader->fetchSprite(downon),
