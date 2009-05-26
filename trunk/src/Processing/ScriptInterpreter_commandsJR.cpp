@@ -339,46 +339,38 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	/*if (!this->everything->screen)
 		this->setDefaultWindow();*/
-	wchar_t *temp=0;
-	_GETWCSVALUE(temp,1,)
-	long semicolon=instr(temp,L";");
-	if (semicolon++<0)
-		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	wchar_t *name=copyWString(temp+semicolon);
-	delete[] temp;
+	wchar_t *name=0;
+	_GETWCSVALUE(name,1,)
 	NONS_Layer **l=0;
 	long off;
 	switch (line.parameters[0][0]){
 		case 'l':
-			l=&(this->everything->screen->leftChar);
-			off=(this->everything->screen->screen->virtualScreen->w)/-4;
+			l=&this->everything->screen->leftChar;
+			off=this->everything->screen->screen->virtualScreen->w/4;
 			break;
 		case 'c':
-			l=&(this->everything->screen->centerChar);
-			off=0;
+			l=&this->everything->screen->centerChar;
+			off=this->everything->screen->screen->virtualScreen->w/2;
 			break;
 		case 'r':
-			l=&(this->everything->screen->rightChar);
-			off=(this->everything->screen->screen->virtualScreen->w)/4;
+			l=&this->everything->screen->rightChar;
+			off=this->everything->screen->screen->virtualScreen->w/4*3;
 			break;
 		default:
 			return NONS_INVALID_PARAMETER;
 	}
-	NONS_tolower(name);
-	toforwardslash(name);
 	if (this->hideTextDuringEffect)
 		this->everything->screen->hideText();
 	if (!*l)
 		*l=new NONS_Layer(name);
-	else{
-		if (!(*l)->load(name)){
-			delete[] name;
-			return NONS_FILE_NOT_FOUND;
-		}
+	else if (!(*l)->load(name)){
+		delete[] name;
+		return NONS_FILE_NOT_FOUND;
 	}
 	if (!(*l)->data)
 		return NONS_FILE_NOT_FOUND;
-	(*l)->clip_rect.x=off;
+	(*l)->centerAround(off);
+	(*l)->useBaseline(this->everything->screen->char_baseline);
 	long number,duration;
 	wchar_t *rule=0;
 	ErrorCode ret;

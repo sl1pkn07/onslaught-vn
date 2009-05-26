@@ -48,7 +48,7 @@ struct NONS_ImageLoader{
 	//SDL_Surface *fetchImage(const wchar_t *name);
 	//SDL_Surface *fetchCursor(const wchar_t *name,int method);
 	//SDL_Surface *fetchSprite(const wchar_t *string,const wchar_t *name,int method);
-	SDL_Surface *fetchSprite(const wchar_t *string);
+	SDL_Surface *fetchSprite(const wchar_t *string,optim_t *rects=0);
 	bool unfetchImage(SDL_Surface *which);
 	NONS_Image *elementFromSurface(SDL_Surface *srf);
 	long freeOldest(long howMany=1);

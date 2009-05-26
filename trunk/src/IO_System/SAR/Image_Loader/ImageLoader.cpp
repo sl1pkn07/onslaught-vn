@@ -60,7 +60,7 @@ ulong NONS_ImageLoader::getCacheSize(){
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string){
+SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,optim_t *rects){
 	if (!string)
 		return 0;
 	NONS_AnimationInfo anim(string);
@@ -92,6 +92,8 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string){
 		for (ulong a=0;a<this->imageCache.size();a++)
 			if (this->imageCache[a] && this->imageCache[a]->age)
 				this->imageCache[a]->age++;
+		if (!!rects)
+			*rects=el->optimized_updates;
 		return el->image;
 	}
 	NONS_Image *primary=0;
@@ -128,7 +130,7 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string){
 		delete[] buffer;
 		freeSecondary=1;
 	}
-	NONS_Image *image=new NONS_Image(&anim,primary,secondary);
+	NONS_Image *image=new NONS_Image(&anim,primary,secondary,rects);
 	image->refCount++;
 	this->addElementToCache(image,1);	
 	if (freePrimary && !this->addElementToCache(primary,0))

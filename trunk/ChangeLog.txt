@@ -1,6 +1,6 @@
 trunk
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,
-        puttext, labellog.
+        puttext, labellog, underline.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
     * Implemented mouse wheel.
     * Variable indices can now be negative.
@@ -18,8 +18,7 @@ trunk
       incorrectly loaded.
     * Labels are now C-style identifiers.
     * Added string concatenation support in expressions.
-    * Added asynchronous animation support for all layers. Optimization is
-        scheduled for a future update.
+    * Added asynchronous animation support for all layers.
     * Added full sprite string support (see doc/NScrAPI/NScrAPI.xml#lsp) for the
         syntax "[:(trans-mode)[/(animation)];](filename)".
     * Removed -transparency-method-layer and -transparency-method-anim as

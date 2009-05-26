@@ -57,10 +57,11 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *
 		this->gfx_store=store;
 	this->monochrome=0;
 	this->negative=0;
-	this->sprite_priority=this->layerStack.size()-1;
+	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
-	this->cursor=0;//new NONS_Layer((SDL_Surface *)0,0);
+	this->cursor=0;
+	this->char_baseline=this->screenBuffer->h-1;
 }
 
 NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store){
@@ -83,9 +84,11 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 		this->gfx_store=new NONS_GFXstore();
 	else
 		this->gfx_store=store;
+	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
-	this->cursor=0;//new NONS_Layer((SDL_Surface *)0,0);
+	this->cursor=0;
+	this->char_baseline=this->screenBuffer->h-1;
 }
 
 NONS_ScreenSpace::~NONS_ScreenSpace(){
@@ -106,6 +109,85 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 	if (this->negative)
 		delete this->negative;
 	delete this->lookback;
+}
+
+void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
+	if (!rects.size())
+		return;
+
+#define BLEND_OPTIM(p,function) {\
+	if ((p) && (p)->data && (p)->visible){\
+		SDL_Rect src={\
+			refresh_area.x-(p)->position.x+(p)->clip_rect.x,\
+			refresh_area.y-(p)->position.y+(p)->clip_rect.y,\
+			refresh_area.w>(p)->clip_rect.w?(p)->clip_rect.w:refresh_area.w,\
+			refresh_area.h>(p)->clip_rect.h?(p)->clip_rect.h:refresh_area.h\
+		};\
+		if (src.x<(p)->clip_rect.x)\
+			src.x=(p)->clip_rect.x;\
+		if (src.y<(p)->clip_rect.y)\
+			src.y=(p)->clip_rect.y;\
+		SDL_Rect dst=refresh_area;\
+		if (dst.x<(p)->position.x)\
+			dst.x=(p)->position.x;\
+		if (dst.y<(p)->position.y)\
+			dst.y=(p)->position.y;\
+		function((p)->data,&src,this->screenBuffer,&dst);\
+	}\
+}
+
+	ulong q=rects.size();
+	ulong minx=rects[0].x,
+		maxx=minx+rects[0].w,
+		miny=rects[0].y,
+		maxy=miny+rects[0].h;
+	for (ulong a=1;a<rects.size();a++){
+		ulong x0=rects[a].x,
+			x1=x0+rects[a].w,
+			y0=rects[a].y,
+			y1=y0+rects[a].h;
+		if (x0<minx)
+			minx=x0;
+		if (x1>maxx)
+			maxx=x1;
+		if (y0<miny)
+			miny=y0;
+		if (y1>maxy)
+			maxy=y1;
+	}
+	SDL_Rect refresh_area={minx,miny,maxx-minx,maxy-miny};
+	if (!(refresh_area.w*refresh_area.h))
+		return;
+	BLEND_OPTIM(this->Background,manualBlit);
+	for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--){
+		NONS_Layer *p=this->layerStack[a];
+		BLEND_OPTIM(p,manualBlit);
+	}
+	BLEND_OPTIM(this->leftChar,manualBlit);
+	BLEND_OPTIM(this->rightChar,manualBlit);
+	BLEND_OPTIM(this->centerChar,manualBlit);
+	for (long a=this->sprite_priority;a>=0;a--){
+		NONS_Layer *p=this->layerStack[a];
+		BLEND_OPTIM(p,manualBlit);
+	}
+	if (this->monochrome)
+		this->monochrome->call(0,this->screenBuffer,0);
+	if (this->negative)
+		this->negative->call(0,this->screenBuffer,0);
+	if (this->output->visible){
+		if (!this->output->shadeLayer->useDataAsDefaultShade){
+			BLEND_OPTIM(this->output->shadeLayer,multiplyBlend);
+		}else{
+			BLEND_OPTIM(this->output->shadeLayer,manualBlit);
+		}
+		BLEND_OPTIM(this->output->shadowLayer,manualBlit);
+		BLEND_OPTIM(this->output->foregroundLayer,manualBlit);
+	}
+	BLEND_OPTIM(this->cursor,manualBlit);
+	LOCKSCREEN;
+	manualBlit(this->screenBuffer,&refresh_area,this->screen->virtualScreen,&refresh_area);
+	UNLOCKSCREEN;
+	this->screen->updateScreen(refresh_area.x,refresh_area.y,refresh_area.w,refresh_area.h);
 }
 
 ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
@@ -171,14 +253,14 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 	if (this->rightChar && this->rightChar->data)
 		manualBlit(
 			this->rightChar->data,
-			&this->leftChar->clip_rect,
+			&this->rightChar->clip_rect,
 			this->screenBuffer,
 			&this->rightChar->position,
 			this->rightChar->alpha);
 	if (this->centerChar && this->centerChar->data)
 		manualBlit(
 			this->centerChar->data,
-			&this->leftChar->clip_rect,
+			&this->centerChar->clip_rect,
 			this->screenBuffer,
 			&this->centerChar->position,
 			this->centerChar->alpha);
@@ -247,11 +329,6 @@ void NONS_ScreenSpace::showText(){
 	this->output->transition->call(this->screenBuffer,0,this->screen);
 }
 
-/*std::vector<NONS_Glyph *> *NONS_ScreenSpace::NONSOut(wchar_t *str,float center){
-	std::vector<NONS_Glyph *> *ret=this->output->Out(str,this->screen);
-	return ret;
-}*/
-
 void NONS_ScreenSpace::resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow){
 	NONS_GFX *temp;
 	bool a=this->output->transition->stored;
@@ -277,8 +354,8 @@ ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const wchar_t *string,long x,long
 		this->layerStack[n]->load(string);
 	if (!this->layerStack[n]->data)
 		return NONS_UNDEFINED_ERROR;
-	this->layerStack[n]->clip_rect.x=x;
-	this->layerStack[n]->clip_rect.y=y;
+	this->layerStack[n]->position.x=x;
+	this->layerStack[n]->position.y=y;
 	this->layerStack[n]->visible=visibility;
 	this->layerStack[n]->alpha=alpha;
 	return NONS_NO_ERROR;
@@ -296,17 +373,33 @@ void NONS_ScreenSpace::clear(){
 	this->BlendNoCursor(1);
 }
 
-bool NONS_ScreenSpace::advanceAnimations(ulong msecs){
+bool NONS_ScreenSpace::advanceAnimations(ulong msecs,std::vector<SDL_Rect> &rects){
+	rects.clear();
 	bool requireRefresh=0;
-#define ADVANCE_ANIM(x) if ((x) && (x)->data) requireRefresh|=(x)->advanceAnimation(msecs)
-	ADVANCE_ANIM(this->Background);
-	ADVANCE_ANIM(this->leftChar);
-	ADVANCE_ANIM(this->rightChar);
-	ADVANCE_ANIM(this->centerChar);
-	for (ulong a=0;a<this->layerStack.size();a++){
-		ADVANCE_ANIM(this->layerStack[a]);
+	std::vector<NONS_Layer *> arr;
+	arr.reserve(5+this->layerStack.size());
+	arr.push_back(this->Background);
+	arr.push_back(this->leftChar);
+	arr.push_back(this->rightChar);
+	arr.push_back(this->centerChar);
+	for (ulong a=0;a<this->layerStack.size();a++)
+		arr.push_back(this->layerStack[a]);
+	arr.push_back(this->cursor);
+	for (ulong a=0;a<arr.size();a++){
+		NONS_Layer *p=arr[a];
+		if (p && p->data){
+			ulong first=p->animation.getCurrentAnimationFrame();
+			bool b=p->advanceAnimation(msecs);
+			requireRefresh|=b;
+			if (b){
+				ulong second=p->animation.getCurrentAnimationFrame();
+				SDL_Rect push=p->optimized_updates[std::pair<ulong,ulong>(first,second)];
+				push.x+=p->position.x;
+				push.y+=p->position.y;
+				rects.push_back(push);
+			}
+		}
 	}
-	ADVANCE_ANIM(this->cursor);
 	return requireRefresh;
 }
 #endif

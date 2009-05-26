@@ -242,7 +242,7 @@ NONS_Image::NONS_Image(){
 	this->refCount=0;
 }
 
-NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary){
+NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects){
 	this->age=0;
 	this->image=0;
 	this->refCount=0;
@@ -407,6 +407,42 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 			break;
 	}
 	this->image->clip_rect.w/=this->animation.animation_length;
+	if (this->animation.animation_length>1){
+		/*switch (this->animation.loop_type){
+			case NONS_AnimationInfo::SAWTOOTH_WAVE_CYCLE:
+				for (ulong a=0;a<this->animation.animation_length-1;a++)
+					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=this->getUpdateRect(a,a+1);
+				this->optimized_updates[
+					std::pair<ulong,ulong>(this->animation.animation_length-1,0)
+				]=this->getUpdateRect(this->animation.animation_length-1,0);
+				break;
+			case NONS_AnimationInfo::SINGLE_CYCLE:
+				for (ulong a=0;a<this->animation.animation_length-1;a++)
+					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=this->getUpdateRect(a,a+1);
+				break;
+			case NONS_AnimationInfo::TRIANGLE_WAVE_CYCLE:
+				for (ulong a=0;a<this->animation.animation_length-1;a++){
+					SDL_Rect temp=this->getUpdateRect(a,a+1);
+					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=temp;
+					this->optimized_updates[std::pair<ulong,ulong>(a+1,a)]=temp;
+				}
+				break;
+			case NONS_AnimationInfo::NO_CYCLE:*/
+				for (ulong a=0;a<this->animation.animation_length-1;a++){
+					for (ulong b=a+1;a<this->animation.animation_length;a++){
+						std::pair<ulong,ulong> p(a,b);
+						if (this->optimized_updates.find(p)!=this->optimized_updates.end())
+							continue;
+						SDL_Rect temp=this->getUpdateRect(a,b);
+						this->optimized_updates[p]=temp;
+						this->optimized_updates[std::pair<ulong,ulong>(b,a)]=temp;
+					}
+				}
+		/*		break;
+		}*/
+	}
+	if (!!rects)
+		*rects=this->optimized_updates;
 }
 
 NONS_Image::~NONS_Image(){
@@ -428,5 +464,52 @@ SDL_Surface *NONS_Image::LoadImage(const wchar_t *string,const uchar *buffer,ulo
 	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;
+}
+
+SDL_Rect NONS_Image::getUpdateRect(ulong from,ulong to){
+	if (!this->image || this->animation.animation_length==1)
+		return SDL_Rect();
+	SDL_LockSurface(this->image);
+	uchar *pixels=(uchar *)this->image->pixels;
+	uchar Roffset=(this->image->format->Rshift)>>3;
+	uchar Goffset=(this->image->format->Gshift)>>3;
+	uchar Boffset=(this->image->format->Bshift)>>3;
+	uchar Aoffset=(this->image->format->Ashift)>>3;
+	unsigned advance=this->image->format->BytesPerPixel,
+		pitch=this->image->pitch;
+	uchar *first=pixels+from*this->image->clip_rect.w*advance,
+		*second=pixels+to*this->image->clip_rect.w*advance;
+	ulong w=this->image->clip_rect.w,
+		h=this->image->clip_rect.h,
+		minx=w,
+		maxx=0,
+		miny=h,
+		maxy=0;
+	for (ulong y=0;y<h;y++){
+		uchar *first0=first,
+			*second0=second;
+		for (ulong x=0;x<w;x++){
+			short rgba0=(short(first[Roffset])+short(first[Goffset])+short(first[Boffset])+short(first[Aoffset]))/4;
+			short rgba1=(short(second[Roffset])+short(second[Goffset])+short(second[Boffset])+short(second[Aoffset]))/4;
+			short diff=rgba0-rgba1;
+			if (diff<=-8 || diff>=8){
+				if (x<minx)
+					minx=x;
+				if (x>maxx)
+					maxx=x;
+				if (y<miny)
+					miny=y;
+				if (y>maxy)
+					maxy=y;
+			}
+			first+=advance;
+			second+=advance;
+		}
+		first=first0+pitch;
+		second=second0+pitch;
+	}
+	SDL_UnlockSurface(this->image);
+	SDL_Rect ret={minx,miny,maxx-minx+1,maxy-miny+1};
+	return ret;
 }
 #endif

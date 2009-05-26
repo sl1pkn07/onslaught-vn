@@ -208,7 +208,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			delete[] filename;
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart,windowYend-windowYstart};
+	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1};
 	SDL_Rect frameRect={frameXstart,frameYstart,frameXend-frameXstart,frameYend-frameYstart};
 	{
 		SDL_Surface *scr=this->everything->screen->screen->virtualScreen;
@@ -931,10 +931,16 @@ ErrorCode NONS_ScriptInterpreter::command_textgosub(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_underline(NONS_ParsedLine &line){
+	if (!line.parameters.size())
+		return 0;
+	long a;
+	_GETINTVALUE(a,0,)
+	this->everything->screen->char_baseline=a;
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
