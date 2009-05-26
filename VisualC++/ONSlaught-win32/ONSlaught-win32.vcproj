@@ -585,11 +585,11 @@
 				Name="Processing"
 				>
 				<File
-					RelativePath="..\..\src\Processing\ExpressionParser.cpp"
+					RelativePath="..\..\src\Processing\ExpressionParser.tab.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\Processing\ExpressionParser.h"
+					RelativePath="..\..\src\Processing\ExpressionParser.tab.hpp"
 					>
 				</File>
 				<File
@@ -630,6 +630,14 @@
 				</File>
 				<File
 					RelativePath="..\..\src\Processing\Variable.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\Processing\VariableMember.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\Processing\VariableMember.h"
 					>
 				</File>
 				<File

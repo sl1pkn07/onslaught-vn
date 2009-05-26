@@ -45,6 +45,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#define ABS(x) ((x)<0?-(x):(x))
+
 #define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
 #define _CHECK_ID_NAME(pointertostring)\
 {\

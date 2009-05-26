@@ -318,8 +318,8 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_textgosub(NONS_ParsedLine &line);
 	ErrorCode command_ispage(NONS_ParsedLine &line);
 	ErrorCode command_labellog(NONS_ParsedLine &line);
+	ErrorCode command_underline(NONS_ParsedLine &line);
 	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);
 	ErrorCode command_(NONS_ParsedLine &line);

@@ -607,7 +607,7 @@ int
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"
-		"\"What's all this, then?\"\n\n"<<std::endl;
+		"\"Make it right before you make it faster.\"\n\n"<<std::endl;
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
 	if (argc>1 && (

@@ -61,11 +61,13 @@ struct NONS_ScreenSpace{
 	ulong sprite_priority;
 	NONS_Lookback *lookback;
 	NONS_Layer *cursor;
+	ulong char_baseline;
 	NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *store=0);
 	NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store);
 	~NONS_ScreenSpace();
 	ErrorCode BlendAll(ulong effect);
 	ErrorCode BlendAll(ulong effect,long timing,wchar_t *rule);
+	void BlendOptimized(std::vector<SDL_Rect> &rects);
 	ErrorCode BlendNoCursor(ulong effect);
 	ErrorCode BlendNoCursor(ulong effect,long timing,wchar_t *rule);
 	ErrorCode BlendNoText(ulong effect);
@@ -78,6 +80,6 @@ struct NONS_ScreenSpace{
 	void resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow);
 	void clear();
 	ErrorCode loadSprite(ulong n,const wchar_t *string,long x,long y,uchar alpha,bool visibility);
-	bool advanceAnimations(ulong msecs);
+	bool advanceAnimations(ulong msecs,std::vector<SDL_Rect> &rects);
 };
 #endif

@@ -70,10 +70,8 @@ NONS_Layer::NONS_Layer(const wchar_t *string){
 	this->visible=1;
 	this->useDataAsDefaultShade=0;
 	this->alpha=0xFF;
-	this->data=ImageLoader->fetchSprite(string);
-	this->animation.parse(string);
-	if (this->data)
-		this->clip_rect=this->data->clip_rect;
+	this->data=0;
+	this->load(string);
 	this->position.x=0;
 	this->position.y=0;
 	this->position.w=0;
@@ -123,14 +121,21 @@ bool NONS_Layer::load(const wchar_t *string){
 		return 1;
 	}
 	this->unload();
-	this->data=ImageLoader->fetchSprite(string);
+	this->data=ImageLoader->fetchSprite(string,&this->optimized_updates);
 	if (!this->data){
 		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,1,1,24,rmask,gmask,bmask,amask);
 		SDL_FillRect(this->data,0,this->defaultShade);
 		this->clip_rect=this->data->clip_rect;
 		return 0;
 	}
+	this->animation.parse(string);
 	this->clip_rect=this->data->clip_rect;
+	/*if (this->animation.animation_length>1){
+		ulong t0=SDL_GetTicks();
+		SDL_Rect rect=this->getUpdateRect(0,1);
+		ulong t1=SDL_GetTicks();
+		std::cout <<"completed in "<<t1-t0<<" msec."<<std::endl;
+	}*/
 	return 1;
 }
 
@@ -139,10 +144,12 @@ bool NONS_Layer::unload(bool youCantTouchThis){
 		return 1;
 	if (ImageLoader->unfetchImage(this->data)){
 		this->data=0;
+		this->optimized_updates.clear();
 		return 1;
 	}else if (!youCantTouchThis){
 		SDL_FreeSurface(this->data);
 		this->data=0;
+		this->optimized_updates.clear();
 		return 1;
 	}
 	return 0;
@@ -154,5 +161,13 @@ bool NONS_Layer::advanceAnimation(ulong msec){
 		return 0;
 	this->clip_rect.x=frame*this->clip_rect.w;
 	return 1;
+}
+
+void NONS_Layer::centerAround(int x){
+	this->position.x=x-this->clip_rect.w/2;
+}
+
+void NONS_Layer::useBaseline(int y){
+	this->position.y=y-this->clip_rect.h+1;
 }
 #endif

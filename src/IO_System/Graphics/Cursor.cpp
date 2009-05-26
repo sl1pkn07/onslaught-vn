@@ -71,6 +71,7 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 	const long delayadvance=25;
 	ulong expire=expiration?expiration:ULONG_MAX;
 	int ret=0;
+	std::vector<SDL_Rect> rects;
 	while (!done && !CURRENTLYSKIPPING && expire>0){
 		for (ulong a=0;!done && !CURRENTLYSKIPPING && expire>0;a+=delayadvance){
 			while (!queue->data.empty()){
@@ -116,28 +117,28 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 				}
 			}
 			ulong t0=SDL_GetTicks();
-			if (!!this->screen && this->screen->advanceAnimations(delayadvance))
-				this->screen->BlendAll(1);
+			if (!!this->screen && this->screen->advanceAnimations(delayadvance,rects))
+				this->screen->BlendOptimized(rects);
 			ulong t1=SDL_GetTicks()-t0;
 			long delay=delayadvance-t1;
 			if (delay>0)
 				SDL_Delay(delay);
 			expire-=delayadvance;
-			if (t1>0)
-				std::cout <<"Completed in "<<t1<<" ms"<<std::endl;
 		}
 	}
 animate_000:
-	this->screen->BlendNoCursor(1);
+	if (ret!=-1){
+		this->screen->BlendNoCursor(1);
+		this->screen->cursor=0;
+	}
 	InputObserver.detach(queue);
-	this->screen->cursor=0;
 	return ret;
 }
 
 bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
 	bool anim=!!this->data;
 	if (menu && menu->rightClickMode==1 && menu->buttons){
-		this->screen->BlendNoText(1);
+		//this->screen->BlendNoText(1);
 		if (menu->callMenu()==-1)
 			return 0;
 		while (!queue->data.empty())

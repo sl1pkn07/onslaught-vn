@@ -34,6 +34,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <vector>
+#include <map>
 
 struct NONS_AnimationInfo{	
 	enum TRANSPARENCY_METHODS{
@@ -75,6 +76,8 @@ struct NONS_AnimationInfo{
 	long getCurrentAnimationFrame();
 };
 
+typedef std::map<std::pair<ulong,ulong>,SDL_Rect> optim_t;
+
 struct NONS_Image{
 	SDL_Surface *image;
 	NONS_AnimationInfo animation;
@@ -87,12 +90,12 @@ struct NONS_Image{
 	*/
 	ulong age;
 	ulong refCount;
+	optim_t optimized_updates;
 	NONS_Image();
-	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary);
+	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects=0);
 	~NONS_Image();
-	//SDL_Surface *LoadLayerImage(const wchar_t *name,uchar *buffer,ulong bufferSize,SDL_Rect *screen,int method);
 	SDL_Surface *LoadImage(const wchar_t *string,const uchar *buffer,ulong bufferSize);
-	//SDL_Surface *LoadSpriteImage(const wchar_t *string,const wchar_t *name,uchar *buffer,ulong bufferSize,int method);
-	//SDL_Surface *LoadCursorImage(uchar *buffer,ulong bufferSize,int method);
+private:
+	SDL_Rect getUpdateRect(ulong from,ulong to);
 };
 #endif

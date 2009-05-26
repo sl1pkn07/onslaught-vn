@@ -137,8 +137,8 @@
 		<Unit filename="..\src\IO_System\StdOut.h" />
 		<Unit filename="..\src\ONSlaught.cpp" />
 		<Unit filename="..\src\Parallelization.h" />
-		<Unit filename="..\src\Processing\ExpressionParser.cpp" />
-		<Unit filename="..\src\Processing\ExpressionParser.h" />
+		<Unit filename="..\src\Processing\ExpressionParser.tab.cpp" />
+		<Unit filename="..\src\Processing\ExpressionParser.tab.hpp" />
 		<Unit filename="..\src\Processing\ParsedLine.cpp" />
 		<Unit filename="..\src\Processing\ParsedLine.h" />
 		<Unit filename="..\src\Processing\ScriptInterpreter.cpp" />

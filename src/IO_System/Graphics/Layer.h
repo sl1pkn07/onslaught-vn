@@ -36,6 +36,7 @@
 #include "../../Common.h"
 #include "../SAR/Image_Loader/ImageLoader.h"
 #include "../../enums.h"
+#include <map>
 
 struct NONS_Layer{
 	//The actual bitmap and other stuff.
@@ -50,6 +51,7 @@ struct NONS_Layer{
 	SDL_Rect clip_rect,
 		position;
 	uchar alpha;
+	optim_t optimized_updates;
 	NONS_AnimationInfo animation;
 	NONS_Layer(SDL_Rect *size,unsigned rgba);
 	NONS_Layer(SDL_Surface *img,unsigned rgba);
@@ -64,5 +66,7 @@ struct NONS_Layer{
 	void Clear();
 	//1 if the layer should be re-blended.
 	bool advanceAnimation(ulong msec);
+	void centerAround(int x);
+	void useBaseline(int y);
 };
 #endif
