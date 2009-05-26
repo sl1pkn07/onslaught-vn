@@ -50,13 +50,9 @@ struct NONS_RedirectedOutput{
 			this->cout <<a;
 		return *this;
 	}
-	template <> NONS_RedirectedOutput &operator<< <wchar_t *>(wchar_t * const &a){
-		char *temp=WChar_to_UTF8(a);
-		*this <<temp;
-		delete[] temp;
-		return *this;
-	}
 	void redirect();
 	std::ostream &getstream();
 };
+
+template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a);
 #endif
