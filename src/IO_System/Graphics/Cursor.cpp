@@ -72,6 +72,7 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 	ulong expire=expiration?expiration:ULONG_MAX;
 	int ret=0;
 	std::vector<SDL_Rect> rects;
+	this->screen->BlendAll(1);
 	while (!done && !CURRENTLYSKIPPING && expire>0){
 		for (ulong a=0;!done && !CURRENTLYSKIPPING && expire>0;a+=delayadvance){
 			while (!queue->data.empty()){
