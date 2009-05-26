@@ -1,4 +1,4 @@
-trunk
+20090526
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,
         puttext, labellog, underline.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
