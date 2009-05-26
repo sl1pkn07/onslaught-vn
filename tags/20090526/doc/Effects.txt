@@ -1,0 +1,21 @@
+0: Don't display. Wait until redraw.
+1: No effect.
+Shutters:
+    Description: The screen is divided in shutters and each shutter is filled
+    with the dst in one direction:
+    step 0..<div width>: div 0..n,row/column step
+2: Rightward shutter. Shutter width: <screen width>/40.
+3: Leftward shutter. Shutter width: Same as above.
+4: Downward shutter. Shutter height: <screen height>/30.
+5: Upward shutter. Shutter height: <screen height>/30.
+Curtains:
+    Description: The screen is divided by the square root of the size of the
+    dimension, and the divisions are filled in this manner:
+    step 0..<sqrt(dimensionSize)>: div 0..step,row/column step-div
+    [0,0],[0,1][1,0],[0,2][1,1][2,0]
+6: Rightward curtain.
+7: Leftward curtain.
+8: Downward curtain.
+9: Upward curtain.
+
+TODO: A few effects are missing.
