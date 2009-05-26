@@ -1,8 +1,0 @@
-include.7z contains only the Boost include files for Visual C++.
-
-Compiling nsaio on Linux is as straightforward as riding a unicycle. I've
-noticed that some versions of Boost require boost_system to link
-boost_filesystem, while others don't. There doesn't appear to be any concensus
-on the names the libraries should have. OpenSuse, for instance, installs by
-default only part of Boost with the pattern libboost_*.*, but Boost uses the
-pattern libboost_*-<compiler>-mt-<version>.*

@@ -1,1 +1,0 @@
-g++ crypt.cpp -I NONS_src -o crypt -O3 -s -fexpensive-optimizations
