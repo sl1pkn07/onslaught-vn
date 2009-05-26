@@ -42,6 +42,13 @@ NONS_RedirectedOutput::~NONS_RedirectedOutput(){
 		this->file->close();
 }
 
+template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a){
+	char *temp=WChar_to_UTF8(a);
+	*this <<temp;
+	delete[] temp;
+	return *this;
+}
+
 std::ostream &NONS_RedirectedOutput::getstream(){
 	if (CLOptions.override_stdout)
 		return *(this->file);
