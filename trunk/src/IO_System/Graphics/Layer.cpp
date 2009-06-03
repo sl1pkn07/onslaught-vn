@@ -64,7 +64,7 @@ NONS_Layer::NONS_Layer(SDL_Surface *img,unsigned rgba){
 	this->position.h=0;
 }
 
-NONS_Layer::NONS_Layer(const wchar_t *string){
+NONS_Layer::NONS_Layer(const std::wstring *string){
 	this->defaultShade=0;
 	this->fontCache=0;
 	this->visible=1;
@@ -96,6 +96,8 @@ void NONS_Layer::Clear(){
 }
 
 void NONS_Layer::setShade(uchar r,uchar g,uchar b){
+	if (!this->data)
+		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,this->clip_rect.w,this->clip_rect.h,32,rmask,gmask,bmask,amask);
 	SDL_PixelFormat *format=this->data->format;
 	unsigned r0=r,
 		g0=g,
@@ -111,7 +113,7 @@ void NONS_Layer::usePicAsDefaultShade(SDL_Surface *pic){
 	this->useDataAsDefaultShade=1;
 }
 
-bool NONS_Layer::load(const wchar_t *string){
+bool NONS_Layer::load(const std::wstring *string){
 	if (!string){
 		int w=this->data->w,h=this->data->h;
 		if (this->unload(1)){
@@ -121,14 +123,14 @@ bool NONS_Layer::load(const wchar_t *string){
 		return 1;
 	}
 	this->unload();
-	this->data=ImageLoader->fetchSprite(string,&this->optimized_updates);
+	this->data=ImageLoader->fetchSprite(*string,&this->optimized_updates);
 	if (!this->data){
 		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,1,1,24,rmask,gmask,bmask,amask);
 		SDL_FillRect(this->data,0,this->defaultShade);
 		this->clip_rect=this->data->clip_rect;
 		return 0;
 	}
-	this->animation.parse(string);
+	this->animation.parse(*string);
 	this->clip_rect=this->data->clip_rect;
 	/*if (this->animation.animation_length>1){
 		ulong t0=SDL_GetTicks();

@@ -48,36 +48,22 @@
 #define DEFAULT_OUTPUT_HEIGHT DEFAULT_INPUT_HEIGHT
 #endif
 
-NONS_CommandLineOptions::NONS_CommandLineOptions(){
-	this->scriptencoding=DETECT_ENCODING;
-	this->musicFormat=0;
-	this->musicDirectory=0;
-	this->cacheSize=0;
-	this->scriptPath=0;
-	this->scriptEncryption=NO_ENCRYPTION;
-	this->override_stdout=1;
-	this->reset_redirection_files=1;
-	this->debugMode=0;
-	this->noconsole=0;
-	this->virtualWidth=DEFAULT_INPUT_WIDTH;
-	this->virtualHeight=DEFAULT_INPUT_HEIGHT;
-	this->realWidth=DEFAULT_OUTPUT_WIDTH;
-	this->realHeight=DEFAULT_OUTPUT_HEIGHT;
-	this->startFullscreen=0;
-	this->verbosity=0;
-	this->no_sound=0;
-	this->savedir=0;
-	this->stopOnFirstError=0;
-}
+NONS_CommandLineOptions::NONS_CommandLineOptions()
+	:scriptencoding(DETECT_ENCODING),
+	cacheSize(0),
+	scriptEncryption(NO_ENCRYPTION),
+	override_stdout(1),
+	reset_redirection_files(1),
+	debugMode(0),
+	noconsole(0),
+	virtualWidth(DEFAULT_INPUT_WIDTH),
+	virtualHeight(DEFAULT_INPUT_HEIGHT),
+	realWidth(DEFAULT_OUTPUT_WIDTH),
+	realHeight(DEFAULT_OUTPUT_HEIGHT),
+	startFullscreen(0),
+	verbosity(0),
+	no_sound(0),
+	stopOnFirstError(0){}
 
-NONS_CommandLineOptions::~NONS_CommandLineOptions(){
-	if (this->musicFormat)
-		delete[] this->musicFormat;
-	if (this->musicDirectory)
-		delete[] this->musicDirectory;
-	if (this->scriptPath)
-		delete[] this->scriptPath;
-	if (this->savedir)
-		delete[] this->savedir;
-}
+NONS_CommandLineOptions::~NONS_CommandLineOptions(){}
 #endif

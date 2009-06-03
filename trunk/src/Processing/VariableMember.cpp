@@ -37,9 +37,10 @@
 #include <SDL/SDL.h>
 #include <sstream>
 
+const std::wstring NONS_VariableMember::null;
+
 NONS_VariableMember::NONS_VariableMember(yytokentype type){
 	this->intValue=0;
-	this->wcsValue=0;
 	this->type=type;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
@@ -52,7 +53,6 @@ NONS_VariableMember::NONS_VariableMember(yytokentype type){
 
 NONS_VariableMember::NONS_VariableMember(long value){
 	this->intValue=value;
-	this->wcsValue=0;
 	this->type=INTEGER;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
@@ -63,23 +63,21 @@ NONS_VariableMember::NONS_VariableMember(long value){
 	this->temporary=0;
 }
 
-NONS_VariableMember::NONS_VariableMember(const wchar_t *a,bool takeOwnership){
+NONS_VariableMember::NONS_VariableMember(const std::wstring &a){
 	this->intValue=0;
-	this->wcsValue=0;
 	this->type=STRING;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
 	this->constant=0;
 	this->dimension=0;
 	this->dimensionSize=0;
-	this->set(a,takeOwnership);
+	this->set(a);
 	this->negated=1;
 	this->temporary=0;
 }
 
 NONS_VariableMember::NONS_VariableMember(std::vector<long> &sizes,size_t startAt){
 	this->intValue=0;
-	this->wcsValue=0;
 	this->_long_upper_limit=LONG_MAX;
 	this->_long_lower_limit=LONG_MIN;
 	this->constant=0;
@@ -103,7 +101,7 @@ NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
 	this->intValue=b.intValue;
 	this->_long_upper_limit=b._long_upper_limit;
 	this->_long_lower_limit=b._long_lower_limit;
-	this->wcsValue=(b.type==STRING)?copyWString(b.wcsValue):0;
+	this->wcsValue=b.wcsValue;
 	this->type=b.type;
 	this->dimensionSize=b.dimensionSize;
 	if (this->type!=INTEGER_ARRAY)
@@ -118,8 +116,6 @@ NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
 }
 
 NONS_VariableMember::~NONS_VariableMember(){
-	if (!!this->wcsValue)
-		delete[] this->wcsValue;
 	if (!!this->dimension){
 		for (ulong a=0;a<this->dimensionSize;a++)
 			delete this->dimension[a];
@@ -152,20 +148,8 @@ long NONS_VariableMember::getInt(){
 	return 0;
 }
 
-const wchar_t *NONS_VariableMember::getWcs(){
-	return (this->type==STRING && !!this->wcsValue)?this->wcsValue:L"";
-}
-
-wchar_t *NONS_VariableMember::getWcsCopy(){
-	if (this->type==STRING)
-		return copyWString(this->wcsValue);
-	return copyWString(L"");
-}
-
-char *NONS_VariableMember::getStrCopy(){
-	if (this->type==STRING)
-		return copyString(this->wcsValue);
-	return copyString(L"");
+const std::wstring &NONS_VariableMember::getWcs(){
+	return this->type==STRING?this->wcsValue:this->null;
 }
 
 NONS_VariableMember *NONS_VariableMember::getIndex(ulong i){
@@ -185,18 +169,23 @@ void NONS_VariableMember::set(long a){
 	SDL_UnlockMutex(exitMutex);
 }
 
-void NONS_VariableMember::set(const wchar_t *a,bool takeOwnership){
-	if (this->constant || this->type==INTEGER || this->type==INTEGER_ARRAY){
-		if (takeOwnership)
-			delete[] (wchar_t *)a;
+void NONS_VariableMember::atoi(const std::wstring &a){
+	if (this->constant || this->type!=INTEGER)
 		return;
-	}
 	SDL_LockMutex(exitMutex);
-	if (this->type==STRING){
-		if (!!this->wcsValue)
-			delete[] this->wcsValue;
-		this->wcsValue=takeOwnership?(wchar_t *)a:copyWString(a);
-	}
+	std::wstringstream stream;
+	stream <<a;
+	stream >>this->intValue;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::set(const std::wstring &a){
+	if (this->constant || this->type==INTEGER || this->type==INTEGER_ARRAY)
+		return;
+	SDL_LockMutex(exitMutex);
+	if (this->type==STRING)
+		this->wcsValue=a;
 	SDL_UnlockMutex(exitMutex);
 }
 

@@ -65,13 +65,11 @@ struct NONS_StandardOutput{
 	void Clear(bool eraseBuffer=1);
 	~NONS_StandardOutput();
 	void setPosition(int x,int y);
-	//if return==1, there should be a call to the page cursor a screen clear before
+	//if return==1, there should be a call to the page cursor and a screen clear before
 	//calling print().
-	bool prepareForPrinting(const wchar_t *str);
+	bool prepareForPrinting(const std::wstring str);
 	bool print(ulong start,ulong end,NONS_VirtualScreen *dst,ulong *printedChars=0);
 	void endPrinting();
-	/*std::vector<NONS_Glyph *> *Out(wchar_t *str,NONS_VirtualScreen *dst);
-	std::vector<NONS_Glyph *> *Out(std::vector<NONS_Glyph *> *fore,std::vector<NONS_Glyph *> *back,NONS_VirtualScreen *dst);*/
 	void ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst,bool update,bool writeToLayers,SDL_Color *col);
 	float getCenterPolicy(char which);
 	void setCenterPolicy(char which,float val);

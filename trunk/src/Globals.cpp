@@ -183,6 +183,10 @@ const char *errorMessages[]={
 	"Negative index in array declaration.",
 	//NONS_LEXICALLY_UNCASTABLE
 	"The string cannot be converted to an integer.",
+	//NONS_DUPLICATE_LABEL
+	"Duplicate label found.",
+	//NONS_INVALID_COMMAND_NAME
+	"Invalid command name. Only [A-Za-z_][A-Za-z_0-9]*",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);
@@ -221,6 +225,6 @@ SDL_mutex *screenMutex=0;
 ulong cpu_count=1;
 #endif
 
-char *save_directory=0;
-char *config_directory=0;
+std::string save_directory;
+std::string config_directory;
 #endif

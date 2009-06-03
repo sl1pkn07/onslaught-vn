@@ -47,8 +47,8 @@ ErrorCode NONS_ScriptInterpreter::command_skip(NONS_ParsedLine &line){
 		return NONS_ZERO_VALUE_IN_SKIP;
 	ulong current_line=this->current_line,target=current_line+count-1;
 	long pos=0;
-	long len=this->script->length;
-	wchar_t *buffer=this->script->script;
+	long len=this->script->script.size();
+	std::wstring &buffer=this->script->script;
 	for (ulong a=0;a<target && pos<len;a++){
 		long temppos=pos;
 		for (;temppos<len && buffer[temppos]!=10 && buffer[temppos]!=13;temppos++);
@@ -69,20 +69,19 @@ ErrorCode NONS_ScriptInterpreter::command_skip(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_wave(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	long size;
-	wchar_t *name=0;
+	ulong size;
+	std::wstring name;
 	_GETWCSVALUE(name,0,)
-	NONS_tolower(name);
+	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
-	this->wav_loop=!!wcscmp(line.commandName,L"wave");
+	this->wav_loop=!!stdStrCmpCI(line.commandName,L"wave");
 	if (this->everything->audio->bufferIsLoaded(name))
-		error=this->everything->audio->playSoundAsync(name,0,0,0,this->wav_loop?-1:0);
+		error=this->everything->audio->playSoundAsync(&name,0,0,0,this->wav_loop?-1:0);
 	else{
-		char *buffer=(char *)this->everything->archive->getFileBuffer(name,(ulong *)&size);
-		error=!buffer?NONS_FILE_NOT_FOUND:this->everything->audio->playSoundAsync(name,buffer,size,0,this->wav_loop?-1:0);
+		char *buffer=(char *)this->everything->archive->getFileBuffer(name,size);
+		error=!buffer?NONS_FILE_NOT_FOUND:this->everything->audio->playSoundAsync(&name,buffer,size,0,this->wav_loop?-1:0);
 	}
-	delete[] name;
 	return error;
 }
 
@@ -139,7 +138,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		windowYstart,
 		windowXend,
 		windowYend;
-	wchar_t *filename=0;
+	std::wstring filename;
 	bool syntax=0;
 	int forceLineSkip=0;
 	if (this->legacy_set_window){
@@ -159,7 +158,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		_GETINTVALUE(shadow,10,)
 		_GETINTVALUE(windowXstart,12,)
 		_GETINTVALUE(windowYstart,13,)
-		if (this->store->getIntValue(line.parameters[11],&color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(line.parameters[11],color)!=NONS_NO_ERROR){
 			syntax=1;
 			_GETWCSVALUE(filename,11,)
 			windowXend=windowXstart+1;
@@ -191,7 +190,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 		_GETINTVALUE(windowYstart,12,)
 		_GETINTVALUE(windowXend,13,)
 		_GETINTVALUE(windowYend,14,)
-		if (this->store->getIntValue(line.parameters[10],&color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(line.parameters[10],color)!=NONS_NO_ERROR){
 			syntax=1;
 			_GETWCSVALUE(filename,10,)
 		}
@@ -204,8 +203,6 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			frameXstart>=frameXend ||
 			frameYstart>=frameYend ||
 			fontsize<1){
-		if (syntax)
-			delete[] filename;
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
 	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1};
@@ -235,8 +232,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			this->everything->screen->output->shadeLayer->setShade((color&0xFF0000)>>16,(color&0xFF00)>>8,color&0xFF);
 			this->everything->screen->output->shadeLayer->Clear();
 		}else{
-			long f=instr(filename,";");
-			pic=ImageLoader->fetchSprite(filename+(f>=0?f+1:0));
+			pic=ImageLoader->fetchSprite(filename);
 			windowRect.w=pic->w;
 			windowRect.h=pic->h;
 			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
@@ -263,8 +259,6 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_ParsedLine &line){
 			break;
 	}
 	this->everything->screen->output->display_speed=this->default_speed;
-	if (syntax)
-		delete[] filename;
 	return NONS_NO_ERROR;
 }
 
@@ -282,19 +276,17 @@ ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	long which,
 		x,y;
-	wchar_t *string=0;
+	std::wstring string;
 	_GETINTVALUE(which,0,)
 	_GETINTVALUE(x,2,)
 	_GETINTVALUE(y,3,)
 	_GETWCSVALUE(string,1,)
-	bool absolute=wcscmp(line.commandName,L"abssetcursor")==0;
+	bool absolute=stdStrCmpCI(line.commandName,L"abssetcursor")==0;
 	if (!which){
 		if (this->arrowCursor)
 			delete this->arrowCursor;
 		this->arrowCursor=new NONS_Cursor(string,x,y,absolute,this->everything->screen);
-		if (this->saveGame->arrowCursorString)
-			delete[] this->saveGame->arrowCursorString;
-		this->saveGame->arrowCursorString=copyWString(string);
+		this->saveGame->arrowCursorString=string;
 		this->saveGame->arrowCursorAbs=absolute;
 		this->saveGame->arrowCursorX=x;
 		this->saveGame->arrowCursorY=y;
@@ -302,15 +294,11 @@ ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_ParsedLine &line){
 		if (this->pageCursor)
 			delete this->pageCursor;
 		this->pageCursor=new NONS_Cursor(string,x,y,absolute,this->everything->screen);
-		if (this->saveGame->pageCursorString)
-			delete[] this->saveGame->pageCursorString;
-		this->saveGame->pageCursorString=copyWString(string);
+		this->saveGame->pageCursorString=string;
 		this->saveGame->pageCursorAbs=absolute;
 		this->saveGame->pageCursorX=x;
 		this->saveGame->pageCursorY=y;
 	}
-
-	delete[] string;
 	return NONS_NO_ERROR;
 }
 
@@ -359,11 +347,10 @@ ErrorCode NONS_ScriptInterpreter::command_undocumented(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_unalias(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	wchar_t *name=line.parameters[0];
-	std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI>::iterator i=this->store->constants.find(name);
+	std::wstring name=line.parameters[0];
+	constants_map_T::iterator i=this->store->constants.find(name);
 	if (i==this->store->constants.end())
 		return NONS_UNDEFINED_CONSTANT;
-	delete[] i->first;
 	delete i->second;
 	this->store->constants.erase(i);
 	return NONS_NO_ERROR;
@@ -389,7 +376,7 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_ParsedLine &line){
 	/*if (!this->everything->screen)
 		this->setDefaultWindow();*/
 	long number,duration;
-	wchar_t *rule=0;
+	std::wstring rule;
 	_GETINTVALUE(number,0,)
 	if (line.parameters.size()>1){
 		_GETINTVALUE(duration,1,)
@@ -397,7 +384,7 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_ParsedLine &line){
 			_GETWCSVALUE(rule,2,)
 		if (!this->everything->screen->output->transition->stored)
 			delete this->everything->screen->output->transition;
-		this->everything->screen->output->transition=new NONS_GFX(number,duration,rule);
+		this->everything->screen->output->transition=new NONS_GFX(number,duration,&rule);
 	}else{
 		NONS_GFX *effect=this->gfx_store->retrieve(number);
 		if (!effect)
@@ -410,9 +397,7 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_ParsedLine &line){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_textonoff(NONS_ParsedLine &line){
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
-	if (!wcscmp(line.commandName,L"texton"))
+	if (!stdStrCmpCI(line.commandName,L"texton"))
 		this->everything->screen->showText();
 	else
 		this->everything->screen->hideText();
@@ -423,7 +408,7 @@ extern std::ofstream textDumpFile;
 
 ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 	bool selnum;
-	if (!wcscmp(line.commandName,L"selnum")){
+	if (!stdStrCmpCI(line.commandName,L"selnum")){
 		if (line.parameters.size()<3 || !(line.parameters.size()%2))
 			return NONS_INSUFFICIENT_PARAMETERS;
 		selnum=1;
@@ -435,13 +420,10 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 	NONS_VariableMember *var;
 	if (selnum)
 		_GETINTVARIABLE(var,0,)
-	std::vector<wchar_t *> strings,jumps;
+	std::vector<std::wstring> strings,jumps;
 	for (ulong a=selnum;a<line.parameters.size();a++){
-		wchar_t *temp=0;
-		_GETWCSVALUE(temp,a,
-			for (ulong b=0;b<strings.size();b++){
-				delete[] strings[b];
-			})
+		std::wstring temp;
+		_GETWCSVALUE(temp,a,)
 		strings.push_back(temp);
 		jumps.push_back(line.parameters[++a]);
 	}
@@ -449,13 +431,13 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 		this->setDefaultWindow();*/
 	NONS_ButtonLayer layer(this->main_font,this->everything->screen,0,(void *)this->menu);
 	layer.makeTextButtons(
-		&strings,
-		&(this->selectOn),
-		&(this->selectOff),
+		strings,
+		&this->selectOn,
+		&this->selectOff,
 		!!this->everything->screen->output->shadowLayer,
-		this->selectVoiceEntry,
-		this->selectVoiceMouseOver,
-		this->selectVoiceClick,
+		&this->selectVoiceEntry,
+		&this->selectVoiceMouseOver,
+		&this->selectVoiceClick,
 		this->everything->audio,
 		this->everything->archive,
 		this->everything->screen->output->w,
@@ -467,33 +449,21 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_ParsedLine &line){
 	if (choice==-2){
 		this->everything->screen->clearText();
 		choice=layer.getUserInput(this->everything->screen->output->x,this->everything->screen->output->y);
-		if (choice==-2){
-			for (ulong b=0;b<strings.size();b++){
-				delete[] strings[b];
-			}
+		if (choice==-2)
 			return NONS_SELECT_TOO_BIG;
-		}
 	}
-	if (choice==-3){
-		for (ulong b=0;b<strings.size();b++)
-			delete[] strings[b];
+	if (choice==-3)
 		return NONS_NO_ERROR;
-	}
 	this->everything->screen->clearText();
-	if (textDumpFile.is_open()){
-		char *copy=WChar_to_UTF8(strings[choice]);
-		textDumpFile <<"    "<<copy<<std::endl;
-		delete[] copy;
-	}
-	for (ulong b=0;b<strings.size();b++)
-		delete[] strings[b];
+	if (textDumpFile.is_open())
+		textDumpFile <<"    "<<UniToUTF8(strings[choice])<<std::endl;
 	if (selnum)
 		var->set(choice);
 	else{
 		long offset=this->script->offsetFromBlock(jumps[choice]);
 		if (offset<0)
 			return NONS_NO_SUCH_BLOCK;
-		if (!wcscmp(line.commandName,L"selgosub")){
+		if (!stdStrCmpCI(line.commandName,L"selgosub")){
 			NONS_StackElement *p=new NONS_StackElement(this->interpreter_position,0,this->insideTextgosub());
 			this->callStack.push_back(p);
 		}
@@ -509,7 +479,7 @@ ErrorCode NONS_ScriptInterpreter::bad_select(NONS_ParsedLine &line){
 		"    I'm going to try and parse the command all the same, so don't be surprised if there are errors.\n"
 		"    Oh, and this is still considered a syntax error, so I'm going to return INSUFFICIENT_PARAMETERS.\n";
 	ulong pos=this->previous_interpreter_position;
-	wchar_t *script=this->script->script;
+	std::wstring &script=this->script->script;
 	for (;!iswhitespace(script[pos]);pos++);
 	while (1){
 		for (;iswhitespace(script[pos]);pos++);
@@ -519,7 +489,7 @@ ErrorCode NONS_ScriptInterpreter::bad_select(NONS_ParsedLine &line){
 			l++;
 		}else
 			for (;!iswhitespace(script[start+l]);l++);
-		line.parameters.push_back(copyWString(script+start,l));
+		line.parameters.push_back(script.substr(start,l));
 		pos+=l;
 		for (;iswhitespace(script[pos]);pos++);
 		if (script[pos]!=',')
@@ -549,66 +519,39 @@ ErrorCode NONS_ScriptInterpreter::command_selectcolor(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	wchar_t *entry=0,
-		*mouseover=0,
-		*click=0;
+	std::wstring entry,
+		mouseover,
+		click;
 	_GETWCSVALUE(entry,0,)
-	_GETWCSVALUE(mouseover,1,delete[] entry;)
-	_GETWCSVALUE(click,2,delete[] entry; delete[] mouseover;)
-	NONS_tolower(entry);
-	NONS_tolower(mouseover);
-	NONS_tolower(click);
+	_GETWCSVALUE(mouseover,1,)
+	_GETWCSVALUE(click,2,)
+	tolower(entry);
+	tolower(mouseover);
+	tolower(click);
 	uchar *buffer;
-	if (*entry){
-		long l;
-		buffer=this->everything->archive->getFileBuffer(entry,(ulong *)&l);
-		if (!buffer){
-			delete[] entry;
-			delete[] mouseover;
-			delete[] click;
+	if (entry.size()){
+		ulong l;
+		buffer=this->everything->archive->getFileBuffer(entry,l);
+		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		}
 		delete[] buffer;
-	}else{
-		delete[] entry;
-		entry=0;
 	}
-	if (*mouseover){
-		long l;
-		uchar *buffer=this->everything->archive->getFileBuffer(mouseover,(ulong *)&l);
-		if (!buffer){
-			delete[] entry;
-			delete[] mouseover;
-			delete[] click;
+	if (mouseover.size()){
+		ulong l;
+		uchar *buffer=this->everything->archive->getFileBuffer(mouseover,l);
+		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		}
 		delete[] buffer;
-	}else{
-		delete[] mouseover;
-		mouseover=0;
 	}
-	if (*click){
-		long l;
-		uchar *buffer=this->everything->archive->getFileBuffer(click,(ulong *)&l);
-		if (!buffer){
-			delete[] entry;
-			delete[] mouseover;
-			delete[] click;
+	if (click.size()){
+		ulong l;
+		uchar *buffer=this->everything->archive->getFileBuffer(click,l);
+		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		}
 		delete[] buffer;
-	}else{
-		delete[] click;
-		click=0;
 	}
-	if (this->selectVoiceEntry)
-		delete[] this->selectVoiceEntry;
 	this->selectVoiceEntry=entry;
-	if (this->selectVoiceMouseOver)
-		delete[] this->selectVoiceMouseOver;
 	this->selectVoiceMouseOver=mouseover;
-	if (this->selectVoiceClick)
-		delete[] this->selectVoiceClick;
 	this->selectVoiceClick=click;
 	return NONS_NO_ERROR;
 }
@@ -616,7 +559,7 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_trap(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (!wcscmp(line.parameters[0],L"off")){
+	if (!stdStrCmpCI(line.parameters[0],L"off")){
 		if (!trapFlag)
 			return NONS_NO_TRAP_SET;
 		trapFlag=0;
@@ -624,11 +567,11 @@ ErrorCode NONS_ScriptInterpreter::command_trap(NONS_ParsedLine &line){
 		return NONS_NO_ERROR;
 	}
 	long kind;
-	if (!wcscmp(line.commandName,L"trap"))
+	if (!stdStrCmpCI(line.commandName,L"trap"))
 		kind=1;
-	else if (!wcscmp(line.commandName,L"lr_trap"))
+	else if (!stdStrCmpCI(line.commandName,L"lr_trap"))
 		kind=2;
-	else if (!wcscmp(line.commandName,L"trap2"))
+	else if (!stdStrCmpCI(line.commandName,L"trap2"))
 		kind=3;
 	else
 		kind=4;
@@ -675,20 +618,14 @@ ErrorCode NONS_ScriptInterpreter::command_waittimer(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_savename(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	wchar_t *save=0,
-		*load=0,
-		*slot=0;
+	std::wstring save,
+		load,
+		slot;
 	_GETWCSVALUE(save,0,)
-	_GETWCSVALUE(load,1,delete[] save;)
-	_GETWCSVALUE(slot,2,delete[] save; delete[] load;)
-	if (this->menu->stringSave)
-		delete[] this->menu->stringSave;
+	_GETWCSVALUE(load,1,)
+	_GETWCSVALUE(slot,2,)
 	this->menu->stringSave=save;
-	if (this->menu->stringLoad)
-		delete[] this->menu->stringLoad;
 	this->menu->stringLoad=load;
-	if (this->menu->stringSlot)
-		delete[] this->menu->stringSlot;
 	this->menu->stringSlot=slot;
 	return NONS_NO_ERROR;
 }
@@ -712,7 +649,7 @@ ErrorCode NONS_ScriptInterpreter::command_savenumber(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_systemcall(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (!wcscmp(line.parameters[0],L"rmenu"))
+	if (!stdStrCmpCI(line.parameters[0],L"rmenu"))
 		this->menu->callMenu();
 	else
 		this->menu->call(line.parameters[0]);
@@ -795,12 +732,11 @@ ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
-	char *filename;
-	_GETSTRVALUE(filename,0,)
+	std::wstring filename;
+	_GETWCSVALUE(filename,0,)
 	LOCKSCREEN;
-	SDL_SaveBMP(this->everything->screen->screen->virtualScreen,filename);
+	SDL_SaveBMP(this->everything->screen->screen->virtualScreen,UniToISO88591(filename).c_str());
 	UNLOCKSCREEN;
-	delete[] filename;
 	return NONS_INSUFFICIENT_PARAMETERS;
 }
 
@@ -881,45 +817,39 @@ ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_split(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	wchar_t *srcStr=0,*searchStr=0;
+	std::wstring srcStr,
+		searchStr;
 	_GETWCSVALUE(srcStr,0,)
-	_GETWCSVALUE(searchStr,1,delete[] srcStr;)
+	_GETWCSVALUE(searchStr,1,)
 	std::vector <NONS_VariableMember *> dsts;
 	for (ulong a=2;a<line.parameters.size();a++){
 		NONS_VariableMember *var;
-		_GETVARIABLE(var,a,delete[] srcStr; delete[] searchStr;)
+		_GETVARIABLE(var,a,)
 		if (var->getType()==INTEGER)
 			var->set(0);
 		else
-			var->set(L"",0);
+			var->set(L"");
 		dsts.push_back(var);
 	}
-	wchar_t *middle=srcStr;
-	ulong size=wcslen(searchStr);
+	ulong middle=0;
 	for (ulong a=0;a<dsts.size();a++){
-		long next=instr(middle,searchStr);
-		if (next<0){
-			dsts[a]->set(middle,0);
+		ulong next=srcStr.find(searchStr,middle);
+		if (next==srcStr.npos){
+			dsts[a]->set(srcStr.substr(middle));
 			break;
 		}
-		wchar_t *copy=copyWString(middle,next);
-		middle+=next+size;
-		dsts[a]->set(copy,1);
+		std::wstring copy(srcStr,middle,next-middle);
+		dsts[a]->set(copy);
+		middle+=next+=searchStr.size();
 	}
-	delete[] srcStr;
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_textgosub(NONS_ParsedLine &line){
-	if (!line.parameters.size()){
-		if (!!this->textgosub)
-			delete[] this->textgosub;
+	if (!line.parameters.size())
 		return NONS_NO_ERROR;
-	}
 	if (this->everything->script->offsetFromBlock(line.parameters[0])<0)
 		return NONS_NO_SUCH_BLOCK;
-	if (!!this->textgosub)
-		delete[] this->textgosub;
 	if (line.parameters.size()<2)
 		this->textgosubRecurses=0;
 	else{
@@ -927,7 +857,8 @@ ErrorCode NONS_ScriptInterpreter::command_textgosub(NONS_ParsedLine &line){
 		_GETINTVALUE(rec,1,)
 		this->textgosubRecurses=(rec!=0);
 	}
-	this->textgosub=copyWString(line.parameters[0]);
+	this->textgosub=line.parameters[0];
+	trim_string(this->textgosub);
 	return NONS_NO_ERROR;
 }
 

@@ -1,6 +1,6 @@
 #ifndef STRCMPT_H
 #define STRCMPT_H
-struct strCmp{
+/*struct strCmp{
 	bool operator()(const char *a,const char *b) const;
 };
 
@@ -14,7 +14,7 @@ struct strCmpCI{
 	bool operator()(const char *a,const char *b) const;
 };
 
-struct wstrCmpCI{
+/*struct wstrCmpCI{
 	bool operator()(const wchar_t *s1,const wchar_t *s2) const;
-};
+};*/
 #endif

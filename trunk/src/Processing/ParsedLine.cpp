@@ -36,26 +36,26 @@
 #include "../Globals.h"
 #include <climits>
 
-wchar_t *getLine(wchar_t *buffer,ulong *increment){
+std::wstring getLine(const std::wstring &buffer,ulong offset,ulong *increment){
 	bool singleline=0;
-	if (*buffer==13 || *buffer==10){
+	if (buffer[offset+0]==13 || buffer[offset+0]==10){
 		*increment=0;
-		return copyWString("");
+		return L"";
 	}
-	if (multicomparison(*buffer,L";*`") || *buffer>0x7F)
+	if (multicomparison(buffer[offset+0],L";*`") || buffer[offset+0]>0x7F)
 		singleline=1;
-	long l=0,finallength=0;
+	ulong off=0,l=0,finallength=0;
 	std::wstring res;
 	res.reserve(2048);
 	while (1){
-		while (buffer[l]){
-			if (multicomparison(buffer[l],L"\"`")){
+		while (buffer[offset+off+l]){
+			if (multicomparison(buffer[offset+off+l],L"\"`")){
 				l++;
-				for (wchar_t delimiter=buffer[l-1];buffer[l] && buffer[l]!=delimiter && buffer[l]!=13 && buffer[l]!=10;l++);
+				for (wchar_t delimiter=buffer[offset+off+l-1];buffer[offset+off+l] && buffer[offset+off+l]!=delimiter && buffer[offset+off+l]!=13 && buffer[offset+off+l]!=10;l++);
 			}
-			if (!buffer[l] || buffer[l]==13 || buffer[l]==10 || buffer[l]==';')
+			if (!buffer[offset+off+l] || buffer[offset+off+l]==13 || buffer[offset+off+l]==10 || buffer[offset+off+l]==';')
 				break;
-			if (buffer[l]==':'){
+			if (buffer[offset+off+l]==':'){
 				l++;
 				break;
 			}
@@ -63,227 +63,217 @@ wchar_t *getLine(wchar_t *buffer,ulong *increment){
 		}
 		if (!l){
 			*increment=0;
-			return copyWString("");
+			return L"";
 		}
-		for (;iswhitespace(buffer[l-1]);l--);
+		for (;iswhitespace(buffer[offset+off+l-1]);l--);
 		finallength+=l;
 		if (singleline){
 			*increment=finallength;
-			return copyWString(buffer,l);
+			return std::wstring(buffer,offset+0,l);
 		}
-		res.append(buffer,l);
-		if (!buffer[l] || !multicomparison(buffer[l-1],",/")){
+		res.append(std::wstring(buffer,offset+0,l));
+		if (off+l>=buffer.size() || !multicomparison(buffer[offset+off+l-1],",/")){
 			*increment=finallength;
-			return copyWString(res.c_str());
+			return res;
 		}
-		if (buffer[l-1]=='/')
+		if (buffer[offset+off+l-1]=='/')
 			res.erase(res.end());
-		for (;buffer[l] && buffer[l]!=13 && buffer[l]!=10;l++,finallength++);
-		for (;iswhitespace(buffer[l]);l++,finallength++);
-		if (!buffer[l]){
+		for (;off+l<buffer.size() && buffer[offset+off+l]!=13 && buffer[offset+off+l]!=10;l++,finallength++);
+		for (;off+l<buffer.size() && iswhitespace(buffer[offset+off+l]);l++,finallength++);
+		if (off+l>=buffer.size()){
 			*increment=finallength;
-			return copyWString(res.c_str());
+			return res;
 		}
-		buffer+=l;
+		off+=l;
 		l=0;
 	}
-	/*T *res=copyWString(buffer,l);
-	for (long a=0;a<l;a++){
-		if (res[a]=='/' && (res[a+1]==13 || res[a+1]==10))
-			res[a]=' ';
-		else if (res[a]==13 || res[a]==10)
-			res[a]=' ';
-	}
-	return res;*/
 }
 
-template <typename T>
-void preparseIf(T *string,std::vector<T *> *vec){
-	static const char *limiters[]={
-		"abssetcursor","add","allsphide","allspresume","amsp","arc","atoi",
-		"autoclick","automode_time","automode","avi","bar","barclear","bg",
-		"bgcopy","bgcpy","bgm","bgmonce","bgmstop","bgmvol","blt","br","break",
-		"btn","btndef","btndown","btntime","btntime2","btnwait","btnwait2",
-		"caption","cell","cellcheckexbtn","cellcheckspbtn","checkpage","chvol",
-		"cl","click","clickstr","clickvoice","cmp","cos","csel","cselbtn",
-		"cselgoto","csp","date","dec","defaultfont","defaultspeed",
-		"definereset","defmp3vol","defsevol","defsub","defvoicevol","delay",
-		"dim","div","draw","drawbg","drawbg2","drawclear","drawfill","drawsp",
-		"drawsp2","drawsp3","drawtext","dwave","dwaveload","dwaveloop",
-		"dwaveplay","dwaveplayloop","dwavestop","effect","effectblank",
-		"effectcut","end","erasetextwindow","exbtn_d","exbtn","exec_dll",
-		"existspbtn","fileexist","filelog","for","game","getbgmvol",
-		"getbtntimer","getcselnum","getcselstr","getcursor","getcursorpos",
-		"getenter","getfunction","getinsert","getlog","getmousepos","getmp3vol",
-		"getpage","getpageup","getparam","getreg","getret","getscreenshot",
-		"getsevol","getspmode","getspsize","gettab","gettag","gettext",
-		"gettimer","getversion","getvoicevol","getzxc","globalon","gosub",
-		"goto","humanorder","humanz","if","inc","indent","input","insertmenu",
-		"intlimit","isdown","isfull","ispage","isskip","itoa","itoa2","jumpb",
-		"jumpf","kidokumode","kidokuskip","labellog","layermessage","ld","len",
-		"linepage","linepage2","loadgame","loadgosub","locate","logsp","logsp2",
-		"lookbackbutton","lookbackcolor","lookbackflush","lookbacksp","loopbgm",
-		"loopbgmstop","lr_trap","lsp","lsph","maxkaisoupage","menu_automode",
-		"menu_full","menu_window","menuselectcolor","menuselectvoice",
-		"menusetwindow","mid","mod","mode_ext","mode_saya","monocro","mov",
-		"mov10","mov3","mov4","mov5","mov6","mov7","mov8","mov9",
-		"movemousecursor","movl","mp3","mp3fadeout","mp3loop","mp3save",
-		"mp3stop","mp3vol","mpegplay","msp","mul","nega","next","notif","ns2",
-		"ns3","nsa","nsadir","numalias","ofscopy","ofscpy","play","playonce",
-		"playstop","pretextgosub","print","prnum","prnumclear","puttext",
-		"quake","quakex","quakey","repaint","reset","resetmenu","resettimer",
-		"return","rmenu","rmode","rnd","rnd2","roff","rubyoff","rubyon","sar",
-		"savefileexist","savegame","savename","savenumber","saveoff","saveon",
-		"savescreenshot","savescreenshot2","savetime","select","selectbtnwait",
-		"selectcolor","selectvoice","selgosub","selnum","setcursor","setlayer",
-		"setwindow","setwindow2","setwindow3","sevol","shadedistance","sin",
-		"skip","skipoff","soundpressplgin","sp_rgb_gradation","spbtn","spclclk",
-		"spi","split","splitstring","spreload","spstr","stop","stralias",
-		"strsp","sub","systemcall","tablegoto","tal","tan","tateyoko","texec",
-		"textbtnwait","textclear","textgosub","texthide","textoff","texton",
-		"textshow","textspeed","time","transmode","trap","underline",
-		"useescspc","usewheel","versionstr","voicevol","vsp","wait","waittimer",
-		"wave","waveloop","wavestop","windowback","windoweffect","zenkakko",
-		"date2","getini","new_set_window","set_default_font_size","unalias",
-		"literal_print","use_new_if","centerh","centerv","killmenu",0
+void preparseIf(const std::wstring &string,std::vector<std::wstring> &vec){
+	static const wchar_t *limiters[]={
+		L"abssetcursor",L"add",L"allsphide",L"allspresume",L"amsp",L"arc",
+		L"atoi",L"autoclick",L"automode_time",L"automode",L"avi",L"bar",
+		L"barclear",L"bg",L"bgcopy",L"bgcpy",L"bgm",L"bgmonce",L"bgmstop",
+		L"bgmvol",L"blt",L"br",L"break",L"btn",L"btndef",L"btndown",L"btntime",
+		L"btntime2",L"btnwait",L"btnwait2",L"caption",L"cell",L"cellcheckexbtn",
+		L"cellcheckspbtn",L"checkpage",L"chvol",L"cl",L"click",L"clickstr",
+		L"clickvoice",L"cmp",L"cos",L"csel",L"cselbtn",L"cselgoto",L"csp",
+		L"date",L"dec",L"defaultfont",L"defaultspeed",L"definereset",
+		L"defmp3vol",L"defsevol",L"defsub",L"defvoicevol",L"delay",L"dim",
+		L"div",L"draw",L"drawbg",L"drawbg2",L"drawclear",L"drawfill",L"drawsp",
+		L"drawsp2",L"drawsp3",L"drawtext",L"dwave",L"dwaveload",L"dwaveloop",
+		L"dwaveplay",L"dwaveplayloop",L"dwavestop",L"effect",L"effectblank",
+		L"effectcut",L"end",L"erasetextwindow",L"exbtn_d",L"exbtn",L"exec_dll",
+		L"existspbtn",L"fileexist",L"filelog",L"for",L"game",L"getbgmvol",
+		L"getbtntimer",L"getcselnum",L"getcselstr",L"getcursor",L"getcursorpos",
+		L"getenter",L"getfunction",L"getinsert",L"getlog",L"getmousepos",
+		L"getmp3vol",L"getpage",L"getpageup",L"getparam",L"getreg",L"getret",
+		L"getscreenshot",L"getsevol",L"getspmode",L"getspsize",L"gettab",
+		L"gettag",L"gettext",L"gettimer",L"getversion",L"getvoicevol",L"getzxc",
+		L"globalon",L"gosub",L"goto",L"humanorder",L"humanz",L"if",L"inc",
+		L"indent",L"input",L"insertmenu",L"intlimit",L"isdown",L"isfull",
+		L"ispage",L"isskip",L"itoa",L"itoa2",L"jumpb",L"jumpf",L"kidokumode",
+		L"kidokuskip",L"labellog",L"layermessage",L"ld",L"len",L"linepage",
+		L"linepage2",L"loadgame",L"loadgosub",L"locate",L"logsp",L"logsp2",
+		L"lookbackbutton",L"lookbackcolor",L"lookbackflush",L"lookbacksp",
+		L"loopbgm",L"loopbgmstop",L"lr_trap",L"lsp",L"lsph",L"maxkaisoupage",
+		L"menu_automode",L"menu_full",L"menu_window",L"menuselectcolor",
+		L"menuselectvoice",L"menusetwindow",L"mid",L"mod",L"mode_ext",
+		L"mode_saya",L"monocro",L"mov",L"mov10",L"mov3",L"mov4",L"mov5",L"mov6",
+		L"mov7",L"mov8",L"mov9",L"movemousecursor",L"movl",L"mp3",L"mp3fadeout",
+		L"mp3loop",L"mp3save",L"mp3stop",L"mp3vol",L"mpegplay",L"msp",L"mul",
+		L"nega",L"next",L"notif",L"ns2",L"ns3",L"nsa",L"nsadir",L"numalias",
+		L"ofscopy",L"ofscpy",L"play",L"playonce",L"playstop",L"pretextgosub",
+		L"print",L"prnum",L"prnumclear",L"puttext",L"quake",L"quakex",L"quakey",
+		L"repaint",L"reset",L"resetmenu",L"resettimer",L"return",L"rmenu",
+		L"rmode",L"rnd",L"rnd2",L"roff",L"rubyoff",L"rubyon",L"sar",
+		L"savefileexist",L"savegame",L"savename",L"savenumber",L"saveoff",
+		L"saveon",L"savescreenshot",L"savescreenshot2",L"savetime",L"select",
+		L"selectbtnwait",L"selectcolor",L"selectvoice",L"selgosub",L"selnum",
+		L"setcursor",L"setlayer",L"setwindow",L"setwindow2",L"setwindow3",
+		L"sevol",L"shadedistance",L"sin",L"skip",L"skipoff",L"soundpressplgin",
+		L"sp_rgb_gradation",L"spbtn",L"spclclk",L"spi",L"split",L"splitstring",
+		L"spreload",L"spstr",L"stop",L"stralias",L"strsp",L"sub",L"systemcall",
+		L"tablegoto",L"tal",L"tan",L"tateyoko",L"texec",L"textbtnwait",
+		L"textclear",L"textgosub",L"texthide",L"textoff",L"texton",L"textshow",
+		L"textspeed",L"time",L"transmode",L"trap",L"underline",L"useescspc",
+		L"usewheel",L"versionstr",L"voicevol",L"vsp",L"wait",L"waittimer",
+		L"wave",L"waveloop",L"wavestop",L"windowback",L"windoweffect",
+		L"zenkakko",L"date2",L"getini",L"new_set_window",
+		L"set_default_font_size",L"unalias",L"literal_print",L"use_new_if",
+		L"centerh",L"centerv",L"killmenu",0
 	};
-	long end=-1,minend=LONG_MAX;
+	ulong end=string.npos,
+		minend=ULONG_MAX;
 	for (long a=0;limiters[a];a++){
 		long offset=0;
 		while (1){
-			end=instr(string+offset,limiters[a]);
-			if (end<0)
+			end=string.find(limiters[a],offset);
+			if (end==string.npos)
 				break;
 			if (!multicomparison(string[end+offset-1]," \t:") && string[end+offset-1]!=0){
 				offset+=end+1;
 				continue;
 			}
-			long len=end+strlen(limiters[a])+offset;
+			ulong len=end+wcslen(limiters[a])+offset;
 			if (!multicomparison(string[len]," \t:\0") && string[len]!=0){
 				offset+=end+1;
 				continue;
 			}
 			break;
 		}
-		if (end<0)
+		if (end==string.npos)
 			continue;
 		end+=offset;
 		if (end<minend)
 			minend=end;
 	}
-	if (minend==LONG_MAX){
+	if (minend==ULONG_MAX){
 		o_stderr <<"ERROR: Could not make sense of if: "<<string<<'\n';
 		return;
 	}
 	end=minend;
-	long start=end;
+	ulong start=end;
 	for (;string[end-1] && (string[end-1]==' ' || string[end-1]=='\t');end--);
-	vec->push_back(copyWString(string,end));
-	string+=start;
-	end=STRLEN(string);
-	for (;string[end-1] && (string[end-1]==' ' || string[end-1]=='\t');end--);
-	vec->push_back(copyWString(string,end));
+	vec.push_back(std::wstring(string,0,end));
+	for (;string[start+string.size()-1-start] &&
+		(string[start+string.size()-1-start]==' ' ||
+		string[start+string.size()-1-start]=='\t');end--);
+	vec.push_back(std::wstring(string,start,end));
 }
 
-void parseFor(wchar_t *string,std::vector<wchar_t *> *vec){
-	for (;*string && iswhitespace((char)*string);string++);
-	long l=0;
-	for (;string[l] && string[l]!=';' && string[l]!='=' && !iswhitespace((char)string[l]);l++);
-	if (!string[l] || string[l]==';')
-		return;
-	vec->push_back(copyWString(string,l));
-	for (string+=l;string[l] && iswhitespace((char)*string);string++);
-	if (*string!='=')
-		return;
-	for (string++;*string && iswhitespace((char)*string);string++);
-	if (*string==';')
-		return;
-	for (l=0;string[l] && string[l]!=';' && !iswhitespace((char)string[l]);l++);
-	if (!string[l] || string[l]==';')
-		return;
-	vec->push_back(copyWString(string,l));
-	for (string+=l;string[l] && iswhitespace((char)*string);string++);
-	if (instr(string,"to"))
-		return;
-	for (string+=2;*string && iswhitespace((char)*string);string++);
-	if (*string==';')
-		return;
-	for (l=0;string[l] && string[l]!=';' && !iswhitespace((char)string[l]);l++);
-	if (string[l]==';')
-		return;
-	vec->push_back(copyWString(string,l));
-	for (string+=l;*string && iswhitespace((char)*string);string++);
-	if (instr(string,"step"))
-		return;
-	for (string+=4;*string && iswhitespace((char)*string);string++);
-	for (l=0;string[l] && string[l]!=';' && !iswhitespace((char)string[l]);l++);
-	if (string[l]==';')
-		return;
-	vec->push_back(copyWString(string,l));
+std::vector<std::wstring> parseFor(const std::wstring &string){
+	std::vector<std::wstring> res;
+	std::wstring::const_iterator i=string.begin(),
+		end=string.end();
+	for (;i!=end && iswhitespace((char)*i);i++);
+	std::wstring::const_iterator second=i;
+	for (;second!=end && *second!=';' && *second!='=' && !iswhitespace(*second);second++);
+	res.push_back(std::wstring(i,second));
+	if (second==end || *second==';')
+		return res;
+	for (i=second;i!=end && iswhitespace(*i);i++);
+	if (i==end || *i!='=')
+		return res;
+	for (i++;i!=end && iswhitespace(*i);i++);
+	if (i==end || *i==';')
+		return res;
+	for (second=i;second!=end && *second!=';' && !iswhitespace(*second);second++);
+	res.push_back(std::wstring(i,second));
+	if (second==end || *second==';')
+		return res;
+	for (i=second;i!=end && iswhitespace(*i);i++);
+	if (i==end || string.find(L"to",std::distance(string.begin(),i)))
+		return res;
+	for (i+=2;i!=end && iswhitespace(*i);i++);
+	if (i==end || *i==';')
+		return res;
+	for (second=i;second!=end && *second!=';' && !iswhitespace(*second);second++);
+	res.push_back(std::wstring(i,second));
+	if (second==end || *second==';')
+		return res;
+	for (i=second;i!=end && iswhitespace(*i);i++);
+	if (i==end || string.find(L"step",std::distance(string.begin(),i)))
+		return res;
+	for (i+=4;i!=end && iswhitespace(*i);i++);
+	for (second=i;second!=end && *second!=';' && !iswhitespace(*second);second++);
+	res.push_back(std::wstring(i,second));
+	return res;
 }
 
-void parseLiteral_print(wchar_t *string,std::vector<wchar_t *> *vec){
-	//ulong len=sizeof(T)==1?strlen((char *)string):wcslen((wchar_t *)string);
-	ulong len=STRLEN(string);
-	wchar_t delim=',';
-	wchar_t tempDelim=delim;
-	for (ulong start=0;start<len;){
-		//for (;start<len && string[start];);
-		ulong end;
-		for (;iswhitespace((char)string[start]);start++);
-		if (string[start]==';')
-			return;
-		if (string[start]=='\"' || string[start]=='`')
-			delim=string[start];
-		if (delim==tempDelim){
-			for (end=start+1;string[end] && string[end]!=delim;end++)
-				if (string[end]==';')
-					break;
-		}else{
-			for (end=start+1;string[end];end++){
-				if (string[end]=='\\'){
-					end++;
-					if (multicomparison(string[end],"\\`\"nrx"))
+std::vector<std::wstring> parseLiteral_print(const std::wstring &string){
+	std::vector<std::wstring> res;
+	wchar_t delim=',',
+		tempDelim=delim;
+	for (std::wstring::const_iterator i=string.begin(),end=string.end();i!=end;i++){
+		std::wstring::const_iterator second;
+		for (;iswhitespace(*i);i++);
+		if (*i==';')
+			return res;
+		if (*i=='\"' || *i=='`')
+			delim=*i;
+		if (delim==tempDelim)
+			for (second=i+1;second!=end && *second!=delim && *second!=';';second++);
+		else{
+			for (second=i+1;second!=end;second++){
+				if (*second=='\\'){
+					second++;
+					if (multicomparison(*second,"\\`\"nrx"))
 						continue;
-					end--;
+					second--;
 				}
-				if (string[end]==delim)
+				if (*second==delim)
 					break;
 			}
-			end++;
+			second++;
 		}
-		for (;iswhitespace((char)string[end]);end--);
+		for (;iswhitespace(*second);second--);
 		bool finishnow=0;
-		if (string[end]==';'){
-			end--;
+		if (*second==';'){
+			second--;
 			finishnow=1;
-			while (end && string[end]==' ' || string[end]=='\t' || string[end]==13 || string[end]==10)
-				end--;
-			end++;
+			for (;second!=i && *second==' ' || *second=='\t' || *second==13 || *second==10;second--);
+			second++;
 		}
-		wchar_t *el=copyWString(string+start,end-start);
-		vec->push_back(el);
+		res.push_back(std::wstring(i,second));
 		if (finishnow)
-			return;
+			return res;
 		delim=tempDelim;
-		for (start=end;string[start]==delim;start++);
+		for (i=second;i!=end && *i==delim;i++);
 	}
+	return res;
 }
 
-template <typename T>
-std::vector<T *> *parseCommandParameters(T *string,T delim=' '){
-	std::vector<T *> *res=new std::vector<T *>;
-	//ulong len=sizeof(T)==1?strlen((char *)string):wcslen((wchar_t *)string);
-	ulong len=STRLEN(string);
-	T tempDelim=delim;
-	for (ulong start=0;start<len;){
-		//for (;start<len && string[start];);
-		ulong end;
-		for (;iswhitespace(string[start]);start++);
-		if (string[start]==';')
+std::vector<std::wstring> parseCommandParameters(const std::wstring &string,wchar_t delim){
+	std::vector<std::wstring> res;
+	wchar_t tempDelim=delim;
+	for (std::wstring::const_iterator i=string.begin(),end=string.end();i!=end;){
+		std::wstring::const_iterator end2;
+		for (;i!=end && iswhitespace(*i);i++);
+		if (i==end || *i==';')
 			return res;
-		if (string[start]=='\"' || string[start]=='`')
-			delim=string[start];
+		if (*i=='\"' || *i=='`')
+			delim=*i;
 		if (delim==tempDelim){
 			/*
 			If delim==tempDelim, it means that delim isn't any of the quote
@@ -291,61 +281,32 @@ std::vector<T *> *parseCommandParameters(T *string,T delim=' '){
 			mean it's not part of a string constant, and parsing doesn't need to
 			continue.
 			*/
-			for (end=start+1;string[end] && string[end]!=delim;end++);
-				/*if (string[end]==';')
-					break;*/
+			for (end2=i+1;end2!=end && *end2!=delim;end2++);
 		}else{
-			for (end=start+1;string[end] && string[end]!=delim ;end++);
-			end++;
+			for (end2=i+1;end2!=end && *end2!=delim;end2++);
+			end2++;
 		}
-		ulong comma=end;
-		for (;end>0 && iswhitespace(string[end-1]);end--);
-		bool finishnow=0;
-		/*if (string[end]==';'){
-			end--;
-			finishnow=1;
-			while (end && string[end]==' ' || string[end]=='\t' || string[end]==13 || string[end]==10)
-				end--;
-			end++;
-		}*/
-		T *el=copyWString(string+start,end-start);
-		res->push_back(el);
-		if (finishnow)
-			return res;
+		std::wstring::const_iterator comma=end2;
+		for (;end2!=end && iswhitespace(end2[-1]);end--);
+		res.push_back(std::wstring(i,end2));
 		delim=tempDelim;
-		for (start=comma;string[start]==delim;start++);
+		for (i=comma;i!=end && *i==delim;i++);
 	}
 	return res;
 }
 
-template <typename T>
-void parseCommandParameters(T *string,std::vector<T *> *vec,T delim=' '){
-	std::vector<T *> *temp=parseCommandParameters(string,delim);
-	ulong l=temp->size();
-	vec->resize(l);
-	for (ulong a=0;a<l;a++)
-		(*vec)[a]=(*temp)[a];
-	delete temp;
-}
-
-NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
+NONS_ParsedLine::NONS_ParsedLine(const std::wstring &buffer,ulong &offset,ulong number){
 	this->lineNo=number;
 	this->error=NONS_NO_ERROR;
-	this->CstringParameters=0;
 	ulong increment=0;
-	this->commandName=getLine(buffer+*offset,&increment);
-	ulong len=wcslen(this->commandName);
-	wchar_t *string=this->commandName;
+	this->commandName=getLine(buffer,offset,&increment);
 	if (iswhitespace((char)this->commandName[0])){
 		long start=0;
-		for (;iswhitespace((char)string[start]) && string[start];start++);
-		string=copyWString(string+start);
-		delete[] this->commandName;
-		this->commandName=string;
+		for (;iswhitespace((char)this->commandName[start]) && this->commandName[start];start++);
+		this->commandName=this->commandName.substr(start);
 	}
-	if (multicomparison(*this->commandName,";*~`?%$!\\@#") || *this->commandName>0x7F){
-		this->CstringParameters=0;
-		switch (*this->commandName){
+	if (multicomparison(this->commandName[0],";*~`?%$!\\@#") || this->commandName[0]>0x7F){
+		switch (this->commandName[0]){
 			case ';':
 				this->type=PARSEDLINE_COMMENT;
 				break;
@@ -361,201 +322,139 @@ NONS_ParsedLine::NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number){
 	}else
 		this->type=PARSEDLINE_COMMAND;
 	//if (string starts with "if" or "notif")...
-	bool isif=!instr(string,"if") || !instr(string,"notif");
+	bool isif=!this->commandName.find(L"if") || !this->commandName.find(L"notif");
 	if (this->type!=PARSEDLINE_COMMAND || isif){
-		(*offset)+=increment;
+		offset+=increment;
 		if (isif){
-			while (this->commandName[len-1]==':'){
-				wchar_t *temp=getLine(buffer+*offset,&increment);
-				addStringsInplace(&this->commandName,temp);
-				string=this->commandName;
-				len+=wcslen(temp);
-				(*offset)+=increment;
+			while (this->commandName[this->commandName.size()-1]==':'){
+				this->commandName.append(getLine(buffer,offset,&increment));
+				offset+=increment;
 			}
 		}
-		for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-		for (;iswhitespace(buffer[*offset]);(*offset)++);
+		for (;buffer[offset] && buffer[offset]!=13 && buffer[offset]!=10;offset++);
+		for (;iswhitespace(buffer[offset]);offset++);
 		if (this->type!=PARSEDLINE_COMMAND)
 			return;
 	}else{
-		if (!instr(string,"literal_print") || !instr(string,"centerv")){
-			for (ulong a=0;string[a];a++){
-				if (string[a]=='\"' || string[a]=='`'){
-					for (wchar_t quote=string[a++];string[a];a++){
-						if (string[a]=='\\'){
-							a++;
-							if (multicomparison(string[a],"\\`\"nrx"))
+		if (!this->commandName.find(L"literal_print") || !this->commandName.find(L"centerv")){
+			for (std::wstring::iterator i=this->commandName.begin(),end=this->commandName.end();i!=end;i++){
+				if (*i=='\"' || *i=='`'){
+					for (wchar_t quote=*i++;i!=end;i++){
+						if (*i=='\\'){
+							if (multicomparison(*++i,"\\`\"nrx"))
 								continue;
-							a--;
+							i--;
 						}
-						if (string[a]==quote)
+						if (*i==quote)
 							break;
 					}
-					if (!string[a]){
+					if (i==end){
 						this->type=PARSEDLINE_INVALID;
 						this->error=NONS_UNMATCHED_QUOTES;
 						return;
 					}
 					continue;
 				}
-				if (multicomparison(string[a],":\\")){
-					len=a;
-					/*string=copyWString(string,a);
-					delete[] this->commandName;
-					this->commandName=string;*/
-					string[a]=0;
+				if (multicomparison(*i,":\\")){
+					this->stringParameters=std::wstring(i,end);
+					this->commandName=std::wstring(this->commandName.begin(),i);
+					trim_string(this->commandName);
 					break;
 				}
 			}
-			(*offset)+=increment;
-			if (buffer[*offset]==':')
-				(*offset)++;
-			else if (buffer[*offset]=='\\');
+			offset+=increment;
+			if (buffer[offset]==':')
+				offset++;
+			else if (buffer[offset]=='\\');
 			else{
-				for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-				for (;iswhitespace(buffer[*offset]);(*offset)++);
+				for (;buffer[offset] && buffer[offset]!=13 && buffer[offset]!=10;offset++);
+				for (;iswhitespace(buffer[offset]);offset++);
 			}
 		}else{
-			for (ulong a=0;string[a];a++){
-				if (string[a]=='\"' || string[a]=='`'){
-					for (wchar_t quote=string[a++];string[a] && string[a]!=quote;a++);
-					if (!string[a]){
+			for (std::wstring::iterator i=this->commandName.begin(),end=this->commandName.end();i!=end;i++){
+				if (*i=='\"' || *i=='`'){
+					for (wchar_t quote=*i++;i!=end && *i!=quote;i++);
+					if (i==end){
 						this->type=PARSEDLINE_INVALID;
 						this->error=NONS_UNMATCHED_QUOTES;
 						return;
 					}
 					continue;
 				}
-				if (multicomparison(string[a],":\\")){
-					len=a;
-					/*string=copyWString(string,a);
-					delete[] this->commandName;
-					this->commandName=string;*/
-					string[a]=0;
+				if (multicomparison(*i,":\\")){
+					this->stringParameters=std::wstring(i,end);
+					this->commandName=std::wstring(this->commandName.begin(),i);
+					trim_string(this->commandName);
 					break;
 				}
 			}
-			(*offset)+=increment;
-			if (buffer[*offset]==':')
-				(*offset)++;
-			else if (buffer[*offset]=='\\');
+			offset+=increment;
+			if (buffer[offset]==':')
+				offset++;
+			else if (buffer[offset]=='\\');
 			else{
-				for (;buffer[*offset] && buffer[*offset]!=13 && buffer[*offset]!=10;(*offset)++);
-				for (;iswhitespace(buffer[*offset]);(*offset)++);
+				for (;buffer[offset] && buffer[offset]!=13 && buffer[offset]!=10;offset++);
+				for (;iswhitespace(buffer[offset]);offset++);
 			}
 		}
 	}
-	if (!len){
+	if (!this->commandName.size()){
 		this->type=PARSEDLINE_EMPTY;
-		delete[] this->commandName;
-		this->commandName=0;
 		return;
 	}
-	for (this->CstringParameters=this->commandName;*this->CstringParameters && !iswhitespace((char)*this->CstringParameters);this->CstringParameters++);
-	if (*this->CstringParameters){
-		*this->CstringParameters=0;
-		this->CstringParameters++;
-		for (;*this->CstringParameters && iswhitespace((char)*this->CstringParameters);this->CstringParameters++);
-	}
-	char *tempCopy=copyString(this->commandName);
-	if (!strcmp(tempCopy,"if") || !strcmp(tempCopy,"notif"))
-		preparseIf(this->CstringParameters,&this->parameters);
-	else if (!strcmp(tempCopy,"for"))
-		parseFor(this->CstringParameters,&this->parameters);
-	else if (!strcmp(tempCopy,"literal_print"))
-		parseLiteral_print(this->CstringParameters,&this->parameters);
+	ulong a,b;
+	for (a=0;a<this->commandName.size() && !iswhitespace(this->commandName[a]);a++);
+	for (b=a;b<this->commandName.size() && iswhitespace(this->commandName[b]);b++);
+	this->stringParameters=this->commandName.substr(b);
+	this->commandName=this->commandName.substr(0,a);
+	if (this->commandName==L"if" || this->commandName==L"notif")
+		preparseIf(this->stringParameters,this->parameters);
+	else if (this->commandName==L"for")
+		this->parameters=parseFor(this->stringParameters);
+	else if (this->commandName==L"literal_print")
+		this->parameters=parseLiteral_print(this->stringParameters);
 	else
-		parseCommandParameters<wchar_t>(this->CstringParameters,&this->parameters,',');
-	delete[] tempCopy;
+		this->parameters=parseCommandParameters(this->stringParameters,',');
 }
 
-NONS_ParsedLine::NONS_ParsedLine(wchar_t *string,ulong number){
+NONS_ParsedLine::NONS_ParsedLine(const std::wstring &string,ulong number){
 	this->lineNo=number;
-	if (*string==';'){
+	std::wstring::const_iterator first=string.begin(),
+		second,
+		end=string.end();
+	for (;first!=end && iswhitespace(*first);first++);
+	if (*first==';'){
 		this->type=PARSEDLINE_COMMENT;
 		return;
 	}
+	for (second=first;second!=end && !iswhitespace(*second);second++);
 	this->type=PARSEDLINE_COMMAND;
-	this->commandName=copyWString(string);
-	for (this->CstringParameters=this->commandName;*this->CstringParameters && *this->CstringParameters!=' ' && *this->CstringParameters!='\t';this->CstringParameters++);
-	if (*this->CstringParameters){
-		*this->CstringParameters=0;
-		this->CstringParameters++;
-		for (;*this->CstringParameters && (*this->CstringParameters==' ' || *this->CstringParameters=='\t');this->CstringParameters++);
-	}
-	parseCommandParameters<wchar_t>(this->CstringParameters,&this->parameters,',');
+	this->commandName=std::wstring(first,second);
+	this->stringParameters=std::wstring(second,end);
+	trim_string(this->stringParameters);
+	this->parameters=parseCommandParameters(this->stringParameters,',');
 }
 
-NONS_ParsedLine::~NONS_ParsedLine(){
-	if (this->commandName)
-		delete[] this->commandName;
-	for (ulong a=0;a<this->parameters.size();a++)
-		delete[] this->parameters[a];
-}
-
-ulong NONS_ParsedLine::nextLine(wchar_t *buffer,ulong offset){
+ulong NONS_ParsedLine::nextLine(const std::wstring &buffer,ulong offset){
 	ulong increment=0;
-	wchar_t *temp=getLine(buffer+offset,&increment);
+	getLine(buffer,offset,&increment);
 	ulong res=offset+increment;
-	delete[] temp;
 	for (;buffer[res]!=13 && buffer[res]!=10;res++);
 	for (;buffer[res]==13 || buffer[res]==10;res++);
 	return res;
 }
 
-ulong NONS_ParsedLine::nextStatement(wchar_t *buffer,ulong offset){
+ulong NONS_ParsedLine::nextStatement(const std::wstring &buffer,ulong offset){
 	ulong previous=offset;
 	while (1){
-		NONS_ParsedLine line(buffer,&offset);
+		NONS_ParsedLine line(buffer,offset,0);
 		if (line.type==PARSEDLINE_COMMAND)
 			return previous;
 		previous=offset;
 	}
-	/*wchar_t *line=getLine(buffer+offset),*string=line;
-	ulong len=wcslen(line);
-	ulong res=offset;
-	if (iswhitespace((char)line[0])){
-		string=line;
-		for (;iswhitespace((char)*string) && *string;string++);
-	}
-	//if (string starts with "if" or "notif")...
-	if (string[0]=='i' && string[1]=='f' || string[0]=='n' && string[1]=='o' && string[2]=='t' && string[3]=='i' && string[4]=='f'){
-		res+=len;
-		for (;buffer[res]!=13 && buffer[res]!=10;res++);
-		for (;buffer[res]==13 || buffer[res]==10;res++);
-	}else{
-		ulong a;
-		for (a=0;string[a];a++){
-			if (string[a]=='\"' || string[a]=='`'){
-				for (wchar_t quote=string[a];string[a] && string[a]!=quote;a++);
-				if (!string[a]){
-					res+=len;
-					return res;
-				}
-				continue;
-			}
-			if (string[a]==':'){
-				len=a;
-				string[len]=0;
-				break;
-			}
-		}
-		res+=len;
-		if (!string[a]){
-			for (;buffer[res]!=13 && buffer[res]!=10;res++);
-			for (;buffer[res]==13 || buffer[res]==10;res++);
-		}else if (line[res]==':')
-			res++;
-		else{
-			for (;buffer[res] && buffer[res]!=13 && buffer[res]!=10;res++);
-			for (;buffer[res] && buffer[res]==13 || buffer[res]==10;res++);
-		}
-	}
-	delete[] line;
-	return res;*/
 }
 
-ulong NONS_ParsedLine::previousLine(wchar_t *buffer,ulong offset){
+ulong NONS_ParsedLine::previousLine(const std::wstring &buffer,ulong offset){
 	ulong res=offset;
 	for (;res && buffer[res]!=13 && buffer[res]!=10;res--);
 	for (;res && buffer[res]==13 || buffer[res]==10;res--);

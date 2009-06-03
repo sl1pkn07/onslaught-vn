@@ -32,13 +32,14 @@
 
 #include "enums.h"
 #include "CommonTypes.h"
+#include <string>
 
 struct NONS_CommandLineOptions{
 	ENCODINGS scriptencoding;
-	char *musicFormat;
-	char *musicDirectory;
+	std::string musicFormat;
+	std::string musicDirectory;
 	long cacheSize;
-	char *scriptPath;
+	std::string scriptPath;
 	ENCRYPTION scriptEncryption;
 	bool override_stdout;
 	bool reset_redirection_files;
@@ -49,7 +50,7 @@ struct NONS_CommandLineOptions{
 	bool startFullscreen;
 	uchar verbosity;
 	bool no_sound;
-	char *savedir;
+	std::string savedir;
 	bool stopOnFirstError;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions();

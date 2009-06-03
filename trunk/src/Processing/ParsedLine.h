@@ -34,8 +34,6 @@
 #include "../ErrorCodes.h"
 #include <vector>
 
-#define STRLEN(x) sizeof(*(x))==1?strlen((char *)(x)):wcslen((wchar_t *)(x))
-
 enum{
 	PARSEDLINE_EMPTY,
 	PARSEDLINE_COMMENT,
@@ -47,18 +45,17 @@ enum{
 };
 
 struct NONS_ParsedLine{
-	wchar_t *commandName;
-	wchar_t *CstringParameters;
-	std::vector<wchar_t *> parameters;
+	std::wstring commandName;
+	std::wstring stringParameters;
+	std::vector<std::wstring> parameters;
 	ulong type;
 	ErrorCode error;
 	long lineNo;
-	NONS_ParsedLine(wchar_t *buffer,ulong *offset,ulong number=0);
-	NONS_ParsedLine(wchar_t *string,ulong number=0);
-	~NONS_ParsedLine();
-	static ulong previousLine(wchar_t *buffer,ulong offset);
-	static ulong nextLine(wchar_t *buffer,ulong offset);
-	static ulong nextStatement(wchar_t *buffer,ulong offset);
+	NONS_ParsedLine(const std::wstring &buffer,ulong &offset,ulong number);
+	NONS_ParsedLine(const std::wstring &string,ulong number);
+	static ulong previousLine(const std::wstring &buffer,ulong offset);
+	static ulong nextLine(const std::wstring &buffer,ulong offset);
+	static ulong nextStatement(const std::wstring &buffer,ulong offset);
 	
 };
 #endif

@@ -50,13 +50,11 @@ struct PSF_parameters{
 
 ulong NONS_GFX::effectblank=0;
 
-NONS_GFX::NONS_GFX(ulong effect,ulong duration,wchar_t *rule){
+NONS_GFX::NONS_GFX(ulong effect,ulong duration,const std::wstring *rule){
 	this->effect=effect;
 	this->duration=duration;
 	if (rule)
-		this->rule=copyWString(rule);
-	else
-		this->rule=0;
+		this->rule=*rule;
 	this->type=TRANSITION;
 	this->stored=0;
 	this->color.r=0;
@@ -66,31 +64,19 @@ NONS_GFX::NONS_GFX(ulong effect,ulong duration,wchar_t *rule){
 }
 
 NONS_GFX::NONS_GFX(const NONS_GFX &b){
-	this->effect=b.effect;
-	this->duration=b.duration;
-	this->rule=copyWString(b.rule);
-	this->type=b.type;
-	this->stored=b.stored;
-	this->color=b.color;
+	*this=b;
 }
 
 NONS_GFX &NONS_GFX::operator=(const NONS_GFX &b){
 	this->effect=b.effect;
 	this->duration=b.effect;
-	if (this->rule)
-		delete[] this->rule;
-	this->rule=copyWString(b.rule);
+	this->rule=b.rule;
 	this->type=b.type;
 	this->stored=b.stored;
 	return *this;
 }
 
-NONS_GFX::~NONS_GFX(){
-	if (this->rule)
-		delete[] this->rule;
-}
-
-ErrorCode NONS_GFX::callEffect(ulong number,long duration,wchar_t *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst){
+ErrorCode NONS_GFX::callEffect(ulong number,long duration,const std::wstring *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst){
 	NONS_GFX *effect=new NONS_GFX(number,duration,rule);
 	ErrorCode ret=effect->call(src,dst0,dst);
 	delete effect;
@@ -101,7 +87,7 @@ ErrorCode NONS_GFX::call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *
 	//Unused:
 	//ulong t0=SDL_GetTicks();
 	SDL_Surface *ruleFile=0;
-	if (this->rule)
+	if (this->rule.size())
 		ruleFile=ImageLoader->fetchSprite(this->rule);
 	if (this->type==TRANSITION){
 		switch (this->effect){
@@ -1753,7 +1739,7 @@ bool NONS_GFXstore::remove(ulong code){
 	return 1;
 }
 
-NONS_GFX *NONS_GFXstore::add(ulong code,ulong effect,ulong duration,wchar_t *rule){
+NONS_GFX *NONS_GFXstore::add(ulong code,ulong effect,ulong duration,const std::wstring *rule){
 	if (this->retrieve(code))
 		return 0;
 	NONS_GFX *res=new NONS_GFX(effect,duration,rule);

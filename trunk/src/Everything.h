@@ -47,8 +47,8 @@ struct NONS_Everything{
 	~NONS_Everything();
 	ErrorCode init_screen();
 	//0: init archive, 1: init NSA.
-	ErrorCode init_audio(const char *musicDir="./CD");
-	ErrorCode init_script(const char *filename,ulong encoding,ulong encryption);
+	ErrorCode init_audio(const std::string &musicDir="./CD");
+	ErrorCode init_script(const std::string &filename,ulong encoding,ulong encryption);
 	ErrorCode init_script(ulong encoding);
 };
 #endif

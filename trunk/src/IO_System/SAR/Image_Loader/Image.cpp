@@ -36,25 +36,22 @@
 #include "../../../UTF.h"
 #include <sstream>
 
-void NONS_AnimationInfo::parse(const wchar_t *image_string){
-	if (!!this->mask_filename)
-		delete[] this->mask_filename;
-	if (!!this->filename)
-		delete[] this->filename;
-	if (!!this->string)
-		delete[] this->string;
-	this->string=copyWString(image_string);
+void NONS_AnimationInfo::parse(const std::wstring &image_string){
+	this->string=image_string;
 	this->valid=0;
 	this->method=COPY_TRANS;
 	this->animation_length=1;
 	this->animation_time_offset=0;
 	this->animation_direction=1;
-	if (*image_string==':'){
-		image_string++;
-		const wchar_t *semicolon=wcschr(image_string,';');
-		if (!semicolon)
+	this->frame_ends.clear();
+	size_t p=0;
+	static const std::wstring slash_semi=UniFromISO88591("/;");
+	if (image_string[p]==':'){
+		p++;
+		size_t semicolon=image_string.find(';',p);
+		if (semicolon==image_string.npos)
 			return;
-		switch (wchar_t c=NONS_tolower(*image_string++)){
+		switch (wchar_t c=NONS_tolower(image_string[p++])){
 			case 'l':
 			case 'r':
 			case 'c':
@@ -65,25 +62,25 @@ void NONS_AnimationInfo::parse(const wchar_t *image_string){
 			default:
 				return;
 		}
-		const wchar_t *p=wcspbrk(image_string,L"/;");
+		size_t p2=image_string.find_first_of(slash_semi,p);
 		if (this->method==SEPARATE_MASK){
-			if (p==image_string)
+			if (p2==image_string.npos)
 				return;
-			this->mask_filename=copyWString(image_string,p-image_string);
-			NONS_tolower(this->mask_filename);
+			this->mask_filename=std::wstring(image_string.begin()+p,image_string.begin()+p2);
+			tolower(this->mask_filename);
 			toforwardslash(this->mask_filename);
 		}
-		image_string=p;
-		if (*image_string=='/'){
+		p=p2;
+		if (image_string[p]=='/'){
 			std::wstringstream stream;
-			while (*++image_string!=',' && *image_string!=';')
-				stream <<*image_string;
-			if (!(stream >>this->animation_length) || *image_string!=',')
+			while (image_string[++p]!=',' && image_string[p]!=';')
+				stream <<image_string[p];
+			if (!(stream >>this->animation_length) || image_string[p]!=',')
 				return;
 			stream.clear();
-			if (image_string[1]!='<'){
-				while (*++image_string!=',' && *image_string!=';')
-					stream <<*image_string;
+			if (image_string[p+1]!='<'){
+				while (image_string[++p]!=',' && image_string[p]!=';')
+					stream <<image_string[p];
 				ulong delay;
 				if (!(stream >>delay))
 					return;
@@ -92,90 +89,65 @@ void NONS_AnimationInfo::parse(const wchar_t *image_string){
 					delay+=this->frame_ends.back();
 				this->frame_ends.push_back(delay);
 			}else{
-				image_string++;
-				const wchar_t *gt=wcschr(image_string,'>');
-				if (!gt || gt>semicolon)
+				p++;
+				size_t gt=image_string.find('>',p);
+				if (gt==image_string.npos || gt>semicolon)
 					return;
-				while (*image_string!='>' && *++image_string!='>'){
-					while (*image_string!=',' && *image_string!='>')
-						stream <<*image_string++;
+				while (image_string[p]!='>' && image_string[++p]!='>'){
+					while (image_string[p]!=',' && image_string[p]!='>')
+						stream <<image_string[p++];
 					ulong delay;
 					if (!(stream >>delay))
 						return;
 					stream.clear();
 					this->frame_ends.push_back(delay);
 				}
-				image_string++;
+				p++;
 			}
 			if (!this->frame_ends.size() || this->frame_ends.size()>1 && this->animation_length!=this->frame_ends.size())
 				return;
-			if (*image_string!=',')
+			if (image_string[p]!=',')
 				return;
-			while (*++image_string!=',' && *image_string!=';')
-				stream <<*image_string;
+			while (image_string[++p]!=',' && image_string[p]!=';')
+				stream <<image_string[p];
 			ulong type;
 			if (!(stream >>type))
 				return;
 			this->loop_type=(LOOP_TYPE)type;
-			image_string++;
+			p++;
 		}
 	}
-	if (*image_string==';')
-		image_string++;
-	this->filename=copyWString(image_string);
-	NONS_tolower(this->filename);
+	if (image_string[p]==';')
+		p++;
+	this->filename=image_string.substr(p);
+	tolower(this->filename);
 	toforwardslash(this->filename);
 	this->animation_time_offset=0;
 	this->valid=1;
 }
 
-NONS_AnimationInfo::NONS_AnimationInfo(){
-	this->mask_filename=0;
-	this->filename=0;
-	this->string=0;
-	this->parse(L"");
-}
-
-NONS_AnimationInfo::NONS_AnimationInfo(const wchar_t *image_string){
-	this->mask_filename=0;
-	this->filename=0;
-	this->string=0;
+NONS_AnimationInfo::NONS_AnimationInfo(const std::wstring &image_string){
 	this->parse(image_string);
 }
 
 NONS_AnimationInfo::NONS_AnimationInfo(const NONS_AnimationInfo &b){
-	this->mask_filename=0;
-	this->filename=0;
-	this->string=0;
 	*this=b;
 }
 
 NONS_AnimationInfo &NONS_AnimationInfo::operator=(const NONS_AnimationInfo &b){
-	if (!!this->mask_filename)
-		delete[] this->mask_filename;
-	if (!!this->filename)
-		delete[] this->filename;
-	if (!!this->string)
-		delete[] this->string;
 	this->method=b.method;
-	this->mask_filename=copyWString(b.mask_filename);
+	this->mask_filename=b.mask_filename;
 	this->animation_length=b.animation_length;
 	this->frame_ends=b.frame_ends;
 	this->loop_type=b.loop_type;
-	this->filename=copyWString(b.filename);
-	this->string=copyWString(b.string);
+	this->filename=b.filename;
+	this->string=b.string;
 	this->animation_time_offset=b.animation_time_offset;
 	this->valid=b.valid;
 	return *this;
 }
 
 NONS_AnimationInfo::~NONS_AnimationInfo(){
-	if (!!this->mask_filename)
-		delete[] this->mask_filename;
-	if (!!this->filename)
-		delete[] this->filename;
-	if (!!this->string)
-		delete[] this->string;
 }
 
 void NONS_AnimationInfo::resetAnimation(){
@@ -450,8 +422,8 @@ NONS_Image::~NONS_Image(){
 		SDL_FreeSurface(this->image);
 }
 
-SDL_Surface *NONS_Image::LoadImage(const wchar_t *string,const uchar *buffer,ulong bufferSize){
-	if (!string || !buffer || !bufferSize || this->image && this->refCount)
+SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize){
+	if (!buffer || !bufferSize || this->image && this->refCount)
 		return 0;
 	if (this->image)
 		SDL_FreeSurface(this->image);

@@ -31,23 +31,22 @@
 #define NONS_SOUNDCACHE_H
 
 #include "../../Common.h"
-#include "../../strCmpT.h"
 #include "SoundEffect.h"
 #include <SDL/SDL_mixer.h>
 #include <SDL/SDL_thread.h>
 #include <map>
 #include <list>
 
+typedef std::map<std::wstring,NONS_CachedSound *> cache_map_t;
+
 struct NONS_SoundCache{
-	std::map<char *,NONS_CachedSound *,strCmp> cache;
+	cache_map_t cache;
 	std::list<NONS_SoundEffect *> channelWatch;
 	NONS_SoundCache();
 	~NONS_SoundCache();
-	NONS_CachedSound *getSound(const char *filename);
-	NONS_CachedSound *getSound(const wchar_t *filename);
-	NONS_CachedSound *checkSound(const char *filename);
-	NONS_CachedSound *newSound(const char *filename,char *databuffer,long size);
-	NONS_CachedSound *newSound(const wchar_t *filename,char *databuffer,long size);
+	NONS_CachedSound *getSound(const std::wstring &filename);
+	NONS_CachedSound *checkSound(const std::wstring &filename);
+	NONS_CachedSound *newSound(const std::wstring &filename,char *databuffer,long size);
 	static int GarbageCollector(NONS_SoundCache *dis);
 	SDL_mutex *mutex;
 private:

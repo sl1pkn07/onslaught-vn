@@ -105,7 +105,7 @@ typedef union YYSTYPE
 		bool invert_terms,
 		std::vector<long> *array_decl,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string
+		std::wstring *string
 	);
 	int yylex(YYSTYPE *yylval,
 		std::wstringstream *stream,
@@ -120,7 +120,7 @@ typedef union YYSTYPE
 		bool,
 		std::vector<long> *,
 		NONS_VariableMember **,
-		wchar_t **string,
+		std::wstring *string,
 		char const *
 	);
 	long atol(std::wstring &str);

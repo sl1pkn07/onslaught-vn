@@ -44,7 +44,6 @@ struct NONS_AnimationInfo{
 		PARALLEL_MASK='a',
 		SEPARATE_MASK='m'
 	} method;
-	wchar_t *mask_filename;
 	ulong animation_length;
 	/*
 	If size==1, the first element contains how long each frame will stay on.
@@ -60,20 +59,31 @@ struct NONS_AnimationInfo{
 		TRIANGLE_WAVE_CYCLE,
 		NO_CYCLE
 	} loop_type;
-	wchar_t *filename;
-	wchar_t *string;
 	ulong animation_time_offset;
 	int animation_direction;
 	bool valid;
-	NONS_AnimationInfo();
-	NONS_AnimationInfo(const wchar_t *image_string);
+	NONS_AnimationInfo(){}
+	NONS_AnimationInfo(const std::wstring &image_string);
 	NONS_AnimationInfo(const NONS_AnimationInfo &b);
 	NONS_AnimationInfo &operator=(const NONS_AnimationInfo &b);
 	~NONS_AnimationInfo();
-	void parse(const wchar_t *image_string);
+	void parse(const std::wstring &image_string);
 	void resetAnimation();
 	long advanceAnimation(ulong msecs);
 	long getCurrentAnimationFrame();
+	const std::wstring &getFilename(){
+		return this->filename;
+	}
+	const std::wstring &getString(){
+		return this->string;
+	}
+	const std::wstring &getMaskFilename(){
+		return this->mask_filename;
+	}
+private:
+	std::wstring filename;
+	std::wstring string;
+	std::wstring mask_filename;
 };
 
 typedef std::map<std::pair<ulong,ulong>,SDL_Rect> optim_t;
@@ -94,7 +104,7 @@ struct NONS_Image{
 	NONS_Image();
 	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects=0);
 	~NONS_Image();
-	SDL_Surface *LoadImage(const wchar_t *string,const uchar *buffer,ulong bufferSize);
+	SDL_Surface *LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize);
 private:
 	SDL_Rect getUpdateRect(ulong from,ulong to);
 };

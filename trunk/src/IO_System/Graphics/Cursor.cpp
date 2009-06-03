@@ -46,13 +46,13 @@ NONS_Cursor::NONS_Cursor(NONS_ScreenSpace *screen){
 	this->screen=screen;
 }
 
-NONS_Cursor::NONS_Cursor(const wchar_t *str,long x,long y,long absolute,NONS_ScreenSpace *screen){
+NONS_Cursor::NONS_Cursor(const std::wstring &str,long x,long y,long absolute,NONS_ScreenSpace *screen){
 	this->data=0;
 	this->xpos=x;
 	this->ypos=y;
 	this->absolute=!!absolute;
 	this->screen=screen;
-	this->data=new NONS_Layer(str);
+	this->data=new NONS_Layer(&str);
 }
 
 NONS_Cursor::~NONS_Cursor(){
@@ -72,7 +72,8 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 	ulong expire=expiration?expiration:ULONG_MAX;
 	int ret=0;
 	std::vector<SDL_Rect> rects;
-	this->screen->BlendAll(1);
+	if (this->data->animated())
+		this->screen->BlendAll(1);
 	while (!done && !CURRENTLYSKIPPING && expire>0){
 		for (ulong a=0;!done && !CURRENTLYSKIPPING && expire>0;a+=delayadvance){
 			while (!queue->data.empty()){
@@ -144,7 +145,10 @@ bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
 			return 0;
 		while (!queue->data.empty())
 			queue->pop();
-		this->screen->BlendAll(1);
+		if (this->data->animated())
+			this->screen->BlendAll(1);
+		else
+			this->screen->BlendNoCursor(1);
 	}
 	return 1;
 }
@@ -159,6 +163,9 @@ void NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	screen->lookback->display(screen->screen);
 	while (!queue->data.empty())
 		queue->pop();
-	screen->BlendAll(1);
+	if (this->data->animated())
+		screen->BlendAll(1);
+	else
+		this->screen->BlendNoCursor(1);
 }
 #endif

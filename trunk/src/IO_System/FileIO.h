@@ -39,9 +39,9 @@ typedef unsigned char uchar;
 #endif
 #include <fstream>
 
-uchar *readfile(const char *filename,long *len,long offset);
-uchar *readfile(std::ifstream *file,long *len,long offset);
-uchar *readfile(const char *name,long *len);
-char writefile(const char *name,char *buffer,long size);
+uchar *readfile(const char *filename,ulong &len,ulong offset);
+uchar *readfile(std::ifstream &file,ulong &len,ulong offset);
+uchar *readfile(const char *name,ulong &len);
+char writefile(const char *name,char *buffer,ulong size);
 bool fileExists(const char *name);
 #endif

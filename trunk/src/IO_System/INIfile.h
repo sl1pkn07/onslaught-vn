@@ -31,74 +31,50 @@
 #define NONS_INIsection_H
 
 #include "../Common.h"
-#include "../UTF.h"
-#include "../strCmpT.h"
 #include "../ErrorCodes.h"
 #include "../enums.h"
 #include <map>
 
 class INIvalue{
 	long intValue;
-	wchar_t *strValue;
+	std::wstring strValue;
 	char type;
 public:
 	INIvalue(long a);
-	INIvalue(char *a);
-	INIvalue(wchar_t *a,bool takeOwnership=0);
-	INIvalue(const char *a);
-	INIvalue(const wchar_t *a);
-	~INIvalue();
+	INIvalue(const std::wstring &a);
 	void setIntValue(long a);
-	void setStrValue(wchar_t *a,bool takeOwnership=0);
-	void setStrValue(const char *a);
-	void setStrValue(const wchar_t *a);
+	void setStrValue(const std::wstring &a);
 	char getType();
 	long getIntValue();
-	char *getStrValue();
-	wchar_t *getWStrValue(bool getCopy=1);
+	const std::wstring &getStrValue();
 };
 
 class INIsection{
-	std::map<wchar_t *,INIvalue *,wstrCmp> variables;
+	std::map<std::wstring,INIvalue *> variables;
 public:
 	INIsection();
-	INIsection(const wchar_t *buffer,long *offset,long l);
 	~INIsection();
+	INIsection(const wchar_t *buffer,long *offset,long l);
 	void readFile(const wchar_t *buffer,long *offset,long l);
-	void setIntValue(const char    *index,long     a);
-	void setIntValue(const wchar_t *index,long     a);
-	void setStrValue(const char    *index,wchar_t *a,bool takeOwnership=0);
-	void setStrValue(const wchar_t *index,wchar_t *a,bool takeOwnership=0);
-	void setStrValue(const char    *index,const char    *a);
-	void setStrValue(const wchar_t *index,const char    *a);
-	void setStrValue(const char    *index,const wchar_t *a);
-	void setStrValue(const wchar_t *index,const wchar_t *a);
-	char getType(const char *index);
-	char getType(const wchar_t *index);
-	long getIntValue(const char *index);
-	long getIntValue(const wchar_t *index);
-	char *getStrValue(const char *index);
-	char *getStrValue(const wchar_t *index);
-	wchar_t *getWStrValue(const char *index,bool getCopy=1);
-	wchar_t *getWStrValue(const wchar_t *index,bool getCopy=1);
-	INIvalue *getValue(const char *index);
-	INIvalue *getValue(const wchar_t *index);
+	void setIntValue(const std::wstring &index,long a);
+	void setStrValue(const std::wstring &index,const std::wstring &a);
+	char getType(const std::wstring &index);
+	long getIntValue(const std::wstring &index);
+	const std::wstring &getStrValue(const std::wstring &index);
+	INIvalue *getValue(const std::wstring &index);
 };
 
 class INIfile{
-	std::map<wchar_t *,INIsection *,wstrCmp> sections;
+	std::map<std::wstring,INIsection *> sections;
 public:
 	INIfile();
-	INIfile(const char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	INIfile(const wchar_t *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	INIfile(const std::string &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	INIfile(const char *buffer,long l,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	INIfile(const wchar_t *buffer,long l);
 	~INIfile();
-	ErrorCode readFile(const char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	ErrorCode readFile(const wchar_t *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	ErrorCode readFile(const std::string &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	void readFile(const char *buffer,long l,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	void readFile(const wchar_t *buffer,long l);
-	INIsection *getSection(const char *index);
-	INIsection *getSection(const wchar_t *index);
+	INIsection *getSection(const std::wstring &index);
 };
 #endif

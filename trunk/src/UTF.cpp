@@ -41,6 +41,12 @@
 extern wchar_t SJIS2Unicode[];
 extern wchar_t Unicode2SJIS[];
 
+/*
+Note: All sizes are powers of two, and wchar_t is guaranteed to be at least as
+big as char, so this division will always give 1, 2, 4, etc.
+*/
+ulong sizeRatio=sizeof(wchar_t)/sizeof(char);
+
 char checkEnd(wchar_t a){
 	if (a==BOM16B)
 		return NONS_BIG_ENDIAN;
@@ -50,231 +56,105 @@ char checkEnd(wchar_t a){
 		return UNDEFINED_ENDIANNESS;
 }
 
-bool checkNativeEndianness(){
-	ushort a=0x1234;
-	bool res;
-	if (*((uchar *)/*(void *)*/&a)==0x12)
-		res=NONS_BIG_ENDIAN;
+char checkNativeEndianness(){
+	Uint16 a=0x1234;
+	if (*(Uint8 *)&a==0x12)
+		return NONS_BIG_ENDIAN;
 	else
-		res=NONS_LITTLE_ENDIAN;
-	return res;
+		return NONS_LITTLE_ENDIAN;
 }
 
-wchar_t *UCS2_to_WChar(const char *buffer,ulong initialSize,long *finalSize,uchar end){
-	wchar_t firstChar=buffer[0]<<8|(wchar_t(buffer[1])&0xFF);
-	char realEnd=checkEnd(firstChar);
-	bool usesBOM=(realEnd!=UNDEFINED_ENDIANNESS);
-	initialSize/=2;
-	if (usesBOM)
-		initialSize--;
-	else
-		realEnd=NONS_BIG_ENDIAN;
-	if (end==UNDEFINED_ENDIANNESS)
-		end=realEnd;
-	wchar_t *res=new wchar_t[initialSize];
-	memcpy(res,buffer+2*usesBOM,initialSize);
-	if ((uchar)checkNativeEndianness()!=end)
-		for (ulong a=0;a<initialSize;a++)
-			res[a]=(res[a]>>8)+(res[a]<<8);
-	*finalSize=initialSize;
-	return res;
+char nativeEndianness=checkNativeEndianness();
+
+inline wchar_t invertWC(wchar_t val){
+#if WCHAR_MAX==0xFFFF
+	return (val>>8)|(val<<8);
+#elif WCHAR_MAX==0xFFFFFFFF
+	return (val>>16)|0xFF&(val>>8)|0xFF00&(val<<8)|(val<<16);
+#endif
 }
 
-wchar_t *ISO88591_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
-	wchar_t *res=new wchar_t[initialSize];
-	*finalSize=initialSize;
-	for (ulong a=0;a<initialSize;a++)
-		res[a]=((wchar_t)buffer[a])&0xFF;
-	return res;
+void UCS2_WC(wchar_t *dst,const uchar *src,ulong srcl,uchar end){
+	memcpy(dst,src,srcl);
+	srcl/=sizeRatio;
+	if ((uchar)nativeEndianness!=end)
+		for (ulong a=0;a<srcl;a++)
+			dst[a]=invertWC(dst[a]);
 }
 
-wchar_t *UTF8_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
-	ulong c=0;
-	ulong b=0,init=(uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C?3:0;
-	uchar *unsigned_buffer=(uchar *)buffer;
-	/*
-	Predict size of resulting buffer. This is a ridiculously simple operation,
-	as all it requires is to find the starting bytes of the characters.
-	*/
-	for (ulong a=init;a<initialSize;a++)
-		if (unsigned_buffer[a]<128 || (unsigned_buffer[a]&192)==192)
-			c++;
-	wchar_t *res;
-	res=new wchar_t[c];
-	for (ulong a=init;a<initialSize;a++){
-		if (!(unsigned_buffer[a]&128))
-			//Byte represents an ASCII character. Direct copy will do.
-			res[b]=buffer[a];
-		else if ((unsigned_buffer[a]&192)==128)
-			//Byte is the middle of an encoded character. Ignore.
+void ISO_WC(wchar_t *dst,const uchar *src,ulong srcl){
+	for (ulong a=0;a<srcl;a++,src++,dst++)
+		*dst=*src;
+}
+
+void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
+	for (ulong a=0;a<srcl;a++){
+		uchar byte=*src++;
+		wchar_t c;
+		if (!(byte&128))
+			c=byte;
+		else if ((byte&192)==128)
 			continue;
-		else if ((unsigned_buffer[a]&224)==192)
-			//Byte represents the start of an encoded character in the range
-			//[U+0080;U+07FF]
-			res[b]=(wchar_t(unsigned_buffer[a]&31)<<6)|wchar_t(unsigned_buffer[a+1]&63);
-		else if ((unsigned_buffer[a]&240)==224)
-			//Byte represents the start of an encoded character in the range
-			//[U+0800;U+FFFF]
-			res[b]=(wchar_t(unsigned_buffer[a]&15)<<12)|(wchar_t(unsigned_buffer[a+1]&63)<<6)|wchar_t(unsigned_buffer[a+2]&63);
-		else if ((unsigned_buffer[a]&248)==240){
-			//Byte represents the start of an encoded character beyond the
-			//U+FFFF limit of 16-bit integer
-			res[b]='?';
-		}
-		b++;
-	}
-	if (!!finalSize)
-		*finalSize=c;
-	return res;
-}
-
-wchar_t *UTF8_to_WChar(const char *string){
-	long b=0,
-		c=0;
-	if ((uchar)string[0]==BOM8A && (uchar)string[1]==BOM8B && (uchar)string[2]==BOM8C)
-		string+=3;
-	for (const char *a=string;*a;a++)
-		if (((uchar)*a)<128 || (*a&192)==192)
-			c++;
-	wchar_t *res=new wchar_t[c+1];
-	res[c]=0;
-	for (uchar *a=(uchar*)string;*a;a++){
-		if (!(*a&128))
-			//Byte represents an ASCII character. Direct copy will do.
-			res[b]=*a;
-		else if ((*a&192)==128)
-			//Byte is the middle of an encoded character. Ignore.
-			continue;
-		else if ((*a&224)==192)
-			//Byte represents the start of an encoded character in the range
-			//[U+0080;U+07FF]
-			res[b]=((*a&31)<<6)|a[1]&63;
-		else if ((*a&240)==224)
-			//Byte represents the start of an encoded character in the range
-			//[U+0800;U+FFFF]
-			res[b]=((*a&15)<<12)|((a[1]&63)<<6)|a[2]&63;
-		else if ((*a&248)==240){
-			//Byte represents the start of an encoded character beyond the
-			//U+FFFF limit of 16-bit integers
-			res[b]='?';
-		}
-		b++;
-	}
-	return res;
-}
-
-wchar_t *SJIS_to_WChar(const char *buffer,ulong initialSize,long *finalSize){
-	wchar_t *temp=new wchar_t[initialSize];
-	ulong a=0,b=0;
-	uchar *unsigned_buffer=(uchar *)buffer;
-	for (;b<initialSize;a++,b++){
-		if (isSJISWide(buffer[b])){
-			temp[a]=(wchar_t(unsigned_buffer[b])<<8)|wchar_t(unsigned_buffer[b+1]);
-			b++;
-		}else
-			temp[a]=wchar_t(unsigned_buffer[b]);
-	}
-	*finalSize=a;
-	wchar_t *res=new wchar_t[a];
-	for (b=0;b<a;b++){
-		res[b]=SJIS2Unicode[temp[b]];
-		if (res[b]=='?' && temp[b]!='?'){
-#ifndef BARE_FILE
-			o_stderr.getstream().width(4);
-			o_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<temp[b]<<" is unsupported. Replacing with '?'.\n";
+		else if ((byte&224)==192){
+			c=byte&31;
+			c<<=6;
+			c|=*src++&63;
+		}else if ((byte&240)==224){
+			c=byte&15;
+			c<<=6;
+			c|=src[1]&63;
+			c<<=6;
+			c|=src[2]&63;
+		}else if ((byte&248)==240){
+#if WCHAR_MAX>=0xFFFF
+			c='?';
 #else
-			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported. Replacing with '?'.\n",temp[b]);
+			c=byte&7;
+			c<<=6;
+			c|=src[1]&63;
+			c<<=6;
+			c|=*src[2]&63;
+			c<<=6;
+			c|=*src[3]&63;
 #endif
 		}
+		*dst++=c;
 	}
-	delete[] temp;
-	return res;
 }
 
-wchar_t *SJIS_to_WChar(const char *string){
-	ulong initialSize=strlen(string);
-	wchar_t *temp=new wchar_t[initialSize];
-	ulong a=0,b=0;
-	uchar *unsigned_buffer=(uchar *)string;
-	for (;b<initialSize;a++,b++){
-		if (isSJISWide(string[b])){
-			temp[a]=(wchar_t(unsigned_buffer[b])<<8)|wchar_t(string[b+1]);
-			b++;
+#define IS_SJIS_WIDE(x) ((x)>=0x81 && (x)<=0x9F || (x)>=0xE0 && (x)<=0xEF)
+
+ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
+	ulong ret=0;
+	for (ulong a=0;a<srcl;a++,ret++){
+		uchar c0=*src++;
+		wchar_t c1;
+		if (IS_SJIS_WIDE(c0)){
+			c1=(c0<<8)|*src++;
+			a++;
 		}else
-			temp[a]=wchar_t(unsigned_buffer[b]);
-	}
-	wchar_t *res=new wchar_t[a+1];
-	res[a]=0;
-	for (b=0;b<a;b++){
-		res[b]=SJIS2Unicode[temp[b]];
-		if (res[b]=='?' && temp[b]!='?'){
+			c1=c0;
+		if (SJIS2Unicode[c1]=='?' && c1!='?'){
 #ifndef BARE_FILE
-			o_stderr <<"ENCODING ERROR: Character SJIS+";
 			o_stderr.getstream().width(4);
-			o_stderr.getstream() <<std::hex<<temp[b];
-			o_stderr <<" is unsupported. Replacing with '?'.\n";
+			o_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<c1<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
 #else
-			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported. Replacing with '?'.\n",temp[b]);
+			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n",c1);
 #endif
 		}
+		*dst++=SJIS2Unicode[c1];
 	}
-	delete[] temp;
-	return res;
+	return ret;
 }
 
-bool isSJISWide(uchar a){
-	return a>=0x81 && a<=0x9F || a>=0xE0 && a<=0xEF;
+void WC_88591(uchar *dst,const wchar_t *src,ulong srcl){
+	for (ulong a=0;a<srcl;a++,src++,dst++)
+		*dst=(*src>0xFF)?'?':*src;
 }
 
-char *WChar_to_UCS2(const wchar_t *buffer,ulong initialSize,long *finalSize,uchar end){
-	bool useBOM=(end<UNDEFINED_ENDIANNESS);
-	if (!useBOM)
-		end=NONS_BIG_ENDIAN;
-	char *res=new char[(initialSize+useBOM)*2];
-	if (checkNativeEndianness()==NONS_BIG_ENDIAN){
-		res[0]=BOM16BA;
-		res[1]=BOM16BB;
-	}else{
-		res[1]=BOM16BA;
-		res[0]=BOM16BB;
-	}
-	initialSize*=2;
-	memcpy(res+2*(useBOM),buffer,initialSize);
-	initialSize+=2*useBOM;
-	if ((uchar)checkNativeEndianness()!=end){
-		for (ulong a=0;a<initialSize;a+=2){
-			char temp=res[a];
-			res[a]=res[a+1];
-			res[a+1]=temp;
-		}
-	}
-	*finalSize=initialSize;
-	return res;
-}
-
-char *WChar_to_ISO88591(const wchar_t *buffer,ulong initialSize,long *finalSize){
-	*finalSize=initialSize;
-	char *res=new char[initialSize];
-	for (ulong a=0;a<initialSize;a++){
-		if (buffer[a]>0xFF){
-#ifndef BARE_FILE
-			o_stderr <<"ENCODING ERROR: Character U+";
-			o_stderr.getstream().width(4);
-			o_stderr.getstream() <<std::hex<<buffer[a];
-			o_stderr <<" cannot be properly encoded in ISO-8859-1. Replacing with '?'.\n";
-#else
-			fprintf(stderr,"ENCODING ERROR: Character U+%04x cannot be properly encoded in ISO-8859-1. Replacing with '?'.\n",buffer[a]);
-#endif
-			res[a]='?';
-		}else
-			res[a]=(char)buffer[a];
-	}
-	return res;
-}
-
-long getUTF8size(const wchar_t *buffer,long size){
-	long res=0;
-	for (long a=0;a<size;a++){
+ulong getUTF8size(const wchar_t *buffer,ulong size){
+	ulong res=0;
+	for (ulong a=0;a<size;a++){
 		if (buffer[a]<0x80)
 			res++;
 		else if (buffer[a]<0x800)
@@ -285,98 +165,163 @@ long getUTF8size(const wchar_t *buffer,long size){
 	return res;
 }
 
-long getUTF8size(const wchar_t *string){
-	if (!string)
-		return 0;
-	long res=0;
-	for (;*string;string++){
-		if (*string<0x80)
-			res++;
-		else if (*string<0x800)
-			res+=2;
-		else
-			res+=3;
-	}
-	return res;
-}
-
-char *WChar_to_UTF8(const wchar_t *buffer,ulong initialSize,long *finalSize){
-	long fSize=getUTF8size(buffer,initialSize);
-	char *res=new char[fSize];
-	long b=0;
-	for (ulong a=0;a<initialSize;a++,b++){
-		wchar_t character=buffer[a];
+void WC_UTF8(uchar *dst,const wchar_t *src,ulong srcl){
+	for (ulong a=0;a<srcl;a++){
+		wchar_t character=*src++;
 		if (character<0x80)
-			res[b]=(char)character;
+			*dst++=character;
 		else if (character<0x800){
-			res[b++]=(character>>6)|192;
-			res[b]=character&63|128;
+			*dst++=(character>>6)|192;
+			*dst++=character&63|128;
 		}else{
-			res[b++]=(character>>12)|224;
-			res[b++]=((character&4095)>>6)|128;
-			res[b]=character&63|128;
+			*dst++=(character>>12)|224;
+			*dst++=((character&4095)>>6)|128;
+			*dst++=character&63|128;
 		}
 	}
-	*finalSize=fSize;
-	return res;
 }
 
-char *WChar_to_UTF8(const wchar_t *string){
-	long fSize=getUTF8size(string);
-	char *res=new char[fSize+1];
-	res[fSize]=0;
-	if (!string)
-		return res;
-	long b=0;
-	for (;*string;string++,b++){
-		if (*string<0x80)
-			res[b]=*string;
-		else if (*string<0x800){
-			res[b++]=(*string>>6)|192;
-			res[b]=*string&63|128;
-		}else{
-			res[b++]=(*string>>12)|224;
-			res[b++]=((*string&4095)>>6)|128;
-			res[b]=*string&63|128;
+void WC_UCS2(uchar *dst,const wchar_t *src,ulong srcl,char end){
+	bool useBOM=(end<UNDEFINED_ENDIANNESS);
+	if (!useBOM)
+		end=NONS_BIG_ENDIAN;
+	if (nativeEndianness==NONS_BIG_ENDIAN){
+		dst[0]=BOM16BA;
+		dst[1]=BOM16BB;
+	}else{
+		dst[0]=BOM16LA;
+		dst[1]=BOM16LB;
+	}
+	srcl*=sizeRatio;
+	memcpy(dst+sizeof(uchar)*useBOM,src,srcl);
+	srcl+=sizeof(uchar)*useBOM;
+	if (nativeEndianness!=end){
+		for (ulong a=0;a<srcl;a+=2,dst+=2){
+			char temp=*dst;
+			*dst=dst[1];
+			dst[1]=temp;
 		}
 	}
-	return res;
 }
 
-char *WChar_to_SJIS(const wchar_t *buffer,ulong initialSize,long *finalSize){
-	wchar_t *temp=new wchar_t[initialSize];
-	memcpy(temp,buffer,initialSize*sizeof(wchar_t));
-	for (ulong a=0;a<initialSize;a++){
-		wchar_t character=Unicode2SJIS[temp[a]];
-		if (character=='?' && temp[a]!='?'){
+ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
+	ulong ret=0;
+	for (ulong a=0;a<srcl;a++){
+		wchar_t srcc=*src++,
+			character=Unicode2SJIS[srcc];
+		if (character=='?' && srcc!='?'){
 #ifndef BARE_FILE
 			o_stderr <<"ENCODING ERROR: Character U+";
 			o_stderr.getstream().width(4);
-			o_stderr.getstream() <<std::hex<<temp[a];
-			o_stderr <<" is unsupported. Replacing with '?'.\n";
+			o_stderr.getstream() <<std::hex<<srcc;
+			o_stderr <<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
 #else
-			fprintf(stderr,"ENCODING ERROR: Character U+%04x is unsupported. Replacing with '?'.\n",temp[a]);
+			fprintf(stderr,"ENCODING ERROR: Character U+%04x is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n",srcc);
 #endif
 		}
-		temp[a]=character;
-	}
-	long fSize=0;
-	for (ulong a=0;a<initialSize;a++)
-		if (temp[a]<0x80)
-			fSize++;
-		else
-			fSize+=2;
-	*finalSize=fSize;
-	char *res=new char[fSize];
-	fSize=0;
-	for (ulong a=0;a<initialSize;a++,fSize++){
-		if (temp[a]<0x80)
-			res[fSize]=(char)temp[a];
+		if (character<0x100)
+			dst[ret++]=character;
 		else{
-			res[fSize++]=char(temp[a]>>8);
-			res[fSize]=char(temp[a]&0xFF);
+			dst[ret++]=character>>8;
+			dst[ret++]=character&0xFF;
 		}
 	}
+	return ret;
+}
+
+std::wstring UniFromISO88591(const std::string &str){
+	std::wstring res;
+	res.resize(str.size());
+	ISO_WC(&res[0],(const uchar *)&str[0],str.size());
+	return res;
+}
+
+std::wstring UniFromUTF8(const std::string &str){
+	ulong start=0;
+	if (str.size()>=3 && (uchar)str[0]==BOM8A && (uchar)str[1]==BOM8B && (uchar)str[2]==BOM8C)
+		start+=3;
+	const uchar *str2=(const uchar *)&str[0]+start;
+	ulong size=0;
+	for (ulong a=0,end=str.size();a<end;a++,str2++)
+		if (*str2<128 || (*str2&192)==192)
+			size++;
+	std::wstring res;
+	res.resize(size);
+	str2=(const uchar *)&str[0]+start;
+	UTF8_WC(&res[0],str2,str.size()-start);
+	return res;
+}
+
+std::wstring UniFromUCS2(const std::string &str,char end){
+	std::wstring res;
+	ulong size=(str.size()&1)?str.size()-1:str.size();
+	if (size<2)
+		return res;
+	wchar_t firstChar=(str[0]<<8)|str[1];
+	char realEnd=checkEnd(firstChar);
+	bool usesBOM=(realEnd!=UNDEFINED_ENDIANNESS);
+	ulong start=0;
+	if (usesBOM)
+		start=2;
+	else
+		realEnd=NONS_BIG_ENDIAN;
+	if (end==UNDEFINED_ENDIANNESS)
+		end=realEnd;
+	size-=start;
+	res.resize(str.size()/sizeRatio);
+	UCS2_WC(&res[0],(const uchar *)&str[0]+start,size,end);
+	return res;
+}
+
+std::wstring UniFromSJIS(const std::string &str){
+	std::wstring res;
+	res.resize(str.size());
+	res.resize(SJIS_WC(&res[0],(const uchar *)&str[0],str.size()));
+	return res;
+}
+
+std::string UniToISO88591(const std::wstring &str){
+	std::string res;
+	res.resize(str.size());
+	WC_88591((uchar *)&res[0],&str[0],str.size());
+	return res;
+}
+
+std::string UniToUTF8(const std::wstring &str,bool addBOM){
+	std::string res;
+	res.resize(getUTF8size(&str[0],str.size())+addBOM*3);
+	if (addBOM){
+		res.push_back(BOM8A);
+		res.push_back(BOM8B);
+		res.push_back(BOM8C);
+	}
+	WC_UTF8((uchar *)&res[0],&str[addBOM*3],str.size());
+	return res;
+}
+
+std::string UniToUCS2(const std::wstring &str,char end){
+	std::string res;
+	res.resize(str.size()*2+(end!=UNDEFINED_ENDIANNESS)*2);
+	WC_UCS2((uchar *)&res[0],&str[0],str.size(),end);
+	return res;
+}
+
+std::string UniToSJIS(const std::wstring &str){
+	std::string res;
+	res.resize(str.size()*sizeRatio);
+	res.resize(WC_SJIS((uchar *)&str[0],&str[0],str.size()));
+	return res;
+}
+
+std::wstring unistring_toupperCopy(const std::wstring &str){
+	std::wstring res=str;
+	toupper(res);
+	return res;
+}
+
+std::wstring unistring_tolowerCopy(const std::wstring &str){
+	std::wstring res=str;
+	tolower(res);
 	return res;
 }
 
@@ -521,7 +466,7 @@ bool isValidUTF8(const char *buffer,ulong size){
 bool isValidSJIS(const char *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++,unsigned_buffer++){
-		if (!isSJISWide(*unsigned_buffer)){
+		if (!IS_SJIS_WIDE(*unsigned_buffer)){
 			if (*unsigned_buffer>=0x80 && *unsigned_buffer<=0xA0 || *unsigned_buffer>=0xE0)
 				return 0;
 			continue;
@@ -553,38 +498,6 @@ bool ISO88591_or_UCS2(const char *buffer,ulong size){
 			buffer[6]=='e')
 			return 0;
 	return 1;
-}
-
-bool NONS_isdigit(wchar_t character){
-	return character>=0x0030 && character<=0x0039;
-}
-
-bool NONS_isupper(wchar_t character){
-	return character>=0x0041 && character<=0x005A;
-}
-
-bool NONS_islower(wchar_t character){
-	return character>=0x0061 && character<=0x007A;
-}
-
-bool NONS_isalpha(wchar_t character){
-	return character>=0x0041 && character<=0x005A || character>=0x0061 && character<=0x007A;
-}
-
-bool NONS_isalnum(wchar_t character){
-	return NONS_isalpha(character) || NONS_isdigit(character);
-}
-
-bool NONS_ishexa(wchar_t character){
-	return character>=0x0030 && character<=0x0039 || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046;
-}
-
-wchar_t NONS_toupper(wchar_t character){
-	return NONS_islower(character)?character&223:character;
-}
-
-wchar_t NONS_tolower(wchar_t character){
-	return NONS_isupper(character)?character|32:character;
 }
 
 void NONS_tolower(wchar_t *param){

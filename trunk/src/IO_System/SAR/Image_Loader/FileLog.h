@@ -31,10 +31,10 @@
 #define NONS_FILELOG_H
 
 #include "../../../Common.h"
-#include "../../../strCmpT.h"
+#include "../../../UTF.h"
 #include <set>
 
-typedef std::set<wchar_t *,wstrCmpCI> logSet_t;
+typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > logSet_t;
 
 struct NONS_LogStrings{
 	std::string saveAs;
@@ -45,19 +45,15 @@ struct NONS_LogStrings{
 	~NONS_LogStrings();
 	void init(const char *oldName,const char *newName);
 	void writeOut();
-	virtual bool addString(const wchar_t *string,bool takeOwnership=0);
-	virtual bool addString(const char *string);
-	virtual bool check(const wchar_t *string);
-	virtual bool check(const char *string);
+	virtual bool addString(const std::wstring &string);
+	virtual bool check(const std::wstring &string);
 };
 
 struct NONS_FileLog:NONS_LogStrings{
 	NONS_FileLog(const char *oldName,const char *newName)
 		:NONS_LogStrings(oldName,newName){}
-	bool addString(const wchar_t *string,bool takeOwnership=0);
-	bool addString(const char *string);
-	bool check(const wchar_t *string);
-	bool check(const char *string);
+	bool addString(const std::wstring &string);
+	bool check(std::wstring string);
 };
 
 struct NONS_LabelLog:NONS_LogStrings{
@@ -65,9 +61,7 @@ struct NONS_LabelLog:NONS_LogStrings{
 		:NONS_LogStrings(){}
 	NONS_LabelLog(const char *oldName,const char *newName)
 		:NONS_LogStrings(oldName,newName){}
-	bool addString(const wchar_t *string,bool takeOwnership=0);
-	bool addString(const char *string);
-	bool check(const wchar_t *string);
-	bool check(const char *string);
+	bool addString(const std::wstring &string);
+	bool check(const std::wstring &string);
 };
 #endif

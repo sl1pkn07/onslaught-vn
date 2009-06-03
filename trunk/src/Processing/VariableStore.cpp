@@ -41,21 +41,18 @@
 NONS_LabelLog labellog;
 
 NONS_VariableStore::NONS_VariableStore(){
-	long l;
+	ulong l;
 	this->commitGlobals=0;
-	char *dir=addStrings(save_directory,"global.sav");
-	uchar *buffer=readfile(dir,&l);
+	std::string dir=save_directory+"global.sav";
+	uchar *buffer=readfile(dir.c_str(),l);
 	if (!buffer){
-		delete[] dir;
-		buffer=readfile("gloval.sav",&l);
+		buffer=readfile("gloval.sav",l);
 		if (!buffer)
 			return;
-		for (long a=0,stackpos=200;a<l;stackpos++){
+		for (ulong a=0,stackpos=200;a<l;stackpos++){
 			NONS_Variable *var=new NONS_Variable();
-			var->intValue->set(readSignedDWord((char *)buffer,&a));
-			wchar_t *temp;
-			_READ_BINARY_SJIS_STRING(temp,buffer,a)
-			var->wcsValue->set(temp,1);
+			var->intValue->set(readSignedDWord((char *)buffer,a));
+			var->wcsValue->set(UniFromSJIS(readString((char *)buffer,a)));
 			this->variables[stackpos]=var;
 		}
 	}else{
@@ -64,23 +61,18 @@ NONS_VariableStore::NONS_VariableStore(){
 			delete[] buffer;
 			buffer=(uchar *)temp;
 		}
-		long offset=0;
-		Uint32 intervalsN=readDWord((char *)buffer,&offset);
+		ulong offset=0;
+		Uint32 intervalsN=readDWord((char *)buffer,offset);
 		std::vector<Sint32> intervals;
 		for (Uint32 a=0;a<intervalsN;a++){
-			Uint32 b=readDWord((char *)buffer,&offset);
+			Uint32 b=readDWord((char *)buffer,offset);
 			if (b&0x80000000){
 				b&=0x7FFFFFFF;
-				/*if (b&0x40000000)
-					b&=0x80000000;*/
 				intervals.push_back((Sint32)b);
 				intervals.push_back(1);
 			}else{
-				/*b&=0x7FFFFFFF;
-				if (b&0x40000000)
-					b&=0x80000000;*/
 				intervals.push_back((Sint32)b);
-				intervals.push_back(readSignedDWord((char *)buffer,&offset));
+				intervals.push_back(readSignedDWord((char *)buffer,offset));
 			}
 		}
 		ulong currentInterval=0;
@@ -90,10 +82,8 @@ NONS_VariableStore::NONS_VariableStore(){
 			currentInterval+=2;
 			for (ulong c=0;c<b;c++){
 				NONS_Variable *var=new NONS_Variable();
-				var->intValue->set(readSignedDWord((char *)buffer,&offset));
-				wchar_t *temp;
-				_READ_BINARY_UTF8_STRING(temp,buffer,offset)
-				var->wcsValue->set(temp,1);
+				var->intValue->set(readSignedDWord((char *)buffer,offset));
+				var->wcsValue->set(UniFromUTF8(readString((char *)buffer,offset)));
 				this->variables[a++]=var;
 			}
 		}
@@ -103,18 +93,18 @@ NONS_VariableStore::NONS_VariableStore(){
 
 NONS_VariableStore::~NONS_VariableStore(){
 	this->saveData();
-	for (constants_map_T::iterator i=this->constants.begin();i!=this->constants.end();i++){
-		delete[] i->first;
+	for (constants_map_T::iterator i=this->constants.begin();i!=this->constants.end();i++)
 		delete i->second;
-	}
 	this->reset();
 }
 
 void NONS_VariableStore::reset(){
 	for (variables_map_T::iterator i=this->variables.begin();i!=this->variables.end();i++)
 		delete i->second;
+	this->variables.clear();
 	for (arrays_map_T::iterator i=this->arrays.begin();i!=this->arrays.end();i++)
 		delete i->second;
+	this->arrays.clear();
 }
 
 void NONS_VariableStore::saveData(){
@@ -125,11 +115,11 @@ void NONS_VariableStore::saveData(){
 	if (i==this->variables.end())
 		i--;
 	if (!this->variables.size() || i->first<200)
-		writeDWord(0,&buffer);
+		writeDWord(0,buffer);
 	else{
 		for (;i!=this->variables.end() && VARIABLE_HAS_NO_DATA(i->second);i++);
 		if (i==this->variables.end())
-			writeDWord(0,&buffer);
+			writeDWord(0,buffer);
 		else{
 			variables_map_T::iterator i2=i;
 			std::vector<Sint32> intervals;
@@ -146,39 +136,38 @@ void NONS_VariableStore::saveData(){
 					last++;
 			}
 			intervals.push_back(last-intervals.back());
-			writeDWord(intervals.size()/2,&buffer);
+			writeDWord(intervals.size()/2,buffer);
 			for (ulong a=0;a<intervals.size();){
 				if (intervals[a+1]>1){
-					writeDWord(intervals[a++],&buffer);
-					writeDWord(intervals[a++],&buffer);
+					writeDWord(intervals[a++],buffer);
+					writeDWord(intervals[a++],buffer);
 				}else{
-					writeDWord(intervals[a]|0x80000000,&buffer);
+					writeDWord(intervals[a]|0x80000000,buffer);
 					a+=2;
 				}
 			}
 			for (i=i2;i!=this->variables.end();i++){
 				if (VARIABLE_HAS_NO_DATA(i->second))
 					continue;
-				writeDWord(i->second->intValue->getInt(),&buffer);
-				writeString(i->second->wcsValue->getWcs(),&buffer);
+				writeDWord(i->second->intValue->getInt(),buffer);
+				writeString(i->second->wcsValue->getWcs(),buffer);
 			}
 		}
 	}
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
-	char *dir=addStrings(save_directory,"global.sav");
-	writefile(dir,writebuffer,l);
-	delete[] dir;
+	std::string dir=save_directory+"global.sav";
+	writefile(dir.c_str(),writebuffer,l);
 	delete[] writebuffer;
 }
 
 ErrorCode NONS_VariableStore::evaluate(
-		const wchar_t *exp,
+		const std::wstring &exp,
 		long *result,
 		bool invert_terms,
 		std::vector<long> *array_decl,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string){
+		std::wstring *string){
 	if (!!result)
 		*result=0;
 	std::wstringstream param;
@@ -212,7 +201,7 @@ void NONS_VariableStore::push(Sint32 pos,NONS_Variable *var){
 	}
 }
 
-NONS_VariableMember *NONS_VariableStore::retrieve(const wchar_t *name,ErrorCode *error){
+NONS_VariableMember *NONS_VariableStore::retrieve(const std::wstring &name,ErrorCode *error){
 	NONS_VariableMember *ret=0;
 	this->evaluate(name,0,0,0,&ret,0);
 	if (!ret && !!error)
@@ -241,32 +230,12 @@ NONS_Variable *NONS_VariableStore::retrieve(Sint32 position,ErrorCode *error){
 	return i->second;
 }
 
-ErrorCode NONS_VariableStore::getWcsValue(const wchar_t *str,wchar_t **value){
-	if (!!*value)
-		delete[] *value;
-	*value=0;
-	return this->evaluate(str,0,0,0,0,value);
+ErrorCode NONS_VariableStore::getWcsValue(const std::wstring &str,std::wstring &value){
+	return this->evaluate(str,0,0,0,0,&value);
 }
 
-ErrorCode NONS_VariableStore::getStrValue(const wchar_t *str,char **value){
-	wchar_t *res=0;
-	ErrorCode error=this->evaluate(str,0,0,0,0,&res);
-	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
-		return error;
-	*value=copyString(res);
-	delete[] res;
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_VariableStore::getStrValue(const char *str,char **value){
-	wchar_t *copy=copyWString(str);
-	ErrorCode ret=this->getStrValue(copy,value);
-	delete[] copy;
-	return ret;
-}
-
-ErrorCode NONS_VariableStore::getIntValue(const wchar_t *str,long *value){
-	return this->evaluate(str,value,0,0,0,0);
+ErrorCode NONS_VariableStore::getIntValue(const std::wstring &str,long &value){
+	return this->evaluate(str,&value,0,0,0,0);
 }
 
 NONS_VariableMember *NONS_VariableStore::getArray(Sint32 arrayNo){
@@ -276,8 +245,8 @@ NONS_VariableMember *NONS_VariableStore::getArray(Sint32 arrayNo){
 	return i->second;
 }
 
-NONS_VariableMember *NONS_VariableStore::getConstant(const wchar_t *name){
-	constants_map_T::iterator i=this->constants.find((wchar_t *)name);
+NONS_VariableMember *NONS_VariableStore::getConstant(const std::wstring &name){
+	constants_map_T::iterator i=this->constants.find(name);
 	if (i==this->constants.end())
 		return 0;
 	return i->second;

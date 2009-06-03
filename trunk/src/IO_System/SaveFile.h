@@ -37,14 +37,12 @@
 #include <map>
 #include <ctime>
 #include <SDL/SDL.h>
-#include "../UTF.h"
 
-#define NONS_SAVEFILE_VERSION 2
+#define NONS_SAVEFILE_VERSION 3
 
-std::vector<tm *> *existing_files(char *location="./");
-std::vector<tm *> *existing_files(wchar_t *location=L"./");
-char *getConfigLocation();
-char *getSaveLocation(unsigned hash[5]);
+std::vector<tm *> existing_files(const std::string &location="./");
+std::string getConfigLocation();
+std::string getSaveLocation(unsigned hash[5]);
 tm *getDate(const char *filename);
 
 struct NONS_SaveFile{
@@ -55,17 +53,17 @@ struct NONS_SaveFile{
 	bool fontShadow;
 	bool rmode;
 	SDL_Color windowTextColor;
-	wchar_t *arrowCursorString;
+	std::wstring arrowCursorString;
 	bool arrowCursorAbs;
 	long arrowCursorX,
 		arrowCursorY;
-	wchar_t *pageCursorString;
+	std::wstring pageCursorString;
 	bool pageCursorAbs;
 	long pageCursorX,
 		pageCursorY;
 	ulong windowTransition;
 	ulong windowTransitionDuration;
-	wchar_t *windowTransitionRule;
+	std::wstring windowTransitionRule;
 	SDL_Rect windowFrame;
 	ulong windowFrameColumns,
 		windowFrameRows;
@@ -79,19 +77,18 @@ struct NONS_SaveFile{
 	bool hideWindow2;
 	ulong textSpeed;
 	SDL_Rect textWindow;
-	wchar_t *unknownString_000;
-	wchar_t *background;
-	wchar_t *leftChar;
-	wchar_t *centerChar;
-	wchar_t *rightChar;
+	ulong char_baseline;
+	std::wstring unknownString_000;
+	std::wstring background;
+	std::wstring leftChar;
+	std::wstring centerChar;
+	std::wstring rightChar;
 	struct Sprite{
-		wchar_t *string;
+		std::wstring string;
 		long x,y;
 		bool visibility;
 		uchar alpha;
 		ulong animOffset;
-		Sprite();
-		~Sprite();
 	};
 	std::vector<Sprite *> sprites;
 	variables_map_T variables;
@@ -99,55 +96,51 @@ struct NONS_SaveFile{
 	ushort fontSize;
 	struct stackEl{
 		bool type;
-		wchar_t *label;
+		std::wstring label;
 		ulong offset;
 		Sint32 variable;
 		long to;
 		long step;
-		wchar_t *leftovers;
+		std::wstring leftovers;
 		ulong textgosubLevel;
-		stackEl();
-		~stackEl();
 	};
 	std::vector<stackEl *> stack;
 	bool monochrome;
 	SDL_Color monochromeColor;
 	bool negative;
-	wchar_t *midi;
-	wchar_t *wav;
-	wchar_t *music;
+	std::wstring midi;
+	std::wstring wav;
+	std::wstring music;
 	long musicTrack;
 	bool loopMidi,
 		loopWav,
 		playOnce,
 		loopMp3,
 		saveMp3;
-	wchar_t *btnDef;
-	wchar_t *loopBGM0,
-		*loopBGM1;
-	std::vector<wchar_t *> logPages;
+	std::wstring btnDef;
+	std::wstring loopBGM0,
+		loopBGM1;
+	std::vector<std::wstring> logPages;
 	ulong currentLine;
 	ulong currentSubline;
-	wchar_t *currentLabel;
+	std::wstring currentLabel;
 	ulong currentOffset;
 	unsigned hash[5];
-	wchar_t *currentBuffer;
+	std::wstring currentBuffer;
 	ushort textX,
 		textY;
 	SDL_Color bgColor;
 	ulong spritePriority;
 	uchar musicVolume;
 	struct Channel{
-		wchar_t *name;
+		std::wstring name;
 		bool loop;
 		uchar volume;
-		Channel();
-		~Channel();
 	};
 	std::vector<Channel *> channels;
 	NONS_SaveFile();
 	~NONS_SaveFile();
-	void load(char *filename);
-	bool save(char *filename);
+	void load(std::string filename);
+	bool save(std::string filename);
 };
 #endif

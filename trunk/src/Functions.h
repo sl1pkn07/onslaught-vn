@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <ctime>
 
 #ifndef M_PI
@@ -48,15 +49,6 @@
 #define ABS(x) ((x)<0?-(x):(x))
 
 #define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
-#define _CHECK_ID_NAME(pointertostring)\
-{\
-	if (!isalpha(*(pointertostring)) && *(pointertostring)!='_')\
-		return NONS_INVALID_ID_NAME;\
-	for (wchar_t *a=(pointertostring)+1;*a;a++)\
-		if (!isalnum(*a) && *a!='_')\
-			return NONS_INVALID_ID_NAME;\
-}
-
 #define NONS_NEWSURFACE(w,h,d) SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,(w),(h),(d),rmask,gmask,bmask,amask)
 #define CHECK_FLAG(x,y) (((x)&(y))==(y))
 
@@ -81,14 +73,59 @@ bool multicomparison(char character,const char *characters);
 bool multicomparison(wchar_t character,const char *characters);
 bool multicomparison(char character,const wchar_t *characters);
 bool multicomparison(wchar_t character,const wchar_t *characters);
-void toforwardslash(wchar_t *param);
-void toforwardslash(char *param);
-bool isanumber(const char *a);
-bool isanumber(const wchar_t *a);
-std::vector<char *> *getParameterList(const char *string,char delim=' ');
-std::vector<wchar_t *> *getParameterList(const wchar_t *string,wchar_t delim=' ');
-bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1);
-bool filenames_are_equal(const char *str0,const char *str1);
+template <typename T>
+void toforwardslash(std::basic_string<T> &s){
+	for (std::basic_string<T>::iterator i=s.begin(),end=s.end();i!=end;i++)
+		*i=(*i==0x5C)?0x2F:*i;
+}
+
+template <typename T>
+std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &string,bool leave_quotes,char delim=' '){
+	std::vector<std::basic_string<T> > res;
+	char tempDelim=delim;
+	for (std::basic_string<T>::const_iterator i=string.begin();i!=string.end();){
+		if (*i=='\"'){
+			if (!leave_quotes)
+				i++;
+			delim='\"';
+		}
+		std::basic_string<T>::const_iterator end=i;
+		if (delim!=tempDelim && leave_quotes)
+			end++;
+		for (;end!=string.end() && *end!=delim;end++);
+		if (delim!=tempDelim && leave_quotes)
+			end++;
+		res.push_back(std::basic_string<T>(i,end));
+		delim=tempDelim;
+		for (i=end+1;i!=string.end() && *i==delim;i++);
+	}
+	return res;
+}
+/*bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1);
+bool filenames_are_equal(const char *str0,const char *str1);*/
+template <typename T>
+void trim_string(std::basic_string<T> &str){
+	std::basic_string<T>::iterator start=str.begin();
+	for (;start!=str.end() && iswhitespace(*start);start++);
+	if (start==str.end()){
+		str.clear();
+		return;
+	}
+	std::basic_string<T>::iterator end=start;
+	for (;end!=str.end() && !iswhitespace(*end);end++);
+	str=std::wstring(start,end);
+}
+template <typename T>
+bool isValidIdentifier(const std::basic_string<T> &str){
+	if (str[0]!='_' && !NONS_isalpha(str[0]))
+		return 0;
+	const T *s=&str[1];
+	for (ulong a=1;a<str.size();a++,s++)
+		if (*s!='_' && !NONS_isalnum(*s))
+			return 0;
+	return 1;
+}
+std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out=0);
 
 
 //string parsing
@@ -100,16 +137,16 @@ char *tagValue(const char *string);
 //binary parsing functions
 bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset);
 ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
-Uint8 readByte(char *buffer,long *offset);
-Sint16 readSignedWord(char *buffer,long *offset);
-Uint16 readWord(char *buffer,long *offset);
-Sint32 readSignedDWord(char *buffer,long *offset);
-Uint32 readDWord(char *buffer,long *offset);
-char *readString(char *buffer,long *offset);
-void writeByte(Uint8 a,std::string *str,long offset=-1);
-void writeWord(Uint16 a,std::string *str,long offset=-1);
-void writeDWord(Uint32 a,std::string *str,long offset=-1);
-void writeString(const wchar_t *a,std::string *str);
+Uint8 readByte(char *buffer,ulong &offset);
+Sint16 readSignedWord(char *buffer,ulong &offset);
+Uint16 readWord(char *buffer,ulong &offset);
+Sint32 readSignedDWord(char *buffer,ulong &offset);
+Uint32 readDWord(char *buffer,ulong &offset);
+std::string readString(char *buffer,ulong &offset);
+void writeByte(Uint8 a,std::string &str,long offset=-1);
+void writeWord(Uint16 a,std::string &str,long offset=-1);
+void writeDWord(Uint32 a,std::string &str,long offset=-1);
+void writeString(const std::wstring &a,std::string &str);
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
 	std::vector<Sint32> intervals;
@@ -153,4 +190,33 @@ dstl: the length of the decompressed buffer will be written here.
 */
 char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl);
 #endif
+template <typename T1,typename T2>
+bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t &at_offset,int (*comp_f)(const T2 &,const T1 &)){
+	if (begin<=end){
+		size_t size=end-begin+1;
+		while (1){
+			size_t pivot=begin+size/2;
+			int cmp=comp_f(value,set[pivot]);
+			if (size==1){
+				if (!cmp){
+					at_offset=pivot;
+					return 1;
+				}
+				break;
+			}
+			if (cmp<0)
+				end=pivot-1;
+			else if (cmp>0)
+				begin=pivot+1;
+			else{
+				at_offset=pivot;
+				return 1;
+			}
+			size=end-begin+1;
+		}
+	}
+	return 0;
+}
+
+ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode);
 #endif

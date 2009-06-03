@@ -39,7 +39,6 @@ NONS_CachedSound::NONS_CachedSound(char *databuffer,long size){
 	delete[] databuffer;
 	this->references=1;
 	this->lastused=secondsSince1970();
-	this->name=0;
 }
 
 NONS_CachedSound::~NONS_CachedSound(){

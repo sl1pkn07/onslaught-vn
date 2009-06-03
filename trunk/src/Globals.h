@@ -64,6 +64,6 @@ extern SDL_mutex *screenMutex;
 
 #include "Parallelization.h"
 
-extern char *save_directory;
-extern char *config_directory;
+extern std::string save_directory;
+extern std::string config_directory;
 #endif

@@ -30,7 +30,6 @@
 #ifndef NONS_COMMON_H
 #define NONS_COMMON_H
 #include <iostream>
-//#include "Globals.h"
 #include "CommonTypes.h"
 
 extern bool ctrlIsPressed;

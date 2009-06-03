@@ -57,38 +57,38 @@ NONS_ButtonLayer::~NONS_ButtonLayer(){
 		SDL_FreeSurface(this->loadedGraphic);
 }
 
-void NONS_ButtonLayer::makeTextButtons(
-		std::vector<wchar_t *> *arr,
+void NONS_ButtonLayer::makeTextButtons(const std::vector<std::wstring> &arr,
 		SDL_Color *on,
 		SDL_Color *off,
 		bool shadow,
-		wchar_t *entry,
-		wchar_t *mouseover,
-		wchar_t *click,
+		std::wstring *entry,
+		std::wstring *mouseover,
+		std::wstring *click,
 		NONS_Audio *audio,
 		NONS_GeneralArchive *archive,
 		int width,
 		int height){
 	if (!this->font)
 		return;
-	if (!arr)
-		return;
 	for (ulong a=0;a<this->buttons.size();a++)
 		delete this->buttons[a];
 	this->buttons.clear();
 	this->archive=archive;
 	this->audio=audio;
-	this->voiceEntry=entry;
-	this->voiceClick=click;
-	this->voiceMouseOver=mouseover;
+	if (entry)
+		this->voiceEntry=*entry;
+	if (click)
+		this->voiceClick=*click;
+	if (mouseover)
+		this->voiceMouseOver=*mouseover;
 	this->boundingBox.x=0;
 	this->boundingBox.y=0;
 	this->boundingBox.w=0;
 	this->boundingBox.h=0;
-	for (ulong a=0;a<arr->size();a++){
+	for (ulong a=0;a<arr.size();a++){
 		NONS_Button *button=new NONS_Button(this->font);
 		this->buttons.push_back(button);
-		button->makeTextButton((*arr)[a],0,on,off,shadow,width,height);
+		button->makeTextButton(arr[a],0,on,off,shadow,width,height);
 		this->boundingBox.h+=button->box.h;
 		if (button->box.w>this->boundingBox.w)
 			this->boundingBox.w=button->box.w;
@@ -106,20 +106,20 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 	}
 	if (y>this->screen->output->y0+this->screen->output->h)
 		return -2;
-	if (this->voiceEntry){
+	if (this->voiceEntry.size()){
 		if (this->audio->bufferIsLoaded(this->voiceEntry))
-			this->audio->playSoundAsync(this->voiceEntry,0,0,7,0);
+			this->audio->playSoundAsync(&this->voiceEntry,0,0,7,0);
 		else{
-			long l;
-			char *buffer=(char *)this->archive->getFileBuffer(this->voiceEntry,(ulong *)&l);
-			if (this->audio->playSoundAsync(this->voiceClick,buffer,l,7,0)!=NONS_NO_ERROR)
+			ulong l;
+			char *buffer=(char *)this->archive->getFileBuffer(this->voiceEntry,l);
+			if (this->audio->playSoundAsync(&this->voiceClick,buffer,l,7,0)!=NONS_NO_ERROR)
 				delete[] buffer;
 		}
 	}
-	if (this->voiceMouseOver){
+	if (this->voiceMouseOver.size()){
 		if (this->audio->bufferIsLoaded(this->voiceMouseOver)){
-			long l;
-			char *buffer=(char *)this->archive->getFileBuffer(this->voiceMouseOver,(ulong *)&l);
+			ulong l;
+			char *buffer=(char *)this->archive->getFileBuffer(this->voiceMouseOver,l);
 			this->audio->loadAsyncBuffer(this->voiceMouseOver,buffer,l,7);
 		}
 	}
@@ -246,13 +246,13 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 							this->buttons[mouseOver]->merge(this->screen->screen,screenCopy,0);
 						mouseOver=tempMO;
 						this->buttons[mouseOver]->merge(this->screen->screen,screenCopy,1);
-						if (this->voiceMouseOver){
+						if (this->voiceMouseOver.size()){
 							if (this->audio->bufferIsLoaded(this->voiceMouseOver))
-								this->audio->playSoundAsync(this->voiceMouseOver,0,0,7,0);
+								this->audio->playSoundAsync(&this->voiceMouseOver,0,0,7,0);
 							else{
-								long l;
-								char *buffer=(char *)this->archive->getFileBuffer(this->voiceMouseOver,(ulong *)&l);
-								if (this->audio->playSoundAsync(this->voiceMouseOver,buffer,l,7,0)!=NONS_NO_ERROR)
+								ulong l;
+								char *buffer=(char *)this->archive->getFileBuffer(this->voiceMouseOver,l);
+								if (this->audio->playSoundAsync(&this->voiceMouseOver,buffer,l,7,0)!=NONS_NO_ERROR)
 									delete[] buffer;
 							}
 						}
@@ -265,13 +265,13 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 					if (mouseOver<0)
 						break;
 					else{
-						if (this->voiceClick){
+						if (this->voiceClick.size()){
 							if (this->audio->bufferIsLoaded(this->voiceClick))
-								this->audio->playSoundAsync(this->voiceClick,0,0,7,0);
+								this->audio->playSoundAsync(&this->voiceClick,0,0,7,0);
 							else{
-								long l;
-								char *buffer=(char *)this->archive->getFileBuffer(this->voiceClick,(ulong *)&l);
-								if (this->audio->playSoundAsync(this->voiceClick,buffer,l,7,0)!=NONS_NO_ERROR)
+								ulong l;
+								char *buffer=(char *)this->archive->getFileBuffer(this->voiceClick,l);
+								if (this->audio->playSoundAsync(&this->voiceClick,buffer,l,7,0)!=NONS_NO_ERROR)
 									delete[] buffer;
 							}
 						}

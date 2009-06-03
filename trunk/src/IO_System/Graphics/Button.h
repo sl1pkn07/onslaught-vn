@@ -47,15 +47,15 @@ struct NONS_Button{
 	NONS_Button();
 	NONS_Button(NONS_Font *font);
 	~NONS_Button();
-	void makeTextButton(wchar_t *text,float center,SDL_Color *on,SDL_Color *off,bool shadow,int limitX,int limitY);
+	void makeTextButton(const std::wstring &text,float center,SDL_Color *on,SDL_Color *off,bool shadow,int limitX,int limitY);
 	void makeGraphicButton(SDL_Surface *src,int posx,int posy,int width,int height,int originX,int originY);
 	void mergeWithoutUpdate(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force=0);
 	void merge(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force=0);
 	bool MouseOver(SDL_Event *event);
 	bool MouseOver(int x,int y);
 private:
-	SDL_Rect GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limitX,int limitY);
-	void write(wchar_t *str,float center=0);
+	SDL_Rect GetBoundingBox(const std::wstring &str,NONS_FontCache *cache,int limitX,int limitY);
+	void write(const std::wstring &str,float center=0);
 	int setLineStart(std::vector<NONS_Glyph *> *arr,long start,SDL_Rect *frame,float center);
 	int predictLineLength(std::vector<NONS_Glyph *> *arr,long start,int width);
 };

@@ -56,7 +56,6 @@ printingPage &printingPage::operator=(const printingPage &b){
 NONS_StackElement::NONS_StackElement(ulong level){
 	this->type=UNDEFINED;
 	this->offset=0;
-	this->first_interpret_string=0;
 	this->var=0;
 	this->from=0;
 	this->to=0;
@@ -67,10 +66,10 @@ NONS_StackElement::NONS_StackElement(ulong level){
 	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(ulong offset,wchar_t *string,ulong level){
+NONS_StackElement::NONS_StackElement(ulong offset,const std::wstring &string,ulong level){
 	this->type=SUBROUTINE_CALL;
 	this->offset=offset;
-	this->first_interpret_string=copyWString(string);
+	this->first_interpret_string=string;
 	this->textgosubLevel=level;
 	this->end=0;
 	this->textgosubTriggeredBy=0;
@@ -84,7 +83,6 @@ NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startof
 	this->to=to;
 	this->step=step;
 	this->end=this->offset;
-	this->first_interpret_string=0;
 	this->textgosubLevel=level;
 	this->end=0;
 	this->textgosubTriggeredBy=0;
@@ -95,12 +93,6 @@ NONS_StackElement::NONS_StackElement(std::vector<printingPage> pages,wchar_t tri
 	this->textgosubLevel=level;
 	this->pages=pages;
 	this->textgosubTriggeredBy=trigger;
-	this->first_interpret_string=0;
-}
-
-NONS_StackElement::~NONS_StackElement(){
-	if (this->first_interpret_string)
-		delete[] this->first_interpret_string;
 }
 
 void NONS_ScriptInterpreter::init(){
@@ -113,17 +105,15 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_slow=0;
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
-	this->selectVoiceEntry=0;
-	this->selectVoiceMouseOver=0;
-	this->selectVoiceClick=0;
 	
-	char *settings_filename=addStrings(config_directory,"settings.cfg");
-	ConfigFile settings(settings_filename);
-	if (settings.exists(L"textSpeedMode"))
-		this->current_speed_setting=settings.getInt(L"textSpeedMode");
-	else
-		this->current_speed_setting=1;
-	delete[] settings_filename;
+	{
+		std::string settings_filename=config_directory+"settings.cfg";
+		ConfigFile settings(settings_filename.c_str());
+		if (settings.exists(L"textSpeedMode"))
+			this->current_speed_setting=settings.getInt(L"textSpeedMode");
+		else
+			this->current_speed_setting=1;
+	}
 
 	srand(time(0));
 	this->defaultx=640;
@@ -149,7 +139,6 @@ void NONS_ScriptInterpreter::init(){
 	this->selectOff.g=0xA9;
 	this->selectOff.b=0xA9;
 	this->inputQueue=InputObserver.attach();
-	this->clickStr=0;
 	this->autoclick=0;
 	this->timer=SDL_GetTicks();
 	//this->setDefaultWindow();
@@ -163,18 +152,13 @@ void NONS_ScriptInterpreter::init(){
 	this->saveGame->format='N';
 	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	this->printed_lines.clear();
-	this->textgosub=0;
+	this->everything->screen->char_baseline=this->everything->screen->screen->inRect.h-1;
 }
 
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
-	this->nsadir=0;
 	this->arrowCursor=0;
 	this->pageCursor=0;
-	this->selectVoiceEntry=0;
-	this->selectVoiceMouseOver=0;
-	this->selectVoiceClick=0;
 	this->inputQueue=0;
-	this->clickStr=0;
 	this->menu=0;
 	this->imageButtons=0;
 	this->saveGame=0;
@@ -183,7 +167,6 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->gfx_store=0;
 	this->everything=0;
 	this->main_font=0;
-	this->textgosub=0;
 	if (everything){
 		if (!everything->script){
 			this->everything=0;
@@ -510,41 +493,35 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	*/
-	ulong total=this->totalCommands(),implemented=this->implementedCommands();
+	ulong total=this->totalCommands(),
+		implemented=this->implementedCommands();
 	std::cout <<"ONSlaught script interpreter v"<<float((implemented*100)/total)/100<<std::endl;
 }
 
 void NONS_ScriptInterpreter::uninit(){
 	if (this->store)
 		delete this->store;
-	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++){
-		delete[] i->first;
+	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
 		delete i->second;
-	}
+	this->INIcache.clear();
 	delete this->arrowCursor;
 	delete this->pageCursor;
 	if (this->menu)
 		delete this->menu;
-	if (this->selectVoiceClick)
-		delete[] this->selectVoiceClick;
-	if (this->selectVoiceEntry)
-		delete[] this->selectVoiceEntry;
-	if (this->selectVoiceMouseOver)
-		delete[] this->selectVoiceMouseOver;
-	if (this->clickStr)
-		delete[] this->clickStr;
+	this->selectVoiceClick.clear();
+	this->selectVoiceEntry.clear();
+	this->selectVoiceMouseOver.clear();
+	this->clickStr.clear();
 	if (this->imageButtons)
 		delete this->imageButtons;
 	delete this->saveGame;
-	if (config_directory){
-		char *settings_filename=addStrings(config_directory,"settings.cfg");
+	if (config_directory.size()){
+		std::string settings_filename=config_directory+"settings.cfg";
 		ConfigFile settings;
 		settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-		settings.writeOut(settings_filename);
-		delete[] settings_filename;
+		settings.writeOut(settings_filename.c_str());
 	}
-	if (!!this->textgosub)
-		delete[] this->textgosub;
+	this->textgosub.clear();
 }
 
 NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
@@ -565,7 +542,7 @@ ulong NONS_ScriptInterpreter::implementedCommands(){
 	return res;
 }
 
-ulong countLines(wchar_t *buffer,ulong byte_pos){
+ulong countLines(const std::wstring &buffer,ulong byte_pos){
 	ulong res=1;
 	for (ulong pos=0;pos<byte_pos;pos++){
 		if (buffer[pos]==13 && buffer[pos+1]==10){
@@ -630,7 +607,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		o_stderr <<"Interpreting line "<<this->current_line<<'\n';
 	this->previous_interpreter_position=this->interpreter_position;
 	//The NONS_ParsedLine constructor needs to be called so that the interpreter position can advance.
-	NONS_ParsedLine line(this->script->script,&this->interpreter_position,this->current_line);
+	NONS_ParsedLine line(this->script->script,this->interpreter_position,this->current_line);
 	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
 		o_stderr <<'\"'<<line.commandName<<"\" ";
 		if (line.parameters.size()){
@@ -652,10 +629,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	this->saveGame->textY=this->everything->screen->output->y;
 	switch (line.type){
 		case PARSEDLINE_BLOCK:
-			if (this->saveGame->currentLabel)
-				delete[] this->saveGame->currentLabel;
-			this->saveGame->currentLabel=copyWString(line.commandName);
-			if (!wcscmp(line.commandName,L"*define"))
+			this->saveGame->currentLabel=line.commandName;
+			if (line.commandName==L"*define")
 				this->interpreter_mode=DEFINE;
 			break;
 		case PARSEDLINE_JUMP:
@@ -715,16 +690,16 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			break;
 		default:;
 	}
-	if (this->interpreter_position>=this->script->length){
+	if (this->interpreter_position>=this->script->script.size()){
 		this->command_end(line);
 		return 0;
 	}
 	return 1;
 }
 
-ErrorCode NONS_ScriptInterpreter::interpretString(wchar_t *string){
+ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &string){
 	ulong offset=0;
-	NONS_ParsedLine line(string,&offset,0);
+	NONS_ParsedLine line(string,offset,0);
 	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
 		o_stderr <<"String: \""<<line.commandName<<"\" ";
 		if (line.parameters.size()){
@@ -800,13 +775,13 @@ wchar_t *insertIntoString(wchar_t *dst,long from,long l,long src){
 	return res;
 }
 
-wchar_t *getInlineExpression(const wchar_t *string,ulong *len){
-	ulong l=0;
+std::wstring getInlineExpression(const std::wstring &string,ulong off,ulong *len){
+	ulong l=off;
 	while (multicomparison(string[l],"_+-*/!|&%$?<>=()[]\"`") || NONS_isalnum(string[l])){
 		if (string[l]=='\"' || string[l]=='`'){
 			wchar_t quote=string[l];
 			ulong l2=l+1;
-			for (;string[l2] && string[l2]!=quote;l2++);
+			for (;l2<string.size() && string[l2]!=quote;l2++);
 			if (string[l2]!=quote)
 				break;
 			else
@@ -816,23 +791,20 @@ wchar_t *getInlineExpression(const wchar_t *string,ulong *len){
 	}
 	if (!!len)
 		*len=l;
-	return copyWString(string,l);
+	return std::wstring(string,off,l-off);
 }
 
 void NONS_ScriptInterpreter::reduceString(
-		const wchar_t *src,
+		const std::wstring &src,
 		std::wstring &dst,
 		std::set<NONS_VariableMember *> *visited,
-		std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack
-	){
-	if (!src)
-		return;
-	for (const wchar_t *str=src;*str;){
-		switch (*str){
+		std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack){
+	for (ulong off=0;off<src.size();){
+		switch (src[off]){
 			case '!':
-				if (!instr(str,"!nl")){
+				if (!src.find(L"!nl",off)){
 					dst.push_back('\n');
-					str+=3;
+					off+=3;
 					break;
 				}
 			case '%':
@@ -840,37 +812,37 @@ void NONS_ScriptInterpreter::reduceString(
 			case '?':
 				{
 					ulong l;
-					wchar_t *expr=getInlineExpression(str,&l);
-					if (expr){
+					std::wstring expr=getInlineExpression(src,off,&l);
+					if (expr.size()){
 						NONS_VariableMember *var=this->store->retrieve(expr,0);
 						if (!!var){
-							str+=l;
+							off+=l;
 							if (var->getType()==INTEGER){
 								std::wstringstream stream;
 								stream <<var->getInt();
 								dst.append(stream.str());
 							}else if (var->getType()==STRING){
-								wchar_t *copy=var->getWcsCopy();
+								std::wstring copy=var->getWcs();
 								if (!!visited && visited->find(var)!=visited->end()){
 									o_stderr <<"NONS_ScriptInterpreter::reduceString(): WARNING: Infinite recursion avoided.\n"
 										"    Reduction stack contents:\n";
-									for (std::vector<std::pair<wchar_t *,NONS_VariableMember *> >::iterator i=stack->begin();i!=stack->end();i++)
+									for (std::vector<std::pair<std::wstring,NONS_VariableMember *> >::iterator i=stack->begin();i!=stack->end();i++)
 										o_stderr <<"        ["<<i->first<<"] = \""<<i->second->getWcs()<<"\"\n";
 									o_stderr <<" (last) ["<<expr<<"] = \""<<copy<<"\"\n";
 									dst.append(copy);
 								}else{
 									std::set<NONS_VariableMember *> *temp_visited;
-									std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *temp_stack;
+									std::vector<std::pair<std::wstring,NONS_VariableMember *> > *temp_stack;
 									if (!visited)
 										temp_visited=new std::set<NONS_VariableMember *>;
 									else
 										temp_visited=visited;
 									temp_visited->insert(var);
 									if (!stack)
-										temp_stack=new std::vector<std::pair<wchar_t *,NONS_VariableMember *> >;
+										temp_stack=new std::vector<std::pair<std::wstring,NONS_VariableMember *> >;
 									else
 										temp_stack=stack;
-									temp_stack->push_back(std::pair<wchar_t *,NONS_VariableMember *>(expr,var));
+									temp_stack->push_back(std::pair<std::wstring,NONS_VariableMember *>(expr,var));
 									reduceString(copy,dst,temp_visited,temp_stack);
 									if (!visited)
 										delete temp_visited;
@@ -881,17 +853,14 @@ void NONS_ScriptInterpreter::reduceString(
 									else
 										temp_stack->pop_back();
 								}
-								delete[] copy;
 							}
-							delete[] expr;
 							break;
 						}
-						delete[] expr;
 					}
 				}
 			default:
-				dst.push_back(*str);
-				str++;
+				dst.push_back(src[off]);
+				off++;
 		}
 	}
 }
@@ -995,7 +964,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 			reduced=i->stops[stop].second;
 			switch (str[reduced]){
 				case '\\':
-					if (!!this->textgosub && (this->textgosubRecurses || !this->insideTextgosub())){
+					if (this->textgosub.size() && (this->textgosubRecurses || !this->insideTextgosub())){
 						std::vector<printingPage>::iterator i2=i;
 						std::vector<printingPage> temp;
 						printingPage temp2(*i2);
@@ -1031,7 +1000,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						*justTurnedPage=1;
 					break;
 				case '@':
-					if (!!this->textgosub && (this->textgosubRecurses || !this->insideTextgosub())){
+					if (this->textgosub.size() && (this->textgosubRecurses || !this->insideTextgosub())){
 						std::vector<printingPage>::iterator i2=i;
 						std::vector<printingPage> temp;
 						printingPage temp2(*i2);
@@ -1135,12 +1104,12 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 	return 0;
 }
 
-ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
+ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 	/*if (!this->everything->screen)
 		this->setDefaultWindow();*/
 	this->currentBuffer=this->everything->screen->output->currentBuffer;
 	NONS_StandardOutput *out=this->everything->screen->output;
-	if (!*line){
+	if (!line.size()){
 		if (out->NewLine()){
 			if (this->pageCursor->animate(this->menu,this->autoclick)<0)
 				return NONS_NO_ERROR;
@@ -1148,12 +1117,11 @@ ErrorCode NONS_ScriptInterpreter::Printer(const wchar_t *line){
 		}
 		return NONS_NO_ERROR;
 	}
-	bool skip=*line=='`';
-	wchar_t *str=copyWString(line+skip);
+	bool skip=line[0]=='`';
+	std::wstring str=line.substr(skip);
 	bool justTurnedPage=0;
 	std::wstring reducedString;
 	reduceString(str,reducedString);
-	delete[] str;
 	std::vector<printingPage> pages;
 	ulong totalprintedchars=0;
 	for (const wchar_t *str2=reducedString.c_str();*str2;){
@@ -1186,14 +1154,14 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 	for (ulong a=0;a<line.parameters.size();a++){
 		NONS_VariableMember *var=this->store->retrieve(line.parameters[a],0);
 		if (!var){
-			wchar_t *str=line.parameters[a];
-			for (str+=(*str=='"')?1:0;*str && *str!='"';str++){
-				if (*str=='\\'){
-					str++;
-					switch (*str){
+			std::wstring &str=line.parameters[a];
+			for (std::wstring::iterator i=str.begin()+(*i=='\"'),end=str.end();i!=end && *i!='\"';i++){
+				if (*i=='\\'){
+					i++;
+					switch (*i){
 						case '"':
 						case '\\':
-							string.push_back(*str);
+							string.push_back(*i);
 							break;
 						case 'r':
 						case 'n':
@@ -1201,11 +1169,11 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 							break;
 						case 'x':
 							{
-								str++;
+								i++;
 								wchar_t n=0;
 								short b;
-								for (b=0;b<4;b++){
-									char hex=toupper(str[b]);
+								for (b=0;i+b!=end && b<4;b++){
+									char hex=toupper(i[b]);
 									if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
 										break;
 									n<<=4;
@@ -1213,7 +1181,7 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 								}
 								if (b<4)
 									goto convertParametersToString_000;
-								str+=3;
+								i+=3;
 								string.push_back(n);
 							}
 							break;
@@ -1221,7 +1189,7 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std
 							goto convertParametersToString_000;
 					}
 				}else
-					string.push_back(*str);
+					string.push_back(*i);
 			}
 		}else if (var->getType()==INTEGER){
 			std::stringstream temp;
@@ -1241,16 +1209,16 @@ ulong NONS_ScriptInterpreter::insideTextgosub(){
 	return (this->callStack.size() && this->callStack.back()->textgosubLevel)?this->callStack.back()->textgosubLevel:0;
 }
 
-bool NONS_ScriptInterpreter::goto_label(wchar_t *label){
+bool NONS_ScriptInterpreter::goto_label(const std::wstring &label){
 	long temp=this->script->offsetFromBlock(label);
 	if (temp<0)
 		return 0;
-	labellog.addString(label,0);
+	labellog.addString(label);
 	this->interpreter_position=temp;
 	return 1;
 }
 
-bool NONS_ScriptInterpreter::gosub_label(wchar_t *label){
+bool NONS_ScriptInterpreter::gosub_label(const std::wstring &label){
 	NONS_StackElement *el=new NONS_StackElement(this->interpreter_position,0,this->insideTextgosub());
 	if (!this->goto_label(label)){
 		delete el;

@@ -34,20 +34,20 @@
 #include "../../Functions.h"
 #include "../../Globals.h"
 
-NONS_Music::NONS_Music(const char *filename){
-	this->data=Mix_LoadMUS(filename);
+NONS_Music::NONS_Music(const std::string &filename){
+	this->data=Mix_LoadMUS(filename.c_str());
 	this->buffer=0;
 	this->buffersize=0;
-	this->filename=copyString(filename);
+	this->filename=filename;
 	this->RWop=0;
 }
 
-NONS_Music::NONS_Music(const char *filename,char *databuffer,long size){
+NONS_Music::NONS_Music(const std::string &filename,char *databuffer,long size){
 	this->buffer=databuffer;
 	this->buffersize=size;
 	this->RWop=SDL_RWFromMem((void *)databuffer,size);
 	this->data=Mix_LoadMUS_RW(this->RWop);
-	this->filename=copyString(filename);
+	this->filename=filename;
 }
 
 NONS_Music::~NONS_Music(){
@@ -55,8 +55,6 @@ NONS_Music::~NONS_Music(){
 	if (this->data){
 		Mix_FreeMusic(this->data);
 	}
-	if (this->filename)
-		delete[] this->filename;
 }
 
 void NONS_Music::play(long times){

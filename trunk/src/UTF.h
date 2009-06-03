@@ -41,6 +41,9 @@ typedef unsigned long ulong;
 typedef unsigned short ushort;
 typedef unsigned char uchar;
 #endif
+#include <string>
+#include <algorithm>
+#include <sstream>
 
 #define BOM16B 0xFEFF
 #define BOM16BA 0xFE
@@ -55,63 +58,98 @@ typedef unsigned char uchar;
 #define NONS_LITTLE_ENDIAN 1
 #define UNDEFINED_ENDIANNESS 2
 
-#ifndef BARE_FILE
-#define _READ_BINARY_SJIS_STRING(to,from,offset)\
-{\
-	char *tempString=readString((char*)(from),&(offset));\
-	to =SJIS_to_WChar(tempString);\
-	delete[] tempString;\
-	if (!*to){\
-		delete[] to;\
-		to=0;\
-	}\
-}
-#define _READ_BINARY_UTF8_STRING(to,from,offset)\
-{\
-	char *tempString=readString((char*)(from),&(offset));\
-	to=UTF8_to_WChar(tempString);\
-	delete[] tempString;\
-	if (!*to){\
-		delete[] to;\
-		to=0;\
-	}\
-}
-#else
+#ifdef BARE_FILE
 uchar *readfile(const char *name,long *len);
 char writefile(const char *name,char *buffer,long size);
 #endif
 
-char checkEnd(wchar_t a);
-//Determines the system's endianness.
-bool checkNativeEndianness();
+inline bool NONS_isdigit(unsigned character){ return character>=0x0030 && character<=0x0039; }
+inline bool NONS_isupper(unsigned character){ return character>=0x0041 && character<=0x005A; }
+inline bool NONS_islower(unsigned character){ return character>=0x0061 && character<=0x007A; }
+inline bool NONS_isalpha(unsigned character){ return character>=0x0041 && character<=0x005A || character>=0x0061 && character<=0x007A; }
+inline bool NONS_isalnum(unsigned character){ return NONS_isalpha(character) || NONS_isdigit(character); }
+inline unsigned NONS_toupper(unsigned character){ return NONS_islower(character)?character&223:character; }
+inline unsigned NONS_tolower(unsigned character){ return NONS_isupper(character)?character|32:character; }
+inline bool NONS_ishexa(unsigned character){ return NONS_isdigit(character) || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046; }
+
+template <typename T1,typename T2>
+int lexcmp(const T1 *a,const T2 *b){
+	for (;*a || *b;a++,b++){
+		unsigned c=*a,
+		d=*b;
+		if (c<d)
+			return -1;
+		if (c>d)
+			return 1;
+	}
+	return 0;
+}
+
+template <typename T1,typename T2>
+int lexcmp_CI(const T1 *a,const T2 *b){
+	for (;*a || *b;a++,b++){
+		unsigned c=NONS_toupper(*a),
+		d=NONS_toupper(*b);
+		if (c<d)
+			return -1;
+		if (c>d)
+			return 1;
+	}
+	return 0;
+}
+
+template <typename T1,typename T2>
+int lexcmp_CI_bounded(const T1 *a,size_t sizeA,const T2 *b,size_t sizeB){
+	for (size_t c=0;c<sizeA && c<sizeB;a++,b++,c++){
+		unsigned d=NONS_toupper(*a),
+		e=NONS_toupper(*b);
+		if (d<e)
+			return -1;
+		if (d>e)
+			return 1;
+	}
+	if (sizeA<sizeB)
+		return -1;
+	if (sizeA>sizeB)
+		return 1;
+	return 0;
+}
+
+std::wstring UniFromISO88591(const std::string &str);
+std::wstring UniFromUTF8(const std::string &str);
 /*
 Important note: this procedure assumes that the text string is a valid UCS-2
 string, so while it does take BOM into account, it doesn't compensate for
 streams with an odd length, as all valid UCS-2 strings have an even length.
-If the string has an odd length, the last byte will be ignored.
 */
-wchar_t *UCS2_to_WChar(const char *buffer,ulong initialSize,long *finalSize,uchar end=UNDEFINED_ENDIANNESS);
-wchar_t *ISO88591_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
-wchar_t *UTF8_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
-wchar_t *UTF8_to_WChar(const char *string);
-/*
-Historical note: If I understood the code correctly, the old ONScripter perfomed
-this conversion in real time in order to output characters to the screen
-(FreeType, TrueType fonts, etc. index glyphs using Unicode). Why Ogapee decided
-not to include Unicode support, despite the fact that he would have to do the
-conversion anyway, is something that eludes me to this day.
-*/
-wchar_t *SJIS_to_WChar(const char *buffer,ulong initialSize,long *finalSize);
-wchar_t *SJIS_to_WChar(const char *string);
-//Determine if a byte is the first of a wide Shift JIS character.
-bool isSJISWide(uchar a);
-char *WChar_to_UCS2(const wchar_t *buffer,ulong initialSize,long *finalSize,uchar end=NONS_BIG_ENDIAN);
-char *WChar_to_ISO88591(const wchar_t *buffer,ulong initialSize,long *finalSize);
-char *WChar_to_UTF8(const wchar_t *buffer,ulong initialSize,long *finalSize);
-char *WChar_to_UTF8(const wchar_t *string);
-char *WChar_to_SJIS(const wchar_t *buffer,ulong initialSize,long *finalSize);
-long getUTF8size(const wchar_t *buffer,long size);
-long getUTF8size(const wchar_t *string);
+std::wstring UniFromUCS2(const std::string &str,char end=UNDEFINED_ENDIANNESS);
+std::wstring UniFromSJIS(const std::string &str);
+std::string UniToISO88591(const std::wstring &str);
+std::string UniToUTF8(const std::wstring &str,bool addBOM=0);
+std::string UniToUCS2(const std::wstring &str,char end=UNDEFINED_ENDIANNESS);
+std::string UniToSJIS(const std::wstring &str);
+inline void toupper(std::wstring &str){
+	std::transform(str.begin(),str.end(),str.begin(),NONS_toupper);
+}
+inline void tolower(std::wstring &str){
+	std::transform(str.begin(),str.end(),str.begin(),NONS_tolower);
+}
+std::wstring toupperCopy(const std::wstring &str);
+std::wstring tolowerCopy(const std::wstring &str);
+inline void toupper(std::string &str){
+	std::transform(str.begin(),str.end(),str.begin(),NONS_toupper);
+}
+inline void tolower(std::string &str){
+	std::transform(str.begin(),str.end(),str.begin(),NONS_tolower);
+}
+
+inline std::ostream &operator<<(std::ostream &stream,std::wstring &str){
+	return stream <<UniToUTF8(str);
+}
+
+char checkEnd(wchar_t a);
+//Determines the system's endianness.
+char checkNativeEndianness();
 
 bool isValidUTF8(const char *buffer,ulong size);
 bool isValidSJIS(const char *buffer,ulong size);
@@ -124,14 +162,24 @@ bool iswhitespaceASCIIe(char character);
 bool isbreakspace(char character);
 bool isbreakspace(wchar_t character);
 bool isbreakspaceASCIIe(char character);
-bool NONS_isdigit(wchar_t character);
-bool NONS_isalpha(wchar_t character);
-bool NONS_isalnum(wchar_t character);
-bool NONS_ishexa(wchar_t character);
-bool NONS_isupper(wchar_t character);
-bool NONS_islower(wchar_t character);
-wchar_t NONS_toupper(wchar_t character);
-wchar_t NONS_tolower(wchar_t character);
 void NONS_tolower(wchar_t *param);
 void NONS_tolower(char *param);
+
+template <typename T>
+struct stdStringCmpCI{
+	bool operator()(const std::basic_string<T> &s1,const std::basic_string<T> &s2) const{
+		return lexcmp_CI_bounded(s1.c_str(),s1.size(),s2.c_str(),s2.size())<0;
+	}
+};
+
+template <typename T1,typename T2>
+int stdStrCmpCI(const std::basic_string<T1> &s1,const T2 *s2){
+	std::basic_string<T2> temp=s2;
+	return lexcmp_CI_bounded(s1.c_str(),s1.size(),temp.c_str(),temp.size());
+}
+
+template <typename T1,typename T2>
+int stdStrCmpCI(const std::basic_string<T1> &s1,const std::basic_string<T2> &s2){
+	return lexcmp_CI_bounded(s1.c_str(),s1.size(),s2.c_str(),s2.size());
+}
 #endif

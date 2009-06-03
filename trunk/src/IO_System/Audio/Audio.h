@@ -38,35 +38,35 @@
 #include <map>
 #include <string>
 
+typedef std::map<int,NONS_SoundEffect *> channels_map_t;
+
 struct NONS_Audio{
 	NONS_Music *music;
-	char *musicDir;
-	char *musicFormat;
+	std::string musicDir;
+	std::string musicFormat;
 	NONS_SoundCache *soundcache;
-	NONS_Audio(const char *musicDir);
+	NONS_Audio(const std::string &musicDir);
 	~NONS_Audio();
-	ErrorCode playMusic(const char *filename,long times=-1);
-	ErrorCode playMusic(const wchar_t *filename,long times=-1);
-	ErrorCode playMusic(const char *filename,char *buffer,long l,long times=-1);
-	ErrorCode playMusic(const wchar_t *filename,char *buffer,long l,long times=-1);
+	ErrorCode playMusic(const std::string *filename,long times=-1);
+	ErrorCode playMusic(const std::string &filename,char *buffer,long l,long times=-1);
 	ErrorCode stopMusic();
 	ErrorCode pauseMusic();
-	ErrorCode playSoundAsync(const char *filename,char *buffer,long l,int channel,long times=-1);
-	ErrorCode playSoundAsync(const wchar_t *filename,char *buffer,long l,int channel,long times=-1);
+	ErrorCode playSoundAsync(const std::wstring *filename,char *buffer,long l,int channel,long times=-1);
 	ErrorCode stopSoundAsync(int channel);
-	ErrorCode loadAsyncBuffer(const char *filename,char *buffer,long l,int channel);
-	ErrorCode loadAsyncBuffer(const wchar_t *filename,char *buffer,long l,int channel);
+	ErrorCode loadAsyncBuffer(const std::wstring &filename,char *buffer,long l,int channel);
 	ErrorCode stopAllSound();
-	bool bufferIsLoaded(const char *filename);
-	bool bufferIsLoaded(const wchar_t *filename);
-	bool asyncBufferIsLoaded(int channel,char *filename=0);
+	bool bufferIsLoaded(const std::wstring &filename);
+	bool asyncBufferIsLoaded(int channel,std::wstring *filename=0);
 	ErrorCode unloadSyncBuffer(int channel);
 	int musicVolume(int vol);
 	int soundVolume(int vol);
 	void freeCacheElement(int chan);
 	bool toggleMute();
+	bool isInitialized(){
+		return !this->uninitialized;
+	}
 private:
-	std::map<int,NONS_SoundEffect *> asynchronous_seffect;
+	channels_map_t asynchronous_seffect;
 	SDL_mutex *mutex;
 	int mvol,
 		svol;

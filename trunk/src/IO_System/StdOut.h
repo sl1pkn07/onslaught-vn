@@ -34,7 +34,6 @@
 #include "../CommandLineOptions.h"
 #include <fstream>
 #include <SDL/SDL.h>
-#include "../UTF.h"
 
 extern NONS_CommandLineOptions CLOptions;
 
@@ -55,4 +54,5 @@ struct NONS_RedirectedOutput{
 };
 
 template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a);
+template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <std::wstring>(const std::wstring &a);
 #endif
