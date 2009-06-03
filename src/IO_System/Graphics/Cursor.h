@@ -42,7 +42,7 @@ struct NONS_Cursor{
 	bool absolute;
 	NONS_ScreenSpace *screen;
 	NONS_Cursor(NONS_ScreenSpace *screen);
-	NONS_Cursor(const wchar_t *string,long x,long y,long absolute,NONS_ScreenSpace *screen);
+	NONS_Cursor(const std::wstring &string,long x,long y,long absolute,NONS_ScreenSpace *screen);
 	~NONS_Cursor();
 	int animate(NONS_Menu *menu,ulong expiration);
 private:

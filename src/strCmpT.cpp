@@ -2,7 +2,7 @@
 #include <cstring>
 #include <cwchar>
 
-bool strCmp::operator()(const char *a,const char *b) const{
+/*bool strCmp::operator()(const char *a,const char *b) const{
 	return strcmp(a,b)<0;
 }
 
@@ -30,3 +30,4 @@ bool strCmpCI::operator()(const char *a,const char *b) const{
 bool wstrCmpCI::operator()(const wchar_t *s1,const wchar_t *s2) const{
 	return strcmpCI(s1,s2)<0;
 }
+*/

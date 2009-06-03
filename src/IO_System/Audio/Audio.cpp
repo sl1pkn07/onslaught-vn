@@ -36,14 +36,11 @@
 #include "../../Globals.h"
 #include <sstream>
 
-NONS_Audio::NONS_Audio(const char *musicDir){
+NONS_Audio::NONS_Audio(const std::string &musicDir){
 	this->music=0;
-	this->musicFormat=0;
 	if (CLOptions.no_sound){
 		this->uninitialized=1;
 		this->soundcache=0;
-		this->musicDir=0;
-		this->musicFormat=0;
 		this->soundcache=0;
 		this->mutex=0;
 		this->notmute=0;
@@ -52,10 +49,11 @@ NONS_Audio::NONS_Audio(const char *musicDir){
 		return;
 	}
 	Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,512);
-	if (!musicDir)
-		this->musicDir=copyString("./CD");
+	if (!musicDir.size())
+		this->musicDir="./CD";
 	else
-		this->musicDir=copyString(musicDir);
+		this->musicDir=musicDir;
+	this->musicFormat=CLOptions.musicFormat;
 	this->soundcache=new NONS_SoundCache();
 	this->mvol=100;
 	this->svol=100;
@@ -71,23 +69,22 @@ NONS_Audio::~NONS_Audio(){
 	if (this->music)
 		delete this->music;
 	delete this->soundcache;
-	for (std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
+	for (channels_map_t::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
 		delete i->second;
-	delete[] this->musicDir;
 	Mix_CloseAudio();
 }
 
 void NONS_Audio::freeCacheElement(int channel){
 	if (this->uninitialized)
 		return;
-	std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.find(channel);
+	channels_map_t::iterator i=this->asynchronous_seffect.find(channel);
 	if (i==this->asynchronous_seffect.end() || !i->second)
 		return;
 	i->second->sound->references--;
 	i->second->unload();
 }
 
-ErrorCode NONS_Audio::playMusic(const char *filename,long times){
+ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
 	static const char *formats[]={"ogg","mp3","it","xm","s3m","mod",0};
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
@@ -102,7 +99,7 @@ ErrorCode NONS_Audio::playMusic(const char *filename,long times){
 			this->music->stop();
 			delete this->music;
 		}
-		if (!this->musicFormat){
+		if (!this->musicFormat.size()){
 			ulong a=0;
 			while (1){
 				if (!formats[a])
@@ -121,29 +118,20 @@ ErrorCode NONS_Audio::playMusic(const char *filename,long times){
 		}
 		if (!fileExists(temp.c_str()))
 			return NONS_FILE_NOT_FOUND;
-		this->music=new NONS_Music(temp.c_str());
+		this->music=new NONS_Music(temp);
 		if (!this->music->loaded())
 			return NONS_UNDEFINED_ERROR;
-		return this->playMusic((char *)0,times);
+		return this->playMusic(0,times);
 	}
 }
 
-ErrorCode NONS_Audio::playMusic(const wchar_t *filename,long times){
+ErrorCode NONS_Audio::playMusic(const std::string &filename,char *buffer,long l,long times){
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
-	char *copy=copyString(filename);
-	ErrorCode ret=this->playMusic(copy,times);
-	delete[] copy;
-	return ret;
-}
-
-ErrorCode NONS_Audio::playMusic(const char *filename,char *buffer,long l,long times){
-	if (this->uninitialized)
-		return NONS_NO_ERROR;
-	if (filename && buffer && l){
+	if (buffer && l){
 		if (this->music){
-			if (!strcmp(filename,this->music->filename))
-				return this->playMusic((char *)0,times);
+			if (filename==this->music->filename)
+				return this->playMusic(0,times);
 			delete this->music;
 		}
 		this->music=new NONS_Music(filename,buffer,l);
@@ -153,19 +141,10 @@ ErrorCode NONS_Audio::playMusic(const char *filename,char *buffer,long l,long ti
 			this->music->volume(this->mvol);
 		else
 			this->music->volume(0);
-		return this->playMusic((char *)0,times);
+		return this->playMusic(0,times);
 	}
-	o_stderr <<"int NONS_Audio::playMusic(char *,char *,long): Internal error.\n";
+	o_stderr <<"int NONS_Audio::playMusic(): Internal error.\n";
 	return NONS_INTERNAL_INVALID_PARAMETER;
-}
-
-ErrorCode NONS_Audio::playMusic(const wchar_t *filename,char *buffer,long l,long times){
-	if (this->uninitialized)
-		return NONS_NO_ERROR;
-	char *copy=copyString(filename);
-	ErrorCode ret=this->playMusic(copy,buffer,l,times);
-	delete[] copy;
-	return ret;
 }
 
 ErrorCode NONS_Audio::stopMusic(){
@@ -173,8 +152,6 @@ ErrorCode NONS_Audio::stopMusic(){
 		return NONS_NO_ERROR;
 	if (this->music){
 		this->music->stop();
-		delete this->music;
-		this->music=0;
 		return NONS_NO_ERROR;
 	}
 	return NONS_NO_MUSIC_LOADED;
@@ -190,7 +167,7 @@ ErrorCode NONS_Audio::pauseMusic(){
 	return NONS_NO_MUSIC_LOADED;
 }
 
-ErrorCode NONS_Audio::playSoundAsync(const char *filename,char *buffer,long l,int channel,long times){
+ErrorCode NONS_Audio::playSoundAsync(const std::wstring *filename,char *buffer,long l,int channel,long times){
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	if (!filename){
@@ -202,25 +179,18 @@ ErrorCode NONS_Audio::playSoundAsync(const char *filename,char *buffer,long l,in
 		else
 			se->volume(0);
 		se->play(0,times);
-		this->soundcache->channelWatch.insert(this->soundcache->channelWatch.end(),se);
+		SDL_LockMutex(this->soundcache->mutex);
+		this->soundcache->channelWatch.push_back(se);
+		SDL_UnlockMutex(this->soundcache->mutex);
 		if (CLOptions.verbosity>=255)
 			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
 				"    cache item "<<se->sound->chunk<<"\n"
 				"    on channel "<<se->channel<<std::endl;
 		return NONS_NO_ERROR;
 	}else{
-		_HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(filename,buffer,l,channel),)
-		return this->playSoundAsync((char *)0,0,0,channel,times);
+		_HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel),)
+		return this->playSoundAsync(0,0,0,channel,times);
 	}
-}
-
-ErrorCode NONS_Audio::playSoundAsync(const wchar_t *filename,char *buffer,long l,int channel,long times){
-	if (this->uninitialized)
-		return NONS_NO_ERROR;
-	char *copy=copyString(filename);
-	ErrorCode ret=this->playSoundAsync(copy,buffer,l,channel,times);
-	delete[] copy;
-	return ret;
 }
 
 ErrorCode NONS_Audio::stopSoundAsync(int channel){
@@ -244,7 +214,7 @@ ErrorCode NONS_Audio::stopAllSound(){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Audio::loadAsyncBuffer(const char *filename,char *buffer,long l,int channel){
+ErrorCode NONS_Audio::loadAsyncBuffer(const std::wstring &filename,char *buffer,long l,int channel){
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.find(channel);
@@ -264,28 +234,10 @@ ErrorCode NONS_Audio::loadAsyncBuffer(const char *filename,char *buffer,long l,i
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Audio::loadAsyncBuffer(const wchar_t *filename,char *buffer,long l,int channel){
-	if (this->uninitialized)
-		return NONS_NO_ERROR;
-	char *copy=copyString(filename);
-	bool ret=!!this->loadAsyncBuffer(copy,buffer,l,channel);
-	delete[] copy;
-	return ret;
-}
-
-bool NONS_Audio::bufferIsLoaded(const char *filename){
+bool NONS_Audio::bufferIsLoaded(const std::wstring &filename){
 	if (this->uninitialized)
 		return 1;
 	return this->soundcache->checkSound(filename)!=0;
-}
-
-bool NONS_Audio::bufferIsLoaded(const wchar_t *filename){
-	if (this->uninitialized)
-		return 1;
-	char *copy=copyString(filename);
-	bool ret=!!this->soundcache->checkSound(copy);
-	delete[] copy;
-	return ret;
 }
 
 int NONS_Audio::musicVolume(int vol){

@@ -95,16 +95,17 @@ NONS_StandardOutput::~NONS_StandardOutput(){
 		delete this->transition;
 }
 
-bool NONS_StandardOutput::prepareForPrinting(const wchar_t *str){
+bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	long lastSpace=-1;
 	int x0=this->x,y0=this->y;
 	int wordL=0;
 	int lineSkip=this->foregroundLayer->fontCache->font->lineSkip;
 	this->resumePrinting=0;
-	for (const wchar_t *str2=str;;str2++){
-		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(*str2);
-		if (*str2=='\n'){
-			this->cachedText.push_back(*str2);
+	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
+		wchar_t character=*i;
+		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
+		if (character=='\n'){
+			this->cachedText.push_back(character);
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0){
 				this->cachedText[lastSpace]='\n';
 				y0+=lineSkip;
@@ -113,7 +114,7 @@ bool NONS_StandardOutput::prepareForPrinting(const wchar_t *str){
 			x0=this->x0;
 			y0+=lineSkip;
 			wordL=0;
-		}else if (isbreakspace(*str2)){
+		}else if (isbreakspace(character)){
 			if (x0+wordL>this->w+this->x0 && lastSpace>=0){
 				this->cachedText[lastSpace]='\n';
 				lastSpace=-1;
@@ -123,10 +124,10 @@ bool NONS_StandardOutput::prepareForPrinting(const wchar_t *str){
 			x0+=wordL;
 			lastSpace=this->cachedText.size();
 			wordL=glyph->getadvance()+this->extraAdvance;
-			this->cachedText.push_back(*str2);
-		}else if (*str2){
+			this->cachedText.push_back(character);
+		}else if (character){
 			wordL+=glyph->getadvance()+this->extraAdvance;
-			this->cachedText.push_back(*str2);
+			this->cachedText.push_back(character);
 		}else{
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0)
 				this->cachedText[lastSpace]=0;
@@ -239,12 +240,14 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			default:
 				this->prebufferedText.push_back(glyph->codePoint);
 		}
+		LOCKSCREEN;
 		if (glyph2){
 			glyph2->putGlyph(this->shadowLayer->data,x0+1-this->shadowLayer->clip_rect.x,y0+1-this->shadowLayer->clip_rect.y,&(this->shadowLayer->fontCache->foreground),1);
 			glyph2->putGlyph(dst->virtualScreen,x0+1,y0+1,0);
 		}
 		glyph->putGlyph(this->foregroundLayer->data,x0-this->foregroundLayer->clip_rect.x,y0-this->foregroundLayer->clip_rect.y,&(this->foregroundLayer->fontCache->foreground),1);
 		glyph->putGlyph(dst->virtualScreen,x0,y0,0);
+		UNLOCKSCREEN;
 		dst->updateScreen(x0,y0,advance+1,fontLineSkip+1);
 		if (printedChars)
 			(*printedChars)++;
@@ -423,10 +426,8 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 		}
 		if (this->currentBuffer.size()>0){
 			if (textDumpFile.is_open()){
-				char *temp=WChar_to_UTF8((wchar_t *)this->currentBuffer.c_str());
-				textDumpFile <<temp<<std::endl;
+				textDumpFile <<UniToUTF8(this->currentBuffer)<<std::endl;
 				textDumpFile.flush();
-				delete[] temp;
 			}
 			this->log.push_back(this->currentBuffer);
 			this->currentBuffer.clear();

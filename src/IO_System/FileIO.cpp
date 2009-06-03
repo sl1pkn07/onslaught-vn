@@ -35,48 +35,37 @@
 #include "../Globals.h"
 #endif
 
-uchar *readfile(const char *filename,long *len,long offset){
+uchar *readfile(const char *filename,ulong &len,ulong offset){
 	if (!filename)
 		return 0;
 	std::ifstream file(filename,std::ios::binary);
-	if (!file){
-		if (len)
-			*len=-1;
+	if (!file)
 		return 0;
-	}
-	return readfile(&file,len,offset);
+	return readfile(file,len,offset);
 }
 
-uchar *readfile(std::ifstream *file,long *len,long offset){
-	if (!*file){
-		if (len)
-			*len=-1;
+uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
+	if (!file)
 		return 0;
-	}
-	long originalPosition=file->tellg();
-	file->seekg(0,std::ios::end);
-	long size=file->tellg();
-	file->seekg(offset,std::ios::beg);
-	size=size-offset>=*len?*len:size-offset;
-	if (len)
-		*len=size;
+	ulong originalPosition=file.tellg();
+	file.seekg(0,std::ios::end);
+	ulong size=file.tellg();
+	file.seekg(offset,std::ios::beg);
+	size=size-offset>=len?len:size-offset;
+	len=size;
 	uchar *buffer=new uchar[size];
-	file->read((char *)buffer,size);
-	file->seekg(originalPosition,std::ios::beg);
+	file.read((char *)buffer,size);
+	file.seekg(originalPosition,std::ios::beg);
 	return buffer;
 }
 
-uchar *readfile(const char *name,long *len){
+uchar *readfile(const char *name,ulong &len){
 	std::ifstream file(name,std::ios::binary);
-	if (!file){
-		if (len)
-			*len=-1;
+	if (!file)
 		return 0;
-	}
 	file.seekg(0,std::ios::end);
 	long pos=file.tellg();
-	if (len)
-		*len=pos;
+	len=pos;
 	file.seekg(0,std::ios::beg);
 	uchar *buffer=new uchar[pos];
 	file.read((char *)buffer,pos);
@@ -88,7 +77,7 @@ uchar *readfile(const char *name,long *len){
 #include <windows.h>
 #endif
 
-char writefile(const char *name,char *buffer,long size){
+char writefile(const char *name,char *buffer,ulong size){
 	std::ofstream file(name,std::ios::binary);
 	if (!file){
 #ifndef BARE_FILE

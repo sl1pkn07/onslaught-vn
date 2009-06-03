@@ -167,7 +167,7 @@ typedef union YYSTYPE
 		bool invert_terms,
 		std::vector<long> *array_decl,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string
+		std::wstring *string
 	);
 	int yylex(YYSTYPE *yylval,
 		std::wstringstream *stream,
@@ -182,7 +182,7 @@ typedef union YYSTYPE
 		bool,
 		std::vector<long> *,
 		NONS_VariableMember **,
-		wchar_t **string,
+		std::wstring *string,
 		char const *
 	);
 	long atol(std::wstring &str);
@@ -492,11 +492,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   114,   114,   127,   140,   145,   148,   164,   169,   172,
-     183,   195,   202,   205,   208,   215,   233,   245,   257,   265,
-     271,   277,   283,   295,   304,   320,   336,   341,   346,   351,
-     360,   371,   380,   391,   398,   405,   412,   419,   426,   433,
-     439,   445
+       0,   114,   114,   125,   136,   141,   144,   160,   165,   168,
+     179,   191,   198,   201,   204,   211,   229,   241,   253,   261,
+     267,   273,   279,   291,   300,   316,   332,   337,   342,   347,
+     356,   367,   376,   387,   394,   401,   408,   415,   422,   429,
+     435,   441
 };
 #endif
 
@@ -786,7 +786,7 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
 #else
 static void
 yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
@@ -800,7 +800,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, resul
     bool invert_terms;
     std::vector<long> *array_decl;
     NONS_VariableMember **retrievedVar;
-    wchar_t **string;
+    std::wstring *string;
 #endif
 {
   if (!yyvaluep)
@@ -834,7 +834,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, resul
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
 #else
 static void
 yy_symbol_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
@@ -848,7 +848,7 @@ yy_symbol_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, inv
     bool invert_terms;
     std::vector<long> *array_decl;
     NONS_VariableMember **retrievedVar;
-    wchar_t **string;
+    std::wstring *string;
 #endif
 {
   if (yytype < YYNTOKENS)
@@ -899,7 +899,7 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string)
+yy_reduce_print (YYSTYPE *yyvsp, int yyrule, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
 #else
 static void
 yy_reduce_print (yyvsp, yyrule, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
@@ -912,7 +912,7 @@ yy_reduce_print (yyvsp, yyrule, stream, store, filelog, result, invert_terms, ar
     bool invert_terms;
     std::vector<long> *array_decl;
     NONS_VariableMember **retrievedVar;
-    wchar_t **string;
+    std::wstring *string;
 #endif
 {
   int yynrhs = yyr2[yyrule];
@@ -1185,7 +1185,7 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
 #else
 static void
 yydestruct (yymsg, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
@@ -1199,7 +1199,7 @@ yydestruct (yymsg, yytype, yyvaluep, stream, store, filelog, result, invert_term
     bool invert_terms;
     std::vector<long> *array_decl;
     NONS_VariableMember **retrievedVar;
-    wchar_t **string;
+    std::wstring *string;
 #endif
 {
   YYUSE (yyvaluep);
@@ -1310,7 +1310,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string);
+int yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string);
 #else
 int yyparse ();
 #endif
@@ -1338,7 +1338,7 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, wchar_t **string)
+yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
 #else
 int
 yyparse (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
@@ -1349,7 +1349,7 @@ yyparse (stream, store, filelog, result, invert_terms, array_decl, retrievedVar,
     bool invert_terms;
     std::vector<long> *array_decl;
     NONS_VariableMember **retrievedVar;
-    wchar_t **string;
+    std::wstring *string;
 #endif
 #endif
 {
@@ -1610,9 +1610,7 @@ yyreduce:
 		if (!!retrievedVar && !(yyvsp[(1) - (1)].obj)->temporary)
 			*retrievedVar=(yyvsp[(1) - (1)].obj);
 		if (!!string){
-			if (!!*string)
-				delete[] *string;
-			*string=(yyvsp[(1) - (1)].obj)->getWcsCopy();
+			*string=(yyvsp[(1) - (1)].obj)->getWcs();
 		}
 		freeVM((yyvsp[(1) - (1)].obj));
 	;}
@@ -1622,9 +1620,7 @@ yyreduce:
 
     {
 		if (!!string){
-			if (!!*string)
-				delete[] *string;
-			*string=(yyvsp[(1) - (1)].obj)->getWcsCopy();
+			*string=(yyvsp[(1) - (1)].obj)->getWcs();
 			freeVM((yyvsp[(1) - (1)].obj));
 		}else if (!!retrievedVar && !(yyvsp[(1) - (1)].obj)->temporary)
 			*retrievedVar=(yyvsp[(1) - (1)].obj);
@@ -1740,7 +1736,7 @@ yyreduce:
   case 14:
 
     {
-		(yyval.obj)=new NONS_VariableMember(addStrings((yyvsp[(1) - (3)].obj)->getWcsCopy(),(yyvsp[(3) - (3)].obj)->getWcsCopy()),1);
+		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getWcs()+(yyvsp[(3) - (3)].obj)->getWcs());
 		freeVM((yyvsp[(1) - (3)].obj));
 		freeVM((yyvsp[(3) - (3)].obj));
 	;}
@@ -2398,7 +2394,7 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 			handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
 		else
 			stream->get();
-		yylval->obj=new NONS_VariableMember(temp.c_str(),0);
+		yylval->obj=new NONS_VariableMember(temp);
 		yylval->obj->temporary=1;
 		return STRING;
 	}
@@ -2417,7 +2413,7 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 				backup.push_back(stream->get());
 			}
 			if (((NONS_ScriptInterpreter *)gScriptInterpreter)->script->offsetFromBlock(identifier.c_str())>=0){
-				yylval->obj=new NONS_VariableMember(identifier.c_str(),0);
+				yylval->obj=new NONS_VariableMember(identifier);
 				yylval->obj->temporary=1;
 				return STRING;
 			}
@@ -2506,11 +2502,9 @@ void yyerror(
 		bool,
 		std::vector<long> *,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string,
+		std::wstring *string,
 		char const *s){
-	wchar_t *temp=copyWString(s);
 	if (!retrievedVar)
-		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,temp);
-	delete[] temp;
+		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,UniFromISO88591(s));
 }
 

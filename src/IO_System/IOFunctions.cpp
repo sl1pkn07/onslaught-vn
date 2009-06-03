@@ -58,7 +58,7 @@ struct reportedError{
 
 typedef std::map<Uint32,std::queue<reportedError> > errorManager;
 
-ErrorCode handleErrors(ErrorCode error,long original_line,const char *caller,bool queue,std::wstring extraInfo){
+ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bool queue,std::wstring extraInfo){
 	static errorManager manager;
 	Uint32 currentThread=SDL_ThreadID();
 	errorManager::iterator currentQueue=manager.find(currentThread);

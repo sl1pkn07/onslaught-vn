@@ -47,13 +47,11 @@ long SJISoffset_to_WCSoffset(wchar_t *buffer,long offset){
 }
 
 bool NONS_ScriptInterpreter::load(int file){
-	char *path=save_directory;
 	//this line makes sure that 'filename' has enough space for sprintf()
-	char *filename=addStrings(path,"save01.dat");
-	sprintf(filename,"%ssave%d.dat",path,file);
+	std::string path=save_directory+"save01.dat";
+	sprintf(&path[0],"%ssave%d.dat",save_directory.c_str(),file);
 	NONS_SaveFile *save=new NONS_SaveFile;
-	save->load(filename);
-	delete[] filename;
+	save->load(path);
 	if (save->error!=NONS_NO_ERROR){
 		delete save;
 		return 0;
@@ -92,9 +90,7 @@ bool NONS_ScriptInterpreter::load(int file){
 		this->callStack.push_back(push);
 	}
 	this->interpreter_position=this->script->offsetFromBlock(save->currentLabel)+save->currentOffset;
-	if (!!this->saveGame->currentLabel)
-		delete[] this->saveGame->currentLabel;
-	this->saveGame->currentLabel=copyWString(save->currentLabel);
+	this->saveGame->currentLabel=save->currentLabel;
 	//variables
 	variables_map_T::iterator first=this->store->variables.begin(),last=first;
 	if (first->first<200){
@@ -128,43 +124,30 @@ bool NONS_ScriptInterpreter::load(int file){
 	out->shadeLayer->Clear();
 	out->transition->effect=save->windowTransition;
 	out->transition->duration=save->windowTransitionDuration;
-	if (out->transition->rule)
-		delete[] out->transition->rule;
 	out->transition->rule=save->windowTransitionRule;
-	save->windowTransitionRule=0;
 	this->hideTextDuringEffect=save->hideWindow;
 	out->foregroundLayer->fontCache->foreground=save->windowTextColor;
 	out->display_speed=save->textSpeed;
 	this->main_font->spacing=save->spacing;
 	this->main_font->lineSkip=save->lineSkip;
 	out->log.clear();
-	for (ulong a=0;a<save->logPages.size();a++){
-		if (save->logPages[a])
-			out->log.push_back(save->logPages[a]);
-		else
-			out->log.push_back(L"");
-	}
-	if (save->currentBuffer)
-		out->currentBuffer=save->currentBuffer;
-	else
-		out->currentBuffer=L"";
+	for (ulong a=0;a<save->logPages.size();a++)
+		out->log.push_back(save->logPages[a]);
+	out->currentBuffer=save->currentBuffer;
 	out->x=save->textX;
 	out->y=save->textY;
-	if (!save->arrowCursorString){
-		if (this->arrowCursor)
-			delete this->arrowCursor;
+	if (this->arrowCursor)
+		delete this->arrowCursor;
+	if (save->arrowCursorString.size())
 		this->arrowCursor=0;
-	}else{
-		if (this->arrowCursor)
-			delete this->arrowCursor;
+	else
 		this->arrowCursor=new NONS_Cursor(
 			save->arrowCursorString,
 			save->arrowCursorX,
 			save->arrowCursorY,
 			save->arrowCursorAbs,
 			this->everything->screen);
-	}
-	if (!save->pageCursorString){
+	if (!save->pageCursorString.size()){
 		if (this->pageCursor)
 			delete this->pageCursor;
 		this->pageCursor=0;
@@ -179,47 +162,48 @@ bool NONS_ScriptInterpreter::load(int file){
 			this->everything->screen);
 	}
 	//graphics
-	if (save->background)
-		scr->Background->load(save->background);
-	else{
-		scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
-		scr->Background->Clear();
-	}
-	scr->leftChar->unload();
-	if (save->leftChar){
-		long semicolon=instr(save->leftChar,L";");
-		semicolon++;
-		wchar_t *name=copyWString(save->leftChar+semicolon);
-		if (!scr->leftChar)
-			scr->leftChar=new NONS_Layer(name);
+	if (save->background.size()){
+		if (!scr->Background)
+			scr->Background=new NONS_Layer(&save->background);
 		else
-			scr->leftChar->load(name);
-		scr->leftChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/-4;
-		delete[] name;
+			scr->Background->load(&save->background);
+	}else{
+		if (!scr->Background){
+			unsigned rgb=(save->bgColor.r<<rshift)|(save->bgColor.g<<gshift)|(save->bgColor.b<<bshift);
+			scr->Background=new NONS_Layer(&scr->screen->inRect,rgb);
+		}else{
+			scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
+			scr->Background->Clear();
+		}
+	}
+	if (save->version>1)
+		scr->char_baseline=save->char_baseline;
+	scr->leftChar->unload();
+	if (save->leftChar.size()){
+		if (!scr->leftChar)
+			scr->leftChar=new NONS_Layer(&save->leftChar);
+		else
+			scr->leftChar->load(&save->leftChar);
+		scr->leftChar->centerAround(scr->screen->virtualScreen->w/4);
+		scr->leftChar->useBaseline(scr->char_baseline);
 	}
 	scr->rightChar->unload();
-	if (save->rightChar){
-		long semicolon=instr(save->rightChar,L";");
-		semicolon++;
-		wchar_t *name=copyWString(save->rightChar+semicolon);
+	if (save->rightChar.size()){
 		if (!scr->rightChar)
-			scr->rightChar=new NONS_Layer(name);
+			scr->rightChar=new NONS_Layer(&save->rightChar);
 		else
-			scr->rightChar->load(name);
-		delete[] name;
-		scr->rightChar->clip_rect.x=(this->everything->screen->screen->virtualScreen->w)/4;
+			scr->rightChar->load(&save->rightChar);
+		scr->rightChar->centerAround(scr->screen->virtualScreen->w/4*3);
+		scr->rightChar->useBaseline(scr->char_baseline);
 	}
 	scr->centerChar->unload();
-	if (save->centerChar){
-		long semicolon=instr(save->centerChar,L";");
-		semicolon++;
-		wchar_t *name=copyWString(save->centerChar+semicolon);
+	if (save->centerChar.size()){
 		if (!scr->centerChar)
-			scr->centerChar=new NONS_Layer(name);
+			scr->centerChar=new NONS_Layer(&save->centerChar);
 		else
-			scr->centerChar->load(name);
-		delete[] name;
-		scr->centerChar->clip_rect.x=0;
+			scr->centerChar->load(&save->centerChar);
+		scr->centerChar->centerAround(scr->screen->virtualScreen->w/2);
+		scr->centerChar->useBaseline(scr->char_baseline);
 	}
 	for (ulong a=0;a<scr->layerStack.size();a++){
 		if (!scr->layerStack[a])
@@ -273,26 +257,25 @@ bool NONS_ScriptInterpreter::load(int file){
 	if (save->musicTrack>=0){
 		char temp[12];
 		sprintf(temp,"track%02u",save->musicTrack);
-		au->playMusic(temp,save->loopMp3?-1:0);
-	}else if (save->music){
-		long size;
-		char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,(ulong *)&size);
+		au->playMusic(&std::string(temp),save->loopMp3?-1:0);
+	}else if (save->music.size()){
+		ulong size;
+		char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,size);
 		if (buffer)
-			au->playMusic(save->music,buffer,size,save->loopMp3?-1:0);
-		//delete[] buffer;
+			au->playMusic(UniToISO88591(save->music),buffer,size,save->loopMp3?-1:0);
 	}
 	au->musicVolume(save->musicVolume);
 	for (ushort a=0;a<save->channels.size();a++){
 		NONS_SaveFile::Channel *c=save->channels[a];
-		if (!c->name)
+		if (!c->name.size())
 			continue;
 		if (au->bufferIsLoaded(c->name))
-			au->playSoundAsync(c->name,0,0,a,c->loop?-1:0);
+			au->playSoundAsync(&c->name,0,0,a,c->loop?-1:0);
 		else{
-			long size;
-			char *buffer=(char *)this->everything->archive->getFileBuffer(c->name,(ulong *)&size);
+			ulong size;
+			char *buffer=(char *)this->everything->archive->getFileBuffer(c->name,size);
 			if (!!buffer)
-				this->everything->audio->playSoundAsync(c->name,buffer,size,a,c->loop);
+				this->everything->audio->playSoundAsync(&c->name,buffer,size,a,c->loop);
 		}
 	}
 	delete save;
@@ -309,16 +292,11 @@ bool NONS_ScriptInterpreter::save(int file){
 	for (arrays_map_T::iterator i=this->saveGame->arrays.begin();i!=this->saveGame->arrays.end();i++)
 		delete i->second;
 	this->saveGame->arrays.clear();
-	for (ulong a=0;a<this->saveGame->logPages.size();a++)
-		if (this->saveGame->logPages[a])
-			delete[] this->saveGame->logPages[a];
 	this->saveGame->logPages.clear();
 	for (ulong a=0;a<this->saveGame->sprites.size();a++)
 		if (this->saveGame->sprites[a])
 			delete this->saveGame->sprites[a];
 	this->saveGame->sprites.clear();
-	if (this->saveGame->currentBuffer)
-		delete[] this->saveGame->currentBuffer;
 	for (ulong a=0;a<this->saveGame->channels.size();a++)
 		if (this->saveGame->channels[a])
 			delete this->saveGame->channels[a];
@@ -329,11 +307,11 @@ bool NONS_ScriptInterpreter::save(int file){
 			NONS_SaveFile::stackEl *el=new NONS_SaveFile::stackEl();
 			NONS_StackElement *el0=*i;
 			el->type=(el0->type!=SUBROUTINE_CALL);
-			el->label=copyWString(this->script->blockFromOffset(el0->offset));
+			el->label=this->script->blockFromOffset(el0->offset);
 			el->offset=el0->offset-this->script->offsetFromBlock(el->label);
 			el->textgosubLevel=el0->textgosubLevel;
 			if (!el->type){
-				el->leftovers=copyWString(el0->first_interpret_string);
+				el->leftovers=el0->first_interpret_string;
 			}else{
 				el->variable=0;
 				for (variables_map_T::iterator i=this->store->variables.begin();i!=this->store->variables.end() && !el->variable;i++)
@@ -344,10 +322,8 @@ bool NONS_ScriptInterpreter::save(int file){
 			}
 			this->saveGame->stack.push_back(el);
 		}
-		if (this->saveGame->currentLabel)
-			delete[] this->saveGame->currentLabel;
-		this->saveGame->currentLabel=copyWString(this->script->blockFromOffset(this->previous_interpreter_position));
-		if (!!this->saveGame->currentLabel)
+		this->saveGame->currentLabel=this->script->blockFromOffset(this->previous_interpreter_position);
+		if (this->saveGame->currentLabel.size())
 			this->saveGame->currentOffset=this->previous_interpreter_position-this->script->offsetFromBlock(this->saveGame->currentLabel);
 		else
 			this->saveGame->currentOffset=0;
@@ -379,7 +355,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		this->saveGame->windowColor.b=(color>>bshift)&0xFF;
 		this->saveGame->windowTransition=out->transition->effect;
 		this->saveGame->windowTransitionDuration=out->transition->duration;
-		this->saveGame->windowTransitionRule=copyWString(out->transition->rule);
+		this->saveGame->windowTransitionRule=out->transition->rule;
 		this->saveGame->hideWindow=this->hideTextDuringEffect;
 		this->saveGame->fontSize=this->main_font->getsize();
 		this->saveGame->windowTextColor=out->foregroundLayer->fontCache->foreground;
@@ -392,51 +368,56 @@ bool NONS_ScriptInterpreter::save(int file){
 		for (ulong a=0;a<out->log.size();a++)
 			this->saveGame->logPages.push_back(copyWString((wchar_t *)out->log[a].c_str()));
 		this->saveGame->currentBuffer=copyWString((wchar_t *)out->currentBuffer.c_str());
-		/*this->saveGame->textX=out->x;
-		this->saveGame->textY=out->y;*/
+		if (!this->arrowCursor || !this->arrowCursor->data)
+			this->saveGame->arrowCursorString.clear();
+		else{
+			this->saveGame->arrowCursorString=this->arrowCursor->data->animation.getString();
+			this->saveGame->arrowCursorX=this->arrowCursor->xpos;
+			this->saveGame->arrowCursorY=this->arrowCursor->ypos;
+			this->saveGame->arrowCursorAbs=this->arrowCursor->absolute;
+		}
+		if (!this->pageCursor || !this->pageCursor->data)
+			this->saveGame->pageCursorString.clear();
+		else{
+			this->saveGame->pageCursorString=this->pageCursor->data->animation.getString();
+			this->saveGame->pageCursorX=this->pageCursor->xpos;
+			this->saveGame->pageCursorY=this->pageCursor->ypos;
+			this->saveGame->pageCursorAbs=this->pageCursor->absolute;
+		}
 		//graphic
 		{
 			NONS_Image *i=ImageLoader->elementFromSurface(scr->Background->data);
 			if (i){
-				if (this->saveGame->background)
-					delete[] this->saveGame->background;
-				this->saveGame->background=copyWString(i->animation.filename);
+				this->saveGame->background=i->animation.getString();
 			}else{
-				if (this->saveGame->background)
-					delete[] this->saveGame->background;
-				this->saveGame->background=0;
+				this->saveGame->background.clear();
 				color=scr->Background->defaultShade;
 				this->saveGame->bgColor.r=(color>>rshift)&0xFF;
 				this->saveGame->bgColor.g=(color>>gshift)&0xFF;
 				this->saveGame->bgColor.b=(color>>bshift)&0xFF;
 			}
 		}
+		this->saveGame->char_baseline=scr->char_baseline;
 		{
 			NONS_Image *i=!!scr->leftChar?ImageLoader->elementFromSurface(scr->leftChar->data):0;
-			if (this->saveGame->leftChar)
-				delete[] this->saveGame->leftChar;
 			if (i)
-				this->saveGame->leftChar=copyWString(i->animation.string);
+				this->saveGame->leftChar=i->animation.getString();
 			else
-				this->saveGame->leftChar=0;
+				this->saveGame->leftChar.clear();
 		}
 		{
 			NONS_Image *i=!!scr->centerChar?ImageLoader->elementFromSurface(scr->centerChar->data):0;
-			if (this->saveGame->centerChar)
-				delete[] this->saveGame->centerChar;
 			if (i)
-				this->saveGame->centerChar=copyWString(i->animation.string);
+				this->saveGame->centerChar=i->animation.getString();
 			else
-				this->saveGame->centerChar=0;
+				this->saveGame->centerChar.clear();
 		}
 		{
 			NONS_Image *i=!!scr->rightChar?ImageLoader->elementFromSurface(scr->rightChar->data):0;
-			if (this->saveGame->rightChar)
-				delete[] this->saveGame->rightChar;
 			if (i)
-				this->saveGame->rightChar=copyWString(i->animation.string);
+				this->saveGame->rightChar=i->animation.getString();
 			else
-				this->saveGame->rightChar=0;
+				this->saveGame->rightChar.clear();
 		}
 		//update sprite record
 		for (ulong a=0;a<scr->layerStack.size();a++){
@@ -454,15 +435,15 @@ bool NONS_ScriptInterpreter::save(int file){
 					NONS_SaveFile::Sprite *spr=new NONS_SaveFile::Sprite();
 					NONS_Image *i=ImageLoader->elementFromSurface(c->data);
 					if (i){
-						spr->string=copyWString(i->animation.string);
+						spr->string=i->animation.getString();
 						this->saveGame->sprites[a]=spr;
 						b=spr;
 					}else
 						delete spr;
 				}
 				if (b){
-					b->x=c->clip_rect.x;
-					b->y=c->clip_rect.y;
+					b->x=c->position.x;
+					b->y=c->position.y;
 					b->visibility=c->visible;
 					b->alpha=c->alpha;
 				}else
@@ -479,32 +460,30 @@ bool NONS_ScriptInterpreter::save(int file){
 		NONS_Audio *au=this->everything->audio;
 		if (!Mix_PlayingMusic()){
 			this->saveGame->musicTrack=-1;
-			if (this->saveGame->music)
-				delete[] this->saveGame->music;
-			this->saveGame->music=0;
+			this->saveGame->music.clear();
 		}else
 			this->saveGame->loopMp3=this->mp3_loop;
 		int vol=au->musicVolume(-1);
 		this->saveGame->musicVolume=vol<0?100:vol;
-		SDL_LockMutex(au->soundcache->mutex);
-		for (std::list<NONS_SoundEffect *>::iterator i=au->soundcache->channelWatch.begin();i!=au->soundcache->channelWatch.end();i++){
-			NONS_SoundEffect *ch=*i;
-			if (!ch || !ch->sound || !ch->isplaying)
-				continue;
-			NONS_SaveFile::Channel *cha=new NONS_SaveFile::Channel();
-			cha->name=copyWString(ch->sound->name);
-			cha->loop=!!ch->loops;
-			if (ch->channel>=ch->channel)
-				this->saveGame->channels.resize(ch->channel+1,0);
-			this->saveGame->channels[ch->channel]=cha;
+		if (au->isInitialized()){
+			SDL_LockMutex(au->soundcache->mutex);
+			for (std::list<NONS_SoundEffect *>::iterator i=au->soundcache->channelWatch.begin();i!=au->soundcache->channelWatch.end();i++){
+				NONS_SoundEffect *ch=*i;
+				if (!ch || !ch->sound || !ch->isplaying)
+					continue;
+				NONS_SaveFile::Channel *cha=new NONS_SaveFile::Channel();
+				cha->name=ch->sound->name;
+				cha->loop=!!ch->loops;
+				if (ch->channel>=ch->channel)
+					this->saveGame->channels.resize(ch->channel+1,0);
+				this->saveGame->channels[ch->channel]=cha;
+			}
+			SDL_UnlockMutex(au->soundcache->mutex);
 		}
-		SDL_UnlockMutex(au->soundcache->mutex);
 	}
-	char *path=save_directory;
-	char *filename=addStrings(path,"save01.dat");
-	sprintf(filename,"%ssave%d.dat",path,file);
-	bool ret=this->saveGame->save(filename);
-	delete[] filename;
+	std::string path=save_directory+"save01.dat";
+	sprintf(&path[0],"%ssave%d.dat",save_directory,file);
+	bool ret=this->saveGame->save(path);
 	//Also save user data
 	this->store->saveData();
 	ImageLoader->filelog.writeOut();

@@ -35,77 +35,55 @@
 #include "../../UTF.h"
 #include "../../Globals.h"
 
-NONS_TreeNode::NONS_TreeNode(const wchar_t *name){
-	this->branches=0;
-	this->data.name=copyWString(name);
+NONS_TreeNode::NONS_TreeNode(const std::wstring &name){
+	this->data.name=name;
 }
 
 NONS_TreeNode::~NONS_TreeNode(){
-	if (this->branches){
-		for (ulong a=0;a<this->branches->size();a++)
-			delete this->branches->at(a);
-		delete this->branches;
-	}
+	for (ulong a=0;a<this->branches.size();a++)
+		delete this->branches[a];
 }
 
-NONS_TreeNode *NONS_TreeNode::getBranch(const wchar_t *name,bool createIfMissing){
-	if (!this->branches || !name)
-		return 0;
-	std::vector<NONS_TreeNode *> *pBranches=this->branches;
-	long pos=instr(name,L"/");
-	if (pos<0)
-		pos=instr(name,L"\\");
-	wchar_t *name0=0;
-	wchar_t *name1=0;
+NONS_TreeNode *NONS_TreeNode::getBranch(const std::wstring &name,bool createIfMissing){
+	size_t pos=name.find('/');
+	if (pos==name.npos)
+		pos=name.find('\\');
+	std::wstring name0;
+	std::wstring name1;
 	if (pos>=0){
-		name0=copyWString(name,pos);
-		name1=copyWString(name+pos+1);
-		NONS_tolower(name0);
-		NONS_tolower(name1);
+		name0=name.substr(0,pos);
+		name1=name.substr(pos+1);
+		tolower(name0);
+		tolower(name1);
 	}else{
-		name0=copyWString(name);
-		NONS_tolower(name0);
+		name0=name;
+		tolower(name0);
 	}
-	for (ulong a=0;a<pBranches->size();a++){
-		if (!wcscmp((*pBranches)[a]->data.name,name0)){
-			delete[] name0;
-			if (!name1){
-				return (*pBranches)[a];
-			}
-			NONS_TreeNode *res=(*pBranches)[a]->getBranch(name1,createIfMissing);
-			delete[] name1;
-			return res;
+	for (std::vector<NONS_TreeNode *>::iterator i=this->branches.begin(),end=this->branches.end();i!=end;i++){
+		if ((*i)->data.name==name0){
+			if (!name1.size())
+				return *i;
+			return (*i)->getBranch(name1,createIfMissing);
 		}
 	}
-	delete[] name0;
-	if (name1)
-		delete[] name1;
 	return createIfMissing?this->newBranch(name):0;
 }
 
-NONS_TreeNode *NONS_TreeNode::newBranch(const wchar_t *name){
-	long pos=instr(name,L"/");
-	if (pos<0)
-		pos=instr(name,L"\\");
+NONS_TreeNode *NONS_TreeNode::newBranch(const std::wstring &name){
+	size_t pos=name.find('/');
+	if (pos==name.npos)
+		pos=name.find('\\');
 	NONS_TreeNode *res;
-	if (pos>=0){
-		wchar_t *name0=copyWString(name,pos);
-		wchar_t *name1=copyWString(name+pos+1);
+	if (pos<name.npos){
+		std::wstring name0=name.substr(0,pos),
+			name1=name.substr(pos+1);
 		res=new NONS_TreeNode(name0);
-		res->makeDirectory();
-		this->branches->push_back(res);
+		this->branches.push_back(res);
 		res=res->newBranch(name1);
-		delete[] name0;
-		delete[] name1;
 	}else{
 		res=new NONS_TreeNode(name);
-		this->branches->push_back(res);
+		this->branches.push_back(res);
 	}
 	return res;
-}
-
-void NONS_TreeNode::makeDirectory(){
-	this->branches=new std::vector<NONS_TreeNode *>();
-	this->branches->reserve(10);
 }
 #endif

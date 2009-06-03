@@ -80,37 +80,29 @@ tm *getDate(const char *filename){
 	return res;
 }
 
-std::vector<tm *> *existing_files(char *location){
-	std::vector<tm *> *res=new std::vector<tm *>;
-	res->reserve(20);
-	char *path=copyString(location);
+std::vector<tm *> existing_files(const std::string &location){
+	std::vector<tm *> res;
+	res.reserve(20);
+	std::string path=location;
 	toforwardslash(path);
-	if (path[strlen(path)-1]!='/')
-		addStringsInplace(&path,"/");
-	char *filename=addStrings(path,"save01.dat");
+	if (path[path.size()-1]!='/')
+		path.push_back('/');
 	for (short a=1;a<21;a++){
-		sprintf(filename,"%ssave%d.dat",path,a);
-		if (!fileExists(filename))
-			res->push_back(0);
+		std::stringstream stream;
+		stream <<path<<a<<".dat";
+		std::string filename=stream.str();
+		if (!fileExists(filename.c_str()))
+			res.push_back(0);
 		else
-			res->push_back(getDate(filename));
+			res.push_back(getDate(filename.c_str()));
 	}
-	delete[] filename;
-	delete[] path;
 	return res;
 }
 
-std::vector<tm *> *existing_files(wchar_t *location){
-	char *copy=copyString(location);
-	std::vector<tm *> *ret=existing_files(copy);
-	delete[] copy;
-	return ret;
-}
-
 #if defined(NONS_SYS_WINDOWS)
-/*#ifndef UNICODE
+#ifndef UNICODE
 #define UNICODE
-#endif*/
+#endif
 #include <windows.h>
 
 enum WINDOWS_VERSION{
@@ -187,127 +179,89 @@ WINDOWS_VERSION getWindowsVersion(){
 #include <unistd.h>
 #endif
 
-char *getConfigLocation(){
+std::string getConfigLocation(){
 #if defined(NONS_SYS_WINDOWS)
 	if (getWindowsVersion()<V2K)
-		return copyString("./");
+		return "./";
 	HKEY k;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER,TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"),0,KEY_READ,&k)!=ERROR_SUCCESS)
-		return copyString("./");
+		return "./";
 	DWORD type,size;
 	if (RegQueryValueEx(k,TEXT("Personal"),0,&type,0,&size)!=ERROR_SUCCESS || type!=REG_SZ){
 		RegCloseKey(k);
-		return copyString("./");
+		return "./";
 	}
 	TCHAR *path=new TCHAR[size/sizeof(TCHAR)];
 	RegQueryValueEx(k,TEXT("Personal"),0,&type,(LPBYTE)path,&size);
 	RegCloseKey(k);
 	size/=sizeof(TCHAR);
-	toforwardslash(path);
-	if (path[size-1]!='/')
-		addStringsInplace(&path,"/.ONSlaught");
+	std::wstring pathStr(path,size);
+	if (pathStr[pathStr.size()-1]!='/')
+		pathStr.append(L"/.ONSlaught");
 	else
-		addStringsInplace(&path,".ONSlaught");
-	if (!CreateDirectory((LPCTSTR)path,0) && GetLastError()!=ERROR_ALREADY_EXISTS){
+		pathStr.append(L".ONSlaught");
+	if (!CreateDirectory((LPCTSTR)pathStr.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS){
 		delete[] path;
-		return copyString("./");
+		return "./";
 	}
-	addStringsInplace(&path,"/");
-	char *res=copyString(path);
-	delete[] path;
-	return res;
+	pathStr.push_back('/');
+	return UniToISO88591(pathStr);
 #elif defined(NONS_SYS_LINUX)
 	passwd* pwd=getpwuid(getuid());
 	if (!pwd)
-		return copyString("./");
-	char *res=copyString(pwd->pw_dir);
-	if (res[strlen(res)-1]!='/')
-		addStringsInplace(&res,"/.ONSlaught");
-	if (mkdir(res,~0) && errno!=EEXIST){
-		delete[] res;
-		return copyString("./");
+		return "./";
+	std::string res=pwd->pw_dir;
+	if (res[res.size()-1]!='/')
+		res.append(L"/.ONSlaught");
+	else
+		res.append(".ONSlaught");
+	if (mkdir(res.c_str(),~0) && errno!=EEXIST){
+		return "./";
 	}
-	addStringsInplace(&res,"/");
+	res.push_back('/');
 	return res;
 #else
-	return copyString("./");
+	return "./";
 #endif
 }
 
-char *getSaveLocation(unsigned hash[5]){
+std::string getSaveLocation(unsigned hash[5]){
 #ifdef NONS_SYS_WINDOWS
 	if (getWindowsVersion()<V2K)
-		return copyString("./");
+		return "./";
 #endif
-	char *root=getConfigLocation();
+	std::string root=getConfigLocation();
 #if defined(NONS_SYS_WINDOWS)
 #ifdef UNICODE
-	wchar_t *path=copyWString(root);
+	std::wstring path=UniFromISO88591(root);
 #else
-	char *path=copyString(root);
+	std::string path=root;
 #endif
 #elif defined(NONS_SYS_LINUX)
-	char *path=copyString(root);
+	std::string path=root;
 #else
 	return root;
 #endif
-	if (!CLOptions.savedir){
-		char hashstring[100];
-		//sprintf(hashstring,"%08X%08X%08X%08X%08X",hash[0],hash[1],hash[2],hash[3],hash[4]);
-		sprintf(hashstring,"%08x %08x",hash[0],hash[1]);
-		addStringsInplace(&path,hashstring);
+	if (CLOptions.savedir.size()){
+		wchar_t hashstring[100];
+		swprintf(hashstring,100,L"%08x %08x",hash[0],hash[1]);
+		path.append(hashstring);
 	}else
-		addStringsInplace(&path,CLOptions.savedir);
+		path.append(UniFromISO88591(CLOptions.savedir));
 #if defined(NONS_SYS_WINDOWS)
-	if (!CreateDirectory((LPCTSTR)path,0) && GetLastError()!=ERROR_ALREADY_EXISTS){
-		delete[] path;
+	if (!CreateDirectory((LPCTSTR)path.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS)
 		return root;
-	}
-	char *res=copyString(path);
-	delete[] path;
+	path.push_back('/');
+	return UniToISO88591(path);
 #elif defined(NONS_SYS_LINUX)
-	if (mkdir(path,~0) && errno!=EEXIST){
-		delete[] path;
+	if (mkdir(path,~0) && errno!=EEXIST)
 		return root;
-	}
-	char *res=path;
+	path.push_back('/');
+	return path;
 #endif
-	addStringsInplace(&res,"/");
-	return res;
 }
 
-NONS_SaveFile::Sprite::Sprite(){
-	this->string=0;
-}
-
-NONS_SaveFile::Sprite::~Sprite(){
-	if (this->string)
-		delete[] this->string;
-}
-
-NONS_SaveFile::stackEl::stackEl(){
-	this->leftovers=0;
-	this->label=0;
-	this->textgosubLevel=0;
-}
-
-NONS_SaveFile::stackEl::~stackEl(){
-	if (this->leftovers)
-		delete[] this->leftovers;
-	if (this->label)
-		delete[] this->label;
-}
-
-NONS_SaveFile::Channel::Channel(){
-	this->name=0;
-}
-
-NONS_SaveFile::Channel::~Channel(){
-	if (this->name)
-		delete[] this->name;
-}
-
-NONS_VariableMember *readArray(char *buffer,long *offset){
+NONS_VariableMember *readArray(char *buffer,ulong &offset){
 	NONS_VariableMember *var;
 	Uint32 dim=readDWord(buffer,offset);
 	if (dim){
@@ -323,12 +277,12 @@ NONS_VariableMember *readArray(char *buffer,long *offset){
 	return var;
 }
 
-void NONS_SaveFile::load(char *filename){
-	long l;
-	char *buffer=(char *)readfile(filename,&l);
+void NONS_SaveFile::load(std::string filename){
+	ulong l;
+	char *buffer=(char *)readfile(filename.c_str(),l);
 	if (!buffer)
 		return;
-	long offset=0;
+	ulong offset=0;
 	if (!instr(buffer,"NONS") || !instr(buffer,"BZh")){
 		this->error=NONS_NO_ERROR;
 		this->format='N';
@@ -338,43 +292,43 @@ void NONS_SaveFile::load(char *filename){
 			buffer=temp;
 		}
 		offset+=5;
-		this->version=readWord(buffer,&offset);
+		this->version=readWord(buffer,offset);
 		for (ulong a=0;a<5;a++)
-			this->hash[a]=readDWord(buffer,&offset);
+			this->hash[a]=readDWord(buffer,offset);
 		ulong header[4];
 		for (ulong a=0;a<4;a++)
-			header[a]=readDWord(buffer,&offset);
+			header[a]=readDWord(buffer,offset);
 		//stack
 		offset=*header;
 		{
-			ulong n=readDWord(buffer,&offset);
+			ulong n=readDWord(buffer,offset);
 			for (ulong a=0;a<n;a++){
 				stackEl *el=new stackEl();
-				el->type=!!readByte(buffer,&offset);
-				_READ_BINARY_UTF8_STRING(el->label,buffer,offset)
-				el->offset=readDWord(buffer,&offset);
+				el->type=!!readByte(buffer,offset);
+				el->label=UniFromUTF8(readString(buffer,offset));
+				el->offset=readDWord(buffer,offset);
 				if (this->version>1)
-					el->textgosubLevel=readDWord(buffer,&offset);
+					el->textgosubLevel=readDWord(buffer,offset);
 				if (!el->type)
-					_READ_BINARY_UTF8_STRING(el->leftovers,buffer,offset)
+					el->leftovers=UniFromUTF8(readString(buffer,offset));
 				else{
-					el->variable=readDWord(buffer,&offset);
-					el->to=readSignedDWord(buffer,&offset);
-					el->step=readSignedDWord(buffer,&offset);
+					el->variable=readDWord(buffer,offset);
+					el->to=readSignedDWord(buffer,offset);
+					el->step=readSignedDWord(buffer,offset);
 				}
 				this->stack.push_back(el);
 			}
-			_READ_BINARY_UTF8_STRING(this->currentLabel,buffer,offset)
-			this->currentOffset=readDWord(buffer,&offset);
+			this->currentLabel=UniFromUTF8(readString(buffer,offset));
+			this->currentOffset=readDWord(buffer,offset);
 		}
 		//variables
 		offset=header[1];
 		{
-			ulong n=readDWord(buffer,&offset);
+			ulong n=readDWord(buffer,offset);
 			std::vector<Sint32> intervals;
 			//read intervals----------------------------------------------------
 			for (ulong a=0;a<n;a++){
-				Uint32 b=readDWord(buffer,&offset);
+				Uint32 b=readDWord(buffer,offset);
 				if (b&0x80000000){
 					//compensate for negatives
 					if (b&0x40000000)
@@ -387,7 +341,7 @@ void NONS_SaveFile::load(char *filename){
 					if (b&0x40000000)
 						b|=0x80000000;
 					intervals.push_back((Sint32)b);
-					intervals.push_back(readDWord(buffer,&offset));
+					intervals.push_back(readDWord(buffer,offset));
 				}
 			}
 			//------------------------------------------------------------------
@@ -397,17 +351,16 @@ void NONS_SaveFile::load(char *filename){
 				currentInterval+=2;
 				for (ulong c=0;c<b;c++){
 					NONS_Variable *var=new NONS_Variable;
-					var->intValue->set(readSignedDWord(buffer,&offset));
-					wchar_t *temp=0;
-					_READ_BINARY_UTF8_STRING(temp,buffer,offset)
-					var->wcsValue->set(temp,1);
+					var->intValue->set(readSignedDWord(buffer,offset));
+					var->wcsValue->set(UniFromUTF8(readString(buffer,offset)));
 					this->variables[a++]=var;
 				}
 			}
 			intervals.clear();
+			n=readDWord(buffer,offset);
 			//read intervals----------------------------------------------------
 			for (ulong a=0;a<n;a++){
-				Uint32 b=readDWord(buffer,&offset);
+				Uint32 b=readDWord(buffer,offset);
 				if (b&0x80000000){
 					if (b&0x40000000)
 						b|=0x80000000;
@@ -419,7 +372,7 @@ void NONS_SaveFile::load(char *filename){
 					if (b&0x40000000)
 						b|=0x80000000;
 					intervals.push_back((Sint32)b);
-					intervals.push_back(readDWord(buffer,&offset));
+					intervals.push_back(readDWord(buffer,offset));
 				}
 			}
 			//------------------------------------------------------------------
@@ -428,7 +381,7 @@ void NONS_SaveFile::load(char *filename){
 					b=intervals[currentInterval+1];
 				currentInterval+=2;
 				for (ulong c=0;c<b;c++){
-					NONS_VariableMember *var=readArray(buffer,&offset);
+					NONS_VariableMember *var=readArray(buffer,offset);
 					this->arrays[a++]=var;
 				}
 			}
@@ -437,111 +390,110 @@ void NONS_SaveFile::load(char *filename){
 		offset=header[2];
 		{
 			ulong subheader[2];
-			subheader[0]=readDWord(buffer,&offset);
-			subheader[1]=readDWord(buffer,&offset);
+			subheader[0]=readDWord(buffer,offset);
+			subheader[1]=readDWord(buffer,offset);
 			offset=*subheader;
-			this->textWindow.x=readSignedWord(buffer,&offset);
-			this->textWindow.y=readSignedWord(buffer,&offset);
-			this->textWindow.w=readSignedWord(buffer,&offset);
-			this->textWindow.h=readSignedWord(buffer,&offset);
-			this->windowFrame.x=readSignedWord(buffer,&offset);
-			this->windowFrame.y=readSignedWord(buffer,&offset);
-			this->windowFrame.w=readSignedWord(buffer,&offset);
-			this->windowFrame.h=readSignedWord(buffer,&offset);
-			this->windowColor.r=readByte(buffer,&offset);
-			this->windowColor.g=readByte(buffer,&offset);
-			this->windowColor.b=readByte(buffer,&offset);
-			this->windowTransition=readDWord(buffer,&offset);
-			this->windowTransitionDuration=readDWord(buffer,&offset);
-			_READ_BINARY_UTF8_STRING(this->windowTransitionRule,buffer,offset);
-			this->hideWindow=!!readByte(buffer,&offset);
-			this->fontSize=readWord(buffer,&offset);
-			this->windowTextColor.r=readByte(buffer,&offset);
-			this->windowTextColor.g=readByte(buffer,&offset);
-			this->windowTextColor.b=readByte(buffer,&offset);
-			this->textSpeed=readDWord(buffer,&offset);
-			this->fontShadow=!!readByte(buffer,&offset);
-			this->spacing=readWord(buffer,&offset);
-			this->lineSkip=readSignedWord(buffer,&offset);
-			ulong n=readDWord(buffer,&offset);
-			for (ulong a=0;a<n;a++){
-				wchar_t *str;
-				_READ_BINARY_UTF8_STRING(str,buffer,offset)
-				this->logPages.push_back(str);
-			}
-			_READ_BINARY_UTF8_STRING(this->currentBuffer,buffer,offset)
-			this->textX=readWord(buffer,&offset);
-			this->textY=readWord(buffer,&offset);
-			_READ_BINARY_UTF8_STRING(this->arrowCursorString,buffer,offset)
-			this->arrowCursorAbs=!!readByte(buffer,&offset);
-			this->arrowCursorX=readSignedWord(buffer,&offset);
-			this->arrowCursorY=readSignedWord(buffer,&offset);
-			_READ_BINARY_UTF8_STRING(this->pageCursorString,buffer,offset)
-			this->pageCursorAbs=!!readByte(buffer,&offset);
-			this->pageCursorX=readSignedWord(buffer,&offset);
-			this->pageCursorY=readSignedWord(buffer,&offset);
+			this->textWindow.x=readSignedWord(buffer,offset);
+			this->textWindow.y=readSignedWord(buffer,offset);
+			this->textWindow.w=readSignedWord(buffer,offset);
+			this->textWindow.h=readSignedWord(buffer,offset);
+			this->windowFrame.x=readSignedWord(buffer,offset);
+			this->windowFrame.y=readSignedWord(buffer,offset);
+			this->windowFrame.w=readSignedWord(buffer,offset);
+			this->windowFrame.h=readSignedWord(buffer,offset);
+			this->windowColor.r=readByte(buffer,offset);
+			this->windowColor.g=readByte(buffer,offset);
+			this->windowColor.b=readByte(buffer,offset);
+			this->windowTransition=readDWord(buffer,offset);
+			this->windowTransitionDuration=readDWord(buffer,offset);
+			this->windowTransitionRule=UniFromUTF8(readString(buffer,offset));
+			this->hideWindow=!!readByte(buffer,offset);
+			this->fontSize=readWord(buffer,offset);
+			this->windowTextColor.r=readByte(buffer,offset);
+			this->windowTextColor.g=readByte(buffer,offset);
+			this->windowTextColor.b=readByte(buffer,offset);
+			this->textSpeed=readDWord(buffer,offset);
+			this->fontShadow=!!readByte(buffer,offset);
+			this->spacing=readWord(buffer,offset);
+			this->lineSkip=readSignedWord(buffer,offset);
+			ulong n=readDWord(buffer,offset);
+			for (ulong a=0;a<n;a++)
+				this->logPages.push_back(UniFromUTF8(readString(buffer,offset)));
+			this->currentBuffer=UniFromUTF8(readString(buffer,offset));
+			this->textX=readWord(buffer,offset);
+			this->textY=readWord(buffer,offset);
+			this->arrowCursorString=UniFromUTF8(readString(buffer,offset));
+			this->arrowCursorAbs=!!readByte(buffer,offset);
+			this->arrowCursorX=readSignedWord(buffer,offset);
+			this->arrowCursorY=readSignedWord(buffer,offset);
+			this->pageCursorString=UniFromUTF8(readString(buffer,offset));
+			this->pageCursorAbs=!!readByte(buffer,offset);
+			this->pageCursorX=readSignedWord(buffer,offset);
+			this->pageCursorY=readSignedWord(buffer,offset);
 
 			offset=subheader[1];
-			_READ_BINARY_UTF8_STRING(this->background,buffer,offset)
-			if (!this->background){
-				this->bgColor.r=readByte(buffer,&offset);
-				this->bgColor.g=readByte(buffer,&offset);
-				this->bgColor.b=readByte(buffer,&offset);
+			this->background=UniFromUTF8(readString(buffer,offset));
+			if (!this->background.size()){
+				this->bgColor.r=readByte(buffer,offset);
+				this->bgColor.g=readByte(buffer,offset);
+				this->bgColor.b=readByte(buffer,offset);
 			}
-			_READ_BINARY_UTF8_STRING(this->leftChar,buffer,offset)
-			_READ_BINARY_UTF8_STRING(this->centerChar,buffer,offset)
-			_READ_BINARY_UTF8_STRING(this->rightChar,buffer,offset)
-			n=readDWord(buffer,&offset);
+			if (this->version>1)
+				this->char_baseline=readDWord(buffer,offset);
+			this->leftChar=UniFromUTF8(readString(buffer,offset));
+			this->centerChar=UniFromUTF8(readString(buffer,offset));
+			this->rightChar=UniFromUTF8(readString(buffer,offset));
+			n=readDWord(buffer,offset);
 			std::vector<ulong> intervals;
 			for (ulong a=0;a<n;a++){
-				ulong b=readDWord(buffer,&offset);
+				ulong b=readDWord(buffer,offset);
 				if (b&0x80000000){
 					intervals.push_back(b&0x7FFFFFFF);
 					intervals.push_back(1);
 				}else{
 					intervals.push_back(b);
-					intervals.push_back(readDWord(buffer,&offset));
+					intervals.push_back(readDWord(buffer,offset));
 				}
 			}
 			for (ulong currentInterval=0;currentInterval<intervals.size();){
 				ulong a=intervals[currentInterval],
 					b=intervals[currentInterval+1];
 				currentInterval+=2;
-				if (this->sprites.size()<a)
+				if (this->sprites.size()<a+1)
 					this->sprites.resize(a+b,0);
 				for (ulong c=0;c<b;c++){
 					Sprite *spr=new Sprite();
-					_READ_BINARY_UTF8_STRING(spr->string,buffer,offset)
-					spr->x=readSignedDWord(buffer,&offset);
-					spr->y=readSignedDWord(buffer,&offset);
-					spr->visibility=!!readByte(buffer,&offset);
-					spr->alpha=readByte(buffer,&offset);
+					spr->string=UniFromUTF8(readString(buffer,offset));
+					spr->x=readSignedDWord(buffer,offset);
+					spr->y=readSignedDWord(buffer,offset);
+					spr->visibility=!!readByte(buffer,offset);
+					spr->alpha=readByte(buffer,offset);
 					this->sprites[a++]=spr;
 				}
 			}
-			this->spritePriority=readDWord(buffer,&offset);
-			this->monochrome=!!readByte(buffer,&offset);
-			this->monochromeColor.r=readByte(buffer,&offset);
-			this->monochromeColor.g=readByte(buffer,&offset);
-			this->monochromeColor.b=readByte(buffer,&offset);
-			this->negative=!!readByte(buffer,&offset);
+			this->spritePriority=readDWord(buffer,offset);
+			this->monochrome=!!readByte(buffer,offset);
+			this->monochromeColor.r=readByte(buffer,offset);
+			this->monochromeColor.g=readByte(buffer,offset);
+			this->monochromeColor.b=readByte(buffer,offset);
+			this->negative=!!readByte(buffer,offset);
 		}
 		//audio
 		offset=header[3];
 		{
-			this->musicTrack=(char)readByte(buffer,&offset);
+			this->musicTrack=(char)readByte(buffer,offset);
 			if (this->musicTrack<0)
-				_READ_BINARY_UTF8_STRING(this->music,buffer,offset)
-			uchar vol=readByte(buffer,&offset);
+				this->music=UniFromUTF8(readString(buffer,offset));
+			uchar vol=readByte(buffer,offset);
 			if (vol>127)
 				vol=127;
 			this->musicVolume=(vol&0x7F);
 			this->loopMp3=CHECK_FLAG(vol,0x80);
-			this->channels.resize(readWord(buffer,&offset),0);
+			this->channels.resize(readWord(buffer,offset),0);
 			for (ushort a=0;a<this->channels.size();a++){
 				Channel *b=new Channel();
-				_READ_BINARY_UTF8_STRING(b->name,buffer,offset)
-				char vol=readByte(buffer,&offset);
+				b->name=UniFromUTF8(readString(buffer,offset));
+				char vol=readByte(buffer,offset);
 				b->volume=(vol&0x7F);
 				b->loop=!!(vol&0x80);
 				this->channels[a]=b;
@@ -553,59 +505,13 @@ void NONS_SaveFile::load(char *filename){
 }
 
 NONS_SaveFile::NONS_SaveFile(){
-	this->arrowCursorString=0;
-	this->pageCursorString=0;
-	this->windowTransitionRule=0;
-	this->unknownString_000=0;
-	this->background=0;
-	this->leftChar=0;
-	this->centerChar=0;
-	this->rightChar=0;
-	this->midi=0;
-	this->wav=0;
-	this->music=0;
-	this->btnDef=0;
-	this->loopBGM0=0;
-	this->loopBGM1=0;
-	this->currentLabel=0;
 	memset(this->hash,0,sizeof(unsigned)*5);
-	this->currentBuffer=0;
 }
 
 NONS_SaveFile::~NONS_SaveFile(){
-	if (this->arrowCursorString)
-		delete[] this->arrowCursorString;
-	if (this->pageCursorString)
-		delete[] this->pageCursorString;
-	if (this->windowTransitionRule)
-		delete[] this->windowTransitionRule;
-	if (this->unknownString_000)
-		delete[] this->unknownString_000;
-	if (this->background)
-		delete[] this->background;
-	if (this->leftChar)
-		delete[] this->leftChar;
-	if (this->centerChar)
-		delete[] this->centerChar;
-	if (this->rightChar)
-		delete[] this->rightChar;
-	if (this->midi)
-		delete[] this->midi;
-	if (this->wav)
-		delete[] this->wav;
-	if (this->music)
-		delete[] this->music;
-	if (this->btnDef)
-		delete[] this->btnDef;
-	if (this->loopBGM0)
-		delete[] this->loopBGM0;
-	if (this->loopBGM1)
-		delete[] this->loopBGM1;
 	for (ulong a=0;a<this->sprites.size();a++)
 		if (this->sprites[a])
 			delete this->sprites[a];
-	if (this->currentLabel)
-		delete[] this->currentLabel;
 	for (ulong a=0;a<this->stack.size();a++)
 		if (this->stack[a])
 			delete this->stack[a];
@@ -615,17 +521,12 @@ NONS_SaveFile::~NONS_SaveFile(){
 	for (arrays_map_T::iterator i=this->arrays.begin();i!=this->arrays.end();i++)
 		if (!!i->second)
 			delete i->second;
-	for (ulong a=0;a<this->logPages.size();a++)
-		if (this->logPages[a])
-			delete[] this->logPages[a];
-	if (this->currentBuffer)
-		delete[] this->currentBuffer;
 	for (ulong a=0;a<this->channels.size();a++)
 		if (this->channels[a])
 			delete this->channels[a];
 }
 
-void writeArray(NONS_VariableMember *var,std::string *buffer){
+void writeArray(NONS_VariableMember *var,std::string &buffer){
 	writeDWord(var->dimensionSize,buffer);
 	if (var->dimensionSize){
 		for (ulong a=0;a<var->dimensionSize;a++)
@@ -634,149 +535,150 @@ void writeArray(NONS_VariableMember *var,std::string *buffer){
 		writeDWord(var->getInt(),buffer);
 }
 
-bool NONS_SaveFile::save(char *filename){
+bool NONS_SaveFile::save(std::string filename){
 	if (this->format!='N')
 		return 0;
 	std::string buffer("NONS");
 	buffer.push_back(0);
-	writeWord(NONS_SAVEFILE_VERSION,&buffer);
+	writeWord(NONS_SAVEFILE_VERSION,buffer);
 	for (ulong a=0;a<5;a++)
-		writeDWord(this->hash[a],&buffer);
+		writeDWord(this->hash[a],buffer);
 	ulong header[4];
 	for (ulong a=0;a<4;a++){
 		header[a]=buffer.size();
-		writeDWord(0,&buffer);
+		writeDWord(0,buffer);
 	}
 	//stack
-	writeDWord(buffer.size(),&buffer,*header);
+	writeDWord(buffer.size(),buffer,*header);
 	{
-		writeDWord(this->stack.size(),&buffer);
+		writeDWord(this->stack.size(),buffer);
 		for (ulong a=0;a<this->stack.size();a++){
 			stackEl *el=this->stack[a];
-			writeByte(el->type,&buffer);
-			writeString(el->label,&buffer);
-			writeDWord(el->offset,&buffer);
-			writeDWord(el->textgosubLevel,&buffer);
+			writeByte(el->type,buffer);
+			writeString(el->label,buffer);
+			writeDWord(el->offset,buffer);
+			writeDWord(el->textgosubLevel,buffer);
 			if (!el->type){
-				writeString(el->leftovers,&buffer);
+				writeString(el->leftovers,buffer);
 			}else{
-				writeDWord(el->variable,&buffer);
-				writeDWord(el->to,&buffer);
-				writeDWord(el->step,&buffer);
+				writeDWord(el->variable,buffer);
+				writeDWord(el->to,buffer);
+				writeDWord(el->step,buffer);
 			}
 		}
-		writeString(this->currentLabel,&buffer);
-		writeDWord(this->currentOffset,&buffer);
+		writeString(this->currentLabel,buffer);
+		writeDWord(this->currentOffset,buffer);
 	}
 	//variables
-	writeDWord(buffer.size(),&buffer,header[1]);
+	writeDWord(buffer.size(),buffer,header[1]);
 	{
 		//variables
 		bool set=!!this->variables.size();
 		if (!set)
-			writeDWord(0,&buffer);
+			writeDWord(0,buffer);
 		else{
 			variables_map_T::iterator i=this->variables.begin();
 			if (i->first>=200)
-				writeDWord(0,&buffer);
+				writeDWord(0,buffer);
 			else{
 				variables_map_T::iterator i2=i;
 				std::vector<Sint32> intervals=getIntervals<NONS_Variable *>(i,this->variables.end());
-				writeDWord(intervals.size()/2,&buffer);
+				writeDWord(intervals.size()/2,buffer);
 				for (ulong a=0;a<intervals.size();){
 					if (intervals[a+1]>1){
-						writeDWord(intervals[a++],&buffer);
-						writeDWord(intervals[a++],&buffer);
+						writeDWord(intervals[a++],buffer);
+						writeDWord(intervals[a++],buffer);
 					}else{
-						writeDWord(intervals[a]|0x80000000,&buffer);
+						writeDWord(intervals[a]|0x80000000,buffer);
 						a+=2;
 					}
 				}
 				for (i=i2;i!=this->variables.end();i++){
-					writeDWord(i->second->intValue->getInt(),&buffer);
-					writeString(i->second->wcsValue->getWcs(),&buffer);
+					writeDWord(i->second->intValue->getInt(),buffer);
+					writeString(i->second->wcsValue->getWcs(),buffer);
 				}
 			}
 		}
 		//arrays
 		if (!this->arrays.size())
-			writeDWord(0,&buffer);
+			writeDWord(0,buffer);
 		else{
 			std::vector<Sint32> intervals=getIntervals<NONS_VariableMember *>(this->arrays.begin(),this->arrays.end());
-			writeDWord(intervals.size()/2,&buffer);
+			writeDWord(intervals.size()/2,buffer);
 			for (ulong a=0;a<intervals.size();){
 				if (intervals[a+1]>1){
-					writeDWord(intervals[a++],&buffer);
-					writeDWord(intervals[a++],&buffer);
+					writeDWord(intervals[a++],buffer);
+					writeDWord(intervals[a++],buffer);
 				}else{
-					writeDWord(intervals[a]|0x80000000,&buffer);
+					writeDWord(intervals[a]|0x80000000,buffer);
 					a+=2;
 				}
 			}
 			for (arrays_map_T::iterator i=this->arrays.begin();i!=this->arrays.end();i++){
-				writeDWord(i->first,&buffer);
-				writeArray(i->second,&buffer);
+				writeDWord(i->first,buffer);
+				writeArray(i->second,buffer);
 			}
 		}
 	}
 	//screen
-	writeDWord(buffer.size(),&buffer,header[2]);
+	writeDWord(buffer.size(),buffer,header[2]);
 	{
 		ulong screenHeader[2];
 		for (ulong a=0;a<2;a++){
 			screenHeader[a]=buffer.size();
-			writeDWord(0,&buffer);
+			writeDWord(0,buffer);
 		}
 		//window
-		writeDWord(buffer.size(),&buffer,*screenHeader);
-		writeWord(this->textWindow.x,&buffer);
-		writeWord(this->textWindow.y,&buffer);
-		writeWord(this->textWindow.w,&buffer);
-		writeWord(this->textWindow.h,&buffer);
-		writeWord(this->windowFrame.x,&buffer);
-		writeWord(this->windowFrame.y,&buffer);
-		writeWord(this->windowFrame.w,&buffer);
-		writeWord(this->windowFrame.h,&buffer);
-		writeByte(this->windowColor.r,&buffer);
-		writeByte(this->windowColor.g,&buffer);
-		writeByte(this->windowColor.b,&buffer);
-		writeDWord(this->windowTransition,&buffer);
-		writeDWord(this->windowTransitionDuration,&buffer);
-		writeString(this->windowTransitionRule,&buffer);
-		writeByte(this->hideWindow,&buffer);
-		writeWord(this->fontSize,&buffer);
-		writeByte(this->windowTextColor.r,&buffer);
-		writeByte(this->windowTextColor.g,&buffer);
-		writeByte(this->windowTextColor.b,&buffer);
-		writeDWord(this->textSpeed,&buffer);
-		writeByte(this->fontShadow,&buffer);
-		writeWord(this->spacing,&buffer);
-		writeWord(this->lineSkip,&buffer);
-		writeDWord(this->logPages.size(),&buffer);
+		writeDWord(buffer.size(),buffer,*screenHeader);
+		writeWord(this->textWindow.x,buffer);
+		writeWord(this->textWindow.y,buffer);
+		writeWord(this->textWindow.w,buffer);
+		writeWord(this->textWindow.h,buffer);
+		writeWord(this->windowFrame.x,buffer);
+		writeWord(this->windowFrame.y,buffer);
+		writeWord(this->windowFrame.w,buffer);
+		writeWord(this->windowFrame.h,buffer);
+		writeByte(this->windowColor.r,buffer);
+		writeByte(this->windowColor.g,buffer);
+		writeByte(this->windowColor.b,buffer);
+		writeDWord(this->windowTransition,buffer);
+		writeDWord(this->windowTransitionDuration,buffer);
+		writeString(this->windowTransitionRule,buffer);
+		writeByte(this->hideWindow,buffer);
+		writeWord(this->fontSize,buffer);
+		writeByte(this->windowTextColor.r,buffer);
+		writeByte(this->windowTextColor.g,buffer);
+		writeByte(this->windowTextColor.b,buffer);
+		writeDWord(this->textSpeed,buffer);
+		writeByte(this->fontShadow,buffer);
+		writeWord(this->spacing,buffer);
+		writeWord(this->lineSkip,buffer);
+		writeDWord(this->logPages.size(),buffer);
 		for (ulong a=0;a<this->logPages.size();a++)
-			writeString(this->logPages[a],&buffer);
-		writeString(this->currentBuffer,&buffer);
-		writeWord(this->textX,&buffer);
-		writeWord(this->textY,&buffer);
-		writeString(this->arrowCursorString,&buffer);
-		writeByte(this->arrowCursorAbs,&buffer);
-		writeWord(this->arrowCursorX,&buffer);
-		writeWord(this->arrowCursorY,&buffer);
-		writeString(this->pageCursorString,&buffer);
-		writeByte(this->pageCursorAbs,&buffer);
-		writeWord(this->pageCursorX,&buffer);
-		writeWord(this->pageCursorY,&buffer);
+			writeString(this->logPages[a],buffer);
+		writeString(this->currentBuffer,buffer);
+		writeWord(this->textX,buffer);
+		writeWord(this->textY,buffer);
+		writeString(this->arrowCursorString,buffer);
+		writeByte(this->arrowCursorAbs,buffer);
+		writeWord(this->arrowCursorX,buffer);
+		writeWord(this->arrowCursorY,buffer);
+		writeString(this->pageCursorString,buffer);
+		writeByte(this->pageCursorAbs,buffer);
+		writeWord(this->pageCursorX,buffer);
+		writeWord(this->pageCursorY,buffer);
 		//graphics
-		writeDWord(buffer.size(),&buffer,screenHeader[1]);
-		writeString(this->background,&buffer);
-		if (!this->background){
-			writeByte(this->bgColor.r,&buffer);
-			writeByte(this->bgColor.g,&buffer);
-			writeByte(this->bgColor.b,&buffer);
+		writeDWord(buffer.size(),buffer,screenHeader[1]);
+		writeString(this->background,buffer);
+		if (this->background.size()){
+			writeByte(this->bgColor.r,buffer);
+			writeByte(this->bgColor.g,buffer);
+			writeByte(this->bgColor.b,buffer);
 		}
-		writeString(this->leftChar,&buffer);
-		writeString(this->centerChar,&buffer);
-		writeString(this->rightChar,&buffer);
+		writeDWord(this->char_baseline,buffer);
+		writeString(this->leftChar,buffer);
+		writeString(this->centerChar,buffer);
+		writeString(this->rightChar,buffer);
 		std::vector<ulong> intervals;
 		ulong last;
 		bool set=0;
@@ -801,56 +703,56 @@ bool NONS_SaveFile::save(char *filename){
 			}
 			if (intervals.size()%2)
 				intervals.push_back(last-intervals.back());
-			writeDWord(intervals.size()/2,&buffer);
+			writeDWord(intervals.size()/2,buffer);
 			for (ulong a=0;a<intervals.size();){
 				long start=intervals[a++];
 				ulong size=intervals[a++];
 				if (size==1)
-					writeDWord(start|0x80000000,&buffer);
+					writeDWord(start|0x80000000,buffer);
 				else{
-					writeDWord(start,&buffer);
-					writeDWord(size,&buffer);
+					writeDWord(start,buffer);
+					writeDWord(size,buffer);
 				}
 			}
 			for (ulong a=0;a<this->sprites.size();a++){
 				Sprite *spr=this->sprites[a];
 				if (!spr)
 					continue;
-				writeString(spr->string,&buffer);
-				writeDWord(spr->x,&buffer);
-				writeDWord(spr->y,&buffer);
-				writeByte(spr->visibility,&buffer);
-				writeByte(spr->alpha,&buffer);
+				writeString(spr->string,buffer);
+				writeDWord(spr->x,buffer);
+				writeDWord(spr->y,buffer);
+				writeByte(spr->visibility,buffer);
+				writeByte(spr->alpha,buffer);
 			}
 		}else
-			writeDWord(0,&buffer);
-		writeDWord(this->spritePriority,&buffer);
-		writeByte(this->monochrome,&buffer);
-		writeByte(this->monochromeColor.r,&buffer);
-		writeByte(this->monochromeColor.g,&buffer);
-		writeByte(this->monochromeColor.b,&buffer);
-		writeByte(this->negative,&buffer);
+			writeDWord(0,buffer);
+		writeDWord(this->spritePriority,buffer);
+		writeByte(this->monochrome,buffer);
+		writeByte(this->monochromeColor.r,buffer);
+		writeByte(this->monochromeColor.g,buffer);
+		writeByte(this->monochromeColor.b,buffer);
+		writeByte(this->negative,buffer);
 	}
 	//audio
-	writeDWord(buffer.size(),&buffer,header[3]);
+	writeDWord(buffer.size(),buffer,header[3]);
 	{
-		writeByte(this->musicTrack,&buffer);
+		writeByte(this->musicTrack,buffer);
 		if (this->musicTrack<0)
-			writeString(this->music,&buffer);
+			writeString(this->music,buffer);
 		if (this->musicVolume>127)
 			this->musicVolume=127;
-		writeByte(this->musicVolume|(this->loopMp3?0x80:0),&buffer);
-		writeWord(this->channels.size(),&buffer);
+		writeByte(this->musicVolume|(this->loopMp3?0x80:0),buffer);
+		writeWord(this->channels.size(),buffer);
 		for (ulong a=0;a<this->channels.size();a++){
 			Channel *c=this->channels[a];
-			writeString(c->name,&buffer);
-			writeByte(c->volume|(c->loop?0:0x80),&buffer);
+			writeString(c->name,buffer);
+			writeByte(c->volume|(c->loop?0:0x80),buffer);
 		}
 	}
 
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
-	bool ret=!writefile(filename,writebuffer,l);
+	bool ret=!writefile(filename.c_str(),writebuffer,l);
 	delete[] writebuffer;
 	return ret;
 	//return !writefile(filename,(char *)buffer.c_str(),buffer.size());

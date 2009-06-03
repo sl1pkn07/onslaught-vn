@@ -36,8 +36,8 @@
 #include <vector>
 
 struct NONS_Menu{
-	std::vector<wchar_t *> strings;
-	std::vector<wchar_t *> commands;
+	std::vector<std::wstring> strings;
+	std::vector<std::wstring> commands;
 	SDL_Color off;
 	SDL_Color on;
 	SDL_Color nofile;
@@ -52,31 +52,31 @@ struct NONS_Menu{
 	NONS_Font *defaultFont;
 	long fontsize,spacing,lineskip;
 	SDL_Color shadeColor;
-	wchar_t *stringSave;
-	wchar_t *stringLoad;
-	wchar_t *stringSlot;
-	wchar_t *voiceEntry;
-	wchar_t *voiceCancel;
-	wchar_t *voiceMO;
-	wchar_t *voiceClick;
-	wchar_t *voiceYes;
-	wchar_t *voiceNo;
+	std::wstring stringSave;
+	std::wstring stringLoad;
+	std::wstring stringSlot;
+	std::wstring voiceEntry;
+	std::wstring voiceCancel;
+	std::wstring voiceMO;
+	std::wstring voiceClick;
+	std::wstring voiceYes;
+	std::wstring voiceNo;
 	NONS_Audio *audio;
 	NONS_GeneralArchive *archive;
 	uchar rightClickMode;
 
 	NONS_Menu(void *interpreter);
-	NONS_Menu(std::vector<wchar_t *> *options,void *interpreter);
+	NONS_Menu(std::vector<std::wstring> *options,void *interpreter);
 	~NONS_Menu();
 	int callMenu();
 	void reset();
-	void resetStrings(std::vector<wchar_t *> *options);
+	void resetStrings(std::vector<std::wstring> *options);
 	int save();
 	int load();
 	int windowerase();
 	int skip();
-	int call(wchar_t *string);
+	int call(const std::wstring &string);
 private:
-	int write(wchar_t *txt,int y);
+	int write(const std::wstring &txt,int y);
 };
 #endif

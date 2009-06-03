@@ -40,12 +40,9 @@ ErrorCode NONS_ScriptInterpreter::command_caption(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		SDL_WM_SetCaption("",0);
 	else{
-		wchar_t *temp0=0;
+		std::wstring temp0;
 		_GETWCSVALUE(temp0,0,)
-		char *temp1=WChar_to_UTF8(temp0);
-		SDL_WM_SetCaption(temp1,0);
-		delete[] temp0;
-		delete[] temp1;
+		SDL_WM_SetCaption(UniToUTF8(temp0).c_str(),0);
 	}
 	return NONS_NO_ERROR;
 }
@@ -57,23 +54,27 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_ParsedLine &line){
 		return NONS_NOT_IN_DEFINE_MODE;*/
 	NONS_VariableMember *var=this->store->retrieve(line.parameters[0],0);
 	if (!var){
-		_CHECK_ID_NAME(line.parameters[0])
+		if (!NONS_isalpha(line.parameters[0][0]) && line.parameters[0][0]!='_')
+			return NONS_INVALID_ID_NAME;
+		for (std::wstring::iterator i=line.parameters[0].begin()+1,end=line.parameters[0].end();i!=end;i++)
+			if (!NONS_isalnum(*i) && *i!='_')
+				return NONS_INVALID_ID_NAME;
 		NONS_VariableMember *val;
 		if (line.parameters.size()>1){
-			if (!wcscmp(line.commandName,L"numalias")){
+			if (!stdStrCmpCI(line.commandName,L"numalias")){
 				long temp;
 				_GETINTVALUE(temp,1,)
 				val=new NONS_VariableMember(INTEGER);
 				val->set(temp);
 			}else{
-				wchar_t *temp=0;
+				std::wstring temp;
 				_GETWCSVALUE(temp,1,)
 				val=new NONS_VariableMember(STRING);
-				val->set(temp,1);
+				val->set(temp);
 			}
 			val->makeConstant();
 		}
-		this->store->constants[copyWString(line.parameters[0])]=val;
+		this->store->constants[line.parameters[0]]=val;
 		return NONS_NO_ERROR;
 	}
 	if (var->isConstant())
@@ -119,7 +120,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	long res=0;
-	bool notif=!wcscmp(line.commandName,L"notif");
+	bool notif=(line.commandName==L"notif");
 	ErrorCode ret=this->store->evaluate(line.parameters[0],&res,notif && !this->new_if,0,0,0);
 	if (!CHECK_FLAG(ret,NONS_NO_ERROR_FLAG))
 		return ret;
@@ -128,37 +129,32 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 	if (!res)
 		return NONS_NO_ERROR;
 	ret=NONS_NO_ERROR;
-	wchar_t *ifblock=line.parameters[1];
-	if (instr(ifblock,L":")<0)
+	std::wstring &ifblock=line.parameters[1];
+	if (ifblock.find(':')==ifblock.npos)
 		return this->interpretString(ifblock);
-	ulong len=wcslen(ifblock);
-	ulong commandstart=0;
-	for (ulong a=0;a<len;a++){
-		if (ifblock[a]=='\"' || ifblock[a]=='`'){
-			wchar_t quote=ifblock[a];
-			a++;
-			for (;ifblock[a] && ifblock[a]!=quote;a++);
-			if (!ifblock[a])
+	std::wstring::iterator commandstart=ifblock.begin();
+	for (std::wstring::iterator i=commandstart,end=ifblock.end();i!=end;i++){
+		if (*i=='\"' || *i=='`'){
+			for (wchar_t quote=*i++;i!=end && *i!=quote;i++);
+			if (i++==end)
 				return NONS_UNMATCHED_QUOTES;
-			a++;
 			continue;
 		}
-		if (ifblock[a]==':' || ifblock[a]==';'){
-			wchar_t *copy=copyWString(ifblock+commandstart,a-commandstart);
+		if (*i==':' || *i==';'){
+			std::wstring copy=std::wstring(commandstart,i);
 			ErrorCode error=this->interpretString(copy);
-			delete[] copy;
-			if (error==NONS_GOSUB && ifblock[a+1])
-				(this->callStack.back())->first_interpret_string=copyWString(ifblock+a+1);
+			if (error==NONS_GOSUB && i+1!=end)
+				this->callStack.back()->first_interpret_string=std::wstring(i+1,end);
 			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
 				ret=NONS_UNDEFINED_ERROR;
 			}
-			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || ifblock[a]==';')
+			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || *i==';')
 				return ret;
-			commandstart=a+1;
+			commandstart=i+1;
 		}
 	}
-	wchar_t *copy=copyWString(ifblock+commandstart);
+	std::wstring copy=std::wstring(commandstart,ifblock.end());
 	ErrorCode error=this->interpretString(copy);
 	if (error==NONS_END)
 		return error;
@@ -166,7 +162,6 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_ParsedLine &line){
 		handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
 		ret=NONS_UNDEFINED_ERROR;
 	}
-	delete[] copy;
 	return ret;
 }
 
@@ -178,37 +173,37 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_ParsedLine &line){
 	long val;
 	_GETINTVALUE(val,1,)
 	while (1){
-		if (!wcscmp(line.commandName,L"add")){
+		if (!stdStrCmpCI(line.commandName,L"add")){
 			var->add(val);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"sub")){
+		if (!stdStrCmpCI(line.commandName,L"sub")){
 			var->sub(val);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"mul")){
+		if (!stdStrCmpCI(line.commandName,L"mul")){
 			var->mul(val);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"div")){
+		if (!stdStrCmpCI(line.commandName,L"div")){
 			if (!val)
 				return NONS_DIVISION_BY_ZERO;
 			var->div(val);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"sin")){
+		if (!stdStrCmpCI(line.commandName,L"sin")){
 			var->set(sin(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"cos")){
+		if (!stdStrCmpCI(line.commandName,L"cos")){
 			var->set(cos(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"tan")){
+		if (!stdStrCmpCI(line.commandName,L"tan")){
 			var->set(tan(M_PI*val/180.0)*1000.0);
 			break;
 		}
-		if (!wcscmp(line.commandName,L"mod")){
+		if (!stdStrCmpCI(line.commandName,L"mod")){
 			if (!val)
 				return NONS_DIVISION_BY_ZERO;
 			var->mod(val);
@@ -223,7 +218,7 @@ ErrorCode NONS_ScriptInterpreter::command_inc(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *var;
 	_GETINTVARIABLE(var,0,)
-	if (!wcscmp(line.commandName,L"inc"))
+	if (!stdStrCmpCI(line.commandName,L"inc"))
 		var->inc();
 	else
 		var->dec();
@@ -235,12 +230,10 @@ ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *var;
 	_GETINTVARIABLE(var,0,)
-	wchar_t *opA=0,*opB=0;
+	std::wstring opA,opB;
 	_GETWCSVALUE(opA,1,)
 	_GETWCSVALUE(opB,2,)
-	var->set(wcscmp(opA,opB));
-	delete[] opA;
-	delete[] opB;
+	var->set(wcscmp(opA.c_str(),opB.c_str()));
 	return NONS_NO_ERROR;
 }
 
@@ -282,7 +275,7 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_ParsedLine &line){
 	_GETINTVARIABLE(day,0,)
 	time_t t=time(0);
 	tm *time=localtime(&t);
-	if (wcscmp(line.commandName,L"date2"))
+	if (stdStrCmpCI(line.commandName,L"date2"))
 		year->set(time->tm_year%100);
 	else
 		year->set(time->tm_year+1900);
@@ -306,7 +299,7 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
 	/*if (this->interpreter_mode!=DEFINE)
 		return NONS_NOT_IN_DEFINE_MODE;*/
 	long code,effect,timing=0;
-	wchar_t *rule=0;
+	std::wstring rule;
 	_GETINTVALUE(code,0,)
 	if (this->gfx_store->retrieve(code))
 		return NONS_DUPLICATE_EFFECT_DEFINITION;
@@ -317,10 +310,8 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_ParsedLine &line){
 		_GETINTVALUE(timing,2,)
 	if (line.parameters.size()>3)
 		_GETWCSVALUE(rule,3,)
-	NONS_GFX *gfx=this->gfx_store->add(code,effect,timing,rule);
+	NONS_GFX *gfx=this->gfx_store->add(code,effect,timing,&rule);
 	gfx->stored=1;
-	if (rule)
-		delete[] rule;
 	return NONS_NO_ERROR;
 }
 
@@ -343,10 +334,9 @@ ErrorCode NONS_ScriptInterpreter::command_atoi(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
 	_GETINTVARIABLE(dst,0,)
-	char *val=0;
-	_GETSTRVALUE(val,1,)
-	dst->set(atoi(val));
-	delete[] val;
+	std::wstring val;
+	_GETWCSVALUE(val,1,)
+	dst->atoi(val);
 	return NONS_NO_ERROR;
 }
 
@@ -358,34 +348,32 @@ ErrorCode NONS_ScriptInterpreter::command_getversion(NONS_ParsedLine &line){
 	if (dst->getType()==INTEGER)
 		dst->set(ONSLAUGHT_BUILD_VERSION);
 	else
-		dst->set(ONSLAUGHT_BUILD_VERSION_WSTR,0);
+		dst->set(ONSLAUGHT_BUILD_VERSION_WSTR);
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	long size,channel;
+	ulong size;
+	long channel;
 	_GETINTVALUE(channel,0,)
 	if (channel<0 || channel>7)
 		return NONS_INVALID_CHANNEL_INDEX;
-	wchar_t *name=0;
+	std::wstring name;
 	_GETWCSVALUE(name,1,)
-	NONS_tolower(name);
+	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
-	long loop=!wcscmp(line.commandName,L"dwave")?0:-1;
+	long loop=!stdStrCmpCI(line.commandName,L"dwave")?0:-1;
 	if (this->everything->audio->bufferIsLoaded(name))
-		error=this->everything->audio->playSoundAsync(name,0,0,channel,loop);
+		error=this->everything->audio->playSoundAsync(&name,0,0,channel,loop);
 	else{
-		char *buffer=(char *)this->everything->archive->getFileBuffer(name,(ulong *)&size);
-		if (!buffer){
-			delete[] name;
+		char *buffer=(char *)this->everything->archive->getFileBuffer(name,size);
+		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		}
-		error=this->everything->audio->playSoundAsync(name,buffer,size,channel,loop);
+		error=this->everything->audio->playSoundAsync(&name,buffer,size,channel,loop);
 	}
-	delete[] name;
 	return error;
 }
 
@@ -396,22 +384,19 @@ ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_ParsedLine &line){
 	_GETINTVALUE(channel,0,)
 	if (channel<0)
 		return NONS_INVALID_CHANNEL_INDEX;
-	wchar_t *name=0;
+	std::wstring name;
 	_GETWCSVALUE(name,1,)
-	NONS_tolower(name);
+	tolower(name);
 	toforwardslash(name);
-	//Unused:
-	//char *filename=copyString(name);
 	ErrorCode error=NONS_NO_ERROR;
 	if (!this->everything->audio->bufferIsLoaded(name)){
-		long size;
-		char *buffer=(char *)this->everything->archive->getFileBuffer(name,(ulong *)&size);
+		ulong size;
+		char *buffer=(char *)this->everything->archive->getFileBuffer(name,size);
 		if (!buffer)
 			error=NONS_FILE_NOT_FOUND;
 		else
 			error=this->everything->audio->loadAsyncBuffer(name,buffer,size,channel);
 	}
-	delete[] name;
 	return error;
 }
 
@@ -420,48 +405,36 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
 	_GETVARIABLE(dst,0,)
-	char *filename=0;
-	wchar_t *section=0,*key=0;
-	_GETSTRVALUE(filename,0,);
-	_GETWCSVALUE(section,1,delete[] filename;)
-	_GETWCSVALUE(key,2,delete[] filename; delete[] section;)
+	std::wstring section,
+		wfilename,
+		key;
+	_GETWCSVALUE(wfilename,0,);
+	_GETWCSVALUE(section,1,)
+	_GETWCSVALUE(key,2,)
+	std::string filename=UniToISO88591(wfilename);
 	INIcacheType::iterator i=this->INIcache.find(filename);
 	INIfile *file;
 	if (i==this->INIcache.end()){
-		long l;
-		wchar_t *temp=copyWString(filename);
-		char *buffer=(char *)this->everything->archive->getFileBuffer(temp,(ulong *)&l);
-		delete[] temp;
-		if (!buffer){
-			delete[] filename;
-			delete[] section;
-			delete[] key;
+		ulong l;
+		char *buffer=(char *)this->everything->archive->getFileBuffer(wfilename,l);
+		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		}
 		INIfile *file=new INIfile(buffer,l,CLOptions.scriptencoding);
 		this->INIcache[filename]=file;
 	}else
 		file=i->second;
 	INIsection *sec=file->getSection(section);
-	if (!section){
-		delete[] filename;
-		delete[] section;
-		delete[] key;
+	if (!sec)
 		return NONS_INI_SECTION_NOT_FOUND;
-	}
 	INIvalue *val=sec->getValue(key);
-	if (!val){
-		delete[] filename;
-		delete[] section;
-		delete[] key;
+	if (!val)
 		return NONS_INI_KEY_NOT_FOUND;
-	}
 	switch (val->getType()){
 		case 'i':
 			dst->set(val->getIntValue());
 			break;
 		case 's':
-			dst->set(val->getWStrValue(),0);
+			dst->set(val->getStrValue());
 	}
 	return NONS_NO_ERROR;
 }
@@ -469,42 +442,38 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_ParsedLine &line){
 ErrorCode NONS_ScriptInterpreter::command_bg(NONS_ParsedLine &line){
 	if (line.parameters.size()<2)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
 	NONS_ScreenSpace *scr=this->everything->screen;
 	long color=0;
-	if (!wcscmp(line.parameters[0],L"white")){
+	if (!stdStrCmpCI(line.parameters[0],L"white")){
 		scr->Background->setShade(-1,-1,-1);
 		scr->Background->Clear();
-	}else if (!wcscmp(line.parameters[0],L"black")){
+	}else if (!stdStrCmpCI(line.parameters[0],L"black")){
 		scr->Background->setShade(0,0,0);
 		scr->Background->Clear();
-	}else if (this->store->getIntValue(line.parameters[0],&color)==NONS_NO_ERROR){
+	}else if (this->store->getIntValue(line.parameters[0],color)==NONS_NO_ERROR){
 		char r=(color&0xFF0000)>>16,
 			g=(color&0xFF00)>>8,
 			b=(color&0xFF);
 		scr->Background->setShade(r,g,b);
 		scr->Background->Clear();
 	}else{
-		wchar_t *filename=0;
+		std::wstring filename;
 		_GETWCSVALUE(filename,0,);
-		NONS_tolower(filename);
 		scr->hideText();
-		scr->Background->load(filename);
+		scr->Background->load(&filename);
 	}
 	scr->leftChar->unload();
 	scr->rightChar->unload();
 	scr->centerChar->unload();
 	long number,duration;
-	wchar_t *rule=0;
 	ErrorCode ret;
 	_GETINTVALUE(number,1,)
 	if (line.parameters.size()>2){
+		std::wstring rule;
 		_GETINTVALUE(duration,2,)
 		if (line.parameters.size()>3)
 			_GETWCSVALUE(rule,3,)
-		ret=scr->BlendNoCursor(number,duration,rule);
-		delete[] rule;
+		ret=scr->BlendNoCursor(number,duration,&rule);
 	}else
 		ret=scr->BlendNoCursor(number);
 	return ret;
@@ -544,16 +513,14 @@ ErrorCode NONS_ScriptInterpreter::command_cl(NONS_ParsedLine &line){
 			return NONS_INVALID_PARAMETER;
 	}
 	long number,duration;
-	wchar_t *rule=0;
 	ErrorCode ret;
 	_GETINTVALUE(number,1,)
 	if (line.parameters.size()>2){
+		std::wstring rule;
 		_GETINTVALUE(duration,2,)
 		if (line.parameters.size()>3)
 			_GETWCSVALUE(rule,3,)
-		ret=this->everything->screen->BlendNoCursor(number,duration,rule);
-		if (rule)
-			delete[] rule;
+		ret=this->everything->screen->BlendNoCursor(number,duration,&rule);
 	}else
 		ret=this->everything->screen->BlendNoCursor(number);
 	return ret;
@@ -595,8 +562,6 @@ ErrorCode NONS_ScriptInterpreter::command_erasetextwindow(NONS_ParsedLine &line)
 ErrorCode NONS_ScriptInterpreter::command_for(NONS_ParsedLine &line){
 	if (line.parameters.size()<3)
 		return NONS_INSUFFICIENT_PARAMETERS;
-	if (*line.parameters[0]!='%')
-		return NONS_INVALID_PARAMETER;
 	NONS_VariableMember *var;
 	_GETINTVARIABLE(var,0,)
 	long from,to,step=1;
@@ -627,13 +592,14 @@ ErrorCode NONS_ScriptInterpreter::command_break(NONS_ParsedLine &line){
 		return NONS_NO_ERROR;
 	}
 	ulong pos=this->interpreter_position,
-		len=this->script->length;
-	wchar_t *buffer=this->script->script;
+		len=this->script->script.size();
+	std::wstring &buffer=this->script->script;
 	while (1){
 		for (;pos<len && iswhitespace((char)buffer[pos]);pos++);
 		if (pos>=len)
 			return NONS_NO_NEXT;
-		if (!instr(buffer+pos,"next") && (multicomparison(buffer[pos+4]," \n\r"))){
+		std::wstring temp(buffer,pos,4);
+		if (!stdStrCmpCI(temp,L"next") && (multicomparison(buffer[pos+4]," \n\r"))){
 			for (;pos<len && buffer[len]!=13 && buffer[len]!=10;len++);
 			for (;pos<len && (buffer[len]==13 || buffer[len]==10);len++);
 			this->interpreter_position=pos;
@@ -676,10 +642,6 @@ ErrorCode NONS_ScriptInterpreter::command_clickstr(NONS_ParsedLine &line){
 	if (!line.parameters.size())
 		return NONS_INSUFFICIENT_PARAMETERS;
 	_GETWCSVALUE(this->clickStr,0,)
-	if (!*this->clickStr){
-		delete[] this->clickStr;
-		this->clickStr=0;
-	}
 	return NONS_NO_ERROR;
 }
 
@@ -714,12 +676,11 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_ParsedLine &line){
 	if (this->imageButtons)
 		delete this->imageButtons;
 	this->imageButtons=0;
-	if (!wcscmp(line.parameters[0],L"clear"))
+	if (!stdStrCmpCI(line.parameters[0],L"clear"))
 		return NONS_NO_ERROR;
-	wchar_t *filename=0;
+	std::wstring filename;
 	_GETWCSVALUE(filename,0,)
-	if (!*filename){
-		delete[] filename;
+	if (!filename.size()){
 		SDL_Surface *tmpSrf=SDL_CreateRGBSurface(
 			SDL_HWSURFACE|SDL_SRCALPHA,
 			this->everything->screen->screen->virtualScreen->w,
@@ -734,11 +695,8 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_ParsedLine &line){
 	}
 	SDL_Surface *img=ImageLoader->fetchSprite(filename);
 	if (!img){
-		delete[] filename;
 		return NONS_FILE_NOT_FOUND;
 	}
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
 	this->imageButtons=new NONS_ButtonLayer(img,this->everything->screen);
 	return NONS_NO_ERROR;
 }
@@ -773,7 +731,7 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_ParsedLine &line){
 	int choice=this->imageButtons->getUserInput(this->imageButtonExpiration);
 	var->set(choice+1);
 	this->btnTimer=SDL_GetTicks();
-	if (choice>=0 && wcscmp(line.commandName,L"btnwait2")){
+	if (choice>=0 && stdStrCmpCI(line.commandName,L"btnwait2")){
 		delete this->imageButtons;
 		this->imageButtons=0;
 	}
@@ -879,10 +837,9 @@ ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_ParsedLine &line){
 		return NONS_INSUFFICIENT_PARAMETERS;
 	NONS_VariableMember *dst;
 	_GETINTVARIABLE(dst,0,)
-	wchar_t *filename=0;
+	std::wstring filename;
 	_GETWCSVALUE(filename,1,)
 	dst->set(this->everything->archive->exists(filename));
-	delete[] filename;
 	return NONS_NO_ERROR;
 }
 

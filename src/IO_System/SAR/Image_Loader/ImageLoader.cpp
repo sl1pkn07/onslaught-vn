@@ -60,9 +60,7 @@ ulong NONS_ImageLoader::getCacheSize(){
 	return res;
 }
 
-SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,optim_t *rects){
-	if (!string)
-		return 0;
+SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *rects){
 	NONS_AnimationInfo anim(string);
 	if (!anim.valid)
 		return 0;
@@ -71,9 +69,9 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,optim_t *rects)
 		NONS_Image *el=this->imageCache[a];
 		if (el){
 			if (el->animation.method==NONS_AnimationInfo::COPY_TRANS){
-				if (!wcscmp(el->animation.filename,anim.filename))
+				if (el->animation.getFilename()==anim.getFilename())
 					fileMatch=a;
-				if (anim.method==NONS_AnimationInfo::SEPARATE_MASK && !wcscmp(el->animation.filename,anim.mask_filename))
+				if (anim.method==NONS_AnimationInfo::SEPARATE_MASK && el->animation.getFilename()==anim.getMaskFilename())
 					maskMatch=a;
 			}
 			if (el->animation.method==anim.method){
@@ -103,13 +101,13 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,optim_t *rects)
 		if (primary->age)
 			primary->age=1;
 	}else{
-		long l;
-		uchar *buffer=this->archive->getFileBuffer(anim.filename,(ulong *)&l);
+		ulong l;
+		uchar *buffer=this->archive->getFileBuffer(anim.getFilename(),l);
 		if (!buffer)
 			return 0;
 		primary=new NONS_Image;
-		primary->LoadImage(anim.filename,buffer,l);
-		this->filelog.addString(anim.filename);
+		primary->LoadImage(anim.getFilename(),buffer,l);
+		this->filelog.addString(anim.getFilename());
 		delete[] buffer;
 		freePrimary=1;
 	}
@@ -120,13 +118,13 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const wchar_t *string,optim_t *rects)
 		if (secondary->age)
 			secondary->age=1;
 	}else if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
-		long l;
-		uchar *buffer=this->archive->getFileBuffer(anim.mask_filename,(ulong *)&l);
+		ulong l;
+		uchar *buffer=this->archive->getFileBuffer(anim.getMaskFilename(),l);
 		if (!buffer)
 			return 0;
 		secondary=new NONS_Image;
-		secondary->LoadImage(anim.mask_filename,buffer,l);
-		this->filelog.addString(anim.mask_filename);
+		secondary->LoadImage(anim.getMaskFilename(),buffer,l);
+		this->filelog.addString(anim.getMaskFilename());
 		delete[] buffer;
 		freeSecondary=1;
 	}
@@ -165,8 +163,13 @@ bool NONS_ImageLoader::unfetchImage(SDL_Surface *which){
 		NONS_Image *temp=this->imageCache[a];
 		if (temp && temp->image==which){
 			temp->refCount--;
-			if (!temp->refCount)
-				temp->age++;
+			if (!temp->refCount){
+				if (!this->maxCacheSize){
+					delete temp;
+					this->imageCache[a]=0;
+				}else
+					temp->age++;
+			}
 			return 1;
 		}
 	}

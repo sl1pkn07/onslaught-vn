@@ -43,76 +43,27 @@ T HEX2DEC(T x){
 	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
 }
 
-void getMembers(wchar_t *src,wchar_t **var,wchar_t **val){
-	wchar_t *temp[]={0,0};
-	long equals=-1;
-	for (wchar_t z=0;z<2;z++){
-		long start=-1,end=-1;
-		for (long a=equals+1;src[a]!=13 && src[a]!=10;a++){
-			if (iswhitespace(src[a]))
-				continue;
-			start=a;
-			break;
-		}
-		if (start==-1)
-			goto getMembers_fail;
-		for (long a=start;src[a]!=13 && src[a]!=10;a++){
-			if (iswhitespace(src[a]))
-				continue;
-			if (src[a]=='='){
-				equals=a;
-				break;
-			}
-			end=a;
-		}
-		if (end==-1)
-			goto getMembers_fail;
-		temp[z]=copyWString(src+start,end-start+1);
+void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
+	size_t equals=src.find('=');
+	if (equals==src.npos)
+		return;
+	var=src.substr(0,equals);
+	val=src.substr(equals+1);
+	trim_string(var);
+	trim_string(val);
+	if (!var.size() || !val.size()){
+		var.clear();
+		val.clear();
 	}
-	*var=temp[0];
-	*val=temp[1];
-	return;
-getMembers_fail:
-	if (temp[0])
-		delete[] temp[0];
-	if (temp[1])
-		delete[] temp[1];
 }
 
-/*std::vector<char *> *getParameterList(char *string,char delim=' '){
-	std::vector<char *> *res=new std::vector<char *>;
-	ulong len=strlen(string);
-	char tempDelim=delim;
-	for (ulong start=0;start<len;){
-		ulong end;
-		if (string[start]=='\"')//{
-			delim='\"';
-			/*start++;
-		}*//*
-		for (end=start+1;string[end] && string[end]!=delim;end++);
-		if (delim=='\"')
-			end++;
-		ulong pl=end-start;
-		char *el=new char[pl+1];
-		el[pl]=0;
-		for (ulong a=start;a<end;a++)
-			el[a-start]=string[a];
-		res->push_back(el);
-		delim=tempDelim;
-		for (start=end+1;string[start]==delim;start++);
-	}
-	return res;
-}*/
-
 //0=str, 1=dec, 2=hex, 3=bin
-char getDataType(wchar_t *string,long len=0){
-	if (!len)
-		len=wcslen(string);
-	if (*string=='\"')
+char getDataType(const std::wstring &string){
+	if (string[0]=='\"')
 		return 0;
-	if (*string=='0' && string[1]=='x')
+	if (string[0]=='0' && string[1]=='x')
 		return 2;
-	if (string[len-1]=='b')
+	if (string[string.size()-1]=='b')
 		return 3;
 	return 1;
 }
@@ -120,68 +71,55 @@ char getDataType(wchar_t *string,long len=0){
 ConfigFile::ConfigFile(){
 }
 
-ConfigFile::ConfigFile(char *filename,ENCODINGS encoding){
+ConfigFile::ConfigFile(const char *filename,ENCODINGS encoding){
 	this->init(filename,encoding);
 }
 
-ConfigFile::ConfigFile(wchar_t *filename,ENCODINGS encoding){
-	char *temp=copyString(filename,encoding);
-	this->init(temp,encoding);
-	delete[] temp;
+ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
+	this->init(UniToISO88591(filename).c_str(),encoding);
 }
 
-void ConfigFile::init(char *filename,ENCODINGS encoding){
-	long l;
-	char *buffer=(char *)readfile(filename,&l);
+void ConfigFile::init(const char *filename,ENCODINGS encoding){
+	ulong l;
+	char *buffer=(char *)readfile(filename,l);
 	if (!buffer)
 		return;
-	wchar_t *decoded;
+	std::wstring decoded;
 	switch (encoding){
 		case ISO_8859_1_ENCODING:
-			decoded=ISO88591_to_WChar(buffer,l,&l);
+			decoded=UniFromISO88591(std::string(buffer,l));
 			break;
 		case UCS2_ENCODING:
-			decoded=UCS2_to_WChar(buffer,l,&l);
+			decoded=UniFromUCS2(std::string(buffer,l),UNDEFINED_ENDIANNESS);
 			break;
 		case UTF8_ENCODING:
-			decoded=UTF8_to_WChar(buffer,l,&l);
+			decoded=UniFromUTF8(std::string(buffer,l));
 			break;
 		case SJIS_ENCODING:
-			decoded=SJIS_to_WChar(buffer,l,&l);
+			decoded=UniFromSJIS(std::string(buffer,l));
 	}
 	delete[] buffer;
-	if (decoded[l-1]!=13 && decoded[l-1]!=10){
-		wchar_t *temp=new wchar_t[l+1];
-		memcpy(temp,decoded,l*sizeof(wchar_t));
-		temp[l]=10;
-		delete[] decoded;
-		decoded=temp;
+	if (decoded[decoded.size()-1]!=10 && decoded[decoded.size()-1]!=13)
+		decoded.push_back(10);
+	for (std::wstring::iterator i=decoded.begin(),end=decoded.end();i!=end;){
+		std::wstring line=readline(i,end,&i);
+		std::wstring var,val;
+		getMembers(line,var,val);
+		if (!var.size() || !val.size())
+			continue;
+		tolower(var);
+		this->entries[var]=getParameterList(val,1);
 	}
-	for (long pos=0;pos<l;){
-		wchar_t *var,*val;
-		getMembers(decoded+pos,&var,&val);
-		NONS_tolower(var);
-		this->entries[var]=getParameterList(val);
-		for (;pos<l && (decoded[pos]!=13 && decoded[pos]!=10);pos++);
-		for (;pos<l && (decoded[pos]==13 || decoded[pos]==10);pos++);
-		delete[] val;
-	}
-	delete[] decoded;
 }
 
 ConfigFile::~ConfigFile(){
-	for (std::map<wchar_t *,std::vector<wchar_t *> *,wstrCmpCI>::iterator i=this->entries.begin();i!=this->entries.end();i++){
-		delete[] i->first;
-		for (std::vector<wchar_t *>::iterator i2=i->second->begin();i2!=i->second->end();i2++)
-			delete[] *i2;
-		delete i->second;
-	}
 }
 
-wchar_t *ConfigFile::getWString(const wchar_t *index,ulong subindex){
-	if (this->entries.find((wchar_t *)index)==this->entries.end() || getDataType((*this->entries[(wchar_t *)index])[subindex]))
-		return 0;
-	return copyWString((*this->entries[(wchar_t *)index])[subindex]+1,wcslen((*this->entries[(wchar_t *)index])[subindex]+1)-1);
+std::wstring ConfigFile::getWString(const std::wstring &index,ulong subindex){
+	config_map_t::iterator i=this->entries.find(index);
+	if (i==this->entries.end())
+		return L"";
+	return i->second[subindex];
 }
 
 template <typename T>
@@ -192,79 +130,81 @@ int atoi2(T *str){
 	return res;
 }
 
-long ConfigFile::getInt(const wchar_t *index,ulong subindex){
-	if (this->entries.find((wchar_t *)index)==this->entries.end())
+long ConfigFile::getInt(const std::wstring &index,ulong subindex){
+	config_map_t::iterator i=this->entries.find(index);
+	if (i==this->entries.end())
 		return 0;
-	wchar_t *in=(*this->entries[(wchar_t *)index])[subindex];
-	char type=getDataType(in);
-	long out=0;
-	switch (type){
+	std::wstring &str=i->second[subindex];
+	long ret=0;
+	std::wstringstream stream;
+	switch (getDataType(str)){
 		case 1:
-			return atoi2(in);
+			stream <<str;
+			stream >>ret;
+			break;
 		case 2:
-			in+=2;
-			for (;*in;in++){
-				out<<=4;
-				out+=HEX2DEC(*in);
+			for (std::wstring::iterator i=str.begin()+2;i!=str.end();i++){
+				ret<<=4;
+				ret|=HEX2DEC(*i);
 			}
-			return out;
+			break;
 		case 3:
-			for (;*in!='b';in++){
-				out<<=1;
-				out+=*in-'0';
+			for (std::wstring::iterator i=str.begin()+2;*i!='b';i++){
+				ret<<=1;
+				ret|=*i-'0';
 			}
-			return out;
+			break;
 		default:
-			return 0;
+			break;
 	}
+	return ret;
 }
 
-void ConfigFile::assignWString(const wchar_t *var,const wchar_t *val,ulong subindex){
-	ulong len=wcslen(val);
-	wchar_t *temp=new wchar_t[len+3];
-	swprintf(temp,len+3,L"\"%s\"",val);
-	if (this->exists(var))
-		if (subindex<0 || subindex>=this->entries.size())
-			this->entries[(wchar_t *)var]->push_back(temp);
+void ConfigFile::assignWString(const std::wstring &var,const std::wstring &val,ulong subindex){
+	config_map_t::iterator i=this->entries.find(var);
+	std::wstring str=UniFromISO88591("\"");
+	str+=val;
+	str.push_back('\"');
+	if (i!=this->entries.end()){
+		if (subindex<0 || subindex>=i->second.size())
+			i->second.push_back(str);
 		else
-			(*this->entries[(wchar_t *)var])[subindex]=temp;
-	else{
-		std::vector<wchar_t *> *temp2=new std::vector<wchar_t *>;
-		temp2->push_back(temp);
-		this->entries[copyWString(var)]=temp2;
+			i->second[subindex]=str;
+	}else{
+		this->entries[var]=std::vector<std::wstring>();
+		this->entries[var].push_back(str);
 	}
 }
 
-void ConfigFile::assignInt(const wchar_t *var,long val,ulong subindex){
-	wchar_t *temp=new wchar_t[50];
-	swprintf(temp,12,L"%d",val);
-	if (this->exists(var))
-		if (subindex<0 || subindex>=this->entries.size())
-			this->entries[(wchar_t *)var]->push_back(temp);
+void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
+	config_map_t::iterator i=this->entries.find(var);
+	std::wstringstream stream;
+	stream <<val;
+	if (i!=this->entries.end()){
+		if (subindex<0 || subindex>=i->second.size())
+			i->second.push_back(stream.str());
 		else
-			(*this->entries[(wchar_t *)var])[subindex]=temp;
-	else{
-		std::vector<wchar_t *> *temp3=new std::vector<wchar_t *>;
-		temp3->push_back(temp);
-		this->entries[copyWString(var)]=temp3;
+			i->second[subindex]=stream.str();
+	}else{
+		this->entries[var]=std::vector<std::wstring>();
+		this->entries[var].push_back(stream.str());
 	}
 }
 
-void ConfigFile::writeOut(char *filename,ENCODINGS encoding){
+void ConfigFile::writeOut(const char *filename,ENCODINGS encoding){
 	std::ofstream file(filename,std::ios::binary);
-	std::string *temp=this->writeOut(encoding);
-	file.write(temp->c_str(),temp->size());
-	delete temp;
+	std::string temp=this->writeOut(encoding);
+	file.write(&temp[0],temp.size());
 }
 
-std::string *ConfigFile::writeOut(ENCODINGS encoding){
+std::string ConfigFile::writeOut(ENCODINGS encoding){
 	std::wstring buffer;
-	for(std::map<wchar_t *,std::vector<wchar_t *> *,wstrCmpCI>::iterator iter=this->entries.begin();iter!=this->entries.end();iter++){
-		buffer.append(iter->first);
+	for(config_map_t::iterator i=this->entries.begin(),end=this->entries.end();i!=end;i++){
+		buffer.append(i->first);
 		buffer.push_back('=');
 		for (ulong a=0;;){
-			buffer.append((*(iter->second))[a++]);
-			if (a<iter->second->size())
+			buffer.append(i->second[a++]);
+			if (a<i->second.size())
 				buffer.push_back(' ');
 			else{
 				buffer.push_back(13);
@@ -273,28 +213,22 @@ std::string *ConfigFile::writeOut(ENCODINGS encoding){
 			}
 		}
 	}
-	long l;
-	char *string;
 	switch (encoding){
 		case ISO_8859_1_ENCODING:
-			string=WChar_to_ISO88591(buffer.c_str(),buffer.size(),&l);
+			return UniToISO88591(buffer);
 			break;
 		case UCS2_ENCODING:
-			string=WChar_to_UCS2(buffer.c_str(),buffer.size(),&l);
+			return UniToUCS2(buffer);
 			break;
 		case UTF8_ENCODING:
-			string=WChar_to_UTF8(buffer.c_str(),buffer.size(),&l);
+			return UniToUTF8(buffer);
 			break;
 		case SJIS_ENCODING:
-			string=WChar_to_SJIS(buffer.c_str(),buffer.size(),&l);
+			return UniToSJIS(buffer);
 	}
-	std::string *ret=new std::string;
-	ret->insert(ret->end(),string,string+l);
-	delete[] string;
-	return ret;
 }
 
-bool ConfigFile::exists(const wchar_t *var){
-	return ((this->entries.find((wchar_t *)var))!=(this->entries.end()));
+bool ConfigFile::exists(const std::wstring &var){
+	return this->entries.find(var)!=this->entries.end();
 }
 #endif

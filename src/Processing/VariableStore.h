@@ -32,18 +32,17 @@
 
 #include "../Common.h"
 #include "../ErrorCodes.h"
-#include "../strCmpT.h"
 #include "../IO_System/SAR/Image_Loader/FileLog.h"
 #include "Variable.h"
 #include <vector>
 #include <map>
 #include <set>
 
-#define VARIABLE_HAS_NO_DATA(x) (!(x) || !(x)->intValue->getInt() && (!(x)->wcsValue->getWcs() || !*(x)->wcsValue->getWcs()))
+#define VARIABLE_HAS_NO_DATA(x) (!(x) || !(x)->intValue->getInt() && !(x)->wcsValue->getWcs().size())
 
 extern NONS_LabelLog labellog;
 
-typedef std::map<wchar_t *,NONS_VariableMember *,wstrCmpCI> constants_map_T;
+typedef std::map<std::wstring,NONS_VariableMember *,stdStringCmpCI<wchar_t> > constants_map_T;
 typedef std::map<Sint32,NONS_Variable *> variables_map_T;
 typedef std::map<Sint32,NONS_VariableMember *> arrays_map_T;
 
@@ -89,26 +88,24 @@ struct NONS_VariableStore{
 		works with both literals and string variables.
 	*/
 	ErrorCode evaluate(
-		const wchar_t *exp,
+		const std::wstring &exp,
 		long *result,
 		bool invert_terms,
 		std::vector<long> *array_decl,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string);
+		std::wstring *string);
 	//ErrorCode resolveIndexing(const wchar_t *expression,NONS_VariableMember **res);
 	void push(Sint32 pos,NONS_Variable *var);
 	bool link(wchar_t *name,Sint32 pos);
 	void push(wchar_t *name,NONS_Variable *var);
-	NONS_VariableMember *retrieve(const wchar_t *name,ErrorCode *error);
+	NONS_VariableMember *retrieve(const std::wstring &name,ErrorCode *error);
 	NONS_Variable *retrieve(Sint32 position,ErrorCode *error);
 	//NONS_VariableMember *retrieve(const wchar_t *name,const std::vector<ulong> *index,ErrorCode *error);
 	//NONS_VariableMember *retrieve(const wchar_t *name,ulong *index,ulong size,ErrorCode *error);
-	NONS_VariableMember *getConstant(const wchar_t *name);
+	NONS_VariableMember *getConstant(const std::wstring &name);
 	NONS_VariableMember *getArray(Sint32 arrayNo);
 
-	ErrorCode getWcsValue(const wchar_t *str,wchar_t **value);
-	ErrorCode getStrValue(const wchar_t *str,char **value);
-	ErrorCode getStrValue(const char *str,char **value);
-	ErrorCode getIntValue(const wchar_t *str,long *value);
+	ErrorCode getWcsValue(const std::wstring &str,std::wstring &value);
+	ErrorCode getIntValue(const std::wstring &str,long &value);
 };
 #endif

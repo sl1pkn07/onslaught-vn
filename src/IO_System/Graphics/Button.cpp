@@ -73,7 +73,7 @@ NONS_Button::~NONS_Button(){
 		delete this->shadowLayer;
 }
 
-void NONS_Button::makeTextButton(wchar_t *text,float center,SDL_Color *on,SDL_Color *off,bool shadow,int limitX,int limitY){
+void NONS_Button::makeTextButton(const std::wstring &text,float center,SDL_Color *on,SDL_Color *off,bool shadow,int limitX,int limitY){
 	SDL_Color black={0,0,0,0};
 	NONS_FontCache *tempCache=new NONS_FontCache(this->font,&black,0);
 	this->limitX=limitX;
@@ -91,7 +91,7 @@ void NONS_Button::makeTextButton(wchar_t *text,float center,SDL_Color *on,SDL_Co
 	this->write(text,center);
 }
 
-SDL_Rect NONS_Button::GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limitX,int limitY){
+SDL_Rect NONS_Button::GetBoundingBox(const std::wstring &str,NONS_FontCache *cache,int limitX,int limitY){
 	std::vector<NONS_Glyph *> outputBuffer;
 	long lastSpace=-1;
 	int x0=0,y0=0;
@@ -102,9 +102,9 @@ SDL_Rect NONS_Button::GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limi
 	if (!cache)
 		cache=this->offLayer->fontCache;
 	SDL_Rect frame={0,0,this->limitX,this->limitY};
-	for (wchar_t *str2=str;;str2++){
-		NONS_Glyph *glyph=cache->getGlyph(*str2);
-		if (*str2=='\n'){
+	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
+		NONS_Glyph *glyph=cache->getGlyph(*i);
+		if (*i=='\n'){
 			outputBuffer.push_back(0);
 			if (x0+wordL>=frame.w && lastSpace>=0){
 				if (isbreakspace(outputBuffer[lastSpace]->getcodePoint()))
@@ -121,7 +121,7 @@ SDL_Rect NONS_Button::GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limi
 			x0=0;
 			y0+=lineSkip;
 			wordL=0;
-		}else if (isbreakspace(*str2)){
+		}else if (isbreakspace(*i)){
 			if (x0+wordL>=frame.w && lastSpace>=0){
 				if (isbreakspace(outputBuffer[lastSpace]->getcodePoint()))
 					outputBuffer[lastSpace]=0;
@@ -136,15 +136,13 @@ SDL_Rect NONS_Button::GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limi
 			lastSpace=outputBuffer.size();
 			wordL=glyph->getadvance();
 			outputBuffer.push_back(glyph);
-		}else if (*str2){
+		}else if (*i){
 			wordL+=glyph->getadvance();
 			outputBuffer.push_back(glyph);
-		}else{
-			if (x0+wordL>=frame.w && lastSpace>=0)
-				outputBuffer[lastSpace]=0;
-			break;
 		}
 	}
+	if (x0+wordL>=frame.w && lastSpace>=0)
+		outputBuffer[lastSpace]=0;
 	x0=0;
 	y0=0;
 	for (ulong a=0;a<outputBuffer.size();a++){
@@ -176,7 +174,7 @@ SDL_Rect NONS_Button::GetBoundingBox(wchar_t *str,NONS_FontCache *cache,int limi
 	return res;
 }
 
-void NONS_Button::write(wchar_t *str,float center){
+void NONS_Button::write(const std::wstring &str,float center){
 	std::vector<NONS_Glyph *> outputBuffer;
 	std::vector<NONS_Glyph *> outputBuffer2;
 	std::vector<NONS_Glyph *> outputBuffer3;
@@ -186,15 +184,15 @@ void NONS_Button::write(wchar_t *str,float center){
 	SDL_Rect frame={0,-this->box.y,this->box.w,this->box.h};
 	int lineSkip=this->offLayer->fontCache->font->lineSkip;
 	SDL_Rect screenFrame={0,0,this->limitX,this->limitY};
-	for (wchar_t *str2=str;;str2++){
-		NONS_Glyph *glyph=this->offLayer->fontCache->getGlyph(*str2);
-		NONS_Glyph *glyph2=this->onLayer->fontCache->getGlyph(*str2);
+	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
+		NONS_Glyph *glyph=this->offLayer->fontCache->getGlyph(*i);
+		NONS_Glyph *glyph2=this->onLayer->fontCache->getGlyph(*i);
 		NONS_Glyph *glyph3=0;
 		if (this->shadowLayer)
-			glyph3=this->shadowLayer->fontCache->getGlyph(*str2);
+			glyph3=this->shadowLayer->fontCache->getGlyph(*i);
 		else
 			glyph3=0;
-		if (*str2=='\n'){
+		if (*i=='\n'){
 			outputBuffer.push_back(0);
 			outputBuffer2.push_back(0);
 			outputBuffer3.push_back(0);
@@ -207,9 +205,6 @@ void NONS_Button::write(wchar_t *str,float center){
 					outputBuffer.insert(outputBuffer.begin()+lastSpace+1,0);
 					outputBuffer2.insert(outputBuffer2.begin()+lastSpace+1,0);
 					outputBuffer3.insert(outputBuffer3.begin()+lastSpace+1,0);
-					/*insertAfter<NONS_Glyph *>(0,&outputBuffer,lastSpace);
-					insertAfter<NONS_Glyph *>(0,&outputBuffer2,lastSpace);
-					insertAfter<NONS_Glyph *>(0,&outputBuffer3,lastSpace);*/
 				}
 				lastSpace=-1;
 				y0+=lineSkip;
@@ -218,7 +213,7 @@ void NONS_Button::write(wchar_t *str,float center){
 			x0=0;
 			y0+=lineSkip;
 			wordL=0;
-		}else if (isbreakspace(*str2)){
+		}else if (isbreakspace(*i)){
 			if (x0+wordL>=screenFrame.w && lastSpace>=0){
 				if (isbreakspace(outputBuffer[lastSpace]->getcodePoint())){
 					outputBuffer[lastSpace]=0;
@@ -228,9 +223,6 @@ void NONS_Button::write(wchar_t *str,float center){
 					outputBuffer.insert(outputBuffer.begin()+lastSpace+1,0);
 					outputBuffer2.insert(outputBuffer2.begin()+lastSpace+1,0);
 					outputBuffer3.insert(outputBuffer3.begin()+lastSpace+1,0);
-					/*insertAfter<NONS_Glyph *>(0,&outputBuffer,lastSpace);
-					insertAfter<NONS_Glyph *>(0,&outputBuffer2,lastSpace);
-					insertAfter<NONS_Glyph *>(0,&outputBuffer3,lastSpace);*/
 				}
 				lastSpace=-1;
 				x0=0;
@@ -242,19 +234,17 @@ void NONS_Button::write(wchar_t *str,float center){
 			outputBuffer.push_back(glyph);
 			outputBuffer2.push_back(glyph2);
 			outputBuffer3.push_back(glyph3);
-		}else if (*str2){
+		}else if (*i){
 			wordL+=glyph->getadvance();
 			outputBuffer.push_back(glyph);
 			outputBuffer2.push_back(glyph2);
 			outputBuffer3.push_back(glyph3);
-		}else{
-			if (x0+wordL>=screenFrame.w && lastSpace>=0){
-				outputBuffer[lastSpace]=0;
-				outputBuffer2[lastSpace]=0;
-				outputBuffer3[lastSpace]=0;
-			}
-			break;
 		}
+	}
+	if (x0+wordL>=screenFrame.w && lastSpace>=0){
+		outputBuffer[lastSpace]=0;
+		outputBuffer2[lastSpace]=0;
+		outputBuffer3[lastSpace]=0;
 	}
 	x0=this->setLineStart(&outputBuffer,0,&screenFrame,center);
 	y0=0;

@@ -45,7 +45,7 @@ struct NONS_Lookback{
 	SDL_Surface *sDownoff;
 	NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b);
 	~NONS_Lookback();
-	bool setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wchar_t *downoff);
+	bool setUpButtons(const std::wstring &upon,const std::wstring &upoff,const std::wstring &downon,const std::wstring &downoff);
 	void display(NONS_VirtualScreen *dst);
 	void reset(NONS_StandardOutput *output);
 private:

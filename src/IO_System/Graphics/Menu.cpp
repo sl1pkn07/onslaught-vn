@@ -54,21 +54,12 @@ NONS_Menu::NONS_Menu(void *interpreter){
 	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
 	this->shade=new NONS_Layer(&(scr->screen->virtualScreen->clip_rect),0xCCCCCCCC|amask);
 	this->slots=10;
-	this->stringSave=0;
-	this->stringLoad=0;
-	this->stringSlot=0;
 	this->audio=((NONS_ScriptInterpreter *)interpreter)->everything->audio;
 	this->archive=((NONS_ScriptInterpreter *)interpreter)->everything->archive;
-	this->voiceCancel=0;
-	this->voiceClick=0;
-	this->voiceEntry=0;
-	this->voiceMO=0;
-	this->voiceNo=0;
-	this->voiceYes=0;
 	this->rightClickMode=1;
 }
 
-NONS_Menu::NONS_Menu(std::vector<wchar_t *> *options,void *interpreter){
+NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,void *interpreter){
 	this->interpreter=interpreter;
 	for (ulong a=0;a<options->size();a++){
 		this->strings.push_back((*options)[a++]);
@@ -91,32 +82,26 @@ NONS_Menu::NONS_Menu(std::vector<wchar_t *> *options,void *interpreter){
 	this->audio=((NONS_ScriptInterpreter *)interpreter)->everything->audio;
 	this->archive=((NONS_ScriptInterpreter *)interpreter)->everything->archive;
 	this->buttons->makeTextButtons(
-		&(this->strings),
+		this->strings,
 		&(this->on),
 		&(this->off),
 		this->shadow,
-		this->voiceEntry,this->voiceMO,this->voiceClick,this->audio,this->archive,
+		&this->voiceEntry,
+		&this->voiceMO,
+		&this->voiceClick,
+		this->audio,
+		this->archive,
 		w,
 		h);
 	this->x=(w-this->buttons->boundingBox.w)/2;
 	this->y=(h-this->buttons->boundingBox.h)/2;
 	this->shade=new NONS_Layer(&(scr->screen->virtualScreen->clip_rect),0xCCCCCCCC|amask);
-	this->voiceCancel=0;
-	this->voiceClick=0;
-	this->voiceEntry=0;
-	this->voiceMO=0;
-	this->voiceNo=0;
-	this->voiceYes=0;
 	this->rightClickMode=1;
 }
 
 NONS_Menu::~NONS_Menu(){
 	if (this->buttons)
 		delete this->buttons;
-	for (ulong a=0;a<this->strings.size();a++){
-		delete[] this->strings[a];
-		delete[] this->commands[a];
-	}
 	if (this->font)
 		delete this->font;
 	delete this->shade;
@@ -129,13 +114,13 @@ int NONS_Menu::callMenu(){
 		((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->screen->virtualScreen,0);
 	int choice=this->buttons->getUserInput(this->x,this->y);
 	if (choice<0){
-		if (this->voiceCancel){
+		if (this->voiceCancel.size()){
 			if (this->audio->bufferIsLoaded(this->voiceCancel))
-				this->audio->playSoundAsync(this->voiceCancel,0,0,7,0);
+				this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
 			else{
-				long l;
-				char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,(ulong *)&l);
-				if (this->audio->playSoundAsync(this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
+				ulong l;
+				char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
+				if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
 					delete[] buffer;
 			}
 		}
@@ -159,9 +144,9 @@ void NONS_Menu::reset(){
 	int w=scr->screen->virtualScreen->w,
 		h=scr->screen->virtualScreen->h;
 	this->buttons->makeTextButtons(
-		&(this->strings),
-		&(this->on),
-		&(this->off),
+		this->strings,
+		&this->on,
+		&this->off,
 		this->shadow,
 		0,0,0,0,0,
 		w,h);
@@ -169,13 +154,9 @@ void NONS_Menu::reset(){
 	this->y=(h-this->buttons->boundingBox.h)/2;
 }
 
-void NONS_Menu::resetStrings(std::vector<wchar_t *> *options){
+void NONS_Menu::resetStrings(std::vector<std::wstring> *options){
 	if (this->buttons)
 		delete this->buttons;
-	for (ulong a=0;a<this->strings.size();a++){
-		delete[] this->strings[a];
-		delete[] this->commands[a];
-	}
 	this->strings.clear();
 	this->commands.clear();
 	for (ulong a=0;a<options->size();a++){
@@ -187,9 +168,9 @@ void NONS_Menu::resetStrings(std::vector<wchar_t *> *options){
 	int w=scr->screen->virtualScreen->w,
 		h=scr->screen->virtualScreen->h;
 	this->buttons->makeTextButtons(
-		&(this->strings),
-		&(this->on),
-		&(this->off),
+		this->strings,
+		&this->on,
+		&this->off,
 		this->shadow,
 		0,0,0,0,0,
 		w,h);
@@ -197,7 +178,7 @@ void NONS_Menu::resetStrings(std::vector<wchar_t *> *options){
 	this->y=(h-this->buttons->boundingBox.h)/2;
 }
 
-int NONS_Menu::write(wchar_t *txt,int y){
+int NONS_Menu::write(const std::wstring &txt,int y){
 	NONS_FontCache *tempCacheForeground=new NONS_FontCache(this->font?this->font:this->defaultFont,&(this->on),0),
 		*tempCacheShadow=0;
 	if (this->shadow){
@@ -206,13 +187,13 @@ int NONS_Menu::write(wchar_t *txt,int y){
 	}
 	std::vector<NONS_Glyph *> outputBuffer;
 	std::vector<NONS_Glyph *> outputBuffer2;
-	long width=0;
-	for (wchar_t *str=txt;*str;str++){
-		NONS_Glyph *glyph=tempCacheForeground->getGlyph(*str);
+	ulong width=0;
+	for (std::wstring::const_iterator i=txt.begin(),end=txt.end();i!=end;i++){
+		NONS_Glyph *glyph=tempCacheForeground->getGlyph(*i);
 		width+=glyph->getadvance();
 		outputBuffer.push_back(glyph);
 		if (tempCacheShadow)
-			outputBuffer2.push_back(tempCacheShadow->getGlyph(*str));
+			outputBuffer2.push_back(tempCacheShadow->getGlyph(*i));
 	}
 	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
 	int w=scr->screen->virtualScreen->w;
@@ -232,120 +213,130 @@ int NONS_Menu::write(wchar_t *txt,int y){
 }
 
 int NONS_Menu::save(){
-	int y0=this->write(this->stringSave?this->stringSave:((wchar_t *)L"~~ Save File ~~"),20);
+	int y0;
+	if (this->stringSave.size())
+		y0=this->write(this->stringSave,20);
+	else
+		y0=this->write(L"~~ Save File ~~",20);
 	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
 	if (!this->files){
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
 	}
-	std::vector<tm *> *files=existing_files(save_directory);
+	std::vector<tm *> files=existing_files(save_directory);
 	int choice;
 	while (1){
-		std::vector<wchar_t *> strings;
+		std::vector<std::wstring> strings;
+		wchar_t temp[100];
 		for (ulong a=0;a<slots;a++){
-			wchar_t *txt=new wchar_t[31];
-			tm *t=(*files)[a];
+			tm *t=files[a];
 			if (t)
-				swprintf(txt,31,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
+				swprintf(temp,100,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
 			else
-				swprintf(txt,31,L" %2d    -------------------",a+1);
-			wchar_t *pusher=copyWString(this->stringSlot?this->stringSlot:((wchar_t *)L"Slot"));
-			addStringsInplace(&pusher,txt);
-			delete[] txt;
+				swprintf(temp,100,L" %2d    -------------------",a+1);
+			std::wstring pusher;
+			if (this->stringSlot.size())
+				pusher=this->stringSlot;
+			else
+				pusher=L"Slot";
+			pusher.append(temp);
 			strings.push_back(pusher);
 		}
 		int w=scr->screen->virtualScreen->w,
 			h=scr->screen->virtualScreen->h;
-		this->files->makeTextButtons(&strings,
-			&(this->on),
-			&(this->off),
+		this->files->makeTextButtons(
+			strings,
+			&this->on,
+			&this->off,
 			this->shadow,
-			this->voiceEntry,
-			this->voiceMO,
-			this->voiceClick,
+			&this->voiceEntry,
+			&this->voiceMO,
+			&this->voiceClick,
 			this->audio,
 			this->archive,w,h);
-		for (ulong a=0;a<strings.size();a++)
-			delete[] strings[a];
 		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
 		if (choice==-2){
 			this->slots--;
 			continue;
 		}
 		if (choice<0){
-			if (this->voiceCancel){
+			if (this->voiceCancel.size()){
 				if (this->audio->bufferIsLoaded(this->voiceCancel))
-					this->audio->playSoundAsync(this->voiceCancel,0,0,7,0);
+					this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
 				else{
-					long l;
-					char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,(ulong *)&l);
-					if (this->audio->playSoundAsync(this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
+					ulong l;
+					char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
+					if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
 						delete[] buffer;
 				}
 			}
 		}
 		break;
 	}
-	for (ulong a=0;a<files->size();a++)
-		delete (*files)[a];
-	delete files;
+	for (ulong a=0;a<files.size();a++)
+		delete files[a];
 	return choice+1;
 }
 
 int NONS_Menu::load(){
-	int y0=this->write(this->stringLoad?this->stringLoad:((wchar_t *)L"~~ Load File ~~"),20);
+	int y0;
+	if (this->stringLoad.size())
+		y0=this->write(this->stringLoad,20);
+	else
+		y0=this->write(L"~~ Load File ~~",20);
 	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
 	if (!this->files)
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
-	std::vector<tm *> *files=existing_files(save_directory);
+	std::vector<tm *> files=existing_files(save_directory);
 	int choice;
 	while (1){
-		std::vector<wchar_t *> strings;
-		wchar_t *txt=new wchar_t[31];
+		std::vector<std::wstring> strings;
+		wchar_t txt[100];
 		for (ulong a=0;a<slots;a++){
-			tm *t=(*files)[a];
+			tm *t=files[a];
 			if (t)
 				swprintf(txt,31,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
 			else
 				swprintf(txt,31,L" %2d    -------------------",a+1);
-			wchar_t *pusher=copyWString(this->stringSlot?this->stringSlot:((wchar_t *)L"Slot"));
-			addStringsInplace(&pusher,txt);
+			std::wstring pusher;
+			if (this->stringSlot.size())
+				pusher=this->stringSlot;
+			else
+				pusher=L"Slot";
+			pusher.append(txt);
 			strings.push_back(pusher);
 		}
-		delete[] txt;
 		int w=scr->screen->virtualScreen->w,
 			h=scr->screen->virtualScreen->h;
-		this->files->makeTextButtons(&strings,
-			&(this->on),
-			&(this->off),
+		this->files->makeTextButtons(
+			strings,
+			&this->on,
+			&this->off,
 			this->shadow,
-			this->voiceEntry,
-			this->voiceMO,
-			this->voiceClick,
+			&this->voiceEntry,
+			&this->voiceMO,
+			&this->voiceClick,
 			this->audio,
 			this->archive,
 			w,h);
-		for (ulong a=0;a<strings.size();a++)
-			delete[] strings[a];
 		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
 		if (choice==-2){
 			this->slots--;
 			continue;
 		}
-		if (choice<0 && this->voiceCancel){
+		if (choice<0 && this->voiceCancel.size()){
 			if (this->audio->bufferIsLoaded(this->voiceCancel))
-				this->audio->playSoundAsync(this->voiceCancel,0,0,7,0);
+				this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
 			else{
-				long l;
-				char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,(ulong *)&l);
-				if (this->audio->playSoundAsync(this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
+				ulong l;
+				char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
+				if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
 					delete[] buffer;
 			}
 		}
 		break;
 	}
-	for (ulong a=0;a<files->size();a++)
-		delete (*files)[a];
-	delete files;
+	for (ulong a=0;a<files.size();a++)
+		delete files[a];
 	return choice+1;
 }
 
@@ -370,23 +361,23 @@ int NONS_Menu::skip(){
 	return 0;
 }
 
-int NONS_Menu::call(wchar_t *string){
+int NONS_Menu::call(const std::wstring &string){
 	int ret=0;
-	if (!wcscmp(string,L"reset"))
+	if (string==L"reset")
 		ret=-1;
-	if (!wcscmp(string,L"save")){
+	if (string==L"save"){
 		int save=this->save();
 		if (save>0){
 			((NONS_ScriptInterpreter *)this->interpreter)->save(save);
 			//ret=-1;
 		}
-	}else if (!wcscmp(string,L"load")){
+	}else if (string==L"load"){
 		int load=this->load();
 		if (load>0 && ((NONS_ScriptInterpreter *)this->interpreter)->load(load))
 			ret=-1;
-	}else if (!wcscmp(string,L"windowerase")){
+	}else if (string==L"windowerase"){
 		this->windowerase();
-	}else if (!wcscmp(string,L"lookback")){
+	}else if (string==L"lookback"){
 		NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)this->interpreter)->everything->screen;
 		scr->BlendNoText(0);
 		manualBlit(scr->screenBuffer,0,scr->screen->virtualScreen,0);
@@ -396,7 +387,7 @@ int NONS_Menu::call(wchar_t *string){
 			scr->screen->virtualScreen,
 			0);
 		scr->lookback->display(scr->screen);
-	}else if (!wcscmp(string,L"skip")){
+	}else if (string==L"skip"){
 		this->skip();
 	}else{
 		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string);

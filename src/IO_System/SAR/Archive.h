@@ -38,7 +38,7 @@
 struct NONS_Archive{
 	NONS_TreeNode *root;
 	std::ifstream *file;
-	char *path;
+	std::string path;
 	ulong archive_type;
 	enum{
 		UNRECOGNIZED=0,
@@ -57,8 +57,8 @@ struct NONS_Archive{
 	bool readArchive();
 	bool readSAR();
 	bool readNSA();
-	uchar *getFileBuffer(NONS_TreeNode *node,ulong *buffersize);
-	uchar *getFileBuffer(const wchar_t *filepath,ulong *buffersize);
-	bool exists(const wchar_t *filepath);
+	uchar *getFileBuffer(NONS_TreeNode *node,ulong &buffersize);
+	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
+	bool exists(const std::wstring &filepath);
 };
 #endif

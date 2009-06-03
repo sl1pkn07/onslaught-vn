@@ -158,6 +158,7 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 	SDL_Rect refresh_area={minx,miny,maxx-minx,maxy-miny};
 	if (!(refresh_area.w*refresh_area.h))
 		return;
+	SDL_FillRect(this->screenBuffer,&refresh_area,amask);
 	BLEND_OPTIM(this->Background,manualBlit);
 	for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--){
 		NONS_Layer *p=this->layerStack[a];
@@ -203,7 +204,7 @@ ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScreenSpace::BlendAll(ulong effect,long timing,wchar_t *rule){
+ErrorCode NONS_ScreenSpace::BlendAll(ulong effect,long timing,const std::wstring *rule){
 	this->BlendAll(0);
 	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
 }
@@ -228,7 +229,7 @@ ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect,long timing,wchar_t *rule){
+ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect,long timing,const std::wstring *rule){
 	this->BlendNoCursor(0);
 	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
 }
@@ -285,14 +286,15 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect,long timing,wchar_t *rule){
+ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect,long timing,const std::wstring *rule){
 	this->BlendNoText(0);
 	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
 }
 
 ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect){
 	SDL_FillRect(this->screenBuffer,0,amask);
-	manualBlit(this->Background->data,&this->Background->clip_rect,this->screenBuffer,&this->Background->position);
+	if (!!this->Background && !!this->Background->data)
+		manualBlit(this->Background->data,&this->Background->clip_rect,this->screenBuffer,&this->Background->position);
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
 		if (!e)
@@ -302,7 +304,7 @@ ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect,long timing,wchar_t *rule){
+ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect,long timing,const std::wstring *rule){
 	this->BlendOnlyBG(0);
 	return NONS_GFX::callEffect(effect,timing,rule,this->screenBuffer,0,this->screen);
 }
@@ -343,15 +345,15 @@ void NONS_ScreenSpace::resetParameters(SDL_Rect *window,SDL_Rect *frame,NONS_Fon
 	this->lookback->reset(this->output);
 }
 
-ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const wchar_t *string,long x,long y,uchar alpha,bool visibility){
-	if (!string || !*string)
+ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const std::wstring &string,long x,long y,uchar alpha,bool visibility){
+	if (!string[0])
 		return NONS_EMPTY_STRING;
 	if (n>this->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (!this->layerStack[n])
-		this->layerStack[n]=new NONS_Layer(string);
+		this->layerStack[n]=new NONS_Layer(&string);
 	else
-		this->layerStack[n]->load(string);
+		this->layerStack[n]->load(&string);
 	if (!this->layerStack[n]->data)
 		return NONS_UNDEFINED_ERROR;
 	this->layerStack[n]->position.x=x;
@@ -362,13 +364,16 @@ ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const wchar_t *string,long x,long
 }
 
 void NONS_ScreenSpace::clear(){
-	this->Background->unload();
-	this->leftChar->unload();
-	this->rightChar->unload();
-	this->centerChar->unload();
-	for (ulong a=0;a<this->layerStack.size();a++)
-		if (this->layerStack[a])
-			this->layerStack[a]->unload();
+#define CHECK_AND_DELETE(p) (p)->unload();  //if (!!(p)){ /*delete (p); (p)=0;*/}
+	CHECK_AND_DELETE(this->Background);
+	CHECK_AND_DELETE(this->leftChar);
+	CHECK_AND_DELETE(this->rightChar);
+	CHECK_AND_DELETE(this->centerChar);
+	for (ulong a=0;a<this->layerStack.size();a++){
+		if (this->layerStack[a]){
+			CHECK_AND_DELETE(this->layerStack[a]);
+		}
+	}
 	this->clearText();
 	this->BlendNoCursor(1);
 }

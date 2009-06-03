@@ -43,7 +43,7 @@ void freeVM(NONS_VariableMember *p);
 %parse-param {bool invert_terms}
 %parse-param {std::vector<long> *array_decl}
 %parse-param {NONS_VariableMember **retrievedVar}
-%parse-param {wchar_t **string}
+%parse-param {std::wstring *string}
 %lex-param {std::wstringstream *stream}
 %lex-param {NONS_VariableStore *store}
 %lex-param {NONS_VariableMember **retrievedVar}
@@ -68,7 +68,7 @@ void freeVM(NONS_VariableMember *p);
 		bool invert_terms,
 		std::vector<long> *array_decl,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string
+		std::wstring *string
 	);
 	int yylex(YYSTYPE *yylval,
 		std::wstringstream *stream,
@@ -83,7 +83,7 @@ void freeVM(NONS_VariableMember *p);
 		bool,
 		std::vector<long> *,
 		NONS_VariableMember **,
-		wchar_t **string,
+		std::wstring *string,
 		char const *
 	);
 	long atol(std::wstring &str);
@@ -118,17 +118,13 @@ eval:
 		if (!!retrievedVar && !$1->temporary)
 			*retrievedVar=$1;
 		if (!!string){
-			if (!!*string)
-				delete[] *string;
-			*string=$1->getWcsCopy();
+			*string=$1->getWcs();
 		}
 		freeVM($1);
 	}|
 	string {
 		if (!!string){
-			if (!!*string)
-				delete[] *string;
-			*string=$1->getWcsCopy();
+			*string=$1->getWcs();
 			freeVM($1);
 		}else if (!!retrievedVar && !$1->temporary)
 			*retrievedVar=$1;
@@ -206,7 +202,7 @@ string:
 		$$=$1;
 	}|
 	string '+' string {
-		$$=new NONS_VariableMember(addStrings($1->getWcsCopy(),$3->getWcsCopy()),1);
+		$$=new NONS_VariableMember($1->getWcs()+$3->getWcs());
 		freeVM($1);
 		freeVM($3);
 	};
@@ -552,7 +548,7 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 			handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
 		else
 			stream->get();
-		yylval->obj=new NONS_VariableMember(temp.c_str(),0);
+		yylval->obj=new NONS_VariableMember(temp);
 		yylval->obj->temporary=1;
 		return STRING;
 	}
@@ -571,7 +567,7 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 				backup.push_back(stream->get());
 			}
 			if (((NONS_ScriptInterpreter *)gScriptInterpreter)->script->offsetFromBlock(identifier.c_str())>=0){
-				yylval->obj=new NONS_VariableMember(identifier.c_str(),0);
+				yylval->obj=new NONS_VariableMember(identifier);
 				yylval->obj->temporary=1;
 				return STRING;
 			}
@@ -660,10 +656,8 @@ void yyerror(
 		bool,
 		std::vector<long> *,
 		NONS_VariableMember **retrievedVar,
-		wchar_t **string,
+		std::wstring *string,
 		char const *s){
-	wchar_t *temp=copyWString(s);
 	if (!retrievedVar)
-		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,temp);
-	delete[] temp;
+		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,UniFromISO88591(s));
 }

@@ -40,9 +40,9 @@ class NONS_Music{
 	long buffersize;
 	long playingTimes;
 public:
-	char *filename;
-	NONS_Music(const char *filename);
-	NONS_Music(const char *filename,char *databuffer,long size);
+	std::string filename;
+	NONS_Music(const std::string &filename);
+	NONS_Music(const std::string &filename,char *databuffer,long size);
 	~NONS_Music();
 	void play(long times=-1);
 	void stop();

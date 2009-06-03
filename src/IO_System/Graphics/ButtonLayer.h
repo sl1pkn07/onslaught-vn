@@ -41,9 +41,9 @@ struct NONS_ButtonLayer{
 	std::vector<NONS_Button *> buttons;
 	NONS_Font *font;
 	NONS_ScreenSpace *screen;
-	wchar_t *voiceEntry;
-	wchar_t *voiceMouseOver;
-	wchar_t *voiceClick;
+	std::wstring voiceEntry;
+	std::wstring voiceMouseOver;
+	std::wstring voiceClick;
 	NONS_Audio *audio;
 	NONS_GeneralArchive *archive;
 	SDL_Rect boundingBox;
@@ -53,13 +53,13 @@ struct NONS_ButtonLayer{
 	NONS_ButtonLayer(SDL_Surface *img,NONS_ScreenSpace *screen);
 	NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,void *menu);
 	~NONS_ButtonLayer();
-	void makeTextButtons(std::vector<wchar_t *> *arr,
+	void makeTextButtons(const std::vector<std::wstring> &arr,
 		SDL_Color *on,
 		SDL_Color *off,
 		bool shadow,
-		wchar_t *entry,
-		wchar_t *mouseover,
-		wchar_t *click,
+		std::wstring *entry,
+		std::wstring *mouseover,
+		std::wstring *click,
 		NONS_Audio *audio,
 		NONS_GeneralArchive *archive,
 		int width,

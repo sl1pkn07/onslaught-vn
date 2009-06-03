@@ -40,7 +40,7 @@ struct NONS_CachedSound{
 	Mix_Chunk *chunk;
 	long references;
 	Uint32 lastused;
-	char *name;
+	std::wstring name;
 	NONS_CachedSound(char *databuffer,long size);
 	~NONS_CachedSound();
 };

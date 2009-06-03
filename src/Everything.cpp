@@ -78,17 +78,15 @@ ErrorCode NONS_Everything::init_screen(){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Everything::init_audio(const char *musicDir){
+ErrorCode NONS_Everything::init_audio(const std::string &musicDir){
 	this->audio=new NONS_Audio(musicDir);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Everything::init_script(const char *filename,ulong encoding,ulong encryption){
-	if (!filename)
-		return NONS_INTERNAL_INVALID_PARAMETER;
+ErrorCode NONS_Everything::init_script(const std::string &filename,ulong encoding,ulong encryption){
 	this->script=new NONS_Script();
 	{
-		ErrorCode error_code=this->script->init(filename,this->archive,encoding,encryption);
+		ErrorCode error_code=this->script->init(filename.c_str(),this->archive,encoding,encryption);
 		if (error_code!=NONS_NO_ERROR){
 			delete this->script;
 			this->script=0;

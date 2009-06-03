@@ -31,6 +31,7 @@
 #define NONS_STDOUT_CPP
 
 #include "StdOut.h"
+#include "../UTF.h"
 #include <ctime>
 
 NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
@@ -43,9 +44,12 @@ NONS_RedirectedOutput::~NONS_RedirectedOutput(){
 }
 
 template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a){
-	char *temp=WChar_to_UTF8(a);
-	*this <<temp;
-	delete[] temp;
+	*this <<std::wstring(a);
+	return *this;
+}
+
+template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <std::wstring>(const std::wstring &a){
+	*this <<UniToUTF8(a);
 	return *this;
 }
 

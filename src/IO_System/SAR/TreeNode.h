@@ -31,17 +31,32 @@
 #define NONS_TREENODE_H
 
 #include "../../Common.h"
-#include "ArchivedFile.h"
 #include <vector>
 
 struct NONS_TreeNode{
-	NONS_ArchivedFile data;
-	std::vector<NONS_TreeNode *> *branches;
-	NONS_TreeNode(const wchar_t *name);
+	struct NONS_ArchivedFile{
+		std::wstring name;
+		ulong compression_type;
+		enum{
+			NO_COMPRESSION=0,
+			SPB_COMPRESSION=1,
+			LZSS_COMPRESSION=2,
+			NBZ_COMPRESSION=4
+		};
+		ulong offset;
+		ulong length;
+		long original_length;
+		NONS_ArchivedFile()
+			:offset(0),
+			length(0),
+			original_length(0),
+			compression_type(NO_COMPRESSION){}
+	} data;
+	std::vector<NONS_TreeNode *> branches;
+	NONS_TreeNode(const std::wstring &name);
 	~NONS_TreeNode();
-	NONS_TreeNode *getBranch(const wchar_t *name,bool createIfMissing);
-	void makeDirectory();
+	NONS_TreeNode *getBranch(const std::wstring &name,bool createIfMissing);
 private:
-	NONS_TreeNode *newBranch(const wchar_t *name);
+	NONS_TreeNode *newBranch(const std::wstring &name);
 };
 #endif

@@ -130,50 +130,6 @@ void addStringsInplace(char **str1,const char *str2){
 	addStringsInplace_template<char,char>(str1,str2);
 }
 
-std::vector<char *> *getParameterList(const char *string,char delim){
-	std::vector<char *> *res=new std::vector<char *>;
-	ulong len=strlen(string);
-	char tempDelim=delim;
-	for (ulong start=0;start<len;){
-		ulong end;
-		if (string[start]=='\"')
-			delim='\"';
-		for (end=start+1;string[end] && string[end]!=delim;end++);
-		if (delim=='\"')
-			end++;
-		ulong pl=end-start;
-		/*char *el=new char[pl+1];
-		el[pl]=0;
-		for (ulong a=start;a<end;a++)
-			el[a-start]=string[a];*/
-		char *el=copyString(string+start,pl);
-		res->push_back(el);
-		delim=tempDelim;
-		for (start=end+1;start<len && string[start]==delim;start++);
-	}
-	return res;
-}
-
-std::vector<wchar_t *> *getParameterList(const wchar_t *string,wchar_t delim){
-	std::vector<wchar_t *> *res=new std::vector<wchar_t *>;
-	ulong len=wcslen(string);
-	wchar_t tempDelim=delim;
-	for (ulong start=0;start<len;){
-		ulong end;
-		if (string[start]=='\"')
-			delim='\"';
-		for (end=start+1;string[end] && string[end]!=delim;end++);
-		if (delim=='\"')
-			end++;
-		ulong pl=end-start;
-		wchar_t *el=copyWString(string+start,pl);
-		res->push_back(el);
-		delim=tempDelim;
-		for (start=end+1;start<len && string[start]==delim;start++);
-	}
-	return res;
-}
-
 bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset){
 	bool res=(arr[*byteoffset]>>(7-*bitoffset))&1;
 	(*bitoffset)++;
@@ -896,121 +852,88 @@ bool multicomparison(wchar_t character,const wchar_t *characters){
 	return multicomparison_template<wchar_t,wchar_t>(character,characters);
 }
 
-template<typename T>
-void toforwardslash_template(T *param){
-	for (;*param;param++)
-		if (*param=='\\')
-			*param='/';
+Uint8 readByte(char *buffer,ulong &offset){
+	return buffer[offset++];
 }
 
-void toforwardslash(wchar_t *param){
-	toforwardslash_template(param);
-}
-
-void toforwardslash(char *param){
-	toforwardslash_template(param);
-}
-
-bool isanumber(const char *a){
-	for (;*a;a++)
-		if (!isdigit(*a))
-			return 0;
-	return 1;
-}
-
-bool isanumber(const wchar_t *a){
-	for (;*a;a++)
-		if (!isdigit(*a))
-			return 0;
-	return 1;
-}
-
-Uint8 readByte(char *buffer,long *offset){
-	Uint8 r=buffer[*offset];
-	(*offset)++;
-	return r;
-}
-
-Sint16 readSignedWord(char *buffer,long *offset){
+Sint16 readSignedWord(char *buffer,ulong &offset){
 	Sint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
-		r|=(uchar)(buffer[*offset+a]);
+		r|=(uchar)buffer[offset+a];
 	}
-	(*offset)+=2;
+	offset+=2;
 	return r;
 }
 
-Uint16 readWord(char *buffer,long *offset){
+Uint16 readWord(char *buffer,ulong &offset){
 	Uint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[*offset+a];
+		r|=(uchar)buffer[offset+a];
 	}
-	(*offset)+=2;
+	offset+=2;
 	return r;
 }
 
-Sint32 readSignedDWord(char *buffer,long *offset){
+Sint32 readSignedDWord(char *buffer,ulong &offset){
 	Sint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
-		r|=(uchar)(buffer[*offset+a]);
+		r|=(uchar)buffer[offset+a];
 	}
-	(*offset)+=4;
+	offset+=4;
 	return r;
 }
 
-Uint32 readDWord(char *buffer,long *offset){
+Uint32 readDWord(char *buffer,ulong &offset){
 	Uint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[*offset+a];
+		r|=(uchar)buffer[offset+a];
 	}
-	(*offset)+=4;
+	offset+=4;
 	return r;
 }
 
-char *readString(char *buffer,long *offset){
-	char *r=copyString(buffer+*offset);
-	(*offset)+=strlen(r)+1;
+std::string readString(char *buffer,ulong &offset){
+	std::string r(buffer+offset);
+	offset+=r.size()+1;
 	return r;
 }
 
-void writeByte(Uint8 a,std::string *str,long offset){
+void writeByte(Uint8 a,std::string &str,long offset){
 	if (offset<0)
-		str->push_back(a&0xFF);
+		str.push_back(a&0xFF);
 	else
-		(*str)[offset]=a&0xFF;
+		str[offset]=a&0xFF;
 }
 
-void writeWord(Uint16 a,std::string *str,long offset){
-	ulong off=(offset<0)?str->size():offset;
+void writeWord(Uint16 a,std::string &str,long offset){
+	ulong off=(offset<0)?str.size():offset;
 	for (char b=0;b<2;b++,off++){
-		if (str->size()>off)
-			(*str)[off]=a&0xFF;
+		if (str.size()>off)
+			str[off]=a&0xFF;
 		else
-			str->push_back(a&0xFF);
+			str.push_back(a&0xFF);
 		a>>=8;
 	}
 }
 
-void writeDWord(Uint32 a,std::string *str,long offset){
-	ulong off=(offset<0)?str->size():offset;
+void writeDWord(Uint32 a,std::string &str,long offset){
+	ulong off=(offset<0)?str.size():offset;
 	for (char b=0;b<4;b++,off++){
-		if (str->size()>off)
-			(*str)[off]=a&0xFF;
+		if (str.size()>off)
+			str[off]=a&0xFF;
 		else
-			str->push_back(a&0xFF);
+			str.push_back(a&0xFF);
 		a>>=8;
 	}
 }
 
-void writeString(const wchar_t *a,std::string *str){
-	char *utf8=WChar_to_UTF8(a);
-	str->append(utf8);
-	str->push_back(0);
-	delete[] utf8;
+void writeString(const std::wstring &a,std::string &str){
+	str.append(UniToUTF8(a));
+	str.push_back(0);
 }
 
 #ifndef BARE_FILE
@@ -1103,7 +1026,7 @@ char *tagValue(const char *string){
 	return tagValue_template<char>(string);
 }
 
-template <typename T1,typename T2>
+/*template <typename T1,typename T2>
 bool filenames_are_equal_template(const T1 *str0,const T2 *str1){
 	T1 *copy0=copyString_template<T1>(str0,0);
 	T2 *copy1=copyString_template<T2>(str1,0);
@@ -1127,5 +1050,49 @@ bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1){
 
 bool filenames_are_equal(const char *str0,const char *str1){
 	return filenames_are_equal_template<char,char>(str0,str1);
+}*/
+
+std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out){
+	std::wstring::const_iterator end2=start;
+	for (;end2!=end && *end2!=13 && *end2!=10;end2++);
+	if (!!out){
+		*out=end2;
+		for (;*out!=end && (**out==13 || **out==10);(*out)++);
+	}
+	return std::wstring(start,end2);
+}
+
+ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
+	switch (mode){
+		case NO_ENCRYPTION:
+		default:
+			return NONS_NO_ERROR;
+		case XOR84_ENCRYPTION:
+			for (ulong a=0;a<length;a++)
+				buffer[a]^=0x84;
+			return NONS_NO_ERROR;
+		case VARIABLE_XOR_ENCRYPTION:
+			{
+				char magic_numbers[5]={0x79,0x57,0x0d,0x80,0x04};
+				ulong index=0;
+				for (ulong a=0;a<length;a++){
+					buffer[a]^=magic_numbers[index];
+					index=(index+1)%5;
+				}
+				return NONS_NO_ERROR;
+			}
+		case TRANSFORM_THEN_XOR84_ENCRYPTION:
+			{
+#ifndef BARE_FILE
+				o_stderr
+#else
+				std::cerr
+#endif
+				<<"TRANSFORM_THEN_XOR84 (aka mode 4) encryption not implemented for a very good\n"
+					"reason. Which I, of course, don\'t need to explain to you. Good day.";
+				return NONS_NOT_IMPLEMENTED;
+			}
+	}
+	return NONS_NO_ERROR;
 }
 #endif

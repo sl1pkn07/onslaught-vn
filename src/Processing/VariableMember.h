@@ -38,11 +38,12 @@
 
 class NONS_VariableMember{
 	long intValue;
-	wchar_t *wcsValue;
+	std::wstring wcsValue;
 	bool constant;
 	yytokentype type;
 	long _long_upper_limit;
 	long _long_lower_limit;
+	const static std::wstring null;
 public:
 	NONS_VariableMember **dimension;
 	ulong dimensionSize;
@@ -50,7 +51,7 @@ public:
 	bool negated;
 	NONS_VariableMember(yytokentype type);
 	NONS_VariableMember(long value);
-	NONS_VariableMember(const wchar_t *a,bool takeOwnership);
+	NONS_VariableMember(const std::wstring &a);
 	//Assumes: All dimensions have a non-negative size.
 	NONS_VariableMember(std::vector<long> &sizes,size_t startAt);
 	NONS_VariableMember(const NONS_VariableMember &b);
@@ -59,12 +60,11 @@ public:
 	bool isConstant();
 	yytokentype getType();
 	long getInt();
-	const wchar_t *getWcs();
-	wchar_t *getWcsCopy();
-	char *getStrCopy();
+	const std::wstring &getWcs();
 	NONS_VariableMember *getIndex(ulong i);
 	void set(long a);
-	void set(const wchar_t *a,bool takeOwnership);
+	void atoi(const std::wstring &a);
+	void set(const std::wstring &a);
 	void inc();
 	void dec();
 	void add(long a);

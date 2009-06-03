@@ -53,31 +53,13 @@ bool isanumber(const T *string){
 
 INIvalue::INIvalue(long a){
 	this->type='i';
-	this->strValue=0;
 	this->intValue=a;
 }
 
-INIvalue::INIvalue(wchar_t *a,bool takeOwnership){
+INIvalue::INIvalue(const std::wstring &a){
 	this->type='s';
 	this->intValue=0;
-	this->strValue=takeOwnership?a:copyWString(a);
-}
-
-INIvalue::INIvalue(const wchar_t *a){
-	this->type='s';
-	this->intValue=0;
-	this->strValue=copyWString(a);
-}
-
-INIvalue::INIvalue(const char *a){
-	this->type='s';
-	this->intValue=0;
-	this->strValue=copyWString(a);
-}
-
-INIvalue::~INIvalue(){
-	if (this->strValue)
-		delete[] this->strValue;
+	this->strValue=a;
 }
 
 void INIvalue::setIntValue(long a){
@@ -86,31 +68,10 @@ void INIvalue::setIntValue(long a){
 	this->intValue=a;
 }
 
-void INIvalue::setStrValue(const char *a){
+void INIvalue::setStrValue(const std::wstring &a){
 	if (this->type!='s')
 		return;
-	if (this->strValue)
-		delete[] this->strValue;
-	this->strValue=copyWString(a);
-}
-
-void INIvalue::setStrValue(wchar_t *a,bool takeOwnership){
-	if (this->type!='s'){
-		if (takeOwnership)
-			delete[] a;
-		return;
-	}
-	if (this->strValue)
-		delete[] this->strValue;
-	this->strValue=takeOwnership?a:copyWString(a);
-}
-
-void INIvalue::setStrValue(const wchar_t *a){
-	if (this->type!='s')
-		return;
-	if (this->strValue)
-		delete[] this->strValue;
-	this->strValue=copyWString(a);
+	this->strValue=a;
 }
 
 char INIvalue::getType(){
@@ -121,31 +82,17 @@ long INIvalue::getIntValue(){
 	return this->intValue;
 }
 
-char *INIvalue::getStrValue(){
-	if (this->type!='s')
-		return 0;
-	return copyString(this->strValue);
-}
-
-wchar_t *INIvalue::getWStrValue(bool getCopy){
-	if (this->type!='s')
-		return 0;
-	return getCopy?copyWString(this->strValue):this->strValue;
-}
-
-INIsection::INIsection(){}
-
-INIsection::INIsection(const wchar_t *buffer,long *offset,long l){
-	this->readFile(buffer,offset,l);
+const std::wstring &INIvalue::getStrValue(){
+	return this->strValue;
 }
 
 INIsection::~INIsection(){
-	for (std::map<wchar_t *,INIvalue *,wstrCmp>::iterator i=this->variables.begin();i!=this->variables.end();i++){
-		if (i->first)
-			delete[] i->first;
-		if (i->second)
-			delete i->second;
-	}
+	for (std::map<std::wstring,INIvalue *>::iterator i=this->variables.begin();i!=this->variables.end();i++)
+		delete i->second;
+}
+
+INIsection::INIsection(const wchar_t *buffer,long *offset,long l){
+	this->readFile(buffer,offset,l);
 }
 
 void INIsection::readFile(const wchar_t *buffer,long *offset,long l){
@@ -191,7 +138,7 @@ void INIsection::readFile(const wchar_t *buffer,long *offset,long l){
 					}
 					if (INIvalue *val=this->getValue(name)){
 						delete[] name;
-						val->setStrValue(copyWString(buffer+valstart,valend),1);
+						val->setStrValue(std::wstring(buffer+valstart,valend));
 					}else{
 						wchar_t *strval=copyWString(buffer+valstart,valend);
 						if (isanumber(strval)){
@@ -202,7 +149,7 @@ void INIsection::readFile(const wchar_t *buffer,long *offset,long l){
 							INIvalue *p=new INIvalue(number);
 							this->variables[name]=p;
 						}else{
-							INIvalue *p=new INIvalue(strval,1);
+							INIvalue *p=new INIvalue(std::wstring(strval));
 							this->variables[name]=p;
 						}
 					}
@@ -213,136 +160,47 @@ void INIsection::readFile(const wchar_t *buffer,long *offset,long l){
 	}
 }
 
-void INIsection::setIntValue(const char *index,long a){
-	wchar_t *temp=copyWString(index);
-	this->setIntValue(temp,a);
-	delete[] temp;
-}
-
-void INIsection::setIntValue(const wchar_t *index,long a){
+void INIsection::setIntValue(const std::wstring &index,long a){
 	INIvalue *v=this->getValue(index);
-	if (!v){
-		INIvalue *p=new INIvalue(a);
-		this->variables[copyWString(index)]=p;
-		return;
-	}
-	v->setIntValue(a);
+	if (!v)
+		this->variables[index]=new INIvalue(a);
+	else
+		v->setIntValue(a);
 }
 
-void INIsection::setStrValue(const char *index,wchar_t * a,bool takeOwnership){
-	wchar_t *temp=copyWString(index);
-	this->setStrValue(temp,a,takeOwnership);
-	delete[] temp;
-}
-
-void INIsection::setStrValue(const wchar_t *index,wchar_t * a,bool takeOwnership){
+void INIsection::setStrValue(const std::wstring &index,const std::wstring &a){
 	INIvalue *v=this->getValue(index);
-	if (!v){
-		INIvalue *p=new INIvalue(a,takeOwnership);
-		this->variables[copyWString(index)]=p;
-		return;
-	}
-	v->setStrValue(a,takeOwnership);
+	if (!v)
+		this->variables[index]=new INIvalue(a);
+	else
+		v->setStrValue(a);
 }
 
-//------------------------------------------------------------------------------
-
-void INIsection::setStrValue(const char *index,const char * a){
-	wchar_t *temp=copyWString(index);
-	this->setStrValue(temp,a);
-	delete[] temp;
-}
-
-void INIsection::setStrValue(const wchar_t *index,const char * a){
-	INIvalue *v=this->getValue(index);
-	if (!v){
-		INIvalue *p=new INIvalue(a);
-		this->variables[copyWString(index)]=p;
-		return;
-	}
-	v->setStrValue(a);
-}
-
-void INIsection::setStrValue(const char *index,const wchar_t *a){
-	wchar_t *temp=copyWString(index);
-	this->setStrValue(temp,a);
-	delete[] temp;
-}
-
-void INIsection::setStrValue(const wchar_t *index,const wchar_t *a){
-	INIvalue *v=this->getValue(index);
-	if (!v){
-		INIvalue *p=new INIvalue(a);
-		this->variables[copyWString(index)]=p;
-		return;
-	}
-	v->setStrValue(a);
-}
-
-char INIsection::getType(const char *index){
-	wchar_t *temp=copyWString(index);
-	char ret=this->getType(temp);
-	delete[] temp;
-	return ret;
-}
-
-char INIsection::getType(const wchar_t *index){
+char INIsection::getType(const std::wstring &index){
 	INIvalue *v=this->getValue(index);
 	if (!v)
 		return 0;
 	return v->getType();
 }
 
-long INIsection::getIntValue(const char *index){
-	wchar_t *temp=copyWString(index);
-	long ret=this->getIntValue(temp);
-	delete[] temp;
-	return ret;
-}
-
-long INIsection::getIntValue(const wchar_t *index){
+long INIsection::getIntValue(const std::wstring &index){
 	INIvalue *v=this->getValue(index);
 	if (!v)
 		return 0;
 	return v->getIntValue();
 }
 
-char * INIsection::getStrValue(const char *index){
-	wchar_t *temp=copyWString(index);
-	char * ret=this->getStrValue(temp);
-	delete[] temp;
-	return ret;
-}
-char * INIsection::getStrValue(const wchar_t *index){
+const std::wstring &INIsection::getStrValue(const std::wstring &index){
 	INIvalue *v=this->getValue(index);
-	if (!v)
-		return 0;
+	if (!v){
+		this->setStrValue(index,L"");
+		return this->getValue(index)->getStrValue();
+	}
 	return v->getStrValue();
 }
 
-wchar_t * INIsection::getWStrValue(const char *index,bool takeOwnership){
-	wchar_t *temp=copyWString(index);
-	wchar_t * ret=this->getWStrValue(temp,takeOwnership);
-	delete[] temp;
-	return ret;
-}
-
-wchar_t * INIsection::getWStrValue(const wchar_t *index,bool takeOwnership){
-	INIvalue *v=this->getValue(index);
-	if (!v)
-		return 0;
-	return v->getWStrValue(takeOwnership);
-}
-
-INIvalue *INIsection::getValue(const char *a){
-	wchar_t *temp=copyWString(a);
-	INIvalue *ret=this->getValue(temp);
-	delete[] temp;
-	return ret;
-}
-
-INIvalue *INIsection::getValue(const wchar_t *a){
-	std::map<wchar_t *,INIvalue *,wstrCmp>::iterator i=this->variables.find((wchar_t *)a);
+INIvalue *INIsection::getValue(const std::wstring &a){
+	std::map<std::wstring,INIvalue *>::iterator i=this->variables.find(a);
 	if (i==this->variables.end())
 		return 0;
 	return i->second;
@@ -350,11 +208,7 @@ INIvalue *INIsection::getValue(const wchar_t *a){
 
 INIfile::INIfile(){}
 
-INIfile::INIfile(const char *filename,ENCODINGS encoding){
-	this->readFile(filename);
-}
-
-INIfile::INIfile(const wchar_t *filename,ENCODINGS encoding){
+INIfile::INIfile(const std::string &filename,ENCODINGS encoding){
 	this->readFile(filename);
 }
 
@@ -367,47 +221,36 @@ INIfile::INIfile(const wchar_t *buffer,long l){
 }
 
 INIfile::~INIfile(){
-	for (std::map<wchar_t *,INIsection *,wstrCmp>::iterator i=this->sections.begin();i!=this->sections.end();i++){
-		if (i->first)
-			delete[] i->first;
+	for (std::map<std::wstring,INIsection *>::iterator i=this->sections.begin();i!=this->sections.end();i++)
 		if (i->second)
 			delete i->second;
-	}
 }
 
-ErrorCode INIfile::readFile(const char *filename,ENCODINGS encoding){
-	long l;
-	char *buffer=(char *)readfile(filename,&l);
+ErrorCode INIfile::readFile(const std::string &filename,ENCODINGS encoding){
+	ulong l;
+	char *buffer=(char *)readfile(filename.c_str(),l);
 	if (!buffer)
 		return NONS_FILE_NOT_FOUND;
 	this->readFile(buffer,l,encoding);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode INIfile::readFile(const wchar_t *filename,ENCODINGS encoding){
-	char *temp=copyString(filename);
-	ErrorCode ret=this->readFile(temp);
-	delete[] temp;
-	return ret;
-}
-
 void INIfile::readFile(const char *buffer,long l,ENCODINGS encoding){
-	wchar_t *buffer2;
+	std::wstring buffer2;
 	switch (encoding){
 		case ISO_8859_1_ENCODING:
-			buffer2=ISO88591_to_WChar(buffer,l,&l);
+			buffer2=UniFromISO88591(std::string(buffer,l));
 			break;
 		case SJIS_ENCODING:
-			buffer2=SJIS_to_WChar(buffer,l,&l);
+			buffer2=UniFromSJIS(std::string(buffer,l));
 			break;
 		case UCS2_ENCODING:
-			buffer2=UCS2_to_WChar(buffer,l,&l);
+			buffer2=UniFromUCS2(std::string(buffer,l),UNDEFINED_ENDIANNESS);
 			break;
 		case UTF8_ENCODING:
-			buffer2=UTF8_to_WChar(buffer,l,&l);
+			buffer2=UniFromUTF8(std::string(buffer,l));
 	}
-	this->readFile(buffer2,l);
-	delete[] buffer2;
+	this->readFile(&buffer2[0],buffer2.size());
 }
 
 void INIfile::readFile(const wchar_t *buffer,long l){
@@ -443,15 +286,8 @@ void INIfile::readFile(const wchar_t *buffer,long l){
 	}
 }
 
-INIsection *INIfile::getSection(const char *index){
-	wchar_t *temp=copyWString(index);
-	INIsection *ret=this->getSection(temp);
-	delete[] temp;
-	return ret;
-}
-
-INIsection *INIfile::getSection(const wchar_t *index){
-	std::map<wchar_t *,INIsection *,wstrCmp>::iterator i=this->sections.find((wchar_t *)index);
+INIsection *INIfile::getSection(const std::wstring &index){
+	std::map<std::wstring,INIsection *>::iterator i=this->sections.find(index);
 	if (i==this->sections.end())
 		return 0;
 	return i->second;

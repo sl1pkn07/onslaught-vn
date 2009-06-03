@@ -57,9 +57,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(line.parameters[(src)],&(dst)),extra)
-#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getStrValue(line.parameters[(src)],&(dst)),extra)
-#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(line.parameters[(src)],&(dst)),extra)
+#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(line.parameters[(src)],dst),extra)
+//#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getStrValue(line.parameters[(src)],&(dst)),extra)
+#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(line.parameters[(src)],dst),extra)
 #define _GETVARIABLE(varName,src,extra){\
 	ErrorCode error;\
 	(varName)=this->store->retrieve(line.parameters[(src)],&error);\
@@ -91,7 +91,7 @@
 	}\
 }
 
-typedef std::map<char *,INIfile *,strCmp> INIcacheType;
+typedef std::map<std::string,INIfile *> INIcacheType;
 
 
 struct printingPage{
@@ -117,7 +117,7 @@ struct NONS_StackElement{
 	int type;
 	ulong offset;
 	//subroutine data
-	wchar_t *first_interpret_string;
+	std::wstring first_interpret_string;
 	//for data
 	NONS_VariableMember *var;
 	long from,
@@ -130,17 +130,16 @@ struct NONS_StackElement{
 	std::vector<printingPage> pages;
 
 	NONS_StackElement(ulong level);
-	NONS_StackElement(ulong offset,wchar_t *string,ulong level);
+	NONS_StackElement(ulong offset,const std::wstring &string,ulong level);
 	NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step,ulong level);
 	NONS_StackElement(std::vector<printingPage> pages,wchar_t trigger,ulong level);
-	~NONS_StackElement();
 };
 
 class NONS_ScriptInterpreter{
-	typedef std::map<const wchar_t *,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),wstrCmpCI> commandListType;
+	typedef std::map<std::wstring,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),stdStringCmpCI<wchar_t> > commandListType;
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
-	ErrorCode Printer(const wchar_t *line);
-	void reduceString(const wchar_t *src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<wchar_t *,NONS_VariableMember *> > *stack=0);
+	ErrorCode Printer(const std::wstring &line);
+	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
 	void uninit();
 	void init();
 
@@ -149,9 +148,9 @@ class NONS_ScriptInterpreter{
 	commandListType commandList;
 	//std::set<ulong> errored_lines;
 	std::set<ulong> printed_lines;
-	std::set<const wchar_t *,wstrCmp> implementationErrors;
+	std::set<std::wstring> implementationErrors;
 	ulong interpreter_mode;
-	char *nsadir;
+	std::string nsadir;
 	std::vector<NONS_StackElement *> callStack;
 	bool mp3_save;
 	bool mp3_loop;
@@ -171,12 +170,12 @@ class NONS_ScriptInterpreter{
 	bool hideTextDuringEffect;
 	SDL_Color selectOn;
 	SDL_Color selectOff;
-	wchar_t *selectVoiceEntry;
-	wchar_t *selectVoiceMouseOver;
-	wchar_t *selectVoiceClick;
+	std::wstring selectVoiceEntry;
+	std::wstring selectVoiceMouseOver;
+	std::wstring selectVoiceClick;
 	NONS_EventQueue *inputQueue;
 	long trapLabel;
-	wchar_t *clickStr;
+	std::wstring clickStr;
 	ulong autoclick;
 	ulong timer;
 	NONS_Menu *menu;
@@ -187,7 +186,7 @@ class NONS_ScriptInterpreter{
 	ulong imageButtonExpiration;
 	NONS_SaveFile* saveGame;
 	std::wstring currentBuffer;
-	wchar_t *textgosub;
+	std::wstring textgosub;
 	bool textgosubRecurses;
 
 	ErrorCode command_caption(NONS_ParsedLine &line);
@@ -336,21 +335,17 @@ public:
 	~NONS_ScriptInterpreter();
 	bool interpretNextLine();
 	NONS_Font *main_font;
-	//void setDefaultWindow();
-	ErrorCode interpretString(wchar_t *string);
+	ErrorCode interpretString(const std::wstring &string);
 	ulong totalCommands();
 	ulong implementedCommands();
-	/*ErrorCode getIntValue(wchar_t *str,long *value);
-	ErrorCode getStrValue(wchar_t *str,char **value);
-	ErrorCode getWcsValue(wchar_t *str,wchar_t **value);*/
 	bool load(int file);
 	bool save(int file);
 	void convertParametersToString(NONS_ParsedLine &line,std::wstring &string);
 	ulong getCurrentTextgosubLevel();
 	ulong insideTextgosub();
-	bool goto_label(wchar_t *label);
-	bool gosub_label(wchar_t *label);
+	bool goto_label(const std::wstring &label);
+	bool gosub_label(const std::wstring &label);
 };
 
-ulong countLines(wchar_t *buffer,ulong byte_pos);
+ulong countLines(const std::wstring &buffer,ulong byte_pos);
 #endif

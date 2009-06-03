@@ -98,7 +98,7 @@ ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSil
 		this->archive=temp;
 	else{
 		for (ulong a=0;a<this->NSAarchives.size();a++){
-			if (!strcmp(this->NSAarchives[a]->path,filename)){
+			if (this->NSAarchives[a]->path==filename){
 				delete temp;
 				return NONS_ALREADY_INITIALIZED;
 			}
@@ -108,7 +108,7 @@ ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSil
 	return NONS_NO_ERROR;
 }
 
-uchar *NONS_GeneralArchive::getFileBuffer(const wchar_t *filepath,ulong *buffersize){
+uchar *NONS_GeneralArchive::getFileBuffer(const std::wstring &filepath,ulong &buffersize){
 	uchar *res=0;
 	for (long a=this->NSAarchives.size()-1;a>=0;a--){
 		if (res=this->NSAarchives[a]->getFileBuffer(filepath,buffersize))
@@ -116,28 +116,16 @@ uchar *NONS_GeneralArchive::getFileBuffer(const wchar_t *filepath,ulong *buffers
 	}
 	if (this->archive && (res=this->archive->getFileBuffer(filepath,buffersize)))
 		return res;
-	char *copy=copyString(filepath);
-	res=readfile(copy,(long *)buffersize);
-	delete[] copy;
+	res=readfile(UniToISO88591(filepath).c_str(),buffersize);
 	return res;
 }
 
-uchar *NONS_GeneralArchive::getFileBuffer(const char *filepath,ulong *buffersize){
-	wchar_t *temp=copyWString(filepath);
-	uchar *ret=this->getFileBuffer(temp,buffersize);
-	delete[] temp;
-	return ret;
-}
-
-bool NONS_GeneralArchive::exists(const wchar_t *filepath){
+bool NONS_GeneralArchive::exists(const std::wstring &filepath){
 	for (long a=this->NSAarchives.size()-1;a>=0;a--)
 		if (this->NSAarchives[a]->exists(filepath))
 			return 1;
 	if (this->archive && this->archive->exists(filepath))
 		return 1;
-	char *copy=copyString(filepath);
-	bool res=fileExists(copy);
-	delete[] copy;
-	return res;
+	return fileExists(UniToISO88591(filepath).c_str());
 }
 #endif

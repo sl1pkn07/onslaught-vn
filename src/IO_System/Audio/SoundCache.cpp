@@ -50,10 +50,8 @@ NONS_SoundCache::~NONS_SoundCache(){
 	//SDL_UnlockMutex(this->mutex);
 	SDL_DestroyMutex(this->mutex);
 	SDL_WaitThread(this->thread,0);
-	for (std::map<char *,NONS_CachedSound *,strCmp>::iterator i=this->cache.begin();i!=this->cache.end();i++){
-		delete[] i->first;
+	for (cache_map_t::iterator i=this->cache.begin();i!=this->cache.end();i++)
 		delete i->second;
-	}
 }
 
 //Sound effects stay in the cache for this amount of seconds
@@ -65,15 +63,14 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 		SDL_LockMutex(_this->mutex);
 		if (!_this->cache.empty()){
 			ulong now=secondsSince1970();
-			for (std::map<char *,NONS_CachedSound *,strCmp>::iterator i=_this->cache.begin();i!=_this->cache.end();){
+			for (cache_map_t::iterator i=_this->cache.begin();i!=_this->cache.end();){
 				if (!i->second->references){
 					i->second->references=-1;
 					i->second->lastused=now;
 					i++;
 				}else if (i->second->references<0 && now-i->second->lastused>SE_EXPIRATION_TIME){
 					if (CLOptions.verbosity>=255)
-						std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<i->first<<")"<<std::endl;
-					delete[] i->first;
+						std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<UniToUTF8(i->first)<<")"<<std::endl;
 					delete i->second;
 					_this->cache.erase(i);
 					if (CLOptions.verbosity>=255)
@@ -115,16 +112,16 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 	return 0;
 }
 
-NONS_CachedSound *NONS_SoundCache::checkSound(const char *filename){
+NONS_CachedSound *NONS_SoundCache::checkSound(const std::wstring &filename){
 	if (this->cache.empty())
 		return 0;
-	std::map<char *,NONS_CachedSound *,strCmp>::iterator i=this->cache.find((char*)filename);
+	cache_map_t::iterator i=this->cache.find(filename);
 	if (i==this->cache.end())
 		return 0;
 	return i->second;
 }
 
-NONS_CachedSound *NONS_SoundCache::getSound(const char *filename){
+NONS_CachedSound *NONS_SoundCache::getSound(const std::wstring &filename){
 	NONS_CachedSound *res=this->checkSound(filename);
 	if (!res)
 		return 0;
@@ -135,28 +132,14 @@ NONS_CachedSound *NONS_SoundCache::getSound(const char *filename){
 	return res;
 }
 
-NONS_CachedSound *NONS_SoundCache::getSound(const wchar_t *filename){
-	char *copy=copyString(filename);
-	NONS_CachedSound *ret=this->getSound(copy);
-	delete[] copy;
-	return ret;
-}
-
-NONS_CachedSound *NONS_SoundCache::newSound(const char *filename,char *databuffer,long size){
+NONS_CachedSound *NONS_SoundCache::newSound(const std::wstring &filename,char *databuffer,long size){
 	if (NONS_CachedSound *ret=this->getSound(filename))
 		return ret;
 	NONS_CachedSound *a=new NONS_CachedSound(databuffer,size);
-	char *temp=copyString(filename);
+	std::wstring temp=filename;
 	toforwardslash(temp);
 	a->name=temp;
 	this->cache[temp]=a;
 	return a;
-}
-
-NONS_CachedSound *NONS_SoundCache::newSound(const wchar_t *filename,char *databuffer,long size){
-	char *copy=copyString(filename);
-	NONS_CachedSound *ret=this->newSound(copy,databuffer,size);
-	delete[] copy;
-	return ret;
 }
 #endif

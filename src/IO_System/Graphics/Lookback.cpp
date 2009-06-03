@@ -76,7 +76,7 @@ NONS_Lookback::~NONS_Lookback(){
 		SDL_FreeSurface(this->sDownoff);
 }
 
-bool NONS_Lookback::setUpButtons(wchar_t *upon,wchar_t *upoff,wchar_t *downon,wchar_t *downoff){
+bool NONS_Lookback::setUpButtons(const std::wstring &upon,const std::wstring &upoff,const std::wstring &downon,const std::wstring &downoff){
 	SDL_Surface *temp0=ImageLoader->fetchSprite(upon),
 		*temp1=ImageLoader->fetchSprite(upoff),
 		*temp2=ImageLoader->fetchSprite(downon),

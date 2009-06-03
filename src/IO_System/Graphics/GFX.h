@@ -45,16 +45,15 @@ enum{
 struct NONS_GFX{
 	ulong effect;
 	ulong duration;
-	wchar_t *rule;
+	std::wstring rule;
 	long type;
 	bool stored;
 	SDL_Color color;
 	static ulong effectblank;
-	NONS_GFX(ulong effect=0,ulong duration=0,wchar_t *rule=0);
+	NONS_GFX(ulong effect=0,ulong duration=0,const std::wstring *rule=0);
 	NONS_GFX(const NONS_GFX &b);
 	NONS_GFX &operator=(const NONS_GFX &b);
-	~NONS_GFX();
-	static ErrorCode callEffect(ulong number,long duration,wchar_t *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
+	static ErrorCode callEffect(ulong number,long duration,const std::wstring *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
 	ErrorCode call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
 	void effectNothing(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
 	void effectOnlyUpdate(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
@@ -83,7 +82,7 @@ struct NONS_GFX{
 
 struct NONS_GFXstore{
 	std::map<ulong,NONS_GFX *> effects;
-	NONS_GFX *add(ulong code,ulong effect,ulong duration,wchar_t *rule=0);
+	NONS_GFX *add(ulong code,ulong effect,ulong duration,const std::wstring *rule=0);
 	NONS_GFX *retrieve(ulong code);
 	bool remove(ulong code);
 	NONS_GFXstore();

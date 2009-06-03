@@ -33,6 +33,7 @@
 
 #include "Common.h"
 #include "Functions.h"
+#include "UTF.h"
 #include "Everything.h"
 #include "Globals.h"
 #include "ErrorCodes.h"
@@ -194,9 +195,7 @@ void parseCommandLine(int argc,T **argv){
 					std::cerr <<"Invalid argument syntax: \""<<argv[argument-1]<<"\""<<std::endl;
 					break;
 				}
-				if (CLOptions.scriptPath)
-					delete[] CLOptions.scriptPath;
-				CLOptions.scriptPath=copyString(argv[argument]);
+				CLOptions.scriptPath=argv[argument];
 				switch (atoi2(argv[++argument])){
 					case 0:
 						CLOptions.scriptEncryption=NO_ENCRYPTION;
@@ -245,20 +244,17 @@ void parseCommandLine(int argc,T **argv){
 					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
 					break;
 				}
-				if (!strcmp2(argv[++argument],"auto") || !!CLOptions.musicFormat){
-					delete[] CLOptions.musicFormat;
-					CLOptions.musicFormat=0;
+				if (!strcmp2(argv[++argument],"auto") || CLOptions.musicFormat.size()){
+					CLOptions.musicFormat.clear();
 					break;
 				}
 				if (!strcmp2(argv[argument],"ogg") ||
-					!strcmp2(argv[argument],"mp3") ||
-					!strcmp2(argv[argument],"it") ||
-					!strcmp2(argv[argument],"xm") ||
-					!strcmp2(argv[argument],"s3m") ||
-					!strcmp2(argv[argument],"mod")){
-					if (CLOptions.musicFormat)
-						delete[] CLOptions.musicFormat;
-					CLOptions.musicFormat=copyString(argv[argument]);
+						!strcmp2(argv[argument],"mp3") ||
+						!strcmp2(argv[argument],"it") ||
+						!strcmp2(argv[argument],"xm") ||
+						!strcmp2(argv[argument],"s3m") ||
+						!strcmp2(argv[argument],"mod")){
+					CLOptions.musicFormat=argv[argument];
 					break;
 				}
 				std::cerr <<"Unrecognized music format: \""<<argv[argument]<<"\""<<std::endl;
@@ -268,9 +264,7 @@ void parseCommandLine(int argc,T **argv){
 					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
 					break;
 				}
-				if (CLOptions.musicDirectory)
-					delete[] CLOptions.musicDirectory;
-				CLOptions.musicDirectory=copyString(argv[++argument]);
+				CLOptions.musicDirectory=argv[++argument];
 				break;
 			case 5: //-transparency-method-layer
 				break;
@@ -348,13 +342,9 @@ void parseCommandLine(int argc,T **argv){
 					ulong l=strlen(str);
 					for (l--;str[l]=='/' || str[l]=='\\';l--)
 						str[l]=0;
-					if (!strlen(str))
-						delete[] str;
-					else{
-						if (CLOptions.savedir)
-							delete[] CLOptions.savedir;
+					if (strlen(str))
 						CLOptions.savedir=str;
-					}
+					delete[] str;	
 				}
 				break;
 			case 22: //-!reset-out-files
@@ -379,15 +369,12 @@ bool useArgumentsFile(const char *filename){
 		return 0;
 	std::string str;
 	std::getline(file,str);
-	std::vector<char *> *vec=getParameterList(str.c_str());
-	char **argv=new char*[vec->size()+1];
-	for (ulong a=0;a<vec->size();a++)
-		argv[a+1]=(*vec)[a];
-	parseCommandLine(vec->size()+1,argv);
+	std::vector<std::string> vec=getParameterList(str,0);
+	const char **argv=new const char*[vec.size()+1];
+	for (ulong a=0;a<vec.size();a++)
+		argv[a+1]=vec[a].c_str();
+	parseCommandLine(vec.size()+1,argv);
 	delete[] argv;
-	for (ulong a=0;a<vec->size();a++)
-		delete[] (*vec)[a];
-	delete vec;
 	return 1;
 }
 
@@ -607,7 +594,7 @@ int
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"
-		"\"Make it right before you make it faster.\"\n\n"<<std::endl;
+		"\"What do I mean by \"do\" and what do I do by \"mean\"?\"\n\n"<<std::endl;
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
 	if (argc>1 && (
@@ -615,8 +602,19 @@ int
 			!strcmp2(argv[1],"-h") || 
 			!strcmp2(argv[1],"--help") || 
 			!strcmp2(argv[1],"--version")
-			) || !useArgumentsFile("arguments.txt"))
+			) || !useArgumentsFile("arguments.txt")){
+#ifdef _MSC_VER
+		char **argv2=new char*[argc];
+		for (int a=0;a<argc;a++)
+			argv2[a]=copyString(argv[a]);
+		parseCommandLine(argc,argv2);
+		for (int a=0;a<argc;a++)
+			delete[] argv2[a];
+		delete[] argv2;
+#else
 		parseCommandLine(argc,argv);
+#endif
+	}
 	if (CLOptions.override_stdout){
 		o_stdout.redirect();
 		o_stderr.redirect();
@@ -677,7 +675,7 @@ int
 	everything=new NONS_Everything();
 	SDL_WM_SetCaption("ONSlaught ("ONSLAUGHT_BUILD_VERSION_STR")",0);
 	ErrorCode error=NONS_NO_ERROR;
-	if (CLOptions.scriptPath)
+	if (CLOptions.scriptPath.size())
 		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
 	else
 		error=everything->init_script(CLOptions.scriptencoding);
@@ -687,11 +685,11 @@ int
 	}
 	labellog.init("NScrllog.dat","nonsllog.dat");
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
-	if (!config_directory)
+	if (config_directory.size())
 		config_directory=getConfigLocation();
 	o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
 	o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
-	if (CLOptions.musicDirectory)
+	if (CLOptions.musicDirectory.size())
 		error=everything->init_audio(CLOptions.musicDirectory);
 	else
 		error=everything->init_audio();
@@ -699,7 +697,7 @@ int
 		handleErrors(error,-1,"mainThread",0);
 		exit(error);
 	}
-	if (CLOptions.musicFormat)
+	if (CLOptions.musicFormat.size())
 		everything->audio->musicFormat=CLOptions.musicFormat;
 	everything->init_screen();
 	NONS_ScriptInterpreter *interpreter=new NONS_ScriptInterpreter(everything);
@@ -755,14 +753,9 @@ int debugThread(void *nothing){
 		if (var){
 			if (var->getType()==INTEGER)
 				std::cout <<"intValue: "<<var->getInt()<<std::endl;
-			else if (var->getType()==STRING){
-				if (var->getWcs()){
-					char *copy=WChar_to_UTF8(var->getWcs());
-					std::cout <<"UTF-8 Value: \""<<copy<<"\""<<std::endl;
-					delete[] copy;
-				}else
-					std::cout <<"UTF-8 Value: \"\""<<std::endl;
-			}else
+			else if (var->getType()==STRING)
+				std::cout <<"UTF-8 Value: \""<<UniToUTF8(var->getWcs())<<"\""<<std::endl;
+			else
 				std::cout <<"Scalar value."<<std::endl;
 		}else if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"debugThread",0);

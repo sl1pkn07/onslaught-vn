@@ -55,10 +55,10 @@ struct NONS_Layer{
 	NONS_AnimationInfo animation;
 	NONS_Layer(SDL_Rect *size,unsigned rgba);
 	NONS_Layer(SDL_Surface *img,unsigned rgba);
-	NONS_Layer(const wchar_t *string);
+	NONS_Layer(const std::wstring *string);
 	~NONS_Layer();
 	void MakeTextLayer(NONS_Font *font,SDL_Color *foreground,bool shadow);
-	bool load(const wchar_t *string);
+	bool load(const std::wstring *string);
 	//if the parameter is true and the image isn't shared, the call has no effect
 	bool unload(bool youCantTouchThis=0);
 	void usePicAsDefaultShade(SDL_Surface *pic);
@@ -68,5 +68,10 @@ struct NONS_Layer{
 	bool advanceAnimation(ulong msec);
 	void centerAround(int x);
 	void useBaseline(int y);
+	bool animated(){
+		return this->animation.frame_ends.size() && 
+			this->animation.animation_time_offset<this->animation.frame_ends.back()*
+			(this->animation.frame_ends.size()==1?this->animation.animation_length:1);
+	}
 };
 #endif
