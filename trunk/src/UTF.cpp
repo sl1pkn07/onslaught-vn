@@ -98,15 +98,15 @@ void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 		else if ((byte&224)==192){
 			c=byte&31;
 			c<<=6;
-			c|=*src++&63;
+			c|=*src&63;
 		}else if ((byte&240)==224){
 			c=byte&15;
 			c<<=6;
-			c|=src[1]&63;
+			c|=*src&63;
 			c<<=6;
-			c|=src[2]&63;
+			c|=src[1]&63;
 		}else if ((byte&248)==240){
-#if WCHAR_MAX>=0xFFFF
+#if WCHAR_MAX==0xFFFF
 			c='?';
 #else
 			c=byte&7;
@@ -356,35 +356,10 @@ char writefile(const char *name,char *buffer,long size){
 #endif
 
 bool iswhitespace(wchar_t character){
-	switch (character){
-		case 0x0009:
-		case 0x000A:
-		case 0x000B:
-		case 0x000C:
-		case 0x000D:
-		case 0x0020:
-		case 0x0085:
-		case 0x00A0:
-		case 0x1680:
-		case 0x180E:
-		case 0x2000:
-		case 0x2001:
-		case 0x2002:
-		case 0x2003:
-		case 0x2004:
-		case 0x2005:
-		case 0x2006:
-		case 0x2007:
-		case 0x2008:
-		case 0x2009:
-		case 0x200A:
-		case 0x2028:
-		case 0x2029:
-		case 0x202F:
-		case 0x205F:
-		case 0x3000:
+	static const wchar_t whitespace[]=WCS_WHITESPACE;
+	for (const wchar_t *a=whitespace;*a;a++)
+		if (character==*a)
 			return 1;
-	}
 	return 0;
 }
 
@@ -393,17 +368,10 @@ bool iswhitespace(char character){
 }
 
 bool iswhitespaceASCIIe(char character){
-	switch (character){
-		case 0x0009:
-		case 0x000A:
-		case 0x000B:
-		case 0x000C:
-		case 0x000D:
-		case 0x0020:
-		case 0x0085:
-		case 0x00A0:
+	static const char whitespace[]=STR_WHITESPACE;
+	for (const char *a=whitespace;*a;a++)
+		if (character==*a)
 			return 1;
-	}
 	return 0;
 }
 
@@ -477,26 +445,6 @@ bool isValidSJIS(const char *buffer,ulong size){
 		if (*unsigned_buffer<0x40 || *unsigned_buffer>0xFC || *unsigned_buffer==0x7F)
 			return 0;
 	}
-	return 1;
-}
-
-bool isValidUCS2(const char *buffer,ulong size){
-	return !(size&1);
-}
-
-bool ISO88591_or_UCS2(const char *buffer,ulong size){
-	if (!isValidUCS2(buffer,size))
-		return 0;
-	ulong nuls=0;
-	for (ulong a=0;a<size-6;a++,buffer++)
-		if (buffer[0]=='*' &&
-			buffer[1]=='d' &&
-			buffer[2]=='e' &&
-			buffer[3]=='f' &&
-			buffer[4]=='i' &&
-			buffer[5]=='n' &&
-			buffer[6]=='e')
-			return 0;
 	return 1;
 }
 

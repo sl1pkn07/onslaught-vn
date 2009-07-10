@@ -71,9 +71,9 @@ const char *errorMessages[]={
 	//NONS_UNMATCHING_OPERANDS
 	"Operands do not match.",
 	//NONS_INVALID_ID_NAME
-	"Invalid identifier name. Only upper and lower case Latin alphabet characters, underscores, and numerals.",
+	"Invalid identifier name. Only [A-Za-z_][A-Za-z_0-9]*. For constants, names that collide with commands are restricted.",
 	//NONS_INSUFFICIENT_PARAMETERS
-	"Not enough parameters passed to the instruction.",
+	"Not enough parameters passed to the command.",
 	//NONS_FILE_NOT_FOUND
 	"File not found.",
 	//NONS_NO_MUSIC_LOADED
@@ -187,6 +187,8 @@ const char *errorMessages[]={
 	"Duplicate label found.",
 	//NONS_INVALID_COMMAND_NAME
 	"Invalid command name. Only [A-Za-z_][A-Za-z_0-9]*",
+	//NONS_NOT_ENOUGH_LINES_TO_SKIP
+	"There aren't enough lines to skip. The skip will be ignored.",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);
@@ -227,4 +229,10 @@ ulong cpu_count=1;
 
 std::string save_directory;
 std::string config_directory;
+
+//Stores the complete list of commands. It's initialized by the interpreter at
+//run time. After being initialized, it's guaranteed to be sorted, so look up
+//can be performed with binary_search().
+std::vector<std::wstring> command_list;
+std::ofstream textDumpFile;
 #endif

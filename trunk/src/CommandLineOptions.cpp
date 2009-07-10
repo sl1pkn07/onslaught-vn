@@ -32,6 +32,8 @@
 
 #include "CommandLineOptions.h"
 #include "Globals.h"
+#include "Processing/ScriptInterpreter.h"
+#include "IO_System/IOFunctions.h"
 
 #define DEFAULT_INPUT_WIDTH 640
 #define DEFAULT_INPUT_HEIGHT 480
@@ -65,5 +67,291 @@ NONS_CommandLineOptions::NONS_CommandLineOptions()
 	no_sound(0),
 	stopOnFirstError(0){}
 
-NONS_CommandLineOptions::~NONS_CommandLineOptions(){}
+void usage(){
+	o_stdout <<"Usage: ONSlaught [options]\n"
+		"Options:\n"
+		"  -h\n"
+		"  -?\n"
+		"  --help\n"
+		"      Display this message.\n"
+		"  --version\n"
+		"      Display version number.\n"
+		"  -verbosity <number>\n"
+		"      Set log verbosity level. 0 by default.\n"
+		"  -save-directory <directory name>\n"
+		"      Override automatic save game directory selection.\n"
+		"      See the documentation for more information.\n"
+		"  -f\n"
+		"      Start in fullscreen.\n"
+		"  -r <virtual width> <virtual height> <real width> <real height>\n"
+		"      Sets the screen resolution. The first two numbers are width and height of\n"
+		"      the virtual screen. The second two numbers are width and height of the\n"
+		"      physical screen or window graphical output will go to.\n"
+		"      See the documentation for more information.\n"
+		"  -script {auto|<path> {0|1|2|3}}\n"
+		"      Select the path and encryption method used by the script.\n"
+		"      Default is \'auto\'. On auto, this is the priority order for files:\n"
+		"          1. \"0.txt\", method 0\n"
+		"          2. \"00.txt\", method 0\n"
+		"          3. \"nscr_sec.dat\", method 2\n"
+		"          4. \"nscript.___\", method 3\n"
+		"          5. \"nscript.dat\", method 1\n"
+		"      The documentation contains a detailed description on each of the modes.\n"
+		"  -encoding {auto|sjis|iso-8859-1|utf8|ucs2}\n"
+		"      Select the encoding to be used for the script.\n"
+		"      Default is \'auto\'.\n"
+		"  -s\n"
+		"      No sound.\n"
+		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}}\n"
+		"      Select the music format to be used.\n"
+		"      Default is \'auto\'.\n"
+		"  -music-directory <directory>\n"
+		"      Set where to look for music files.\n"
+		"      Default is \"./CD\"\n"
+		"  -image-cache-size <size>\n"
+		"      Set the size for the image cache. -1 is infinite, 0 is do not use.\n"
+		"      Default to -1.\n"
+		"  -debug\n"
+		"      Enable debug mode.\n"
+		"      If -output-to-file has been used, it is disabled.\n"
+		"      See the documentation for details.\n"
+#ifdef NONS_SYS_WINDOWS
+		"  -no-console\n"
+		"      Hide the console.\n"
+#endif
+		"  -redirect\n"
+		"      Redirect stdout and stderr to \"stdout.txt\" and \"stderr.txt\"\n"
+		"      correspondingly.\n"
+		"      If -debug has been used, it is disabled.\n"
+		"      By default, output is redirected.\n"
+		"  -!redirect\n"
+		"      Sends the output to the console instead of the file system.\n"
+		"      See \"-redirect\" for more info.\n"
+		"  -!reset-out-files\n"
+		"      Only used with \"-redirect\".\n"
+		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
+		"      them and puts the date and time as identification.\n"
+		"   -stop-on-first-error\n"
+		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
+		"      command\" (when the command will not be implemented) errors don't count.\n";
+	exit(0);
+}
+
+void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
+	static const wchar_t *options[]={
+		L"--help",
+		L"-script",
+		L"-encoding",
+		L"-music-format",
+		L"-music-directory",
+		L"",
+		L"",
+		L"-image-cache-size",
+		L"-debug",
+		L"-redirect",
+		L"--version",
+		L"-implementation",
+		L"-no-console",
+		L"-dump-text",
+		L"-f",
+		L"-r",
+		L"-verbosity",
+		L"-sdebug",
+		L"-s",
+		L"-h",
+		L"-?",
+		L"-save-directory",
+		L"-!reset-out-files",
+		L"-!redirect",
+		L"-stop-on-first-error",
+		0
+	};
+
+	for (ulong a=0,size=arguments.size();a<size;a++){
+		long option=-1;
+		for (long b=0;options[b] && option<0;b++){
+			if (arguments[a]==options[b])
+				option=b;
+		}
+		switch(option){
+			case 0: //--help
+			case 19: //-h
+			case 20: //-?
+				usage();
+			case 1: //-script
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				if (arguments[++a]==L"auto"){
+					this->scriptencoding=DETECT_ENCODING;
+					break;
+				}
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a-1]<<"\""<<std::endl;
+					break;
+				}
+				this->scriptPath=UniToISO88591(arguments[a]);
+				switch (atoi(arguments[++a])){
+					case 0:
+						this->scriptEncryption=NO_ENCRYPTION;
+						break;
+					case 1:
+						this->scriptEncryption=XOR84_ENCRYPTION;
+						break;
+					case 2:
+						this->scriptEncryption=VARIABLE_XOR_ENCRYPTION;
+						break;
+					case 3:
+						this->scriptEncryption=TRANSFORM_THEN_XOR84_ENCRYPTION;
+						break;
+				}
+				break;
+			case 2: //-encoding
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				if (arguments[++a]==L"sjis"){
+					this->scriptencoding=DETECT_ENCODING;
+					break;
+				}
+				if (arguments[a]==L"sjis"){
+					this->scriptencoding=SJIS_ENCODING;
+					break;
+				}
+				if (arguments[a]==L"iso-8859-1"){
+					this->scriptencoding=ISO_8859_1_ENCODING;
+					break;
+				}
+				if (arguments[a]==L"utf8"){
+					this->scriptencoding=UTF8_ENCODING;
+					break;
+				}
+				if (arguments[a]==L"ucs2"){
+					this->scriptencoding=UCS2_ENCODING;
+					break;
+				}
+				std::cerr <<"Unrecognized encoding: \""<<arguments[a]<<"\""<<std::endl;
+				break;
+			case 3: //-music-format
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				if (arguments[++a]==L"auto"){
+					this->musicFormat.clear();
+					break;
+				}
+				if (arguments[a]==L"ogg" ||
+						arguments[a]==L"mp3" ||
+						arguments[a]==L"it" ||
+						arguments[a]==L"xm" ||
+						arguments[a]==L"s3m" ||
+						arguments[a]==L"mod"){
+					this->musicFormat=UniToISO88591(arguments[a]);
+					break;
+				}
+				std::cerr <<"Unrecognized music format: \""<<arguments[a]<<"\""<<std::endl;
+				break;
+			case 4: //-music-directory
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				this->musicDirectory=UniToISO88591(arguments[++a]);
+				break;
+			case 5: //-transparency-method-layer
+				break;
+			case 6: //-transparency-method-anim
+				break;
+			case 7: //-image-cache-size
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				this->cacheSize=atoi(arguments[++a]);
+				break;
+			case 8: //-debug
+				this->debugMode=1;
+				this->override_stdout=0;
+				this->noconsole=0;
+				break;
+			case 9: //-redirect
+				this->override_stdout=1;
+				this->debugMode=0;
+				break;
+			case 10: //--version
+				{
+					delete new NONS_ScriptInterpreter(0);
+				}
+				exit(0);
+			case 11: //-implementation
+				break;
+			case 12: //-no-console
+#ifdef NONS_SYS_WINDOWS
+				this->noconsole=1;
+				this->debugMode=0;
+				this->override_stdout=1;
+#endif
+				break;
+			case 13: //-dump-text
+				{
+					if (a+1>=size){
+						std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+						break;
+					}
+					std::string name=UniToISO88591(arguments[++a]);
+					textDumpFile.open(name.c_str(),std::ios::app);
+				}
+				break;
+			case 14: //-f
+				this->startFullscreen=1;
+				break;
+			case 15: //-r
+				if (a+4>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				this->virtualWidth=atoi(arguments[++a]);
+				this->virtualHeight=atoi(arguments[++a]);
+				this->realWidth=atoi(arguments[++a]);
+				this->realHeight=atoi(arguments[++a]);
+				break;
+			case 16: //-verbosity
+				if (a+1>=size){
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+					break;
+				}
+				this->verbosity=atoi(arguments[++a]);
+				break;
+			case 18: //-s
+				this->no_sound=1;
+				break;
+			case 21: //-save-directory
+				if (a+1>=size)
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+				else{
+					std::string copy=UniToISO88591(arguments[++a]);
+					toforwardslash(copy);
+					copy=copy.substr(0,copy.find('/'));
+					if (copy.size())
+						this->savedir=copy;
+				}
+				break;
+			case 22: //-!reset-out-files
+				this->reset_redirection_files=0;
+				break;
+			case 23: //-!redirect
+				this->override_stdout=0;
+				break;
+			case 24: //-stop-on-first-error
+				this->stopOnFirstError=1;
+				break;
+			case 17://-sdebug
+			default:
+				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;
+		}
+	}
+}
 #endif

@@ -42,326 +42,10 @@
 #include "IO_System/FileIO.h"
 
 #if defined(NONS_SYS_WINDOWS)
-#include <tchar.h>
 #include <windows.h>
-#define COMMAND_LINE_ARGUMENT_TYPE wchar_t
-#else
-#define COMMAND_LINE_ARGUMENT_TYPE char
 #endif
 
 int mainThread(void *nothing);
-
-void usage(){
-	o_stdout <<"Usage: ONSlaught [options]\n"
-		"Options:\n"
-		"  -h\n"
-		"  -?\n"
-		"  --help\n"
-		"      Display this message.\n"
-		"  --version\n"
-		"      Display version number.\n"
-		"  -verbosity <number>\n"
-		"      Set log verbosity level. 0 by default.\n"
-		"  -save-directory <directory name>\n"
-		"      Override automatic save game directory selection.\n"
-		"      See the documentation for more information.\n"
-		"  -f\n"
-		"      Start in fullscreen.\n"
-		"  -r <virtual width> <virtual height> <real width> <real height>\n"
-		"      Sets the screen resolution. The first two numbers are width and height of\n"
-		"      the virtual screen. The second two numbers are width and height of the\n"
-		"      physical screen or window graphical output will go to.\n"
-		"      See the documentation for more information.\n"
-		"  -script {auto|<path> {0|1|2|3}}\n"
-		"      Select the path and encryption method used by the script.\n"
-		"      Default is \'auto\'. On auto, this is the priority order for files:\n"
-		"          1. \"0.txt\", method 0\n"
-		"          2. \"00.txt\", method 0\n"
-		"          3. \"nscr_sec.dat\", method 2\n"
-		"          4. \"nscript.___\", method 3\n"
-		"          5. \"nscript.dat\", method 1\n"
-		"      The documentation contains a detailed description on each of the modes.\n"
-		"  -encoding {auto|sjis|iso-8859-1|utf8|ucs2}\n"
-		"      Select the encoding to be used for the script.\n"
-		"      Default is \'auto\'.\n"
-		"  -s\n"
-		"      No sound.\n"
-		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}}\n"
-		"      Select the music format to be used.\n"
-		"      Default is \'auto\'.\n"
-		"  -music-directory <directory>\n"
-		"      Set where to look for music files.\n"
-		"      Default is \"./CD\"\n"
-		"  -image-cache-size <size>\n"
-		"      Set the size for the image cache. -1 is infinite, 0 is do not use.\n"
-		"      Default to -1.\n"
-		"  -debug\n"
-		"      Enable debug mode.\n"
-		"      If -output-to-file has been used, it is disabled.\n"
-		"      See the documentation for details.\n"
-#ifdef NONS_SYS_WINDOWS
-		"  -no-console\n"
-		"      Hide the console.\n"
-#endif
-		"  -redirect\n"
-		"      Redirect stdout and stderr to \"stdout.txt\" and \"stderr.txt\"\n"
-		"      correspondingly.\n"
-		"      If -debug has been used, it is disabled.\n"
-		"      By default, output is redirected.\n"
-		"  -!redirect\n"
-		"      Sends the output to the console instead of the file system.\n"
-		"      See \"-redirect\" for more info.\n"
-		"  -!reset-out-files\n"
-		"      Only used with \"-redirect\".\n"
-		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
-		"      them and puts the date and time as identification.\n"
-		"   -stop-on-first-error\n"
-		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
-		"      command\" (when the command will not be implemented) errors don't count.\n";
-	exit(0);
-}
-
-template <typename T0,typename T1>
-int strcmp2(T0 *str0,T1 *str1){
-	for (;*str0 || *str1;str0++,str1++){
-		if (*str0<*str1)
-			return -1;
-		if (*str0>*str1)
-			return 1;
-	}
-	return 0;
-}
-
-template <typename T>
-int atoi2(T *str){
-	char *temp=copyString(str);
-	int res=atoi(temp);
-	delete[] temp;
-	return res;
-}
-
-std::ofstream textDumpFile;
-
-template <typename T>
-void parseCommandLine(int argc,T **argv){
-	if (argc==1)
-		return;
-	static const char *options[]={
-		"--help",
-		"-script",
-		"-encoding",
-		"-music-format",
-		"-music-directory",
-		"",
-		"",
-		"-image-cache-size",
-		"-debug",
-		"-redirect",
-		"--version",
-		"-implementation",
-		"-no-console",
-		"-dump-text",
-		"-f",
-		"-r",
-		"-verbosity",
-		"-sdebug",
-		"-s",
-		"-h",
-		"-?",
-		"-save-directory",
-		"-!reset-out-files",
-		"-!redirect",
-		"-stop-on-first-error",
-		0
-	};
-	for (long argument=1;argument<argc;argument++){
-		long option=-1;
-		for (long a=0;options[a] && option<0;a++)
-			if (!strcmp2(argv[argument],options[a]))
-				option=a;
-		switch(option){
-			case 0: //--help
-			case 19: //-h
-			case 20: //-?
-				usage();
-			case 1: //-script
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				if (!strcmp2(argv[++argument],"auto"))
-					break;
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument-1]<<"\""<<std::endl;
-					break;
-				}
-				CLOptions.scriptPath=argv[argument];
-				switch (atoi2(argv[++argument])){
-					case 0:
-						CLOptions.scriptEncryption=NO_ENCRYPTION;
-						break;
-					case 1:
-						CLOptions.scriptEncryption=XOR84_ENCRYPTION;
-						break;
-					case 2:
-						CLOptions.scriptEncryption=VARIABLE_XOR_ENCRYPTION;
-						break;
-					case 3:
-						CLOptions.scriptEncryption=TRANSFORM_THEN_XOR84_ENCRYPTION;
-						break;
-				}
-				break;
-			case 2: //-encoding
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				argument++;
-				if (!strcmp2(argv[argument],"sjis")){
-					CLOptions.scriptencoding=DETECT_ENCODING;
-					break;
-				}
-				if (!strcmp2(argv[argument],"sjis")){
-					CLOptions.scriptencoding=SJIS_ENCODING;
-					break;
-				}
-				if (!strcmp2(argv[argument],"iso-8859-1")){
-					CLOptions.scriptencoding=ISO_8859_1_ENCODING;
-					break;
-				}
-				if (!strcmp2(argv[argument],"utf8")){
-					CLOptions.scriptencoding=UTF8_ENCODING;
-					break;
-				}
-				if (!strcmp2(argv[argument],"ucs2")){
-					CLOptions.scriptencoding=UCS2_ENCODING;
-					break;
-				}
-				std::cerr <<"Unrecognized encoding: \""<<argv[argument]<<"\""<<std::endl;
-				break;
-			case 3: //-music-format
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				if (!strcmp2(argv[++argument],"auto") || CLOptions.musicFormat.size()){
-					CLOptions.musicFormat.clear();
-					break;
-				}
-				if (!strcmp2(argv[argument],"ogg") ||
-						!strcmp2(argv[argument],"mp3") ||
-						!strcmp2(argv[argument],"it") ||
-						!strcmp2(argv[argument],"xm") ||
-						!strcmp2(argv[argument],"s3m") ||
-						!strcmp2(argv[argument],"mod")){
-					CLOptions.musicFormat=argv[argument];
-					break;
-				}
-				std::cerr <<"Unrecognized music format: \""<<argv[argument]<<"\""<<std::endl;
-				break;
-			case 4: //-music-directory
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				CLOptions.musicDirectory=argv[++argument];
-				break;
-			case 5: //-transparency-method-layer
-				break;
-			case 6: //-transparency-method-anim
-				break;
-			case 7: //-image-cache-size
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				CLOptions.cacheSize=atoi2(argv[++argument]);
-				break;
-			case 8: //-debug
-				CLOptions.debugMode=1;
-				CLOptions.override_stdout=0;
-				CLOptions.noconsole=0;
-				break;
-			case 9: //-redirect
-				CLOptions.override_stdout=1;
-				CLOptions.debugMode=0;
-				break;
-			case 10: //--version
-				{
-					delete new NONS_ScriptInterpreter(0);
-				}
-				exit(0);
-			case 11: //-implementation
-				break;
-			case 12: //-no-console
-#ifdef NONS_SYS_WINDOWS
-				CLOptions.noconsole=1;
-				CLOptions.debugMode=0;
-				CLOptions.override_stdout=1;
-#endif
-				break;
-			case 13: //-dump-text
-				{
-					if (argument+1>=argc){
-						std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-						break;
-					}
-					char *copy=copyString(argv[++argument]);
-					textDumpFile.open(copy,std::ios::app);
-					delete[] copy;
-				}
-				break;
-			case 14: //-f
-				CLOptions.startFullscreen=1;
-				break;
-			case 15: //-r
-				if (argument+4>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				CLOptions.virtualWidth=atoi2(argv[++argument]);
-				CLOptions.virtualHeight=atoi2(argv[++argument]);
-				CLOptions.realWidth=atoi2(argv[++argument]);
-				CLOptions.realHeight=atoi2(argv[++argument]);
-				break;
-			case 16: //-verbosity
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-					break;
-				}
-				CLOptions.verbosity=atoi2(argv[++argument]);
-				break;
-			case 18: //-s
-				CLOptions.no_sound=1;
-				break;
-			case 21: //-save-directory
-				if (argument+1>=argc){
-					std::cerr <<"Invalid argument syntax: \""<<argv[argument]<<"\""<<std::endl;
-				}else{
-					char *str=copyString(argv[++argument]);
-					ulong l=strlen(str);
-					for (l--;str[l]=='/' || str[l]=='\\';l--)
-						str[l]=0;
-					if (strlen(str))
-						CLOptions.savedir=str;
-					delete[] str;	
-				}
-				break;
-			case 22: //-!reset-out-files
-				CLOptions.reset_redirection_files=0;
-				break;
-			case 23: //-!redirect
-				CLOptions.override_stdout=0;
-				break;
-			case 24: //-stop-on-first-error
-				CLOptions.stopOnFirstError=1;
-				break;
-			case 17://-sdebug
-			default:
-				std::cout <<"Unrecognized command line option: \""<<argv[argument]<<"\""<<std::endl;
-		}
-	}
-}
 
 bool useArgumentsFile(const char *filename){
 	std::ifstream file(filename);
@@ -369,12 +53,9 @@ bool useArgumentsFile(const char *filename){
 		return 0;
 	std::string str;
 	std::getline(file,str);
-	std::vector<std::string> vec=getParameterList(str,0);
-	const char **argv=new const char*[vec.size()+1];
-	for (ulong a=0;a<vec.size();a++)
-		argv[a+1]=vec[a].c_str();
-	parseCommandLine(vec.size()+1,argv);
-	delete[] argv;
+	std::wstring copy=UniFromUTF8(str);
+	std::vector<std::wstring> vec=getParameterList(copy,0);
+	CLOptions.parse(vec);
 	return 1;
 }
 
@@ -386,6 +67,8 @@ NONS_Everything *everything=0;
 void enditall(){
 	SDL_LockMutex(exitMutex);
 	SDL_KillThread(thread);
+	if (!!dbgThread)
+		SDL_KillThread(dbgThread);
 	if (gScriptInterpreter)
 		delete (NONS_ScriptInterpreter *)gScriptInterpreter;
 #ifdef NONS_SYS_LINUX
@@ -426,9 +109,7 @@ void handle_SIGINT(int){
 
 bool stopEventHandling=0;
 
-void handleInputEvent(SDL_Event &event,bool onlyHandleQuit=0){
-	if (onlyHandleQuit && event.type!=SDL_QUIT || stopEventHandling)
-		return;
+void handleInputEvent(SDL_Event &event){
 	long x,y;
 	switch(event.type){
 		case SDL_QUIT:
@@ -520,74 +201,25 @@ void handleInputEvent(SDL_Event &event,bool onlyHandleQuit=0){
 	}
 }
 
-void writeEvent(SDL_Event *event,uchar *buffer){
-	*buffer++=event->type;
-	switch(event->type){
-		case SDL_QUIT:
-			break;
-		case SDL_KEYDOWN:
-		case SDL_KEYUP:
-			*buffer++=event->key.type;
-			*buffer++=event->key.which;
-			*buffer++=event->key.state;
-			*buffer++=event->key.keysym.scancode;
-			{
-				Uint32 x=event->key.keysym.sym;
-				for (int a=0;a<4;a++){
-					*buffer++=x&0xFF;
-					x>>=8;
-				}
-			}
-			{
-				Uint32 x=event->key.keysym.mod;
-				for (int a=0;a<4;a++){
-					*buffer++=x&0xFF;
-					x>>=8;
-				}
-			}
-			{
-				Uint16 x=event->key.keysym.unicode;
-				for (int a=0;a<2;a++){
-					*buffer++=x&0xFF;
-					x>>=8;
-				}
-			}
-			break;
-		case SDL_MOUSEMOTION:
-			*buffer++=event->motion.type;
-			*buffer++=event->motion.which;
-			*buffer++=event->motion.state;
-			*buffer++=event->motion.x&0xFF;
-			*buffer++=event->motion.x>>8;
-			*buffer++=event->motion.y&0xFF;
-			*buffer++=event->motion.y>>8;
-			*buffer++=event->motion.xrel&0xFF;
-			*buffer++=event->motion.xrel>>8;
-			*buffer++=event->motion.yrel&0xFF;
-			*buffer++=event->motion.yrel>>8;
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			*buffer++=event->button.type;
-			*buffer++=event->button.which;
-			*buffer++=event->button.button;
-			*buffer++=event->button.state;
-			*buffer++=event->button.x&0xFF;
-			*buffer++=event->button.x>>8;
-			*buffer++=event->button.y&0xFF;
-			*buffer++=event->button.y>>8;
-			break;
-		default:
-			break;
-	}
+std::vector<std::wstring> getArgumentsVector(char **argv){
+	std::vector<std::wstring> ret;
+	for (argv++;*argv;argv++)
+		ret.push_back(UniFromUTF8(std::string(*argv)));
+	return ret;
 }
 
-int
-#ifdef _MSC_VER
-	_tmain(int argc,wchar_t **argv)
-#else
-	main(int argc,char **argv)
+std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
+	std::vector<std::wstring> ret;
+	for (argv++;*argv;argv++)
+		ret.push_back(std::wstring(*argv));
+	return ret;
+}
+
+#ifdef main
+#undef main
 #endif
-{
+
+int main(int argc,char **argv){
 	std::cout <<"ONSlaught ";
 	if (ONSLAUGHT_BUILD_VERSION<99999999)
 		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";
@@ -595,26 +227,19 @@ int
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"
 		"\"What do I mean by \"do\" and what do I do by \"mean\"?\"\n\n"<<std::endl;
+
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
-	if (argc>1 && (
-			!strcmp2(argv[1],"-?") || 
-			!strcmp2(argv[1],"-h") || 
-			!strcmp2(argv[1],"--help") || 
-			!strcmp2(argv[1],"--version")
-			) || !useArgumentsFile("arguments.txt")){
-#ifdef _MSC_VER
-		char **argv2=new char*[argc];
-		for (int a=0;a<argc;a++)
-			argv2[a]=copyString(argv[a]);
-		parseCommandLine(argc,argv2);
-		for (int a=0;a<argc;a++)
-			delete[] argv2[a];
-		delete[] argv2;
-#else
-		parseCommandLine(argc,argv);
-#endif
-	}
+
+	std::vector<std::wstring> cmdl_arg=getArgumentsVector(argv);
+	if (cmdl_arg.size() && (
+			cmdl_arg[0]==L"-?" ||
+			cmdl_arg[0]==L"-h" ||
+			cmdl_arg[0]==L"--help" ||
+			cmdl_arg[0]==L"--version"
+			) || !useArgumentsFile("arguments.txt"))
+		CLOptions.parse(cmdl_arg);
+
 	if (CLOptions.override_stdout){
 		o_stdout.redirect();
 		o_stderr.redirect();
@@ -663,6 +288,7 @@ int
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	//exitMutex=SDL_CreateMutex();
 	screenMutex=SDL_CreateMutex();
+	config_directory=getConfigLocation();
 
 #if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
 	if (CLOptions.noconsole){
@@ -685,8 +311,6 @@ int
 	}
 	labellog.init("NScrllog.dat","nonsllog.dat");
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
-	if (config_directory.size())
-		config_directory=getConfigLocation();
 	o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
 	o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
 	if (CLOptions.musicDirectory.size())
@@ -743,13 +367,13 @@ int mainThread(void *nothing){
 int debugThread(void *nothing){
 	NONS_ScriptInterpreter *interpreter=(NONS_ScriptInterpreter *)gScriptInterpreter;
 	while (1){
-		char *command=inputstr();
-		NONS_tolower(command);
-		if (!strcmp(command,"exit") || !strcmp(command,"quit"))
+		std::string input;
+		std::getline(std::cin,input);
+		if (!stdStrCmpCI(input,"exit") || !stdStrCmpCI(input,"quit"))
 			return 0;
-		wchar_t *wcommand=copyWString(command);
+		std::wstring winput=UniFromUTF8(input);
 		ErrorCode error;
-		NONS_VariableMember *var=interpreter->store->retrieve(wcommand,&error);
+		NONS_VariableMember *var=interpreter->store->retrieve(winput,&error);
 		if (var){
 			if (var->getType()==INTEGER)
 				std::cout <<"intValue: "<<var->getInt()<<std::endl;
@@ -760,8 +384,6 @@ int debugThread(void *nothing){
 		}else if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"debugThread",0);
 		else
-			handleErrors(interpreter->interpretString(wcommand),-1,"debugThread",0);
-		delete[] wcommand;
-		delete[] command;
+			handleErrors(interpreter->interpretString(winput),-1,"debugThread",0);
 	}
 }

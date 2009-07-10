@@ -118,6 +118,7 @@ typedef Uint32 ErrorCode;
 #define NONS_LEXICALLY_UNCASTABLE					(72|NONS_SYNTAX_ERROR)
 #define NONS_DUPLICATE_LABEL						(73|NONS_SYNTAX_ERROR)
 #define NONS_INVALID_COMMAND_NAME					(74|NONS_SYNTAX_ERROR)
+#define NONS_NOT_ENOUGH_LINES_TO_SKIP				75
 
 extern const char *errorMessages[];
 #endif

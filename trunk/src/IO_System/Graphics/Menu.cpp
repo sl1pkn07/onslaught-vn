@@ -226,19 +226,23 @@ int NONS_Menu::save(){
 	int choice;
 	while (1){
 		std::vector<std::wstring> strings;
-		wchar_t temp[100];
+		std::wstring pusher;
 		for (ulong a=0;a<slots;a++){
 			tm *t=files[a];
-			if (t)
-				swprintf(temp,100,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-			else
-				swprintf(temp,100,L" %2d    -------------------",a+1);
-			std::wstring pusher;
 			if (this->stringSlot.size())
 				pusher=this->stringSlot;
 			else
 				pusher=L"Slot";
-			pusher.append(temp);
+			pusher+=L" "+itoa<wchar_t>(a+1,2)+L"    ";
+			if (t)
+				pusher+=itoa<wchar_t>(t->tm_year+1900,4)+L"-"+
+					itoa<wchar_t>(t->tm_mon+1,2)+L"-"+
+					itoa<wchar_t>(t->tm_mday,2)+L" "+
+					itoa<wchar_t>(t->tm_hour,2)+L":"+
+					itoa<wchar_t>(t->tm_min,2)+L":"+
+					itoa<wchar_t>(t->tm_sec,2);
+			else
+				pusher+=L"-------------------";
 			strings.push_back(pusher);
 		}
 		int w=scr->screen->virtualScreen->w,
@@ -290,19 +294,23 @@ int NONS_Menu::load(){
 	int choice;
 	while (1){
 		std::vector<std::wstring> strings;
-		wchar_t txt[100];
+		std::wstring pusher;
 		for (ulong a=0;a<slots;a++){
 			tm *t=files[a];
-			if (t)
-				swprintf(txt,31,L" %2d    %04d-%02d-%02d %02d:%02d:%02d",a+1,t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-			else
-				swprintf(txt,31,L" %2d    -------------------",a+1);
-			std::wstring pusher;
 			if (this->stringSlot.size())
 				pusher=this->stringSlot;
 			else
 				pusher=L"Slot";
-			pusher.append(txt);
+			pusher+=L" "+itoa<wchar_t>(a+1,2)+L"    ";
+			if (t)
+				pusher+=itoa<wchar_t>(t->tm_year+1900,4)+L"-"+
+					itoa<wchar_t>(t->tm_mon+1,2)+L"-"+
+					itoa<wchar_t>(t->tm_mday,2)+L" "+
+					itoa<wchar_t>(t->tm_hour,2)+L":"+
+					itoa<wchar_t>(t->tm_min,2)+L":"+
+					itoa<wchar_t>(t->tm_sec,2);
+			else
+				pusher+=L"-------------------";
 			strings.push_back(pusher);
 		}
 		int w=scr->screen->virtualScreen->w,
@@ -391,6 +399,8 @@ int NONS_Menu::call(const std::wstring &string){
 		this->skip();
 	}else{
 		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string);
+		if (error==NONS_END)
+			return NONS_END;
 		if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"NONS_Menu::call",1);
 	}

@@ -56,7 +56,7 @@ NONS_VariableStore::NONS_VariableStore(){
 			this->variables[stackpos]=var;
 		}
 	}else{
-		if (!instr((char *)buffer,"BZh")){
+		if (firstchars(std::string((char *)buffer),0,"BZh")){
 			char *temp=decompressBuffer_BZ2((char *)buffer,l,(unsigned long *)&l);
 			delete[] buffer;
 			buffer=(uchar *)temp;
@@ -172,7 +172,7 @@ ErrorCode NONS_VariableStore::evaluate(
 		*result=0;
 	std::wstringstream param;
 	param <<exp;
-	switch (yyparse(&param,this,&ImageLoader->filelog,result,invert_terms,array_decl,retrievedVar,string)){
+	switch (expressionParser_yyparse(&param,this,&ImageLoader->filelog,result,invert_terms,array_decl,retrievedVar,string)){
 		case 0:
 			if (!!result && CLOptions.verbosity>=2){
 				if (invert_terms)

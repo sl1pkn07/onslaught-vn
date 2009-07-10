@@ -37,33 +37,108 @@
 #include "../../Globals.h"
 #include "../SaveFile.h"
 #include "sha1.h"
+#include "commandPreParser.tab.hpp"
 #include <cstring>
+#include <stack>
 
-NONS_ParsedStatement::NONS_ParsedStatement(const std::wstring &string){
+//Returns then position of the ending quote, of npos if couldn't be found before
+//the end of the string or if there isn't a string beginning at 'start'.
+size_t findEndOfString(const std::wstring &str,size_t offset){
+	if (offset+1>=str.size())
+		return str.npos;
+	bool account_for_escapes;
+	wchar_t terminator;
+	if (str[offset]=='\"' || str[offset]=='`'){
+		terminator=str[offset];
+		offset++;
+		account_for_escapes=0;
+	}else if (offset+1<str.size() && NONS_tolower(str[offset])=='e' && str[offset+1]=='\"'){
+		offset+=2;
+		account_for_escapes=1;
+	}else
+		return str.npos;
+	if (!account_for_escapes)
+		return str.find(terminator,offset);
+	ulong size=str.size();
+	while (offset<size && str[offset]!='\"'){
+		if (str[offset]=='\\'){
+			offset++;
+			if (offset>=size)
+				return str.npos;
+			if (str[offset]=='x'){
+				offset++;
+				for (ulong a=0;offset<size && str[offset]!='\"' && a<4;a++,offset++);
+			}else
+				offset++;
+		}else
+			offset++;
+	}
+	return (offset<size)?offset:str.npos;
+}
+
+std::wstring readIdentifierAndAdvance(const std::wstring &str,ulong offset){
+	if (str[offset]!='_' && !NONS_isalpha(str[offset]))
+		return L"";
+	ulong start=offset,
+		end=start+1;
+	for (;end<str.size() && (str[end]=='_' || NONS_isalnum(str[end]));end++);
+	return std::wstring(str,start,end-start);
+}
+
+NONS_Statement::NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,ulong number,ulong offset,bool terminal){
+	this->stmt=string;
+	this->lineOfOrigin=line;
+	this->fileOffset=offset;
+	this->statementNo=number;
+	this->parsed=0;
 	if (!string.size()){
-		this->type=PARSEDSTMT_EMPTY;
+		this->type=STATEMENT_EMPTY;
 		return;
 	}
-	ulong size=string.size();
 	if (multicomparison(string[0],";*`\\@!#~%$?") || string[0]>0x7F){
-		switch (this->commandName[0]){
+		switch (string[0]){
 			case ';':
-				this->type=PARSEDSTMT_COMMENT;
+				this->type=STATEMENT_COMMENT;
 				return;
 			case '*':
-				this->type=PARSEDSTMT_BLOCK;
-				this->commandName=string;
+				this->type=STATEMENT_BLOCK;
+				this->commandName=string.substr(1);
+				trim_string(this->commandName);
 				break;
 			case '~':
-				this->type=PARSEDSTMT_JUMP;
+				this->type=STATEMENT_JUMP;
 				return;
 			default:
-				this->type=PARSEDSTMT_PRINTER;
-				this->commandName=string;
+				this->type=STATEMENT_PRINTER;
 		}
-	}else{
-		this->type=PARSEDSTMT_COMMAND;
-		ulong space=0;
+	}else
+		this->type=STATEMENT_COMMAND;
+}
+
+NONS_Statement::NONS_Statement(const NONS_Statement &copy,ulong No,NONS_ScriptLine *newLOO){
+	*this=copy;
+	this->lineOfOrigin=newLOO;
+	this->statementNo=No;
+}
+
+NONS_Statement &NONS_Statement::operator=(const NONS_Statement &copy){
+	this->stmt=copy.stmt;
+	this->commandName=copy.commandName;
+	this->stringParameters=copy.stringParameters;
+	this->parameters=copy.parameters;
+	this->type=copy.type;
+	this->error=copy.error;
+	this->lineOfOrigin=0;
+	this->statementNo=0;
+	return *this;
+}
+
+void NONS_Statement::parse(NONS_Script *script){
+	if (!this->parsed && this->type==STATEMENT_COMMAND){
+		this->parsed=1;
+		std::wstring &string=this->stmt;
+		ulong size=string.size(),
+			space=0;
 		for (;space<size && !iswhitespace(string[space]);space++);
 		this->commandName=string.substr(0,space);
 		if (!isValidIdentifier(this->commandName)){
@@ -74,91 +149,91 @@ NONS_ParsedStatement::NONS_ParsedStatement(const std::wstring &string){
 		for (;space<size && iswhitespace(string[space]);space++);
 		this->stringParameters=string.substr(space);
 		if (!stdStrCmpCI(this->commandName,L"if") || !stdStrCmpCI(this->commandName,L"notif")){
-
+			this->preparseIf(script);
 		}else if (!stdStrCmpCI(this->commandName,L"for")){
+			this->preparseFor(script);
 		}else{
 			ulong start=space,
 				end;
 			while (start<size){
 				end=start;
 				while (end<size && string[end]!=','){
-					if (string[end]=='\"' || string[end]=='`'){
-						wchar_t quote=string[end];
-						for (end++;end<size && string[end]!=quote;end++);
-					}else if (end+1<size && NONS_tolower(string[end])=='e' && string[end+1]){
-						for (end+=2;end<size && string[end]!='\"';end++){
-							if (string[end]=='\\' && string[end+1]=='x'){
-								end+=2;
-								for (ulong a=0;end<size && string[end]!='\"' && a<4;a++,end++);
-							}
-						}
-					}
+					if (string[end]=='\"' || string[end]=='`' || end+1<size && NONS_tolower(string[end])=='e' && string[end+1]=='\"')
+						end=findEndOfString(string,end);
 					for (end++;end<size && iswhitespace(string[end]);end++);
 				}
 				if (end>size)
 					end=size;
 				ulong start0=end;
 				for (end--;end>start && iswhitespace(string[end]);end--);
+				end++;
 				this->parameters.push_back(std::wstring(string,start,end-start));
 				start=start0;
-				for (;start<size && !iswhitespace(string[start]);start++);
+				if (start<size)
+					start++;
+				for (;start<size && iswhitespace(string[start]);start++);
 			}
 		}
 	}
 }
 
-void NONS_ParsedStatement::preparseIf(){
+void NONS_Statement::preparseIf(NONS_Script *script){
+	std::wstringstream stream(this->stringParameters);
+	ulong start[3];
+	if (!commandPreParser_yyparse(&stream,script,start)){
+		this->parameters.push_back(this->stringParameters.substr(0,*start));
+		this->parameters.push_back(this->stringParameters.substr(*start));
+	}else
+		this->error=NONS_UNDEFINED_SYNTAX_ERROR;
 }
 
-void NONS_ParsedStatement::preparseFor(){
+void NONS_Statement::preparseFor(NONS_Script *script){
+	std::wstringstream stream(this->stringParameters);
+	//Note: In reality, ifParser_yyparse() will write at most 3 elements. The
+	//fourth is there for additional processing.
+	ulong end[3];
+	if (!commandPreParser_yyparse(&stream,script,end)){
+		ulong start=0;
+		this->parameters.push_back(this->stringParameters.substr(start,end[0]-start));
+		start=end[0]+1;
+		this->parameters.push_back(this->stringParameters.substr(start,end[1]-start));
+		start=end[1]+2;
+		if (end[2]!=ULONG_MAX){
+			this->parameters.push_back(this->stringParameters.substr(start,end[2]-start));
+			start=end[2]+4;
+		}
+		this->parameters.push_back(this->stringParameters.substr(start));
+		for (ulong a=0;a<this->parameters.size();a++)
+			trim_string(this->parameters[a]);
+	}else
+		this->error=NONS_UNDEFINED_SYNTAX_ERROR;
 }
 
-NONS_Statement::NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,ulong number,ulong offset,bool terminal){
-	this->stmt=string;
-	this->lineOfOrigin=line;
-	this->fileOffset=offset;
-	this->statementNo=number;
-	this->parsed_stmt=0;
-	if (terminal)
-		this->parse();
-}
-
-NONS_ParsedStatement *NONS_Statement::parse(){
-	if (!this->parsed_stmt)
-		this->parsed_stmt=new NONS_ParsedStatement(this->stmt);
-	return this->parsed_stmt;
-}
-
-NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off){
+NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off,bool ignoreEmptyStatements){
 	this->lineNumber=line;
 	ulong start=string.find_first_not_of(L"\x09\x20");
+	if (start==string.npos)
+		start=0;
 	off+=start;
 	std::wstring temp=string.substr(start);
 	wchar_t *C_temp=&temp[0];
 	std::wstring temp2;
 	for (ulong a=0,size=string.size();a<size;){
 		bool terminal=0;
-		if (multicomparison(temp[0],";~`?%$!\\@#") || temp[0]>0x7F){
+		ulong original_a=a;
+		if (multicomparison(temp[a],";~`?%$!\\@#") || temp[a]>0x7F || firstcharsCI(temp,a,L"if") || firstcharsCI(temp,a,L"notif")){
 			temp2=std::wstring(temp,a);
 			terminal=1;
 			a=size;
 		}else{
 			ulong b=a;
 			while (b<size){
-				if (C_temp[b]=='\"' || C_temp[b]=='`'){
-					wchar_t quote=C_temp[b];
-					for (b++;b<size && C_temp[b]!=quote;b++);
-				}else if (C_temp[b]==':')
+				if (C_temp[b]=='\"' || C_temp[b]=='`' || b+1<size && NONS_tolower(C_temp[b])=='e' && C_temp[b+1]=='\"')
+					b=findEndOfString(temp,b);
+				else if (C_temp[b]==':' || C_temp[b]==';')
 					break;
-				else if (b+1<size && NONS_tolower(C_temp[b])=='e' && C_temp[b+1]){
-					for (b+=2;b<size && C_temp[b]!='\"';b++){
-						if (C_temp[b]=='\\' && C_temp[b+1]=='x'){
-							b+=2;
-							for (ulong c=0;b<size && C_temp[b]!='\"' && c<4;c++,b++);
-						}
-					}
-				}
-				b++;
+				if (b!=temp.npos)
+					b++;
 			}
 			if (b>=size)
 				b=size;
@@ -170,8 +245,38 @@ NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off
 			if (C_temp[a]==':')
 				for (a++;a<size && (C_temp[a]==9 || C_temp[a]==32);a--);
 		}
-		this->statements.push_back(new NONS_Statement(temp2,this,this->statements.size(),off+a,terminal));
+		NONS_Statement *stmt=new NONS_Statement(temp2,this,this->statements.size(),off+original_a,terminal);
+		if (ignoreEmptyStatements && (
+				stmt->type==NONS_Statement::STATEMENT_EMPTY ||
+				stmt->type==NONS_Statement::STATEMENT_COMMENT ||
+				stmt->type==NONS_Statement::STATEMENT_JUMP))
+			delete stmt;
+		else
+			this->statements.push_back(stmt);
 	}
+}
+
+NONS_ScriptLine::NONS_ScriptLine(const NONS_ScriptLine &copy,ulong startAt){
+	if (!startAt)
+		*this=copy;
+	else{
+		this->lineNumber=copy.lineNumber;
+		for (ulong a=0;a<this->statements.size();a++)
+			delete this->statements[a];
+		this->statements.resize(copy.statements.size()-startAt);
+		for (ulong a=startAt;a<copy.statements.size();a++)
+			this->statements[a-startAt]=new NONS_Statement(*copy.statements[a],a-startAt,this);
+	}
+}
+
+NONS_ScriptLine &NONS_ScriptLine::operator=(const NONS_ScriptLine &copy){
+	this->lineNumber=copy.lineNumber;
+	for (ulong a=0;a<this->statements.size();a++)
+		delete this->statements[a];
+	this->statements.resize(copy.statements.size());
+	for (ulong a=0;a<this->statements.size();a++)
+		this->statements[a]=new NONS_Statement(*copy.statements[a],a,this);
+	return *this;
 }
 
 NONS_ScriptLine::~NONS_ScriptLine(){
@@ -179,15 +284,24 @@ NONS_ScriptLine::~NONS_ScriptLine(){
 		delete this->statements[a];
 }
 
-NONS_ScriptBlock::NONS_ScriptBlock(NONS_Statement *stmt,bool *valid){
-	if (stmt->stmt[0]=='*')
-		this->name=stmt->stmt.substr(1);
-	else
-		this->name=stmt->stmt;
-	trim_string(this->name);
-	if (!!valid)
-		*valid=isValidIdentifier(this->name);
-	this->used=0;
+std::wstring NONS_ScriptLine::toString(){
+	if (!this->statements.size())
+		return L"";
+	std::wstring res=this->statements[0]->stmt;
+	for (ulong a=1;a<this->statements.size();a++){
+		res.push_back(':');
+		res.append(this->statements[a]->stmt);
+	}
+	return res;
+}
+
+NONS_ScriptBlock::NONS_ScriptBlock(const std::wstring &name,const wchar_t *buffer,ulong start,ulong end,ulong line_start,ulong line_end){
+	this->name=name;
+	this->data=std::wstring(buffer+start,end-start+1);
+	this->first_offset=start;
+	this->last_offset=end;
+	this->first_line=line_start;
+	this->last_line=line_end;
 }
 
 NONS_Script::NONS_Script(){
@@ -215,12 +329,9 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 			}else if (isValidSJIS(temp,l)){
 				o_stderr <<"The script seems to be a valid Shift JIS stream. Using it as such.\n";
 				wtemp=UniFromSJIS(std::string(temp,l));
-			}else if (!ISO88591_or_UCS2(temp,l)){
+			}else{
 				o_stderr <<"The script seems to be a valid ISO-8859-1 stream. Using it as such.\n";
 				wtemp=UniFromISO88591(std::string(temp,l));
-			}else{
-				o_stderr <<"The script seems to be a valid UCS-2 stream. Using it as such.\n";
-				wtemp=UniFromUCS2(std::string(temp,l),UNDEFINED_ENDIANNESS);
 			}
 			break;
 		case ISO_8859_1_ENCODING:
@@ -242,68 +353,91 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 		default:
 			break;
 	}
+	this->scriptSize=wtemp.size();
 	wchar_t *buffer=&wtemp[0];
-	for (ulong a=0;a<wtemp.size();a++){
-		ulong b=wtemp.find_first_of(L"\x0A\x0D",a);
-		std::wstring temp(wtemp,a,b-a);
-		temp=std::wstring(temp,temp.find_first_not_of(L"\x09\x20"));
-		ulong off=a;
-		while (temp[temp.size()-1]=='/' && b!=wtemp.npos){
-			this->script.push_back(new NONS_ScriptLine(this->script.size()+1,L"",off));
-			a=b;
-			if (buffer[a]==10)
-				a++;
-			else if (a+1<wtemp.size() && buffer[a+1]==10)
-				a+=2;
-			else
-				a++;
-			b=wtemp.find_first_of(L"\x0A\x0D",a);
-			temp=temp.substr(0,temp.size()-1)+std::wstring(wtemp,a,b-a);
+	ulong currentLine=1,
+		start_of_block_offset=0,
+		start_of_block_line=currentLine;
+	std::wstring block_name=NONS_FIRST_BLOCK;
+	std::set<std::wstring,stdStringCmpCI<wchar_t> > *checkDuplicates=new std::set<std::wstring,stdStringCmpCI<wchar_t> >;
+	ErrorCode error=NONS_NO_ERROR;
+	for (ulong a=0,size=wtemp.size();a<size;){
+		this->lineOffsets.push_back(a);
+		ulong start_of_line=wtemp.find_first_not_of(L"\x09\x20",a),
+			end_of_line=wtemp.find_first_of(L"\x0A\x0D",a),
+			currentLineCopy=currentLine;
+		if (end_of_line==wtemp.npos)
+			end_of_line=wtemp.size();
+		if (start_of_line!=end_of_line){
+			while (buffer[end_of_line-1]=='/' && end_of_line<size-1){
+				a=end_of_line;
+				if (buffer[a]==10)
+					a++;
+				else if (a+1<wtemp.size() && buffer[a+1]==10)
+					a+=2;
+				else
+					a++;
+				this->lineOffsets.push_back(a);
+				currentLine++;
+				end_of_line=wtemp.find_first_of(L"\x0A\x0D",a);
+				if (end_of_line==wtemp.npos)
+					end_of_line=size-1;
+			}
+			if (buffer[start_of_line]=='*'){
+				ulong beg=wtemp.find_first_not_of(WCS_WHITESPACE,start_of_line+1);
+				ulong len=wtemp.find_first_of(WCS_WHITESPACE,beg);
+				if (len!=wtemp.npos)
+					len-=beg;
+				std::wstring id(wtemp,beg,len);
+				id=string_replace<wchar_t>(id,L"/\x0D\x0A",0);
+				id=string_replace<wchar_t>(id,L"/\x0D",0);
+				id=string_replace<wchar_t>(id,L"/\x0A",0);
+				if (checkDuplicates->find(id)!=checkDuplicates->end()){
+					handleErrors(NONS_DUPLICATE_LABEL,currentLine,"NONS_Script::init",0);
+					error=NONS_FATAL_ERROR;
+				}
+				if (isValidLabel(id)){
+					if (start_of_line)
+						this->blocksByLine.push_back(new NONS_ScriptBlock(
+							block_name,
+							buffer,
+							start_of_block_offset,
+							start_of_line-1,
+							start_of_block_line,
+							currentLine-1));
+					start_of_block_offset=start_of_line;
+					start_of_block_line=currentLine;
+					block_name=id;
+					checkDuplicates->insert(id);
+				}else
+					handleErrors(NONS_INVALID_ID_NAME,currentLineCopy,"NONS_Script::init",0,L"The label will be ignored");
+			}else if (buffer[start_of_line]=='~')
+				this->jumps.push_back(std::pair<ulong,ulong>(currentLineCopy,start_of_line));
 		}
-		this->script.push_back(new NONS_ScriptLine(this->script.size()+1,temp,off));
-		if (b==wtemp.npos)
-			break;
-		a=b;
+		a=end_of_line;
 		if (buffer[a]==10)
 			a++;
 		else if (a+1<wtemp.size() && buffer[a+1]==10)
 			a+=2;
 		else
 			a++;
+		currentLine++;
 	}
-	wtemp.clear();
-	std::set<std::wstring,stdStringCmpCI<wchar_t> > *checkDuplicates=new std::set<std::wstring,stdStringCmpCI<wchar_t> >;
-	ErrorCode error=NONS_NO_ERROR;
-	for (ulong a=0;a<this->script.size();a++){
-		NONS_ScriptLine *line=this->script[a];
-		for (ulong b=0;b<line->statements.size();b++){
-			if (!line->statements[b]->stmt.size())
-				continue;
-			if (line->statements[b]->stmt[0]=='*'){
-				bool valid;
-				NONS_ScriptBlock *block=new NONS_ScriptBlock(line->statements[b],&valid);
-				if (!valid){
-					delete block;
-					handleErrors(NONS_INVALID_ID_NAME,a+1,"NONS_Script::init",1,L"The label will be ignored");
-					continue;
-				}
-				if (checkDuplicates->find(block->name)!=checkDuplicates->end()){
-					delete block;
-					handleErrors(NONS_DUPLICATE_LABEL,a+1,"NONS_Script::init",1);
-					error=NONS_FATAL_ERROR;
-				}
-				this->blocksByLine.push_back(block);
-				this->blocksByName.push_back(block);
-			}else if (line->statements[b]->stmt[0]=='~')
-				this->jumps.push_back(line->statements[b]);
-		}
-	}
-	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-		delete checkDuplicates;
+	delete checkDuplicates;
+	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
 		return error;
-	}
+	this->blocksByLine.push_back(new NONS_ScriptBlock(
+		block_name,
+		buffer,
+		start_of_block_offset,
+		wtemp.size()-1,
+		start_of_block_line,
+		currentLine));
+	wtemp.clear();
+	this->blocksByName.resize(this->blocksByLine.size());
+	std::copy(this->blocksByLine.begin(),this->blocksByLine.end(),this->blocksByName.begin());
 	std::sort(this->blocksByName.begin(),this->blocksByName.end(),sortBlocksByName);
-	if (!this->statementFromLabel(L"*define"))
+	if (!this->blockFromLabel(L"define"))
 		return NONS_NO_DEFINE_LABEL;
 	SHA1 hash;
 	for (ulong a=0;a<this->blocksByLine.size();a++){
@@ -317,29 +451,308 @@ ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,
 }
 
 NONS_Script::~NONS_Script(){
-	for (ulong a=0;a<this->script.size();a++)
-		delete this->script[a];
 	for (ulong a=0;a<this->blocksByLine.size();a++)
 		delete this->blocksByLine[a];
 }
 
-NONS_Statement *NONS_Script::statementFromLabel(std::wstring name){
-	std::wstring copy;
+NONS_ScriptBlock *NONS_Script::blockFromLabel(std::wstring name){
 	if (name[0]=='*')
-		copy=name.substr(1);
+		name=name.substr(1);
 	else
-		copy=name;
-	trim_string(copy);
+		name=name;
+	trim_string(name);
 	size_t off;
-	if (!binary_search<NONS_ScriptBlock *,std::wstring>(&this->blocksByName[0],0,this->blocksByName.size(),name,off,&findBlocksByName))
+	if (!this->blocksByName.size() || !binary_search<NONS_ScriptBlock *,std::wstring>(
+			&this->blocksByName[0],
+			0,
+			this->blocksByName.size()-1,
+			name,
+			off,
+			&findBlocksByName))
 		return 0;
-	return this->blocksByName[off]->labelStatement;
+	return this->blocksByName[off];
 }
 
-std::wstring NONS_Script::statementFromOffset(ulong offset){
+NONS_ScriptBlock *NONS_Script::blockFromOffset(ulong offset){
 	size_t off;
-	if (!binary_search<NONS_ScriptBlock *,ulong>(&this->blocksByLine[0],0,this->blocksByLine.size(),offset,off,&findBlocksByOffset))
+	if (!this->blocksByName.size() || !binary_search<NONS_ScriptBlock *,ulong>(
+			&this->blocksByLine[0],
+			0,
+			this->blocksByLine.size()-1,
+			offset,
+			off,
+			&findBlocksByOffset))
+		return 0;
+	return this->blocksByLine[off];
+}
+
+
+std::wstring NONS_Script::labelFromOffset(ulong offset){
+	size_t off;
+	if (!this->blocksByLine.size() || !binary_search<NONS_ScriptBlock *,ulong>(
+			&this->blocksByLine[0],
+			0,
+			this->blocksByLine.size()-1,
+			offset,
+			off,
+			&findBlocksByOffset))
 		return L"";
 	return this->blocksByName[off]->name;
+}
+
+NONS_ScriptBlock *NONS_Script::blockFromLine(ulong line){
+	size_t off;
+	if (!this->blocksByLine.size() || !binary_search<NONS_ScriptBlock *,ulong>(
+			&this->blocksByLine[0],
+			0,
+			this->blocksByLine.size()-1,
+			line,
+			off,
+			&findBlocksByLine))
+		return 0;
+	return this->blocksByLine[off];
+}
+
+size_t NONS_Script::blockIndexFromLine(ulong line){
+	size_t off;
+	if (!this->blocksByLine.size() || !binary_search<NONS_ScriptBlock *,ulong>(
+			&this->blocksByLine[0],
+			0,
+			this->blocksByLine.size()-1,
+			line,
+			off,
+			&findBlocksByLine))
+		off=this->blocksByLine.size();
+	return off;
+}
+
+size_t NONS_Script::jumpIndexForBackwards(ulong offset){
+	ulong size=this->jumps.size();
+	for (long a=size-1;a>=0;a--)
+		if (this->jumps[a].second<=offset)
+			return a;
+	return size;
+}
+
+size_t NONS_Script::jumpIndexForForward(ulong offset){
+	ulong size=this->jumps.size();
+	for (ulong a=0;a<size;a++)
+		if (this->jumps[a].second>=offset)
+			return a;
+	return size;
+}
+
+ulong NONS_Script::offsetFromLine(ulong line){
+	if (line>this->lineOffsets.size())
+		return this->scriptSize;
+	return this->lineOffsets[line-1];
+}
+
+NONS_ScriptThread::NONS_ScriptThread(NONS_Script *script){
+	this->script=script;
+	this->valid=0;
+	if (!this->script->blocksByLine.size())
+		return;
+	for (ulong a=0,size=this->script->blocksByLine.size();a<size && !this->readBlock(*this->script->blocksByLine[a]);a++);
+	if (!this->lines.size())
+		return;
+	this->currentLine=0;
+	this->currentStatement=0;
+	std::pair<ulong,ulong> pair=this->getNextStatementPair();
+	this->nextLine=pair.first;
+	this->nextStatement=pair.second;
+}
+
+bool NONS_ScriptThread::advanceToNextStatement(){
+	if (this->nextLine==this->lines[this->currentLine]->lineNumber)
+		this->currentStatement=this->nextStatement;
+	else if (this->nextLine>=this->first_line && this->nextLine<=this->last_line){
+		long moveTo=-1;
+		if (this->lines[this->currentLine]->lineNumber<=this->nextLine){
+			for (ulong a=this->currentLine;a<this->lines.size() && moveTo<0;a++)
+				if (this->nextLine<=this->lines[a]->lineNumber)
+					moveTo=a;
+		}else{
+			for (ulong a=0;a<this->lines.size() && moveTo<0;a++)
+				if (this->nextLine<=this->lines[a]->lineNumber)
+					moveTo=a;
+		}
+		if (moveTo<0){
+			this->nextLine=this->last_line+1;
+			return this->advanceToNextStatement();
+		}
+		this->currentLine=moveTo;
+	}else{
+		NONS_ScriptBlock *block=this->script->blockFromLine(this->nextLine);
+		if (!block)
+			return 0;
+		ulong offset=this->script->offsetFromLine(this->nextLine),line=this->nextLine-block->first_line;
+		if (offset==this->script->scriptSize)
+			return 0;
+		if (block->first_offset>offset)
+			offset=0;
+		else
+			offset-=block->first_offset;
+		if (!this->readBlock(*block,offset,line)){
+			size_t index=this->script->blockIndexFromLine(this->nextLine);
+			offset=0;
+			line=0;
+			for (ulong a=index,size=this->script->blocksByLine.size();a<size && !this->readBlock(*block,offset,line);a++);
+			if (!this->lines.size())
+				return 0;
+		}
+		this->currentLine=0;
+		this->currentStatement=0;
+	}
+	std::pair<ulong,ulong> pair=this->getNextStatementPair();
+	this->nextLine=pair.first;
+	this->nextStatement=pair.second;
+	return 1;
+}
+
+bool NONS_ScriptThread::gotoLabel(const std::wstring &label){
+	NONS_ScriptBlock *block=this->script->blockFromLabel(label);
+	if (!block)
+		return 0;
+	this->nextLine=block->first_line;
+	this->nextStatement=0;
+	return 1;
+}
+
+bool NONS_ScriptThread::skip(long offset){
+	ulong line=this->lines[this->currentLine]->lineNumber;
+	if (!offset){
+		this->nextLine=line;
+		this->nextStatement=0;
+		return 1;
+	}
+	line+=offset;
+	if (this->script->blocksByLine.back()->last_line<line)
+		return 0;
+	this->nextLine=line;
+	this->nextStatement=0;
+	return 1;
+}
+
+std::pair<ulong,ulong> NONS_ScriptThread::getNextStatementPair(){
+	std::pair<ulong,ulong> pair;
+	if (this->lines[this->currentLine]->statements.size()<=this->currentStatement+1){
+		pair.first=this->lines[this->currentLine]->lineNumber+1;
+		pair.second=0;
+	}else{
+		pair.first=this->lines[this->currentLine]->lineNumber;
+		pair.second=this->currentStatement+1;
+	}
+	return pair;
+}
+
+bool NONS_ScriptThread::gotoPair(const std::pair<ulong,ulong> &to){
+	this->nextLine=to.first;
+	this->nextStatement=to.second;
+	return 1;
+}
+
+bool NONS_ScriptThread::gotoJumpBackwards(ulong offset){
+	size_t index=this->script->jumpIndexForBackwards(offset);
+	if (index==this->script->jumps.size())
+		return 0;
+	this->nextLine=this->script->jumps[index].first;
+	this->nextStatement=0;
+	return 1;
+}
+
+bool NONS_ScriptThread::gotoJumpForward(ulong offset){
+	size_t index=this->script->jumpIndexForForward(offset);
+	if (index==this->script->jumps.size())
+		return 0;
+	this->nextLine=this->script->jumps[index].first;
+	this->nextStatement=0;
+	return 1;
+}
+
+bool NONS_ScriptThread::readBlock(const NONS_ScriptBlock &block,ulong start_at_offset,ulong start_at_line){
+	static const ulong lines_limit=100;
+
+	for (ulong a=0;a<this->lines.size();a++)
+		delete this->lines[a];
+	this->lines.clear();
+	if (start_at_offset>=block.data.size())
+		return 0;
+	this->currentBlock=&block;
+
+	this->first_line=block.first_line+start_at_line;
+	this->first_offset=block.first_offset+start_at_offset;
+	const std::wstring &txt=block.data;
+	ulong lineNo=block.first_line+start_at_line;
+	ulong a=start_at_offset;
+	for (ulong size=txt.size();a<size && this->lines.size()<lines_limit;){
+		ulong start_of_line=txt.find_first_not_of(L"\x09\x20",a),
+			end_of_line=txt.find_first_of(L"\x0A\x0D",a),
+			lineNo0=lineNo;
+		if (start_of_line==txt.npos)
+			break;
+		if (end_of_line==txt.npos)
+			end_of_line=txt.size();
+		if (start_of_line!=end_of_line){
+			std::wstring lineCopy=txt.substr(start_of_line,end_of_line-start_of_line);
+readBlock_000:
+			while (txt[end_of_line-1]=='/' && end_of_line<size-1){
+				lineCopy.resize(lineCopy.size()-1);
+				a=end_of_line;
+				if (txt[a]==10)
+					a++;
+				else if (a+1<size && txt[a+1]==10)
+					a+=2;
+				else
+					a++;
+				lineNo++;
+				end_of_line=txt.find_first_of(L"\x0A\x0D",a);
+				if (end_of_line==txt.npos)
+					end_of_line=size-1;
+				lineCopy.append(txt,a,end_of_line-a);
+			}
+			NONS_ScriptLine *line=new NONS_ScriptLine(lineNo0,lineCopy,block.first_offset+a,1);
+			if (line->statements.size()){
+				if (line->statements.back()->type==NONS_Statement::STATEMENT_COMMAND && 
+						lineCopy[lineCopy.find_last_not_of(WCS_WHITESPACE)]==','){
+					delete line;
+
+					while (1){
+						a=end_of_line;
+						if (txt[a]==10)
+							a++;
+						else if (a+1<size && txt[a+1]==10)
+							a+=2;
+						else
+							a++;
+						a=txt.find_first_not_of(WCS_NON_NEWLINE_WHITESPACE,a);
+						lineNo++;
+						end_of_line=txt.find_first_of(L"\x0A\x0D",a);
+						if (end_of_line!=a)
+							break;
+					}
+					if (end_of_line==txt.npos)
+						end_of_line=size-1;
+					lineCopy.append(txt,a,end_of_line-a);
+
+
+					goto readBlock_000;
+				}
+				this->lines.push_back(line);
+			}else
+				delete line;
+		}
+		a=end_of_line;
+		if (txt[a]==10)
+			a++;
+		else if (a+1<size && txt[a+1]==10)
+			a+=2;
+		else
+			a++;
+		lineNo++;
+	}
+	this->last_line=lineNo-1;
+	this->last_offset=a-1;
+	return !!this->lines.size();
 }
 #endif

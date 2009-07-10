@@ -49,9 +49,8 @@ tm *getDate(const char *filename){
 	FILETIME time;
 	SYSTEMTIME time2;
 #ifdef UNICODE
-	wchar_t *copy=copyWString(filename);
-	HANDLE h=CreateFile(copy,FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
-	delete[] copy;
+	std::wstring copy=UniFromISO88591(filename);
+	HANDLE h=CreateFile(copy.c_str(),FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #else
 	HANDLE h=CreateFile(filename,FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #endif
@@ -88,9 +87,7 @@ std::vector<tm *> existing_files(const std::string &location){
 	if (path[path.size()-1]!='/')
 		path.push_back('/');
 	for (short a=1;a<21;a++){
-		std::stringstream stream;
-		stream <<path<<a<<".dat";
-		std::string filename=stream.str();
+		std::string filename=path+"save"+itoa<char>(a)+".dat";
 		if (!fileExists(filename.c_str()))
 			res.push_back(0);
 		else
@@ -102,8 +99,8 @@ std::vector<tm *> existing_files(const std::string &location){
 #if defined(NONS_SYS_WINDOWS)
 #ifndef UNICODE
 #define UNICODE
-#endif
 #include <windows.h>
+#endif
 
 enum WINDOWS_VERSION{
 	ERR=0,
@@ -195,7 +192,11 @@ std::string getConfigLocation(){
 	RegQueryValueEx(k,TEXT("Personal"),0,&type,(LPBYTE)path,&size);
 	RegCloseKey(k);
 	size/=sizeof(TCHAR);
-	std::wstring pathStr(path,size);
+	size--;
+	std::wstring pathStr;
+	pathStr.resize(size);
+	std::copy(path,path+size,pathStr.begin());
+	toforwardslash(pathStr);
 	if (pathStr[pathStr.size()-1]!='/')
 		pathStr.append(L"/.ONSlaught");
 	else
@@ -230,7 +231,7 @@ std::string getSaveLocation(unsigned hash[5]){
 	if (getWindowsVersion()<V2K)
 		return "./";
 #endif
-	std::string root=getConfigLocation();
+	std::string root=config_directory;
 #if defined(NONS_SYS_WINDOWS)
 #ifdef UNICODE
 	std::wstring path=UniFromISO88591(root);
@@ -242,10 +243,12 @@ std::string getSaveLocation(unsigned hash[5]){
 #else
 	return root;
 #endif
-	if (CLOptions.savedir.size()){
-		wchar_t hashstring[100];
-		swprintf(hashstring,100,L"%08x %08x",hash[0],hash[1]);
-		path.append(hashstring);
+	if (!CLOptions.savedir.size()){
+		std::wstringstream stream;
+		stream.fill('0');
+		stream.width(8);
+		stream <<std::hex<<hash[0]<<" "<<hash[1];
+		path.append(stream.str());
 	}else
 		path.append(UniFromISO88591(CLOptions.savedir));
 #if defined(NONS_SYS_WINDOWS)
@@ -283,10 +286,10 @@ void NONS_SaveFile::load(std::string filename){
 	if (!buffer)
 		return;
 	ulong offset=0;
-	if (!instr(buffer,"NONS") || !instr(buffer,"BZh")){
+	if (firstcharsCI(std::string(buffer),0,"NONS") || firstcharsCI(std::string(buffer),0,"BZh")){
 		this->error=NONS_NO_ERROR;
 		this->format='N';
-		if (!instr(buffer,"BZh")){
+		if (firstcharsCI(std::string(buffer),0,"BZh")){
 			char *temp=decompressBuffer_BZ2(buffer,l,(unsigned long *)&l);
 			delete[] buffer;
 			buffer=temp;
@@ -304,22 +307,35 @@ void NONS_SaveFile::load(std::string filename){
 			ulong n=readDWord(buffer,offset);
 			for (ulong a=0;a<n;a++){
 				stackEl *el=new stackEl();
-				el->type=!!readByte(buffer,offset);
+				el->type=(StackFrameType)readByte(buffer,offset);
 				el->label=UniFromUTF8(readString(buffer,offset));
-				el->offset=readDWord(buffer,offset);
-				if (this->version>1)
-					el->textgosubLevel=readDWord(buffer,offset);
-				if (!el->type)
-					el->leftovers=UniFromUTF8(readString(buffer,offset));
+				if (this->version<2)
+					el->offset_deprecated=readDWord(buffer,offset);
 				else{
-					el->variable=readDWord(buffer,offset);
-					el->to=readSignedDWord(buffer,offset);
-					el->step=readSignedDWord(buffer,offset);
+					el->linesBelow=readDWord(buffer,offset);
+					el->statementNo=readDWord(buffer,offset);
+					el->textgosubLevel=readDWord(buffer,offset);
+				}
+				switch (el->type){
+					case SUBROUTINE_CALL:
+						el->leftovers=UniFromUTF8(readString(buffer,offset));
+						break;
+					case FOR_NEST:
+						el->variable=readDWord(buffer,offset);
+						el->to=readSignedDWord(buffer,offset);
+						el->step=readSignedDWord(buffer,offset);
+						break;
+					case TEXTGOSUB_CALL:;
 				}
 				this->stack.push_back(el);
 			}
 			this->currentLabel=UniFromUTF8(readString(buffer,offset));
-			this->currentOffset=readDWord(buffer,offset);
+			if (this->version<2)
+				this->currentOffset_deprecated=readDWord(buffer,offset);
+			else{
+				this->linesBelow=readDWord(buffer,offset);
+				this->statementNo=readDWord(buffer,offset);
+			}
 		}
 		//variables
 		offset=header[1];
@@ -422,27 +438,41 @@ void NONS_SaveFile::load(std::string filename){
 			this->currentBuffer=UniFromUTF8(readString(buffer,offset));
 			this->textX=readWord(buffer,offset);
 			this->textY=readWord(buffer,offset);
-			this->arrowCursorString=UniFromUTF8(readString(buffer,offset));
-			this->arrowCursorAbs=!!readByte(buffer,offset);
-			this->arrowCursorX=readSignedWord(buffer,offset);
-			this->arrowCursorY=readSignedWord(buffer,offset);
-			this->pageCursorString=UniFromUTF8(readString(buffer,offset));
-			this->pageCursorAbs=!!readByte(buffer,offset);
-			this->pageCursorX=readSignedWord(buffer,offset);
-			this->pageCursorY=readSignedWord(buffer,offset);
+			this->arrow.string=UniFromUTF8(readString(buffer,offset));
+			this->arrow.absolute=!!readByte(buffer,offset);
+			this->arrow.x=readSignedWord(buffer,offset);
+			this->arrow.y=readSignedWord(buffer,offset);
+			this->page.string=UniFromUTF8(readString(buffer,offset));
+			this->page.absolute=!!readByte(buffer,offset);
+			this->page.x=readSignedWord(buffer,offset);
+			this->page.y=readSignedWord(buffer,offset);
 
 			offset=subheader[1];
 			this->background=UniFromUTF8(readString(buffer,offset));
-			if (!this->background.size()){
+			if (this->background.size()){
 				this->bgColor.r=readByte(buffer,offset);
 				this->bgColor.g=readByte(buffer,offset);
 				this->bgColor.b=readByte(buffer,offset);
+			}else{
+				this->bgColor.r=0;
+				this->bgColor.g=0;
+				this->bgColor.b=0;
 			}
 			if (this->version>1)
 				this->char_baseline=readDWord(buffer,offset);
-			this->leftChar=UniFromUTF8(readString(buffer,offset));
-			this->centerChar=UniFromUTF8(readString(buffer,offset));
-			this->rightChar=UniFromUTF8(readString(buffer,offset));
+			if (this->version>1){
+				for (int a=0;a<3;a++){
+					this->characters[a].string=UniFromUTF8(readString(buffer,offset));
+					if (this->characters[a].string.size()){
+						this->characters[a].x=readSignedDWord(buffer,offset);
+						this->characters[a].y=readSignedDWord(buffer,offset);
+						this->characters[a].visibility=!!readByte(buffer,offset);
+						this->characters[a].alpha=readByte(buffer,offset);
+					}
+				}
+			}else
+				for (int a=0;a<3;a++)
+					this->characters[a].string=UniFromUTF8(readString(buffer,offset));
 			n=readDWord(buffer,offset);
 			std::vector<ulong> intervals;
 			for (ulong a=0;a<n;a++){
@@ -485,8 +515,8 @@ void NONS_SaveFile::load(std::string filename){
 			if (this->musicTrack<0)
 				this->music=UniFromUTF8(readString(buffer,offset));
 			uchar vol=readByte(buffer,offset);
-			if (vol>127)
-				vol=127;
+			/*if (vol>127)
+				vol=127;*/
 			this->musicVolume=(vol&0x7F);
 			this->loopMp3=CHECK_FLAG(vol,0x80);
 			this->channels.resize(readWord(buffer,offset),0);
@@ -556,18 +586,24 @@ bool NONS_SaveFile::save(std::string filename){
 			stackEl *el=this->stack[a];
 			writeByte(el->type,buffer);
 			writeString(el->label,buffer);
-			writeDWord(el->offset,buffer);
+			writeDWord(el->linesBelow,buffer);
+			writeDWord(el->statementNo,buffer);
 			writeDWord(el->textgosubLevel,buffer);
-			if (!el->type){
-				writeString(el->leftovers,buffer);
-			}else{
-				writeDWord(el->variable,buffer);
-				writeDWord(el->to,buffer);
-				writeDWord(el->step,buffer);
+			switch (el->type){
+				case SUBROUTINE_CALL:
+					writeString(el->leftovers,buffer);
+					break;
+				case FOR_NEST:
+					writeDWord(el->variable,buffer);
+					writeDWord(el->to,buffer);
+					writeDWord(el->step,buffer);
+					break;
+				case TEXTGOSUB_CALL:;
 			}
 		}
 		writeString(this->currentLabel,buffer);
-		writeDWord(this->currentOffset,buffer);
+		writeDWord(this->linesBelow,buffer);
+		writeDWord(this->statementNo,buffer);
 	}
 	//variables
 	writeDWord(buffer.size(),buffer,header[1]);
@@ -614,10 +650,8 @@ bool NONS_SaveFile::save(std::string filename){
 					a+=2;
 				}
 			}
-			for (arrays_map_T::iterator i=this->arrays.begin();i!=this->arrays.end();i++){
-				writeDWord(i->first,buffer);
+			for (arrays_map_T::iterator i=this->arrays.begin();i!=this->arrays.end();i++)
 				writeArray(i->second,buffer);
-			}
 		}
 	}
 	//screen
@@ -659,14 +693,14 @@ bool NONS_SaveFile::save(std::string filename){
 		writeString(this->currentBuffer,buffer);
 		writeWord(this->textX,buffer);
 		writeWord(this->textY,buffer);
-		writeString(this->arrowCursorString,buffer);
-		writeByte(this->arrowCursorAbs,buffer);
-		writeWord(this->arrowCursorX,buffer);
-		writeWord(this->arrowCursorY,buffer);
-		writeString(this->pageCursorString,buffer);
-		writeByte(this->pageCursorAbs,buffer);
-		writeWord(this->pageCursorX,buffer);
-		writeWord(this->pageCursorY,buffer);
+		writeString(this->arrow.string,buffer);
+		writeByte(this->arrow.absolute,buffer);
+		writeWord(this->arrow.x,buffer);
+		writeWord(this->arrow.y,buffer);
+		writeString(this->page.string,buffer);
+		writeByte(this->page.absolute,buffer);
+		writeWord(this->page.x,buffer);
+		writeWord(this->page.y,buffer);
 		//graphics
 		writeDWord(buffer.size(),buffer,screenHeader[1]);
 		writeString(this->background,buffer);
@@ -676,9 +710,15 @@ bool NONS_SaveFile::save(std::string filename){
 			writeByte(this->bgColor.b,buffer);
 		}
 		writeDWord(this->char_baseline,buffer);
-		writeString(this->leftChar,buffer);
-		writeString(this->centerChar,buffer);
-		writeString(this->rightChar,buffer);
+		for (int a=0;a<3;a++){
+			writeString(this->characters[a].string,buffer);
+			if (this->characters[a].string.size()){
+				writeDWord(this->characters[a].x,buffer);
+				writeDWord(this->characters[a].y,buffer);
+				writeByte(this->characters[a].visibility,buffer);
+				writeByte(this->characters[a].alpha,buffer);
+			}
+		}
 		std::vector<ulong> intervals;
 		ulong last;
 		bool set=0;

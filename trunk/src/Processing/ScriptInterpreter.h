@@ -57,12 +57,13 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(line.parameters[(src)],dst),extra)
+#define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
+#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)),extra)
 //#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getStrValue(line.parameters[(src)],&(dst)),extra)
-#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(line.parameters[(src)],dst),extra)
+#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)),extra)
 #define _GETVARIABLE(varName,src,extra){\
 	ErrorCode error;\
-	(varName)=this->store->retrieve(line.parameters[(src)],&error);\
+	(varName)=this->store->retrieve(stmt.parameters[(src)],&error);\
 	if (!(varName)){\
 		extra\
 		return error;\
@@ -90,6 +91,14 @@
 		return NONS_EXPECTED_STRING_VARIABLE;\
 	}\
 }
+#define _GETLABEL(dst,src,extra){\
+	std::wstring &_GETLABEL_temp=stmt.parameters[(src)];\
+	if (_GETLABEL_temp[0]=='*')\
+		(dst)=_GETLABEL_temp;\
+	else{\
+		_GETWCSVALUE((dst),(src),extra)\
+	}\
+}
 
 typedef std::map<std::string,INIfile *> INIcacheType;
 
@@ -106,46 +115,53 @@ struct printingPage{
 	printingPage &operator=(const printingPage &b);
 };
 
-enum{
-	UNDEFINED=0,
-	SUBROUTINE_CALL=1,
-	FOR_NEST=2,
-	TEXTGOSUB_CALL=3
-};
-
 struct NONS_StackElement{
-	int type;
-	ulong offset;
+	StackFrameType type;
+	struct statementPair{
+		ulong line,statement;
+		bool operator==(const statementPair &opB){
+			return this->line==opB.line && this->statement==opB.statement;
+		}
+		bool operator!=(const statementPair &opB){
+			return !(*this==opB);
+		}
+		std::pair<ulong,ulong> toPair(){
+			return std::pair<ulong,ulong>(this->line,this->statement);
+		}
+	} returnTo;
 	//subroutine data
-	std::wstring first_interpret_string;
+	NONS_ScriptLine interpretAtReturn;
 	//for data
 	NONS_VariableMember *var;
 	long from,
 		to,
 		step;
-	ulong end;
+	statementPair end;
 	//textgosub data
 	ulong textgosubLevel;
 	wchar_t textgosubTriggeredBy;
 	std::vector<printingPage> pages;
 
 	NONS_StackElement(ulong level);
-	NONS_StackElement(ulong offset,const std::wstring &string,ulong level);
-	NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step,ulong level);
-	NONS_StackElement(std::vector<printingPage> pages,wchar_t trigger,ulong level);
+	NONS_StackElement(const std::pair<ulong,ulong> &returnTo,const NONS_ScriptLine &interpretAtReturn,ulong beginAtStatement,ulong level);
+	NONS_StackElement(NONS_VariableMember *variable,const std::pair<ulong,ulong> &startStatement,long from,long to,long step,ulong level);
+	NONS_StackElement(const std::vector<printingPage> &pages,wchar_t trigger,ulong level);
 };
 
 class NONS_ScriptInterpreter{
-	typedef std::map<std::wstring,ErrorCode(NONS_ScriptInterpreter::*)(NONS_ParsedLine &),stdStringCmpCI<wchar_t> > commandListType;
+	typedef ErrorCode(NONS_ScriptInterpreter::*commandFunctionPointer)(NONS_Statement &);
+	typedef std::map<std::wstring,commandFunctionPointer,stdStringCmpCI<wchar_t> > commandListType;
+	//typedef std::map<std::wstring,ErrorCode(NONS_ScriptInterpreter::*)(NONS_Statement &),stdStringCmpCI<wchar_t> > commandListType;
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
 	void uninit();
 	void init();
 
-	ulong interpreter_position;
-	ulong previous_interpreter_position;
+	/*ulong interpreter_position;
+	ulong previous_interpreter_position;*/
 	commandListType commandList;
+	NONS_ScriptThread *thread;
 	//std::set<ulong> errored_lines;
 	std::set<ulong> printed_lines;
 	std::set<std::wstring> implementationErrors;
@@ -174,158 +190,155 @@ class NONS_ScriptInterpreter{
 	std::wstring selectVoiceMouseOver;
 	std::wstring selectVoiceClick;
 	NONS_EventQueue *inputQueue;
-	long trapLabel;
+	std::wstring trapLabel;
 	std::wstring clickStr;
 	ulong autoclick;
 	ulong timer;
 	NONS_Menu *menu;
 	NONS_ButtonLayer *imageButtons;
-	ulong current_line;
 	bool new_if;
 	ulong btnTimer;
 	ulong imageButtonExpiration;
-	NONS_SaveFile* saveGame;
+	NONS_SaveFile *saveGame;
 	std::wstring currentBuffer;
 	std::wstring textgosub;
 	bool textgosubRecurses;
 
-	ErrorCode command_caption(NONS_ParsedLine &line);
-	ErrorCode command_alias(NONS_ParsedLine &line);
-	ErrorCode command_game(NONS_ParsedLine &line);
-	ErrorCode command_nsa(NONS_ParsedLine &line);
-	ErrorCode command_nsadir(NONS_ParsedLine &line);
-	ErrorCode command_goto(NONS_ParsedLine &line);
-	ErrorCode command_globalon(NONS_ParsedLine &line);
-	ErrorCode command_gosub(NONS_ParsedLine &line);
-	ErrorCode command_return(NONS_ParsedLine &line);
-	ErrorCode command_if(NONS_ParsedLine &line);
-	ErrorCode command_mov(NONS_ParsedLine &line);
-	ErrorCode command_add(NONS_ParsedLine &line);
-	ErrorCode command_inc(NONS_ParsedLine &line);
-	ErrorCode command_cmp(NONS_ParsedLine &line);
-	ErrorCode command_skip(NONS_ParsedLine &line);
-	ErrorCode command_len(NONS_ParsedLine &line);
-	ErrorCode command_rnd(NONS_ParsedLine &line);
-	ErrorCode command_play(NONS_ParsedLine &line);
-	ErrorCode command_playstop(NONS_ParsedLine &line);
-	ErrorCode command_wave(NONS_ParsedLine &line);
-	ErrorCode command_wavestop(NONS_ParsedLine &line);
-	ErrorCode command_itoa(NONS_ParsedLine &line);
-	ErrorCode command_intlimit(NONS_ParsedLine &line);
-	ErrorCode command_wait(NONS_ParsedLine &line);
-	ErrorCode command_end(NONS_ParsedLine &line);
-	ErrorCode command_date(NONS_ParsedLine &line);
-	ErrorCode command_mp3vol(NONS_ParsedLine &line);
-	ErrorCode command_getmp3vol(NONS_ParsedLine &line);
-	ErrorCode command_effect(NONS_ParsedLine &line);
-	ErrorCode command_mid(NONS_ParsedLine &line);
-	ErrorCode command_dim(NONS_ParsedLine &line);
-	ErrorCode command_movl(NONS_ParsedLine &line);
-	ErrorCode command_time(NONS_ParsedLine &line);
-	ErrorCode command_jumpf(NONS_ParsedLine &line);
-	ErrorCode command_atoi(NONS_ParsedLine &line);
-	ErrorCode command_getversion(NONS_ParsedLine &line);
-	ErrorCode command_dwave(NONS_ParsedLine &line);
-	ErrorCode command_dwaveload(NONS_ParsedLine &line);
-	//ErrorCode command_dwavefree(NONS_ParsedLine &line);
-	ErrorCode command_mp3fadeout(NONS_ParsedLine &line);
-	ErrorCode command_stop(NONS_ParsedLine &line);
-	ErrorCode command_mpegplay(NONS_ParsedLine &line);
-	ErrorCode command_getini(NONS_ParsedLine &line);
-	ErrorCode command_setwindow(NONS_ParsedLine &line);
-	ErrorCode command_new_set_window(NONS_ParsedLine &line);
-	ErrorCode command_set_default_font_size(NONS_ParsedLine &line);
-	ErrorCode command_bg(NONS_ParsedLine &line);
-	ErrorCode command_setcursor(NONS_ParsedLine &line);
-	ErrorCode command_br(NONS_ParsedLine &line);
-	ErrorCode command_ld(NONS_ParsedLine &line);
-	ErrorCode command_cl(NONS_ParsedLine &line);
-	ErrorCode command_tal(NONS_ParsedLine &line);
-	ErrorCode command_undocumented(NONS_ParsedLine &line);
-	ErrorCode command_unimplemented(NONS_ParsedLine &line);
-	ErrorCode command_lsp(NONS_ParsedLine &line);
-	ErrorCode command_csp(NONS_ParsedLine &line);
-	ErrorCode command_unalias(NONS_ParsedLine &line);
-	ErrorCode command_vsp(NONS_ParsedLine &line);
-	ErrorCode command_windoweffect(NONS_ParsedLine &line);
-	ErrorCode command_literal_print(NONS_ParsedLine &line);
-	ErrorCode command_print(NONS_ParsedLine &line);
-	ErrorCode command_delay(NONS_ParsedLine &line);
-	ErrorCode command_monocro(NONS_ParsedLine &line);
-	ErrorCode command_nega(NONS_ParsedLine &line);
-	ErrorCode command_textonoff(NONS_ParsedLine &line);
-	ErrorCode command_erasetextwindow(NONS_ParsedLine &line);
-	ErrorCode command_for(NONS_ParsedLine &line);
-	ErrorCode command_next(NONS_ParsedLine &line);
-	ErrorCode command_break(NONS_ParsedLine &line);
-	ErrorCode command_effectblank(NONS_ParsedLine &line);
-	ErrorCode command_select(NONS_ParsedLine &line);
-	ErrorCode command_selectcolor(NONS_ParsedLine &line);
-	ErrorCode command_selectvoice(NONS_ParsedLine &line);
-	ErrorCode command_trap(NONS_ParsedLine &line);
-	ErrorCode command_defaultspeed(NONS_ParsedLine &line);
-	ErrorCode command_clickstr(NONS_ParsedLine &line);
-	ErrorCode command_click(NONS_ParsedLine &line);
-	ErrorCode command_autoclick(NONS_ParsedLine &line);
-	ErrorCode command_textclear(NONS_ParsedLine &line);
-	ErrorCode command_locate(NONS_ParsedLine &line);
-	ErrorCode command_textspeed(NONS_ParsedLine &line);
-	ErrorCode command_repaint(NONS_ParsedLine &line);
-	ErrorCode command_resettimer(NONS_ParsedLine &line);
-	ErrorCode command_waittimer(NONS_ParsedLine &line);
-	ErrorCode command_gettimer(NONS_ParsedLine &line);
-	ErrorCode command_rmenu(NONS_ParsedLine &line);
-	ErrorCode command_menusetwindow(NONS_ParsedLine &line);
-	//ErrorCode command_kidokuskip(NONS_ParsedLine &line);
-	ErrorCode command_menuselectcolor(NONS_ParsedLine &line);
-	ErrorCode command_savename(NONS_ParsedLine &line);
-	ErrorCode command_menuselectvoice(NONS_ParsedLine &line);
-	ErrorCode command_rmode(NONS_ParsedLine &line);
-	//ErrorCode command_skipoff(NONS_ParsedLine &line);
-	ErrorCode command_savenumber(NONS_ParsedLine &line);
-	ErrorCode command_systemcall(NONS_ParsedLine &line);
-	ErrorCode command_reset(NONS_ParsedLine &line);
-	ErrorCode command_btndef(NONS_ParsedLine &line);
-	ErrorCode command_btn(NONS_ParsedLine &line);
-	ErrorCode command_btnwait(NONS_ParsedLine &line);
-	ErrorCode command_msp(NONS_ParsedLine &line);
-	ErrorCode command_use_new_if(NONS_ParsedLine &line);
-	ErrorCode command_getbtntimer(NONS_ParsedLine &line);
-	ErrorCode command_btntime(NONS_ParsedLine &line);
-	ErrorCode command_humanz(NONS_ParsedLine &line);
-	ErrorCode command_sinusoidal_quake(NONS_ParsedLine &line);
-	ErrorCode command_quake(NONS_ParsedLine &line);
-	ErrorCode command_filelog(NONS_ParsedLine &line);
-	ErrorCode command_lookbackbutton(NONS_ParsedLine &line);
-	ErrorCode command_lookbackcolor(NONS_ParsedLine &line);
-	ErrorCode command_lookbackflush(NONS_ParsedLine &line);
-	ErrorCode command_savegame(NONS_ParsedLine &line);
-	ErrorCode command_loadgame(NONS_ParsedLine &line);
-	ErrorCode command_centerh(NONS_ParsedLine &line);
-	ErrorCode command_centerv(NONS_ParsedLine &line);
-	ErrorCode command_blt(NONS_ParsedLine &line);
-	ErrorCode command_fileexist(NONS_ParsedLine &line);
-	ErrorCode command_menu_full(NONS_ParsedLine &line);
-	ErrorCode command_savefileexist(NONS_ParsedLine &line);
-	ErrorCode command_savescreenshot(NONS_ParsedLine &line);
-	ErrorCode command_savetime(NONS_ParsedLine &line);
-	ErrorCode command_savetime2(NONS_ParsedLine &line);
-	ErrorCode command_split(NONS_ParsedLine &line);
-	ErrorCode command_isdown(NONS_ParsedLine &line);
-	ErrorCode command_isfull(NONS_ParsedLine &line);
-	ErrorCode command_getcursorpos(NONS_ParsedLine &line);
-	ErrorCode command_textgosub(NONS_ParsedLine &line);
-	ErrorCode command_ispage(NONS_ParsedLine &line);
-	ErrorCode command_labellog(NONS_ParsedLine &line);
-	ErrorCode command_underline(NONS_ParsedLine &line);
-	/*ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);
-	ErrorCode command_(NONS_ParsedLine &line);*/
-	//Not a command!:
-	ErrorCode bad_select(NONS_ParsedLine &line);
+	ErrorCode command_caption(NONS_Statement &stmt);
+	ErrorCode command_alias(NONS_Statement &stmt);
+	ErrorCode command_game(NONS_Statement &stmt);
+	ErrorCode command_nsa(NONS_Statement &stmt);
+	ErrorCode command_nsadir(NONS_Statement &stmt);
+	ErrorCode command_goto(NONS_Statement &stmt);
+	ErrorCode command_globalon(NONS_Statement &stmt);
+	ErrorCode command_gosub(NONS_Statement &stmt);
+	ErrorCode command_return(NONS_Statement &stmt);
+	ErrorCode command_if(NONS_Statement &stmt);
+	ErrorCode command_mov(NONS_Statement &stmt);
+	ErrorCode command_add(NONS_Statement &stmt);
+	ErrorCode command_inc(NONS_Statement &stmt);
+	ErrorCode command_cmp(NONS_Statement &stmt);
+	ErrorCode command_skip(NONS_Statement &stmt);
+	ErrorCode command_len(NONS_Statement &stmt);
+	ErrorCode command_rnd(NONS_Statement &stmt);
+	ErrorCode command_play(NONS_Statement &stmt);
+	ErrorCode command_playstop(NONS_Statement &stmt);
+	ErrorCode command_wave(NONS_Statement &stmt);
+	ErrorCode command_wavestop(NONS_Statement &stmt);
+	ErrorCode command_itoa(NONS_Statement &stmt);
+	ErrorCode command_intlimit(NONS_Statement &stmt);
+	ErrorCode command_wait(NONS_Statement &stmt);
+	ErrorCode command_end(NONS_Statement &stmt);
+	ErrorCode command_date(NONS_Statement &stmt);
+	ErrorCode command_mp3vol(NONS_Statement &stmt);
+	ErrorCode command_getmp3vol(NONS_Statement &stmt);
+	ErrorCode command_effect(NONS_Statement &stmt);
+	ErrorCode command_mid(NONS_Statement &stmt);
+	ErrorCode command_dim(NONS_Statement &stmt);
+	ErrorCode command_movl(NONS_Statement &stmt);
+	ErrorCode command_time(NONS_Statement &stmt);
+	ErrorCode command_jumpf(NONS_Statement &stmt);
+	ErrorCode command_atoi(NONS_Statement &stmt);
+	ErrorCode command_getversion(NONS_Statement &stmt);
+	ErrorCode command_dwave(NONS_Statement &stmt);
+	ErrorCode command_dwaveload(NONS_Statement &stmt);
+	//ErrorCode command_dwavefree(NONS_Statement &stmt);
+	ErrorCode command_mp3fadeout(NONS_Statement &stmt);
+	ErrorCode command_stop(NONS_Statement &stmt);
+	ErrorCode command_mpegplay(NONS_Statement &stmt);
+	ErrorCode command_getini(NONS_Statement &stmt);
+	ErrorCode command_setwindow(NONS_Statement &stmt);
+	ErrorCode command_new_set_window(NONS_Statement &stmt);
+	ErrorCode command_set_default_font_size(NONS_Statement &stmt);
+	ErrorCode command_bg(NONS_Statement &stmt);
+	ErrorCode command_setcursor(NONS_Statement &stmt);
+	ErrorCode command_br(NONS_Statement &stmt);
+	ErrorCode command_ld(NONS_Statement &stmt);
+	ErrorCode command_cl(NONS_Statement &stmt);
+	ErrorCode command_tal(NONS_Statement &stmt);
+	ErrorCode command_undocumented(NONS_Statement &stmt);
+	ErrorCode command_unimplemented(NONS_Statement &stmt);
+	ErrorCode command_lsp(NONS_Statement &stmt);
+	ErrorCode command_csp(NONS_Statement &stmt);
+	ErrorCode command_unalias(NONS_Statement &stmt);
+	ErrorCode command_vsp(NONS_Statement &stmt);
+	ErrorCode command_windoweffect(NONS_Statement &stmt);
+	ErrorCode command_literal_print(NONS_Statement &stmt);
+	ErrorCode command_print(NONS_Statement &stmt);
+	ErrorCode command_delay(NONS_Statement &stmt);
+	ErrorCode command_monocro(NONS_Statement &stmt);
+	ErrorCode command_nega(NONS_Statement &stmt);
+	ErrorCode command_textonoff(NONS_Statement &stmt);
+	ErrorCode command_erasetextwindow(NONS_Statement &stmt);
+	ErrorCode command_for(NONS_Statement &stmt);
+	ErrorCode command_next(NONS_Statement &stmt);
+	ErrorCode command_break(NONS_Statement &stmt);
+	ErrorCode command_effectblank(NONS_Statement &stmt);
+	ErrorCode command_select(NONS_Statement &stmt);
+	ErrorCode command_selectcolor(NONS_Statement &stmt);
+	ErrorCode command_selectvoice(NONS_Statement &stmt);
+	ErrorCode command_trap(NONS_Statement &stmt);
+	ErrorCode command_defaultspeed(NONS_Statement &stmt);
+	ErrorCode command_clickstr(NONS_Statement &stmt);
+	ErrorCode command_click(NONS_Statement &stmt);
+	ErrorCode command_autoclick(NONS_Statement &stmt);
+	ErrorCode command_textclear(NONS_Statement &stmt);
+	ErrorCode command_locate(NONS_Statement &stmt);
+	ErrorCode command_textspeed(NONS_Statement &stmt);
+	ErrorCode command_repaint(NONS_Statement &stmt);
+	ErrorCode command_resettimer(NONS_Statement &stmt);
+	ErrorCode command_waittimer(NONS_Statement &stmt);
+	ErrorCode command_gettimer(NONS_Statement &stmt);
+	ErrorCode command_rmenu(NONS_Statement &stmt);
+	ErrorCode command_menusetwindow(NONS_Statement &stmt);
+	//ErrorCode command_kidokuskip(NONS_Statement &stmt);
+	ErrorCode command_menuselectcolor(NONS_Statement &stmt);
+	ErrorCode command_savename(NONS_Statement &stmt);
+	ErrorCode command_menuselectvoice(NONS_Statement &stmt);
+	ErrorCode command_rmode(NONS_Statement &stmt);
+	//ErrorCode command_skipoff(NONS_Statement &stmt);
+	ErrorCode command_savenumber(NONS_Statement &stmt);
+	ErrorCode command_systemcall(NONS_Statement &stmt);
+	ErrorCode command_reset(NONS_Statement &stmt);
+	ErrorCode command_btndef(NONS_Statement &stmt);
+	ErrorCode command_btn(NONS_Statement &stmt);
+	ErrorCode command_btnwait(NONS_Statement &stmt);
+	ErrorCode command_msp(NONS_Statement &stmt);
+	ErrorCode command_use_new_if(NONS_Statement &stmt);
+	ErrorCode command_getbtntimer(NONS_Statement &stmt);
+	ErrorCode command_btntime(NONS_Statement &stmt);
+	ErrorCode command_humanz(NONS_Statement &stmt);
+	ErrorCode command_sinusoidal_quake(NONS_Statement &stmt);
+	ErrorCode command_quake(NONS_Statement &stmt);
+	ErrorCode command_filelog(NONS_Statement &stmt);
+	ErrorCode command_lookbackbutton(NONS_Statement &stmt);
+	ErrorCode command_lookbackcolor(NONS_Statement &stmt);
+	ErrorCode command_lookbackflush(NONS_Statement &stmt);
+	ErrorCode command_savegame(NONS_Statement &stmt);
+	ErrorCode command_loadgame(NONS_Statement &stmt);
+	ErrorCode command_centerh(NONS_Statement &stmt);
+	ErrorCode command_centerv(NONS_Statement &stmt);
+	ErrorCode command_blt(NONS_Statement &stmt);
+	ErrorCode command_fileexist(NONS_Statement &stmt);
+	ErrorCode command_menu_full(NONS_Statement &stmt);
+	ErrorCode command_savefileexist(NONS_Statement &stmt);
+	ErrorCode command_savescreenshot(NONS_Statement &stmt);
+	ErrorCode command_savetime(NONS_Statement &stmt);
+	ErrorCode command_savetime2(NONS_Statement &stmt);
+	ErrorCode command_split(NONS_Statement &stmt);
+	ErrorCode command_isdown(NONS_Statement &stmt);
+	ErrorCode command_isfull(NONS_Statement &stmt);
+	ErrorCode command_getcursorpos(NONS_Statement &stmt);
+	ErrorCode command_textgosub(NONS_Statement &stmt);
+	ErrorCode command_ispage(NONS_Statement &stmt);
+	ErrorCode command_labellog(NONS_Statement &stmt);
+	ErrorCode command_underline(NONS_Statement &stmt);
+	/*ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);*/
 public:
 	NONS_Script *script;
 	NONS_VariableStore *store;
@@ -335,17 +348,16 @@ public:
 	~NONS_ScriptInterpreter();
 	bool interpretNextLine();
 	NONS_Font *main_font;
-	ErrorCode interpretString(const std::wstring &string);
+	ErrorCode interpretString(NONS_Statement &stmt);
+	ErrorCode interpretString(const std::wstring &str);
 	ulong totalCommands();
 	ulong implementedCommands();
 	bool load(int file);
 	bool save(int file);
-	void convertParametersToString(NONS_ParsedLine &line,std::wstring &string);
+	void convertParametersToString(NONS_Statement &line,std::wstring &string);
 	ulong getCurrentTextgosubLevel();
 	ulong insideTextgosub();
 	bool goto_label(const std::wstring &label);
 	bool gosub_label(const std::wstring &label);
 };
-
-ulong countLines(const std::wstring &buffer,ulong byte_pos);
 #endif
