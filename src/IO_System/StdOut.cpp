@@ -32,6 +32,7 @@
 
 #include "StdOut.h"
 #include "../UTF.h"
+#include "../Functions.h"
 #include <ctime>
 
 NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
@@ -76,13 +77,16 @@ void NONS_RedirectedOutput::redirect(){
 	if (!this->file->is_open())
 		delete this->file;
 	else if (!CLOptions.reset_redirection_files){
-		char str[25];
 		time_t secs=time(0);
 		tm *t=localtime(&secs);
-		sprintf(str,"%04d-%02d-%02d %02d:%02d:%02d",
-			t->tm_year+1900,t->tm_mon+1,t->tm_mday,
-			t->tm_hour,t->tm_min,t->tm_sec);
-		*(this->file) <<"\n\n"
+		std::string str=
+			itoa<char>(t->tm_year+1900,4)+"-"+
+			itoa<char>(t->tm_mon+1,4)+"-"+
+			itoa<char>(t->tm_mday,4)+" "+
+			itoa<char>(t->tm_hour,4)+":"+
+			itoa<char>(t->tm_min,4)+":"+
+			itoa<char>(t->tm_sec,4);
+		*this->file <<"\n\n"
 			"--------------------------------------------------------------------------------\n"
 			"Session "<<str<<"\n"
 			"--------------------------------------------------------------------------------"<<std::endl;

@@ -45,6 +45,10 @@ typedef unsigned char uchar;
 #include <algorithm>
 #include <sstream>
 
+#define STR_WHITESPACE "\x09\x0A\x0B\x0C\x0D\x20\x85\xA0"
+#define WCS_WHITESPACE L"\x0009\x000A\x000B\x000C\x000D\x0020\x0085\x00A0\x1680\x180E\x2002\x2003\x2004\x2005\x2006\x2008\x2009\x200A\x200B\x200C\x200D\x205F\x3000"
+#define WCS_NON_NEWLINE_WHITESPACE L"\x0009\x000B\x000C\x0020\x0085\x00A0\x1680\x180E\x2002\x2003\x2004\x2005\x2006\x2008\x2009\x200A\x200B\x200C\x200D\x205F\x3000"
+
 #define BOM16B 0xFEFF
 #define BOM16BA 0xFE
 #define BOM16BB 0xFF
@@ -71,6 +75,10 @@ inline bool NONS_isalnum(unsigned character){ return NONS_isalpha(character) || 
 inline unsigned NONS_toupper(unsigned character){ return NONS_islower(character)?character&223:character; }
 inline unsigned NONS_tolower(unsigned character){ return NONS_isupper(character)?character|32:character; }
 inline bool NONS_ishexa(unsigned character){ return NONS_isdigit(character) || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046; }
+//1 if the character matches [A-Za-z_] (the first character in a C-style identifier)
+inline bool NONS_isid1char(unsigned character){ return NONS_isalpha(character) || character==0x005F; }
+//1 if the character matches [A-Za-z_0-9] (the second and beyond character in a C-style identifier)
+inline bool NONS_isidnchar(unsigned character){ return NONS_isid1char(character) || NONS_isdigit(character); }
 
 template <typename T1,typename T2>
 int lexcmp(const T1 *a,const T2 *b){
@@ -153,8 +161,6 @@ char checkNativeEndianness();
 
 bool isValidUTF8(const char *buffer,ulong size);
 bool isValidSJIS(const char *buffer,ulong size);
-bool isValidUCS2(const char *buffer,ulong size);
-bool ISO88591_or_UCS2(const char *buffer,ulong size);
 
 bool iswhitespace(char character);
 bool iswhitespace(wchar_t character);
@@ -181,5 +187,29 @@ int stdStrCmpCI(const std::basic_string<T1> &s1,const T2 *s2){
 template <typename T1,typename T2>
 int stdStrCmpCI(const std::basic_string<T1> &s1,const std::basic_string<T2> &s2){
 	return lexcmp_CI_bounded(s1.c_str(),s1.size(),s2.c_str(),s2.size());
+}
+
+//1 if the s1 begins with s2 at off
+template <typename T>
+bool firstcharsCI(const std::basic_string<T> &s1,size_t off,const std::basic_string<T> &s2){
+	if (s1.size()-off<s2.size())
+		return 0;
+	for (ulong a=0;a<s2.size();a++)
+		if (NONS_tolower(s1[off+a])!=NONS_tolower(s2[a]))
+			return 0;
+	return 1;
+}
+
+template <typename T>
+bool firstcharsCI(const std::basic_string<T> &s1,size_t off,const T *s2){
+	ulong l=0;
+	while (s2[l])
+		l++;
+	if (s1.size()-off<l)
+		return 0;
+	for (ulong a=0;a<l;a++)
+		if (NONS_tolower(s1[off+a])!=NONS_tolower(s2[a]))
+			return 0;
+	return 1;
 }
 #endif

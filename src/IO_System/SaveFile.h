@@ -33,17 +33,20 @@
 #include "../Common.h"
 #include "../ErrorCodes.h"
 #include "../Processing/VariableStore.h"
+#include "Script/Script.h"
 #include <vector>
 #include <map>
 #include <ctime>
 #include <SDL/SDL.h>
 
-#define NONS_SAVEFILE_VERSION 3
+#define NONS_SAVEFILE_VERSION 2
 
 std::vector<tm *> existing_files(const std::string &location="./");
 std::string getConfigLocation();
 std::string getSaveLocation(unsigned hash[5]);
 tm *getDate(const char *filename);
+
+struct printingPage;
 
 struct NONS_SaveFile{
 	char format;
@@ -53,14 +56,12 @@ struct NONS_SaveFile{
 	bool fontShadow;
 	bool rmode;
 	SDL_Color windowTextColor;
-	std::wstring arrowCursorString;
-	bool arrowCursorAbs;
-	long arrowCursorX,
-		arrowCursorY;
-	std::wstring pageCursorString;
-	bool pageCursorAbs;
-	long pageCursorX,
-		pageCursorY;
+	struct Cursor{
+		std::wstring string;
+		bool absolute;
+		long x,y;
+		Cursor():absolute(0),x(0),y(0){}
+	} arrow,page;
 	ulong windowTransition;
 	ulong windowTransitionDuration;
 	std::wstring windowTransitionRule;
@@ -80,29 +81,35 @@ struct NONS_SaveFile{
 	ulong char_baseline;
 	std::wstring unknownString_000;
 	std::wstring background;
-	std::wstring leftChar;
-	std::wstring centerChar;
-	std::wstring rightChar;
 	struct Sprite{
 		std::wstring string;
 		long x,y;
 		bool visibility;
 		uchar alpha;
 		ulong animOffset;
+		Sprite():x(0),y(0),visibility(1),alpha(255),animOffset(0){}
 	};
+	//Sprite leftChar;
+	//Sprite centerChar;
+	//Sprite rightChar;
+	Sprite characters[3];
 	std::vector<Sprite *> sprites;
 	variables_map_T variables;
 	arrays_map_T arrays;
 	ushort fontSize;
 	struct stackEl{
-		bool type;
+		StackFrameType type;
 		std::wstring label;
-		ulong offset;
+		ulong linesBelow,
+			statementNo,
+			offset_deprecated;
 		Sint32 variable;
 		long to;
 		long step;
 		std::wstring leftovers;
 		ulong textgosubLevel;
+		//std::vector<printingPage> pages;
+		wchar_t trigger;
 	};
 	std::vector<stackEl *> stack;
 	bool monochrome;
@@ -123,8 +130,13 @@ struct NONS_SaveFile{
 	std::vector<std::wstring> logPages;
 	ulong currentLine;
 	ulong currentSubline;
+
+	//Current position data:
 	std::wstring currentLabel;
-	ulong currentOffset;
+	ulong linesBelow,
+		statementNo,
+		currentOffset_deprecated;
+
 	unsigned hash[5];
 	std::wstring currentBuffer;
 	ushort textX,

@@ -87,6 +87,9 @@ Mode 3, or transform and xor: Not supported.
 
 -encoding {auto|sjis|iso-8859-1|utf8|ucs2}
 Selects the encoding to be used on the script file. Default is auto.
+Note: auto will only choose between utf8, sjis, and iso-8859-1. ucs2 will never
+be chosen. If your script is in that encoding, you'll need to specify it
+manually.
 
 
 -dump-text <file name>

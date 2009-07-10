@@ -33,6 +33,7 @@
 #include "enums.h"
 #include "CommonTypes.h"
 #include <string>
+#include <vector>
 
 struct NONS_CommandLineOptions{
 	ENCODINGS scriptencoding;
@@ -53,6 +54,9 @@ struct NONS_CommandLineOptions{
 	std::string savedir;
 	bool stopOnFirstError;
 	NONS_CommandLineOptions();
-	~NONS_CommandLineOptions();
+	~NONS_CommandLineOptions(){}
+	void parse(const std::vector<std::wstring> &arguments);
 };
+
+void usage();
 #endif

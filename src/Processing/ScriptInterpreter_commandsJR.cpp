@@ -35,13 +35,12 @@
 
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
 #define NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
-ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	std::wstring temp;
 	_GETWCSVALUE(temp,0,)
 	this->nsadir=UniToISO88591(temp);
@@ -52,7 +51,7 @@ ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_return(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_return(NONS_Statement &stmt){
 	if (this->callStack.empty())
 		return NONS_EMPTY_CALL_STACK;
 	NONS_StackElement *popped;
@@ -60,58 +59,32 @@ ErrorCode NONS_ScriptInterpreter::command_return(NONS_ParsedLine &line){
 		popped=this->callStack.back();
 		this->callStack.pop_back();
 	}while (popped->type!=SUBROUTINE_CALL && popped->type!=TEXTGOSUB_CALL);
-	this->interpreter_position=popped->offset;
+	this->thread->gotoPair(popped->returnTo.toPair());
 	if (popped->type==TEXTGOSUB_CALL){
 		this->Printer_support(popped->pages,0,0,0);
 		delete popped;
 		return NONS_NO_ERROR;
 	}
-	if (popped->first_interpret_string.size()){
-		delete popped;
-		return NONS_NO_ERROR_BUT_BREAK;
-	}
-	std::wstring str=popped->first_interpret_string;
-	delete popped;
-	if (str.find(':')==str.npos){
-		ErrorCode error=this->interpretString(str);
-		return error;
-	}
-	std::wstring::iterator commandstart=str.begin();
-	for (std::wstring::iterator i=commandstart,end=str.end();i!=end;i++){
-		if (*i=='\"' || *i=='`'){
-			for (wchar_t quote=*i++;i!=end && *i!=quote;i++);
-			if (i++==end)
-				return NONS_UNMATCHED_QUOTES;
-			continue;
+	NONS_ScriptLine &line=popped->interpretAtReturn;
+	ErrorCode ret=NONS_NO_ERROR_BUT_BREAK;
+	for (ulong a=0;a<line.statements.size();a++){
+		ErrorCode error=this->interpretString(*line.statements[a]);
+		if (error==NONS_END)
+			return NONS_END;
+		if (error==NONS_GOSUB)
+			this->callStack.back()->interpretAtReturn=NONS_ScriptLine(line,a+1);
+		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
+			handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
+			ret=NONS_UNDEFINED_ERROR;
 		}
-		if (*i==':' || *i==';'){
-			std::wstring copy=std::wstring(commandstart,i);
-			ErrorCode error=this->interpretString(copy);
-			if (error==NONS_GOSUB && i+1!=end)
-				this->callStack.back()->first_interpret_string=std::wstring(i+1,end);
-			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-				handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
-				return NONS_UNDEFINED_ERROR;
-			}
-			if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR) || *i==';')
-				return NONS_NO_ERROR_BUT_BREAK;
-			commandstart=i+1;
-		}
+		if (CHECK_FLAG(error,NONS_BREAK_WORTHY_ERROR))
+			break;
 	}
-	std::wstring copy=std::wstring(commandstart,str.end());
-	ErrorCode error=this->interpretString(copy);
-	if (error==NONS_END)
-		return error;
-	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-		handleErrors(error,-1,"NONS_ScriptInterpreter::command_if",1);
-		return NONS_UNDEFINED_ERROR;
-	}
-	return NONS_NO_ERROR_BUT_BREAK;
+	return ret;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mov(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_mov(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *var;
 	_GETVARIABLE(var,0,)
 	if (var->getType()==INTEGER){
@@ -126,9 +99,8 @@ ErrorCode NONS_ScriptInterpreter::command_mov(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_len(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_len(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
 	_GETINTVARIABLE(dst,0,)
 	std::wstring src;
@@ -142,18 +114,16 @@ Behavior notes:
 rnd %a,%n ;a=[0;n)
 rnd2 %a,%min,%max ;a=[min;max]
 */
-ErrorCode NONS_ScriptInterpreter::command_rnd(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_rnd(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
 	_GETINTVARIABLE(dst,0,)
 	long min=0,max;
-	if (!stdStrCmpCI(line.commandName,L"rnd")){
+	if (!stdStrCmpCI(stmt.commandName,L"rnd")){
 		_GETINTVALUE(max,1,)
 		max--;
 	}else{
-		if (line.parameters.size()<3)
-			return NONS_INSUFFICIENT_PARAMETERS;
+		MINIMUM_PARAMETERS(3);
 		_GETINTVALUE(max,2,)
 		_GETINTVALUE(min,1,)
 	}
@@ -162,27 +132,26 @@ ErrorCode NONS_ScriptInterpreter::command_rnd(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_play(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	std::wstring name;
 	_GETWCSVALUE(name,0,)
 	ErrorCode error=NONS_UNDEFINED_ERROR;
 	this->mp3_loop=0;
 	this->mp3_save=0;
-	if (!stdStrCmpCI(line.commandName,L"play") || !stdStrCmpCI(line.commandName,L"loopbgm"))
+	if (!stdStrCmpCI(stmt.commandName,L"play") || !stdStrCmpCI(stmt.commandName,L"loopbgm"))
 		this->mp3_loop=1;
-	else if (!stdStrCmpCI(line.commandName,L"mp3save"))
+	else if (!stdStrCmpCI(stmt.commandName,L"mp3save"))
 		this->mp3_save=1;
-	else if (!stdStrCmpCI(line.commandName,L"mp3loop") || !stdStrCmpCI(line.commandName,L"bgm")){
+	else if (!stdStrCmpCI(stmt.commandName,L"mp3loop") || !stdStrCmpCI(stmt.commandName,L"bgm")){
 		this->mp3_loop=1;
 		this->mp3_save=1;
 	}
 	if (name[0]=='*'){
 		int track=atoi(UniToISO88591(name.substr(1)).c_str());
-		char temp[100];
-		sprintf(temp,"track%02u",track);
-		error=this->everything->audio->playMusic(&std::string(temp),this->mp3_loop?-1:0);
+		std::string temp="track";
+		temp+=itoa<char>(track,2);
+		error=this->everything->audio->playMusic(&temp,this->mp3_loop?-1:0);
 		if (error==NONS_NO_ERROR)
 			this->saveGame->musicTrack=track;
 		else
@@ -203,24 +172,22 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_ParsedLine &line){
 	return error;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_playstop(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_playstop(NONS_Statement &stmt){
 	this->mp3_loop=0;
 	this->mp3_save=0;
 	return this->everything->audio->stopMusic();
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long vol;
 	_GETINTVALUE(vol,0,)
 	this->everything->audio->musicVolume(vol);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mid(NONS_ParsedLine &line){
-	if (line.parameters.size()<3)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_mid(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *dst;
 	_GETSTRVARIABLE(dst,0,)
 	long start,len;
@@ -232,7 +199,7 @@ ErrorCode NONS_ScriptInterpreter::command_mid(NONS_ParsedLine &line){
 		dst->set(L"");
 		return NONS_NO_ERROR;
 	}
-	if (line.parameters.size()>3){
+	if (stmt.parameters.size()>3){
 		_GETINTVALUE(len,3,)
 	}
 	if ((ulong)start+len>src.size())
@@ -241,19 +208,18 @@ ErrorCode NONS_ScriptInterpreter::command_mid(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_movl(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_movl(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
 	ErrorCode error;
-	dst=this->store->retrieve(line.parameters[0],&error);
+	dst=this->store->retrieve(stmt.parameters[0],&error);
 	if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
 		return error;
 	if (dst->getType()!=INTEGER_ARRAY)
 		return NONS_EXPECTED_ARRAY;
-	if (line.parameters.size()-1>dst->dimensionSize)
-		handleErrors(NONS_TOO_MANY_PARAMETERS,line.lineNo,"NONS_ScriptInterpreter::command_movl",1);
-	for (ulong a=0;a<dst->dimensionSize && a<line.parameters.size()-1;a++){
+	if (stmt.parameters.size()-1>dst->dimensionSize)
+		handleErrors(NONS_TOO_MANY_PARAMETERS,stmt.lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::command_movl",1);
+	for (ulong a=0;a<dst->dimensionSize && a<stmt.parameters.size()-1;a++){
 		long temp;
 		_GETINTVALUE(temp,a+1,)
 		dst->dimension[a]->set(temp);
@@ -261,31 +227,20 @@ ErrorCode NONS_ScriptInterpreter::command_movl(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_jumpf(NONS_ParsedLine &line){
-	std::vector<ulong> &jumps=this->everything->script->jumps;
-	if (!jumps.size())
-		return NONS_NO_JUMPS;
-	if (!stdStrCmpCI(line.commandName,L"jumpb")){
-		for (long a=jumps.size()-1;a>=0;a--){
-			if (jumps[a]<this->interpreter_position){
-				this->interpreter_position=jumps[a];
-				return NONS_NO_ERROR_BUT_BREAK;
-			}
-		}
+ErrorCode NONS_ScriptInterpreter::command_jumpf(NONS_Statement &stmt){
+	if (!stdStrCmpCI(stmt.commandName,L"jumpb")){
+		if (!this->thread->gotoJumpBackwards(stmt.fileOffset))
+			return NONS_NO_JUMPS;
+		return NONS_NO_ERROR_BUT_BREAK;
 	}else{
-		for (ulong a=0;a<jumps.size();a++){
-			if (jumps[a]>this->interpreter_position){
-				this->interpreter_position=jumps[a];
-				return NONS_NO_ERROR_BUT_BREAK;
-			}
-		}
+		if (!this->thread->gotoJumpForward(stmt.fileOffset))
+			return NONS_NO_JUMPS;
+		return NONS_NO_ERROR_BUT_BREAK;
 	}
-	return NONS_NO_JUMPS;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long ms;
 	_GETINTVALUE(ms,0,)
 	if (ms<25){
@@ -307,23 +262,22 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mpegplay(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_mpegplay(NONS_Statement &stmt){
 	return NONS_UNIMPLEMENTED_COMMAND;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_new_set_window(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_new_set_window(NONS_Statement &stmt){
 	this->legacy_set_window=0;
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
-	if (line.parameters.size()<3)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(3);
 	std::wstring name;
 	_GETWCSVALUE(name,1,)
 	NONS_Layer **l=0;
 	long off;
-	switch (line.parameters[0][0]){
+	switch (stmt.parameters[0][0]){
 		case 'l':
 			l=&this->everything->screen->leftChar;
 			off=this->everything->screen->screen->virtualScreen->w/4;
@@ -352,10 +306,10 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 	long number,duration;
 	ErrorCode ret;
 	_GETINTVALUE(number,2,)
-	if (line.parameters.size()>3){
+	if (stmt.parameters.size()>3){
 		_GETINTVALUE(duration,3,)
 		std::wstring rule;
-		if (line.parameters.size()>4)
+		if (stmt.parameters.size()>4)
 			_GETWCSVALUE(rule,4,)
 		ret=this->everything->screen->BlendNoCursor(number,duration,&rule);
 	}else
@@ -363,15 +317,14 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_ParsedLine &line){
 	return ret;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_ParsedLine &line){
-	if (line.parameters.size()<4)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(4);
 	long spriten,x,y,alpha=255;
 	std::wstring str;
 	_GETINTVALUE(spriten,0,)
 	_GETINTVALUE(x,2,)
 	_GETINTVALUE(y,3,)
-	if (line.parameters.size()>4)
+	if (stmt.parameters.size()>4)
 		_GETINTVALUE(alpha,4,)
 	_GETWCSVALUE(str,1,)
 	ErrorCode error=NONS_NO_ERROR;
@@ -379,15 +332,14 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_ParsedLine &line){
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,str,x,y,alpha,!stdStrCmpCI(line.commandName,L"lsp")),);
+	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,str,x,y,alpha,!stdStrCmpCI(stmt.commandName,L"lsp")),);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	std::wstring string;
-	this->convertParametersToString(line,string);
+	this->convertParametersToString(stmt,string);
 	if (string.size()){
 		this->everything->screen->showText();
 		if (this->everything->screen->output->prepareForPrinting(string.c_str())){
@@ -408,16 +360,15 @@ ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_print(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_print(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long number,duration;
 	ErrorCode ret;
 	_GETINTVALUE(number,0,)
-	if (line.parameters.size()>1){
+	if (stmt.parameters.size()>1){
 		_GETINTVALUE(duration,1,)
 		std::wstring rule;
-		if (line.parameters.size()>2)
+		if (stmt.parameters.size()>2)
 			_GETWCSVALUE(rule,2,)
 		ret=this->everything->screen->BlendNoCursor(number,duration,&rule);
 	}else
@@ -425,11 +376,10 @@ ErrorCode NONS_ScriptInterpreter::command_print(NONS_ParsedLine &line){
 	return ret;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long color;
-	if (!stdStrCmpCI(line.parameters[0],L"off")){
+	if (!stdStrCmpCI(stmt.parameters[0],L"off")){
 		/*if (!this->everything->screen)
 			this->setDefaultWindow();*/
 		if (this->everything->screen->monochrome){
@@ -456,35 +406,26 @@ ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_nega(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_nega(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long onoff;
 	_GETINTVALUE(onoff,0,)
 	if (onoff){
-		/*if (!this->everything->screen)
-			this->setDefaultWindow();*/
 		if (!this->everything->screen->negative)
 			this->everything->screen->negative=new NONS_GFX(onoff==1?1:2,0,0);
 		else
 			this->everything->screen->negative->effect=onoff==1?1:2;
 		this->everything->screen->negative->type=POSTPROCESSING;
-	}else{
-		/*if (!this->everything->screen)
-			this->setDefaultWindow();*/
-		if (this->everything->screen->negative){
-			delete this->everything->screen->negative;
-			this->everything->screen->negative=0;
-		}
+	}else if (this->everything->screen->negative){
+		delete this->everything->screen->negative;
+		this->everything->screen->negative=0;
 	}
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_next(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_next(NONS_Statement &stmt){
 	if (this->callStack.empty())
 		return NONS_EMPTY_CALL_STACK;
-	/*std::vector<NONS_StackElement *>::iterator top=;
-	top--;*/
 	NONS_StackElement *element=this->callStack.back();
 	if (element->type!=FOR_NEST)
 		return NONS_UNEXPECTED_NEXT;
@@ -494,14 +435,15 @@ ErrorCode NONS_ScriptInterpreter::command_next(NONS_ParsedLine &line){
 		this->callStack.pop_back();
 		return NONS_NO_ERROR;
 	}
-	element->end=this->interpreter_position;
-	this->interpreter_position=element->offset;
+	NONS_Statement *cstmt=this->thread->getCurrentStatement();
+	element->end.line=cstmt->lineOfOrigin->lineNumber;
+	element->end.statement=cstmt->statementNo;
+	this->thread->gotoPair(element->returnTo.toPair());
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_locate(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_locate(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	long x,y;
 	_GETINTVALUE(x,0,)
 	_GETINTVALUE(y,1,)
@@ -513,36 +455,36 @@ ErrorCode NONS_ScriptInterpreter::command_locate(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_resettimer(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_resettimer(NONS_Statement &stmt){
 	this->timer=SDL_GetTicks();
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_repaint(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_repaint(NONS_Statement &stmt){
 	if (this->everything->screen)
 		this->everything->screen->BlendNoCursor(1);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_rmenu(NONS_ParsedLine &line){
-	if (line.parameters.size()<2 || line.parameters.size()%2)
+ErrorCode NONS_ScriptInterpreter::command_rmenu(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	if (stmt.parameters.size()%2)
 		return NONS_INSUFFICIENT_PARAMETERS;
 	std::vector<std::wstring> items;
-	for (ulong a=0;a<line.parameters.size();a++){
+	for (ulong a=0;a<stmt.parameters.size();a++){
 		std::wstring s;
 		_GETWCSVALUE(s,a,)
 		a++;
 		items.push_back(s);
-		items.push_back(line.parameters[a]);
+		items.push_back(stmt.parameters[a]);
 	}
 	this->menu->resetStrings(&items);
 	this->menu->rightClickMode=1;
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_ParsedLine &line){
-	if (line.parameters.size()<7)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(7);
 	//bold is unused
 	long fontX,fontY,spacingX,spacingY,
 		//bold,
@@ -563,14 +505,13 @@ ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_kidokuskip(NONS_ParsedLine &line){
+/*ErrorCode NONS_ScriptInterpreter::command_kidokuskip(NONS_Statement &stmt){
 	softwareCtrlIsPressed=1;
 	return NONS_NO_ERROR;
 }*/
 
-ErrorCode NONS_ScriptInterpreter::command_menuselectcolor(NONS_ParsedLine &line){
-	if (line.parameters.size()<3)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_menuselectcolor(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(3);
 	long on,off,nofile;
 	_GETINTVALUE(on,0,)
 	_GETINTVALUE(off,1,)
@@ -585,9 +526,8 @@ ErrorCode NONS_ScriptInterpreter::command_menuselectcolor(NONS_ParsedLine &line)
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_menuselectvoice(NONS_ParsedLine &line){
-	if (line.parameters.size()<7)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_menuselectvoice(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(7);
 	std::wstring entry,
 		cancel,
 		mouse,
@@ -609,13 +549,12 @@ ErrorCode NONS_ScriptInterpreter::command_menuselectvoice(NONS_ParsedLine &line)
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_rmode(NONS_ParsedLine &line){
-	if (!stdStrCmpCI(line.commandName,L"roff")){
+ErrorCode NONS_ScriptInterpreter::command_rmode(NONS_Statement &stmt){
+	if (!stdStrCmpCI(stmt.commandName,L"roff")){
 		this->menu->rightClickMode=0;
 		return NONS_NO_ERROR;
 	}
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+	MINIMUM_PARAMETERS(1);
 	long a;
 	_GETINTVALUE(a,0,)
 	if (!a)
@@ -625,7 +564,7 @@ ErrorCode NONS_ScriptInterpreter::command_rmode(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_reset(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_reset(NONS_Statement &stmt){
 	this->uninit();
 	this->init();
 	//if (this->everything->screen){
@@ -638,9 +577,8 @@ ErrorCode NONS_ScriptInterpreter::command_reset(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_msp(NONS_ParsedLine &line){
-	if (line.parameters.size()<4)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(4);
 	long spriten,x,y,alpha;
 	_GETINTVALUE(spriten,0,)
 	_GETINTVALUE(x,1,)
@@ -651,7 +589,7 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_ParsedLine &line){
 	NONS_Layer *l=this->everything->screen->layerStack[spriten];
 	if (!l)
 		return NONS_NO_SPRITE_LOADED_THERE;
-	if (stdStrCmpCI(line.commandName,L"amsp")){
+	if (stdStrCmpCI(stmt.commandName,L"amsp")){
 		l->position.x+=x;
 		l->position.y+=y;
 		if (long(l->alpha)+alpha>255)
@@ -694,9 +632,8 @@ void shake(SDL_Surface *dst,long amplitude,ulong duration){
 	SDL_FreeSurface(copyDst);
 }
 
-ErrorCode NONS_ScriptInterpreter::command_quake(NONS_ParsedLine &line){
-	if (line.parameters.size()<2)
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_quake(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
 	long amplitude,duration;
 	_GETINTVALUE(amplitude,0,)
 	_GETINTVALUE(duration,1,)
@@ -708,13 +645,9 @@ ErrorCode NONS_ScriptInterpreter::command_quake(NONS_ParsedLine &line){
 	return 0;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_ParsedLine &line){
-	if (line.parameters.size()<4)
-		return NONS_INSUFFICIENT_PARAMETERS;
-	std::wstring A,
-		B,
-		C,
-		D;
+ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(4);
+	std::wstring A,B,C,D;
 	_GETWCSVALUE(A,0,)
 	_GETWCSVALUE(B,1,)
 	_GETWCSVALUE(C,2,)
@@ -736,9 +669,8 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_ParsedLine &line){
 	return ret?NONS_NO_ERROR:NONS_FILE_NOT_FOUND;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_lookbackcolor(NONS_ParsedLine &line){
-	if (!line.parameters.size())
-		return NONS_INSUFFICIENT_PARAMETERS;
+ErrorCode NONS_ScriptInterpreter::command_lookbackcolor(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
 	long a;
 	_GETINTVALUE(a,0,)
 	SDL_Color col={(a&0xFF0000)>>16,(a&0xFF00)>>8,a&0xFF,0};
@@ -746,12 +678,12 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackcolor(NONS_ParsedLine &line){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_lookbackflush(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_lookbackflush(NONS_Statement &stmt){
 	this->everything->screen->output->log.clear();
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_Statement &stmt){
 	long file;
 	_GETINTVALUE(file,0,)
 	if (file<1)
@@ -759,40 +691,40 @@ ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_ParsedLine &line){
 	return this->load(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_ParsedLine &line){
-	this->everything->screen->screen->toggleFullscreen(!stdStrCmpCI(line.commandName,L"menu_full"));
+ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_Statement &stmt){
+	this->everything->screen->screen->toggleFullscreen(!stdStrCmpCI(stmt.commandName,L"menu_full"));
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_labellog(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_labellog(NONS_Statement &stmt){
 	labellog.commit=1;
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_ParsedLine &line){
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }*/
 #endif

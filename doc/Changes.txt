@@ -25,26 +25,26 @@ DOCUMENTATION, AND IS UNRELATED TO THE ONE USED BY THE ENGINE.
 
 Example:
 command %num_var, $str_var, c%num_const, c$str_const, c#hex_color_value
-The identifier names will be descriptive of the purpose of the parameter.
+Identifier names will be descriptive of the purpose of the parameter.
 When an identifier is preceded by c% or c$, it means that the command expects as
 that parameter either a number or a string that will not be modified, so
 literals (1.1) expressions (1.7), or variables (1.5) may be used.
-When an identifier is preceded by c# or c$, it means that the command expects a
+When an identifier is preceded by c#, it means that the command expects a
 numerical constant, but that using a hexadecimal literal (1.1) will be easier.
 When an identifier is preceded by % or $, it means that the command expects as
 that parameter a numerical or string variable. Only variables may be used for
 that parameter.
-A valid use of the command described in the previous could be
-command %var, $str, 14*%3, "foobar"
+When an identifier is preceded by ?, it means that the command expects an array
+of some number of dimensions.
 [] syntax: This means that whatever is inside the brackets is optional. Brackets
 may be nested. Example: command [%a[, %b, %c[...]]] This means that command can
 take no, 1, 3, or more parameters.
 {|} syntax: This means that it's necessary to choose one of two or more options.
 Examples:
-command {%a|$a} This means that command may take an integer or a string.
-command {%a|$a|some other thing} This means that command may take an integer, a
-string, or some other thing.
-command {%a|$a[, %b]} This means that command may take an integer, or a string
+command {%a|$a} This means that command may take an integer or string variable.
+command {%a|$a|some other thing} This means that command may take an integer
+variable, a string variable, or some other thing.
+command {%a|$a[, c%b]} This means that command may take an integer, or a string
 with an optional integer.
 
 
@@ -59,13 +59,28 @@ with a #. E.g. "#00FF00" (without quotes, case is ignored). They are
 normally used to represent colors, but a decimal literal can be used in their
 place, and viceversa. When used to represent color, the first two digits are
 red, the third and fourth are green, and the fifth and sixth are blue. So it's
-RRGGBB. Hexadecimal literals have to be at least six digits long to be
+RRGGBB. Hexadecimal literals have to be exactly six digits long to be
 considered valid. The # is not a digit.
 String literals are enclosed by either double quotes (", U+0022), or grave
 accents (`, U+0060). E.g. "<--This `is a` string-->" and
 `<--This "is a" string-->`. In both examples, the first character is < and the
 last is >. String literals have to be in a single line. E.g. "This string
 literal is invalid."
+
+Update (2009-06-13):
+Extended strings: Enclosed by e"" or E"" (whitespace between the 'e' and the
+quote is not allowed. See below), these work just like ""-enclosed strings, with
+the addition of escape sequences:
+\\ - Backslash
+\" - Quote
+\n - Newline
+\r - Newline (does exactly the same as \n)
+\x#### - Translates to the Unicode character U+####. \x0000 is not allowed, and
+         is automatically replaced by \x0020 (space). The digits A, B, C, D, E,
+         and F may be both upper and lower case.
+Example (see section 3 for an explanation of the /):
+literal_print e"This is an \"advanced\\string.\nAnd now, \"ONSLAUGHT\" in katak/
+ana: \x30aa\x30f3\x30b9\x30ed\x30c3\x30c8\n"
 
 1.2. Identifiers
 Identifiers are used to name various things, and they follow the C scheme. Only
@@ -90,7 +105,7 @@ var 126
 
 Update (2009-05-08):
 I've just confirmed through source code that this is the scheme used by, at
-least ONScripter-en, so this rule will never change.
+least, ONScripter-en so this rule will never change.
 
 1.3. Constants
 Constants (called aliases in the original documentation) are declared with the
@@ -153,43 +168,50 @@ if %0==0 command:command parameter1 : command parameter1,
 1.7. Expressions
 An expression is a formula. Whenever a command asks for a constant, an
 expression may be used instead (e.g. mov %0, 10*10). Note that decimal numerical
-literals are expressions. Hexadecimal numerical literals may not be used inside
-expressions.
+literals are expressions.
+An expression that evaluates to a string (e.g. $0, _itoa(10)) is invalid.
+Likewise, when a string is required, it's illegal to provide an expression.
 The following operators are supported (ordered from higher to lower precedence):
-9.  _itoa, _atoi, _eval %, $, ?: conversion and dereference operators.
+10. lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion
+    operators, and recursive evaluation operator.
+9.  %, $, ?: dereference operators.
 8.  []: offset operator.
 7.  +, -: unary NOP and sign inversion.
-6.  !: Boolean NOT.
+6.  !: boolean NOT.
 5.  *, /: multiplication and division.
-4.  +, -: addition and subtraction.
+4.  +, -: addition, subtraction, and string concatenation.
 3.  ==, =, !=, <>, <, >=, >, <=: relational operators.
-2.  &&, &: Boolean AND.
-1.  ||, |: Boolean NOT.
+2.  &&, &: boolean AND.
+1.  ||, |: boolean NOT.
 
-Note: In the following subsections, an {integer} can be any of the following:
+Note: In the following subsections, an {expression} can be any of the following:
 * An integer literal
 * The result of _eval
 * The result of _atoi
 * An integer dereference
 
-1.7.1. 9th order operators
-_itoa{integer} (Lexical string-to-integer cast operator)
-Converts the number to its right to a string. If the number is a variable, it
-doesn't change the its value.
-Example: _itoa 16, _itoa %0
+1.7.1. 10th order operators
+lchk{string} (Label check operator)
+See the original documentation.
 
-_atoi{string} (Lexical integer-to-string cast operator)
+fchk{string} (File check operator)
+See the original documentation.
+
+_itoa({expression}) (Lexical string-to-integer cast operator)
+Converts the number to its right to a string. If the number is a variable, it
+doesn't change its value.
+Example: _itoa(16), _itoa(%0)
+
+_atoi({string}) (Lexical integer-to-string cast operator)
 Converts the string to its right to an integer. If the string is a variable, it
 doesn't change its value.
-Example: _atoi "145", _atoi $12
+Example: _atoi("145"), _atoi($12)
 
-_eval{string} (String evaluation operator)
+_eval({string}) (Recursive evaluation operator)
 Evaluates the string to its right as an expression and returns the result.
-Example: _eval "1+1", _eval $84
+Example: _eval("1+1"), _eval($84)
 
-Wrapping the operands of any of the above operators around parentheses
-(e.g. _itoa (0)) is both unnecessary and invalid.
-
+1.7.2. 9th order operators
 % and $ (Integer dereference and string dereference operators)
 %{integer}
 %({expression})
@@ -201,9 +223,7 @@ Variables are allocated in a table and indexed by an integer. What these
 operators do is find the variable that corresponds to the operand and get the
 integer or string component (as mentioned on section 1.5, variables are an 
 integer-string pair) respectively.
-E.g. %0, %%0, $0, $%0, %(%0+1), %_atoi $0 (note: the space between _atoi and $
-is optional. The same applies to all spaces in expressions), $%(_atoi$0+1)
-(note: this has the same meaning as $%((_atoi$0)+1) )
+E.g. %0, %%0, $0, $%0, %(%0+1), %_atoi($0), $%(_atoi($0)+1)
 
 ?{integer} (Array dereference operator)
 ?({expression})
@@ -213,9 +233,9 @@ Unlike variables, arrays are not automatically declared, and also, they occupy a
 different namespace (i.e. variable 12 is unrelated to array 12).
 The array cannot be used directly. It has to be indexed with the offset
 operator, which is explained in the next subsection.
-E.g. ?0, ?%0, ?_atoi$0, ?(_atoi$%0+1)
+E.g. ?0, ?(1+1), ?%0, ?_atoi($0), ?(_atoi($%0)+1)
 
-1.7.2. 8th order operators
+1.7.3. 8th order operators
 [] (Offset operator)
 {array dereference}[{expression}]
 {array obtained from []}[{expression}]
@@ -233,7 +253,7 @@ For an array declared as ?array[10][10]
 ?array[10][11] ;<-- The element doesn't exist. This is known as a buffer 
                ;    overflow
 
-1.7.3. 7th order operators
+1.7.4. 7th order operators
 + (unary NOP operator)
 +{expression}
 Produces the same value as the operand.
@@ -242,13 +262,29 @@ Produces the same value as the operand.
 -{expression}
 Inverts the sign of the operand.
 
-1.7.4. 6th order operators
+1.7.5. 6th order operators
 !{expression} (Boolean NOT)
 Evaluates to non-zero if the operand is zero, and to zero otherwise.
 E.g. !$0, !(%0==0), !(%0==0 && %5==4) (note: this is one of the recommendable
 alternatives to notif)
 
-1.7.5. 3rd order operators
+1.7.6. 4th order operators
+{string}+{string}[+{string}[...]] (String concatenation operator)
+A special note needs to be made on this operator.
+In reality, this should be an eleventh order operator, so that (lchk $0+$0+$0)
+produced the expected result. Because of some weird behavior on the part of
+Bison, I'm unable to do that, so please follow this simple rule: if the
+expression consists at the top level of a string concatenation, use the legacy
+rules; if the string concatenation is used as an operand for an operator that
+accepts a string, surround the concatenation with parentheses.
+Examples:
+mov $0,$0+"string"+"string" ;<- ok
+if fchk "directory/"+"file" command ;<- NOT OK! It's parsed as equivalent to
+                                    ;(fchk "directory")+"file", which results in
+                                    ;in a syntax error
+if fchk("directory/"+"file") command ;<- ok
+
+1.7.7. 3rd order operators
 All operators in this subsection take two {expressions} as their operands. All
 operands compare their operands and evaluate to non-zero if the condition is
 met, and zero otherwise.
@@ -259,12 +295,12 @@ met, and zero otherwise.
 <: Lower than
 >= Greater than or equal to
 
-1.7.6. 2nd order operators
+1.7.8. 2nd order operators
 && or & (Boolean AND)
 {expression}&&{expression}
 Evaluates to non-zero if both operands are non-zero.
 
-1.7.7. 1st order operators
+1.7.9. 1st order operators
 || or | (Boolean OR)
 {expression}||{expression}
 Evaluates to non-zero if either operand is non-zero.
@@ -395,7 +431,29 @@ c$fileString         This image file will be used as the background for the text
 c%windowStartX       X coordinate of the upper left corner of the text window.
 c%windowStartY       Y coordinate of the upper left corner of the text window.
 }
-The parameters for this syntax are the same as the previous, but
+
+
+/
+When a slash is the last character in a line (that is, the next character has to
+be either carriage return [U+000D] or line feed [U+000A]), both the slash and
+the newline are ignored.
+This processing is done before *anything* else.
+Example:
+mov $0,"stri/
+ng"
+;$0 now contains "string".
+mov %0,2//
+2
+;%0 now contains 1
+This expands the behavior from ONScripter, where the slash only worked in
+printing lines.
+Note: If an error occurs while executing the command, the error message will
+report that the error occurred on the line number where the split line began.
+For example,
+(Line 10) command some/
+(Line 11) thing:command2
+If an error occurs when executing command2, the error message will report that
+the error occurred on line 10
 
 4. New commands
 date2
@@ -407,16 +465,21 @@ It is back from NScripter.
 new_setwindow
 Uses the new version of setwindow.
 
-set_default_font_size %
+set_default_font_size c%
 Changes the default font size. Meant to be used with new_setwindow.
 
 unalias
 Undefine a previously defined alias.
 
-literal_print
-Mostly reserved for debugging. It will print whatever text is passed to it.
-E.g.
-literal_print "This is an example of the \"literal_print\" command.\nWith this command, we can print any characters we want, such as new\rlines, \"quotes\", back\\slashes, or even Unicode characters: \xFFE6.\n\nWe can also print the value of variables: %var=",%var,"\n\"literal_print\" is therefore very useful for debugging scripts.\nAs usual, we don't need to worry about line- or page-wrapping, either."
+literal_print {c$|c%}[, {c$|c%}[...]]
+Mostly reserved for debugging. It takes both strings and expressions as
+parameters. Strings are printed verbatim (with line and page wrapping) and
+expressions are evaluated and their results printed.
+Example:
+mov $0,"1+2*3"
+literal_print e"This is an \"advanced\\string.\nAnd now, \"ONSLAUGHT\" in katak/
+ana: \x30aa\x30f3\x30b9\x30ed\x30c3\x30c8\n$0 = \"",$0,e"\" -evaluates to-> ", /
+_eval($0)
 
 use_new_if
 There was a problem with the if in the old ONScripter.
@@ -444,7 +507,8 @@ during the printing process.
 It is important when using centerv that all printing commands end with a \:
 `Sample vertically!nlcentered text.\ ;<-- Ok.
 `Sample vertically!nlcentered text.  ;<-- May produce strange artifacts.
-\                                    ;<-- If this appears before the next printing command, there's no problem.
+\                                    ;<-- If this appears before the next
+                                     ;printing command, there's no problem.
 Also, at the moment vertical centering produces incorrect results when the size
 of a page of text is greater than the size of the screen. This will probably be
 fixed in future releases. The syntax is identical to centerh.

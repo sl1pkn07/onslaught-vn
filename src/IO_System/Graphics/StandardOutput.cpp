@@ -142,9 +142,9 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 		this->y=this->setTextStart(&this->cachedText,&frame,this->verticalCenterPolicy);
 	else if (!this->currentBuffer.size())
 		this->y=this->y0;
-	wchar_t tempbuf[100];
-	swprintf(tempbuf,100,L"<y=%u>",this->y);
-	this->prebufferedText.append(tempbuf);
+	this->prebufferedText.append(L"<y=");
+	this->prebufferedText.append(itoa<wchar_t>(this->y));
+	this->prebufferedText.push_back('>');
 	return 0;
 }
 
@@ -158,9 +158,9 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 	if (this->x==this->x0){
 		x0=this->setLineStart(&this->cachedText,start,&frame,this->horizontalCenterPolicy);
 		if (x0!=this->lastStart){
-			wchar_t tempbuf[100];
-			swprintf(tempbuf,100,L"<x=%u>",x0);
-			this->prebufferedText.append(tempbuf);
+			this->prebufferedText.append(L"<x=");
+			this->prebufferedText.append(itoa<wchar_t>(x0));
+			this->prebufferedText.push_back('>');
 			this->lastStart=x0;
 		}
 	}else
@@ -192,9 +192,9 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			if (a<this->cachedText.size()-1){
 				x0=this->setLineStart(&this->cachedText,a+1,&frame,this->horizontalCenterPolicy);
 				if (x0!=this->lastStart){
-					wchar_t tempbuf[100];
-					swprintf(tempbuf,100,L"<x=%u>",x0);
-					this->prebufferedText.append(tempbuf);
+					this->prebufferedText.append(L"<x=");
+					this->prebufferedText.append(itoa<wchar_t>(x0));
+					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
 			}else
@@ -218,9 +218,9 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			}else{
 				x0=this->setLineStart(&this->cachedText,a,&frame,this->horizontalCenterPolicy);
 				if (x0!=this->lastStart){
-					wchar_t tempbuf[100];
-					swprintf(tempbuf,100,L"<x=%u>",x0);
-					this->prebufferedText.append(tempbuf);
+					this->prebufferedText.append(L"<x=");
+					this->prebufferedText.append(itoa<wchar_t>(x0));
+					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
 				y0+=lineSkip;
@@ -277,14 +277,6 @@ void NONS_StandardOutput::endPrinting(){
 	this->printingStarted=0;
 }
 
-template <typename T>
-int atoi2(T *str){
-	char *temp=copyString(str);
-	int res=atoi(temp);
-	delete[] temp;
-	return res;
-}
-
 void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst,bool update,bool writeToLayers,SDL_Color *col){
 	int x=this->x0,
 		y=this->y0;
@@ -298,25 +290,18 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 	for (ulong a=0;a<str->size();a++){
 		wchar_t character=(*str)[a];
 		if (character=='<'){
-			const wchar_t *string=str->c_str()+a;
-			wchar_t *tagname=tagName(string);
-			if (!!tagname){
-				if (!wcscmp(tagname,L"x")){
-					wchar_t *tagvalue=tagValue(string);
-					if (!!tagvalue){
-						x=atoi2(tagvalue);
-						lastStart=x;
-						delete[] tagvalue;
-					}
-				}else if (!wcscmp(tagname,L"y")){
-					wchar_t *tagvalue=tagValue(string);
-					if (!!tagvalue){
-						y=atoi2(tagvalue);
-						delete[] tagvalue;
-					}
+			std::wstring tagname=tagName(*str,a);
+			if (tagname.size()){
+				if (tagname==L"x"){
+					std::wstring tagvalue=tagValue(*str,a);
+					if (tagvalue.size())
+						lastStart=x=atoi(tagvalue);
+				}else if (tagname==L"y"){
+					std::wstring tagvalue=tagValue(*str,a);
+					if (tagvalue.size())
+						y=atoi(tagvalue);
 				}
-				for (;(*str)[a]!='>';a++);
-				delete[] tagname;
+				a=str->find('>',a);
 			}
 			continue;
 		}
@@ -436,18 +421,20 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 	if (this->verticalCenterPolicy>0 && this->cachedText.size()){
 		SDL_Rect frame={this->x0,this->y0,this->w,this->h};
 		this->y=this->setTextStart(&this->cachedText,&frame,this->verticalCenterPolicy);
-		wchar_t tempbuf[100];
-		swprintf(tempbuf,100,L"<y=%u>",this->y);
-		this->prebufferedText.append(tempbuf);
+		this->prebufferedText.append(L"<y=");
+		this->prebufferedText.append(itoa<wchar_t>(this->y));
+		this->prebufferedText.push_back('>');
 	}
 }
 
 void NONS_StandardOutput::setPosition(int x,int y){
 	this->x=this->x0+x;
 	this->y=this->y0+y;
-	wchar_t tempbuf[100];
-	swprintf(tempbuf,100,L"<x=%u><y=%u>",this->x,this->y);
-	this->currentBuffer.append(tempbuf);
+	this->currentBuffer.append(L"<x=");
+	this->currentBuffer.append(itoa<wchar_t>(this->x));
+	this->currentBuffer.append(L"><y=");
+	this->currentBuffer.append(itoa<wchar_t>(this->y));
+	this->currentBuffer.push_back(L'>');
 }
 
 float NONS_StandardOutput::getCenterPolicy(char which){

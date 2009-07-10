@@ -83,9 +83,9 @@ NONS_VariableMember::NONS_VariableMember(std::vector<long> &sizes,size_t startAt
 	this->constant=0;
 	if (startAt<sizes.size()){
 		this->type=INTEGER_ARRAY;
-		this->dimensionSize=sizes[startAt];
-		this->dimension=new NONS_VariableMember*[sizes[startAt]+1];
-		for (ulong a=0;a<ulong(sizes[startAt]);a++)
+		this->dimensionSize=sizes[startAt]+1;
+		this->dimension=new NONS_VariableMember*[this->dimensionSize];
+		for (ulong a=0;a<ulong(this->dimensionSize);a++)
 			this->dimension[a]=new NONS_VariableMember(sizes,startAt+1);
 	}else{
 		this->type=INTEGER;

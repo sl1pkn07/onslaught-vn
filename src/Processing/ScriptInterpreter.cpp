@@ -55,40 +55,37 @@ printingPage &printingPage::operator=(const printingPage &b){
 
 NONS_StackElement::NONS_StackElement(ulong level){
 	this->type=UNDEFINED;
-	this->offset=0;
 	this->var=0;
 	this->from=0;
 	this->to=0;
 	this->step=0;
-	this->end=0;
 	this->textgosubLevel=level;
-	this->end=0;
 	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(ulong offset,const std::wstring &string,ulong level){
+NONS_StackElement::NONS_StackElement(const std::pair<ulong,ulong> &returnTo,const NONS_ScriptLine &interpretAtReturn,ulong beginAtStatement,ulong level)
+		:interpretAtReturn(interpretAtReturn,beginAtStatement){
+	this->returnTo.line=returnTo.first;
+	this->returnTo.statement=returnTo.second;
 	this->type=SUBROUTINE_CALL;
-	this->offset=offset;
-	this->first_interpret_string=string;
 	this->textgosubLevel=level;
-	this->end=0;
 	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,ulong startoffset,long from,long to,long step,ulong level){
+NONS_StackElement::NONS_StackElement(NONS_VariableMember *variable,const std::pair<ulong,ulong> &startStatement,long from,long to,long step,ulong level){
+	this->returnTo.line=startStatement.first;
+	this->returnTo.statement=startStatement.second;
 	this->type=FOR_NEST;
 	this->var=variable;
-	this->offset=startoffset;
 	this->from=from;
 	this->to=to;
 	this->step=step;
-	this->end=this->offset;
+	this->end=this->returnTo;
 	this->textgosubLevel=level;
-	this->end=0;
 	this->textgosubTriggeredBy=0;
 }
 
-NONS_StackElement::NONS_StackElement(std::vector<printingPage> pages,wchar_t trigger,ulong level){
+NONS_StackElement::NONS_StackElement(const std::vector<printingPage> &pages,wchar_t trigger,ulong level){
 	this->type=TEXTGOSUB_CALL;
 	this->textgosubLevel=level;
 	this->pages=pages;
@@ -97,10 +94,11 @@ NONS_StackElement::NONS_StackElement(std::vector<printingPage> pages,wchar_t tri
 
 void NONS_ScriptInterpreter::init(){
 	this->script=everything->script;
-	this->interpreter_position=0;
+	//this->interpreter_position=0;
+	this->thread=new NONS_ScriptThread(this->script);
 	this->store=new NONS_VariableStore();
 	this->interpreter_mode=DEFINE;
-	this->nsadir=copyString("./");
+	this->nsadir="./";
 	this->default_speed=0;
 	this->default_speed_slow=0;
 	this->default_speed_med=0;
@@ -167,6 +165,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->gfx_store=0;
 	this->everything=0;
 	this->main_font=0;
+	this->thread=0;
 	if (everything){
 		if (!everything->script){
 			this->everything=0;
@@ -496,6 +495,10 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	ulong total=this->totalCommands(),
 		implemented=this->implementedCommands();
 	std::cout <<"ONSlaught script interpreter v"<<float((implemented*100)/total)/100<<std::endl;
+	command_list.clear();
+	command_list.reserve(this->commandList.size());
+	for (commandListType::iterator i=this->commandList.begin(),end=this->commandList.end();i!=end;i++)
+		command_list.push_back(i->first);
 }
 
 void NONS_ScriptInterpreter::uninit(){
@@ -503,6 +506,7 @@ void NONS_ScriptInterpreter::uninit(){
 		delete this->store;
 	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
 		delete i->second;
+	delete this->thread;
 	this->INIcache.clear();
 	delete this->arrowCursor;
 	delete this->pageCursor;
@@ -542,20 +546,6 @@ ulong NONS_ScriptInterpreter::implementedCommands(){
 	return res;
 }
 
-ulong countLines(const std::wstring &buffer,ulong byte_pos){
-	ulong res=1;
-	for (ulong pos=0;pos<byte_pos;pos++){
-		if (buffer[pos]==13 && buffer[pos+1]==10){
-			res++;
-			pos++;
-		}else if (buffer[pos]==13)
-			res++;
-		else if (buffer[pos]==10)
-			res++;
-	}
-	return res;
-}
-
 #define INTERPRETNEXTLINE_HANDLEKEYS switch (event.type){\
 	case SDL_KEYDOWN:\
 		{\
@@ -591,8 +581,9 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 				}
 			}
 			if (end){
-				this->interpreter_position=this->trapLabel;
-				this->trapLabel=0;
+				this->thread->gotoLabel(this->trapLabel);
+				this->thread->advanceToNextStatement();
+				this->trapLabel.clear();
 				trapFlag=0;
 			}
 		}
@@ -602,19 +593,21 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			INTERPRETNEXTLINE_HANDLEKEYS
 		}
 	}
-	this->current_line=countLines(this->script->script,this->interpreter_position);
+
+	NONS_Statement *stmt=this->thread->getCurrentStatement();
+	if (!stmt)
+		return 0;
+	stmt->parse(this->everything->script);
 	if (CLOptions.verbosity>=1)
-		o_stderr <<"Interpreting line "<<this->current_line<<'\n';
-	this->previous_interpreter_position=this->interpreter_position;
-	//The NONS_ParsedLine constructor needs to be called so that the interpreter position can advance.
-	NONS_ParsedLine line(this->script->script,this->interpreter_position,this->current_line);
-	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
-		o_stderr <<'\"'<<line.commandName<<"\" ";
-		if (line.parameters.size()){
+		o_stderr <<"Interpreting line "<<stmt->lineOfOrigin->lineNumber<<'\n';
+	//this->previous_interpreter_position=this->interpreter_position;
+	if (CLOptions.verbosity>=3 && stmt->type==NONS_Statement::STATEMENT_COMMAND){
+		o_stderr <<'\"'<<stmt->commandName<<"\" ";
+		if (stmt->parameters.size()){
 			o_stderr <<"{\n";
 			for (ulong a=0;;a++){
-				o_stderr <<"    \""<<line.parameters[a]<<'\"';
-				if (a==line.parameters.size()-1){
+				o_stderr <<"    \""<<stmt->parameters[a]<<'\"';
+				if (a==stmt->parameters.size()-1){
 					o_stderr <<'\n';
 					break;
 				}
@@ -624,34 +617,33 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		}else
 			o_stderr <<"{NO PARAMETERS}\n";
 	}
-	this->saveGame->currentOffset=this->interpreter_position;
 	this->saveGame->textX=this->everything->screen->output->x;
 	this->saveGame->textY=this->everything->screen->output->y;
-	switch (line.type){
-		case PARSEDLINE_BLOCK:
-			this->saveGame->currentLabel=line.commandName;
-			if (line.commandName==L"*define")
+	switch (stmt->type){
+		case NONS_Statement::STATEMENT_BLOCK:
+			this->saveGame->currentLabel=stmt->commandName;
+			if (!stdStrCmpCI(stmt->commandName,L"define"))
 				this->interpreter_mode=DEFINE;
 			break;
-		case PARSEDLINE_JUMP:
-		case PARSEDLINE_COMMENT:
+		case NONS_Statement::STATEMENT_JUMP:
+		case NONS_Statement::STATEMENT_COMMENT:
 			break;
-		case PARSEDLINE_PRINTER:
-			if (this->printed_lines.find(this->current_line)==this->printed_lines.end()){
+		case NONS_Statement::STATEMENT_PRINTER:
+			if (this->printed_lines.find(stmt->lineOfOrigin->lineNumber)==this->printed_lines.end()){
 				//softwareCtrlIsPressed=0;
-				this->printed_lines.insert(this->current_line);
+				this->printed_lines.insert(stmt->lineOfOrigin->lineNumber);
 			}
-			this->Printer(line.commandName);
+			this->Printer(stmt->stmt);
 			break;
-		case PARSEDLINE_COMMAND:
+		case NONS_Statement::STATEMENT_COMMAND:
 			{
-				commandListType::iterator i=this->commandList.find(line.commandName);
+				commandListType::iterator i=this->commandList.find(stmt->commandName);
 				if (i!=this->commandList.end()){
-					ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
-					if (!temp){
+					commandFunctionPointer function=i->second;
+					if (!function){
 						if (this->implementationErrors.find(i->first)==this->implementationErrors.end()){
 							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
-								"Error near line "<<this->current_line<<". Command \""<<line.commandName<<"\" is not implemented yet.\n"
+								"Error near line "<<stmt->lineOfOrigin->lineNumber<<". Command \""<<stmt->commandName<<"\" is not implemented yet.\n"
 								"    Implementation errors are reported only once.\n";
 							this->implementationErrors.insert(i->first);
 						}
@@ -659,15 +651,15 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 							return 0;
 						break;
 					}
-					ErrorCode error=(this->*temp)(line);
+					ErrorCode error=(this->*function)(*stmt);
 					if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-						o_stderr <<"Line "<<line.lineNo<<": \n"
-							"\""<<line.commandName<<"\" ";
-						if (line.parameters.size()){
+						o_stderr <<"Line "<<stmt->lineOfOrigin->lineNumber<<": \n"
+							"\""<<stmt->commandName<<"\" ";
+						if (stmt->parameters.size()){
 							o_stderr <<"{\n";
 							for (ulong a=0;;a++){
-								o_stderr <<"    \""<<line.parameters[a]<<'\"';
-								if (a==line.parameters.size()-1){
+								o_stderr <<"    \""<<stmt->parameters[a]<<'\"';
+								if (a==stmt->parameters.size()-1){
 									o_stderr <<'\n';
 									break;
 								}
@@ -677,12 +669,12 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 						}else
 							o_stderr <<"{NO PARAMETERS}\n";
 					}
-					handleErrors(error,this->current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+					handleErrors(error,stmt->lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::interpretNextLine",0);
 					if (CLOptions.stopOnFirstError && error!=NONS_UNIMPLEMENTED_COMMAND || error==NONS_END)
 						return 0;
 				}else{
 					o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
-						"Error near line "<<this->current_line<<". Command \""<<line.commandName<<"\" could not be recognized.\n";
+						"Error near line "<<stmt->lineOfOrigin->lineNumber<<". Command \""<<stmt->commandName<<"\" could not be recognized.\n";
 					if (CLOptions.stopOnFirstError)
 						return 0;
 				}
@@ -690,23 +682,34 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			break;
 		default:;
 	}
-	if (this->interpreter_position>=this->script->script.size()){
-		this->command_end(line);
+	if (!this->thread->advanceToNextStatement()){
+		this->command_end(*stmt);
 		return 0;
 	}
 	return 1;
 }
 
-ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &string){
+ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &str){
+	NONS_ScriptLine line(0,str,0,1);
+	ErrorCode ret=NONS_NO_ERROR;
+	for (ulong a=0;a<line.statements.size();a++){
+		ErrorCode error=this->interpretString(*line.statements[a]);
+		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
+			ret=NONS_UNDEFINED_ERROR;
+	}
+	return ret;
+}
+
+ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt){
 	ulong offset=0;
-	NONS_ParsedLine line(string,offset,0);
-	if (CLOptions.verbosity>=3 && line.type==PARSEDLINE_COMMAND){
-		o_stderr <<"String: \""<<line.commandName<<"\" ";
-		if (line.parameters.size()){
+	stmt.parse(this->everything->script);
+	if (CLOptions.verbosity>=3 && stmt.type==NONS_Statement::STATEMENT_COMMAND){
+		o_stderr <<"String: \""<<stmt.commandName<<"\" ";
+		if (stmt.parameters.size()){
 			o_stderr <<"{\n";
 			for (ulong a=0;;a++){
-				o_stderr <<"    \""<<line.parameters[a]<<'\"';
-				if (a==line.parameters.size()-1){
+				o_stderr <<"    \""<<stmt.parameters[a]<<'\"';
+				if (a==stmt.parameters.size()-1){
 					o_stderr <<'\n';
 					break;
 				}
@@ -716,35 +719,34 @@ ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &string){
 		}else
 			o_stderr <<"{NO PARAMETERS}\n";
 	}
-	line.lineNo=-1;
-	switch (line.type){
-		case PARSEDLINE_COMMENT:
+	switch (stmt.type){
+		case NONS_Statement::STATEMENT_COMMENT:
 			break;
-		case PARSEDLINE_PRINTER:
-			if (this->printed_lines.find(this->current_line)==this->printed_lines.end()){
+		case NONS_Statement::STATEMENT_PRINTER:
+			if (this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
 				//softwareCtrlIsPressed=0;
-				this->printed_lines.insert(this->current_line);
+				this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
 			}
-			this->Printer(line.commandName);
+			this->Printer(stmt.commandName);
 			break;
-		case PARSEDLINE_COMMAND:
+		case NONS_Statement::STATEMENT_COMMAND:
 			{
-				commandListType::iterator i=this->commandList.find(line.commandName);
+				commandListType::iterator i=this->commandList.find(stmt.commandName);
 				if (i!=(this->commandList.end())){
-					ErrorCode(NONS_ScriptInterpreter::*temp)(NONS_ParsedLine &)=i->second;
-					if (!temp){
+					commandFunctionPointer function=i->second;
+					if (!function){
 						if (this->implementationErrors.find(i->first)!=this->implementationErrors.end()){
 							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
-								"Error. Command \""<<line.commandName<<"\" is not implemented.\n"
+								"Error. Command \""<<stmt.commandName<<"\" is not implemented.\n"
 								"    Implementation errors are reported only once.\n";
 							this->implementationErrors.insert(i->first);
 						}
 						return NONS_NOT_IMPLEMENTED;
 					}
-					return handleErrors((this->*temp)(line),line.lineNo,"NONS_ScriptInterpreter::interpretString",1);
+					return handleErrors((this->*function)(stmt),stmt.lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::interpretString",1);
 				}else{
 					o_stderr <<"NONS_ScriptInterpreter::interpretString(): "
-						"Error. Command \""<<line.commandName<<"\" could not be recognized.\n";
+						"Error. Command \""<<stmt.commandName<<"\" could not be recognized.\n";
 					return NONS_UNRECOGNIZED_COMMAND;
 				}
 			}
@@ -754,25 +756,14 @@ ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &string){
 	return NONS_NO_ERROR;
 }
 
-wchar_t *insertIntoString(wchar_t *dst,long from,long l,wchar_t *src){
-	long ldst=wcslen(dst),
-		lsrc=wcslen(src),
-		lnew=ldst-l+lsrc;
-	wchar_t *res=new wchar_t[lnew+1];
-	res[lnew]=0;
-	memcpy(res,dst,from*sizeof(wchar_t));
-	memcpy(res+from,src,lsrc*sizeof(wchar_t));
-	memcpy(res+from+lsrc,dst+from+l,(ldst-(from+l))*sizeof(wchar_t));
-	return res;
+std::wstring insertIntoString(const std::wstring &dst,ulong from,ulong l,const std::wstring &src){
+	return dst.substr(0,from)+src+dst.substr(from+l);
 }
 
-wchar_t *insertIntoString(wchar_t *dst,long from,long l,long src){
-	std::stringstream temp;
+std::wstring insertIntoString(const std::wstring &dst,ulong from,ulong l,long src){
+	std::wstringstream temp;
 	temp <<src;
-	wchar_t *representation=copyWString(temp.str().c_str());
-	wchar_t *res=insertIntoString(dst,from,l,representation);
-	delete[] representation;
-	return res;
+	return insertIntoString(dst,from,l,temp.str());
 }
 
 std::wstring getInlineExpression(const std::wstring &string,ulong off,ulong *len){
@@ -865,72 +856,61 @@ void NONS_ScriptInterpreter::reduceString(
 	}
 }
 
-void findStops(const wchar_t *src,std::vector<std::pair<ulong,ulong> > &stopping_points,std::wstring &dst){
+void findStops(const std::wstring &src,std::vector<std::pair<ulong,ulong> > &stopping_points,std::wstring &dst){
 	dst.clear();
-	const wchar_t *str2=src;
-	for (;*str2;str2++){
-		switch (*str2){
+	for (ulong a=0,size=src.size();a<size;a++){
+		switch (src[a]){
 			case '\\':
 			case '@':
 				{
-					std::pair<ulong,ulong> push(dst.size(),str2-src);
+					std::pair<ulong,ulong> push(dst.size(),a);
 					stopping_points.push_back(push);
 					continue;
 				}
 			case '!':
-				if (!instr(str2,L"!sd")){
-					std::pair<ulong,ulong> push(dst.size(),src-str2);
+				if (firstcharsCI(src,a,L"!sd")){
+					std::pair<ulong,ulong> push(dst.size(),a);
 					stopping_points.push_back(push);
-					str2+=2;
+					a+=2;
 					continue;
-				}else if (!instr(str2,L"!s") || !instr(str2,L"!d") || !instr(str2,L"!w")){
-					std::pair<ulong,ulong> push(dst.size(),src-str2);
+				}else if (firstcharsCI(src,a,L"!s") || firstcharsCI(src,a,L"!d") || firstcharsCI(src,a,L"!w")){
+					std::pair<ulong,ulong> push(dst.size(),a);
 					stopping_points.push_back(push);
 					ulong l=2;
-					for (;isdigit(str2[l]);l++);
-					str2+=l-1;
+					for (;isdigit(src[a+l]);l++);
+					a+=l-1;
 					continue;
 				}
 			case '#':
-				if (*str2=='#'){
-					ulong len=wcslen(str2+1);
-					if (len>=6){
-						str2++;
-						short a;
-						for (a=0;a<6;a++){
-							char hex=str2[a];
-							if (!NONS_ishexa(hex))
-								break;
-						}
-						if (a!=6)
-							str2--;
+				if (src[a]=='#'){
+					if (src.size()-a-1>=6){
+						a++;
+						short b;
+						for (b=0;b<6 && NONS_ishexa(src[b]);b++);
+						if (b!=6)
+							a--;
 						else{
-							std::pair<ulong,ulong> push(dst.size(),src-str2);
+							std::pair<ulong,ulong> push(dst.size(),a);
 							stopping_points.push_back(push);
-							str2+=5;
+							a+=5;
 							continue;
 						}
 					}
 				}
 			default:
-				dst.push_back(*str2);
+				dst.push_back(src[a]);
 		}
-		if (*str2=='\\')
+		if (src[a]=='\\')
 			break;
 	}
-	std::pair<ulong,ulong> push(dst.size(),str2-src);
+	std::pair<ulong,ulong> push(dst.size(),src.size());
 	stopping_points.push_back(push);
-}
-
-template <typename T>
-T HEX2DEC(T x){
-	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
 }
 
 bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error){
 	NONS_StandardOutput *out=this->everything->screen->output;
 	this->everything->screen->showText();
-	wchar_t *str;
+	std::wstring *str;
 	bool justClicked;
 	for (std::vector<printingPage>::iterator i=pages.begin();i!=pages.end();i++){
 		bool clearscr=out->prepareForPrinting(i->print.c_str());
@@ -942,7 +922,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 			}
 			this->everything->screen->clearText();
 		}
-		str=(wchar_t *)i->reduced.c_str();
+		str=&i->reduced;
 		for (ulong reduced=0,printed=0,stop=0;stop<i->stops.size();stop++){
 			ulong printedChars=0;
 			while (justClicked=out->print(printed,i->stops[stop].first,this->everything->screen->screen,&printedChars)){
@@ -962,7 +942,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 				justClicked=0;
 			}
 			reduced=i->stops[stop].second;
-			switch (str[reduced]){
+			switch ((*str)[reduced]){
 				case '\\':
 					if (this->textgosub.size() && (this->textgosubRecurses || !this->insideTextgosub())){
 						std::vector<printingPage>::iterator i2=i;
@@ -1032,22 +1012,24 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 					reduced++;
 					break;
 				case '!':
-					if (!instr(str+reduced,"!sd")){
+					if (firstcharsCI(*str,reduced,L"!sd")){
 						out->display_speed=this->default_speed;
 						reduced+=3;
 						break;
 					}else{
-						bool notess=!instr(str+reduced,"!s"),
-							notdee=!instr(str+reduced,"!d"),
-							notdu=!instr(str+reduced,"!w");
+						bool notess=firstcharsCI(*str,reduced,L"!s"),
+							notdee=firstcharsCI(*str,reduced,L"!d"),
+							notdu=firstcharsCI(*str,reduced,L"!w");
 						if (notess || notdee || notdu){
 							reduced+=2;
 							ulong l=0;
-							for (;isdigit(str[reduced+l]);l++);
+							for (;NONS_isdigit((*str)[reduced+l]);l++);
 							if (l>0){
-								char *temp=copyString(str+reduced,l);
-								long s=atol(temp);
-								delete[] temp;
+								long s=0;
+								{
+									std::wstringstream stream(str->substr(reduced,l));
+									stream >>s;
+								}
 								if (notess){
 									switch (this->current_speed_setting){
 										case 0:
@@ -1070,14 +1052,14 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						}
 					}
 				case '#':
-					if (str[reduced]=='#'){
-						ulong len=wcslen(str+reduced+1);
+					if ((*str)[reduced]=='#'){
+						ulong len=str->size()-reduced-1;
 						if (len>=6){
 							reduced++;
 							Uint32 parsed=0;
 							short a;
 							for (a=0;a<6;a++){
-								int hex=str[reduced+a];
+								int hex=(*str)[reduced+a];
 								if (!NONS_ishexa(hex))
 									break;
 								parsed<<=4;
@@ -1124,18 +1106,18 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 	reduceString(str,reducedString);
 	std::vector<printingPage> pages;
 	ulong totalprintedchars=0;
-	for (const wchar_t *str2=reducedString.c_str();*str2;){
-		ulong p=instr(str2,L"\\")+1;
-		wchar_t *str3=copyWString(str2,p);
-		if (!p)
-			str2+=wcslen(str2);
+	for (ulong a=0;a<reducedString.size();){
+		ulong p=reducedString.find('\\',a);
+		if (p==reducedString.npos)
+			p=reducedString.size();
 		else
-			str2+=p;
+			p++;
+		std::wstring str3(reducedString.begin()+a,reducedString.begin()+p);
+		a=p;
 		pages.push_back(printingPage());
 		printingPage &page=pages.back();
 		page.reduced=str3;
-		delete[] str3;
-		findStops(page.reduced.c_str(),page.stops,page.print);
+		findStops(page.reduced,page.stops,page.print);
 	}
 	ErrorCode error;
 	if (this->Printer_support(pages,&totalprintedchars,&justTurnedPage,&error))
@@ -1149,59 +1131,20 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 	return NONS_NO_ERROR;
 }
 
-void NONS_ScriptInterpreter::convertParametersToString(NONS_ParsedLine &line,std::wstring &string){
+void NONS_ScriptInterpreter::convertParametersToString(NONS_Statement &stmt,std::wstring &string){
 	string.clear();
-	for (ulong a=0;a<line.parameters.size();a++){
-		NONS_VariableMember *var=this->store->retrieve(line.parameters[a],0);
-		if (!var){
-			std::wstring &str=line.parameters[a];
-			for (std::wstring::iterator i=str.begin()+(*i=='\"'),end=str.end();i!=end && *i!='\"';i++){
-				if (*i=='\\'){
-					i++;
-					switch (*i){
-						case '"':
-						case '\\':
-							string.push_back(*i);
-							break;
-						case 'r':
-						case 'n':
-							string.push_back('\n');
-							break;
-						case 'x':
-							{
-								i++;
-								wchar_t n=0;
-								short b;
-								for (b=0;i+b!=end && b<4;b++){
-									char hex=toupper(i[b]);
-									if (!(hex>='0' && hex<='9' || hex>='A' && hex<='F'))
-										break;
-									n<<=4;
-									n|=(hex>='0' && hex<='9')?hex-'0':hex-'A'+10;
-								}
-								if (b<4)
-									goto convertParametersToString_000;
-								i+=3;
-								string.push_back(n);
-							}
-							break;
-						default:
-							goto convertParametersToString_000;
-					}
-				}else
-					string.push_back(*i);
-			}
-		}else if (var->getType()==INTEGER){
-			std::stringstream temp;
-			temp <<var->getInt();
-			wchar_t *representation=copyWString(temp.str().c_str());
-			string.append(representation);
-			delete[] representation;
-		}else if (var->getType()==STRING){
-			string.append(var->getWcs());
-		}else if (var->getType()==INTEGER_ARRAY)
-			continue;
-convertParametersToString_000:;
+	for (ulong a=0;a<stmt.parameters.size();a++){
+		long res;
+		std::wstring &str=stmt.parameters[a];
+		if (CHECK_FLAG(this->store->getIntValue(str,res),NONS_NO_ERROR_FLAG)){
+			string.append(itoa<wchar_t>(res));
+		}else{
+			std::wstring resString;
+			if (CHECK_FLAG(this->store->getWcsValue(str,resString),NONS_NO_ERROR_FLAG))
+				string.append(resString);
+			else
+				continue;
+		}
 	}
 }
 
@@ -1210,16 +1153,14 @@ ulong NONS_ScriptInterpreter::insideTextgosub(){
 }
 
 bool NONS_ScriptInterpreter::goto_label(const std::wstring &label){
-	long temp=this->script->offsetFromBlock(label);
-	if (temp<0)
+	if (!this->thread->gotoLabel(label))
 		return 0;
 	labellog.addString(label);
-	this->interpreter_position=temp;
 	return 1;
 }
 
 bool NONS_ScriptInterpreter::gosub_label(const std::wstring &label){
-	NONS_StackElement *el=new NONS_StackElement(this->interpreter_position,0,this->insideTextgosub());
+	NONS_StackElement *el=new NONS_StackElement(this->thread->getNextStatementPair(),NONS_ScriptLine(),0,this->insideTextgosub());
 	if (!this->goto_label(label)){
 		delete el;
 		return 0;

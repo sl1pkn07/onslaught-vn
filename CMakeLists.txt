@@ -21,12 +21,11 @@ set(LIBS
 )
 
 add_executable(ONSlaught
-	src/ONSlaught.cpp
 	src/CommandLineOptions.cpp
-	src/Encryption.cpp
 	src/Everything.cpp
 	src/Functions.cpp
 	src/Globals.cpp
+	src/ONSlaught.cpp
 	src/SJIS.table.cpp
 	src/strCmpT.cpp
 	src/UTF.cpp
@@ -42,27 +41,24 @@ add_executable(ONSlaught
 	src/IO_System/Audio/Music.cpp
 	src/IO_System/Audio/SoundCache.cpp
 	src/IO_System/Audio/SoundEffect.cpp
+	src/IO_System/Graphics/SDL_ttf.c
 	src/IO_System/Graphics/Button.cpp
 	src/IO_System/Graphics/ButtonLayer.cpp
 	src/IO_System/Graphics/Cursor.cpp
-	src/IO_System/Graphics/Font.cpp
 	src/IO_System/Graphics/FontCache.cpp
 	src/IO_System/Graphics/GFX.cpp
-	src/IO_System/Graphics/Glyph.cpp
 	src/IO_System/Graphics/Layer.cpp
 	src/IO_System/Graphics/Lookback.cpp
 	src/IO_System/Graphics/Menu.cpp
 	src/IO_System/Graphics/ScreenSpace.cpp
-	src/IO_System/Graphics/SDL_ttf.c
 	src/IO_System/Graphics/StandardOutput.cpp
 	src/IO_System/Graphics/VirtualScreen.cpp
 	src/IO_System/SAR/Archive.cpp
-	src/IO_System/SAR/ArchivedFile.cpp
 	src/IO_System/SAR/GeneralArchive.cpp
+	src/IO_System/SAR/TreeNode.cpp
 	src/IO_System/SAR/Image_Loader/FileLog.cpp
 	src/IO_System/SAR/Image_Loader/Image.cpp
 	src/IO_System/SAR/Image_Loader/ImageLoader.cpp
-	src/IO_System/SAR/TreeNode.cpp
 	src/IO_System/Script/Script.cpp
 	src/IO_System/Script/ScriptBlock.cpp
 	src/IO_System/Script/sha1.cpp

@@ -104,18 +104,13 @@ ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
 			while (1){
 				if (!formats[a])
 					break;
-				std::stringstream stream;
-				stream <<this->musicDir<<'/'<<filename<<'.'<<formats[a];
-				temp=stream.str();
+				temp=this->musicDir+"/"+*filename+"."+formats[a];
 				if (fileExists(temp.c_str()))
 					break;
 				a++;
 			}
-		}else{
-			std::stringstream stream;
-			stream <<this->musicDir<<'/'<<filename<<'.'<<this->musicFormat;
-			temp=stream.str();
-		}
+		}else
+			temp=this->musicDir+"/"+*filename+"."+this->musicFormat;
 		if (!fileExists(temp.c_str()))
 			return NONS_FILE_NOT_FOUND;
 		this->music=new NONS_Music(temp);

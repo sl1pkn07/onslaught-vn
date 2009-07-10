@@ -38,11 +38,6 @@ T DEC2HEX(T x){
 	return x<10?'0'+x:'A'+x-10;
 }
 
-template <typename T>
-T HEX2DEC(T x){
-	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
-}
-
 void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
 	size_t equals=src.find('=');
 	if (equals==src.npos)
@@ -226,6 +221,7 @@ std::string ConfigFile::writeOut(ENCODINGS encoding){
 		case SJIS_ENCODING:
 			return UniToSJIS(buffer);
 	}
+	return "";
 }
 
 bool ConfigFile::exists(const std::wstring &var){

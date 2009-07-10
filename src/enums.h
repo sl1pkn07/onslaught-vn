@@ -19,4 +19,11 @@ enum INTERPRETER_MODES{
 	DEFINE,
 	NORMAL,
 };
+
+enum StackFrameType{
+	UNDEFINED=0,
+	SUBROUTINE_CALL,
+	FOR_NEST,
+	TEXTGOSUB_CALL
+};
 #endif

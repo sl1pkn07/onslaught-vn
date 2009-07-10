@@ -1,8 +1,9 @@
 //All strings are UTF-8.
+//Latest version: 2
 
 String. "NONS". (magic word)
 Word. Version.
-5*DWord. Hash of the generating script. (loading will fail if it doesn't match)
+5*DWord. Hash of the generating script. (Loading will fail if it doesn't match. If it matches, no further error checking is done.)
 DWord. Start of the stack section.
 DWord. Start of the variables section.
 DWord. Start of the screen section.
@@ -10,22 +11,44 @@ DWord. Start of the audio section.
 Stack section{
 	DWord. Size of the stack (n).
 	n*Stack element{
-		Byte. Type of nest. (0 subroutine, 1 for)
+		Byte. Type of nest. (0 subroutine, 1 for, 2 textgosub)
 		String. Label.
-		DWord. Offset in wide characters from the label.
-		if (save_version>1){
+		if (save_version<2){
+			DWord. Offset in wide characters from the label.
+		}else{
+			DWord. Number of lines below the original label.
+			DWord. Statement offset (statement 0:statement 1:statement 2).
 			DWord. Level of textgosub recursion.
 		}
-		if (!Type of nest)
+		if (Type of nest==0)
 			String. A string that must be interpreted before popping the stack.
-		else{
+		else if (Type of nest==1){
 			DWord. A variable stack index used to identify the for index variable.
 			sDWord. The final value of the for (for (;var<=val;)).
 			sDWord. The step of the for (for (;;var+=step)).
+		}else if (Type of nest==2 && save_version>1){
+			//TODO: Add support for saving from inside textgosub.
+			//DWord. Number of pages (n1).
+			//n1*Page{
+			//	String. Printing string.
+			//	String. Reduced string.
+			//	DWord. Start at for printing.
+			//	DWord. Start at for reduced.
+			//	DWord. Number of stops for the page (n2).
+			//	n2*Stop{
+			//		DWord. Position in the printing string.
+			//		DWord. Position in the reduced string.
+			//	}
+			//}
 		}
 	}
 	String. Current label.
-	DWord. Offset in wide characters from the label.
+	if (save_version<2){
+		DWord. Offset in wide characters from the label.
+	}else{
+		DWord. Number of lines below the original label.
+		DWord. Statement offset (statement 0:statement 1:statement 2).
+	}
 }
 Variables section{
 	DWord. Number of intervals (n).
@@ -130,9 +153,37 @@ Screen section{
 			Byte. Background color G.
 			Byte. Background color B.
 		}
-		String. Left character.
-		String. Center character.
-		String. Right character.
+		if (save_version<2){
+			String. Left character.
+			String. Center character.
+			String. Right character.
+		}else{
+			DWord. Character base line.
+			
+			String. Left character.
+			if (left character){
+				sDWord. Left's X.
+				sDWord. Left's Y.
+				Byte. Left's visibility.
+				Byte. Left's alpha.
+			}
+			
+			String. Center character.
+			if (center character){
+				sDWord. Center's X.
+				sDWord. Center's Y.
+				Byte. Center's visibility.
+				Byte. Center's alpha.
+			}
+			
+			String. Right character.
+			if (right character){
+				sDWord. Right's X.
+				sDWord. Right's Y.
+				Byte. Right's visibility.
+				Byte. Right's alpha.
+			}
+		}
 		DWord. Number of intervals (n).
 		n*Interval{
 			if (Size of the interval==1)

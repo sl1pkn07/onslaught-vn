@@ -35,6 +35,7 @@
 #include "ErrorCodes.h"
 #include <SDL/SDL.h>
 #include <map>
+#include <iomanip>
 #endif
 
 #include <vector>
@@ -53,22 +54,6 @@
 #define CHECK_FLAG(x,y) (((x)&(y))==(y))
 
 //string functions
-wchar_t *copyWString(const wchar_t *str,ulong len=0);
-wchar_t *copyWString(const char *str,ulong len=0);
-char *copyString(const wchar_t *str,ulong len=0);
-char *copyString(const char *str,ulong len=0);
-wchar_t *addStrings(const wchar_t *str1,const wchar_t *str2);
-char *addStrings(const char *str1,const char *str2);
-void addStringsInplace(wchar_t **str1,const wchar_t *str2);
-void addStringsInplace(wchar_t **str1,const char *str2);
-void addStringsInplace(char **str1,const wchar_t *str2);
-void addStringsInplace(char **str1,const char *str2);
-long instr(const wchar_t *str0,const wchar_t *str1,long max=-1);
-long instr(const wchar_t *str0,const char *str1,long max=-1);
-long instr(const char *str0,const wchar_t *str1,long max=-1);
-long instr(const char *str0,const char *str1,long max=-1);
-long instrB(const wchar_t *str0,const wchar_t *str1);
-long instrB(const char *str0,const char *str1);
 bool multicomparison(char character,const char *characters);
 bool multicomparison(wchar_t character,const char *characters);
 bool multicomparison(char character,const wchar_t *characters);
@@ -83,21 +68,21 @@ template <typename T>
 std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &string,bool leave_quotes,char delim=' '){
 	std::vector<std::basic_string<T> > res;
 	char tempDelim=delim;
-	for (std::basic_string<T>::const_iterator i=string.begin();i!=string.end();){
-		if (*i=='\"'){
+	for (ulong a=0,size=string.size();a<size;){
+		if (string[a]=='\"'){
 			if (!leave_quotes)
-				i++;
+				a++;
 			delim='\"';
 		}
-		std::basic_string<T>::const_iterator end=i;
+		ulong end=a;
 		if (delim!=tempDelim && leave_quotes)
 			end++;
-		for (;end!=string.end() && *end!=delim;end++);
+		for (;end<size && string[end]!=delim;end++);
 		if (delim!=tempDelim && leave_quotes)
 			end++;
-		res.push_back(std::basic_string<T>(i,end));
+		res.push_back(std::basic_string<T>(string,a,end-a));
 		delim=tempDelim;
-		for (i=end+1;i!=string.end() && *i==delim;i++);
+		for (a=end+1;a<size && string[a]==delim;a++);
 	}
 	return res;
 }
@@ -117,22 +102,148 @@ void trim_string(std::basic_string<T> &str){
 }
 template <typename T>
 bool isValidIdentifier(const std::basic_string<T> &str){
-	if (str[0]!='_' && !NONS_isalpha(str[0]))
+	if (!NONS_isid1char(str[0]))
 		return 0;
 	const T *s=&str[1];
-	for (ulong a=1;a<str.size();a++,s++)
-		if (*s!='_' && !NONS_isalnum(*s))
+	for (ulong a=1,size=str.size();a<size;a++,s++)
+		if (!NONS_isidnchar(*s))
+			return 0;
+	return 1;
+}
+template <typename T>
+bool isValidLabel(const std::basic_string<T> &str){
+	const T *s=&str[0];
+	for (ulong a=0,size=str.size();a<size;a++,s++)
+		if (!NONS_isidnchar(*s))
 			return 0;
 	return 1;
 }
 std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out=0);
+template <typename T>
+inline T HEX2DEC(T x){
+	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
+}
+template <typename T>
+long atoi(const std::basic_string<T> &str){
+	std::basic_stringstream<T> stream(str);
+	long res;
+	return !(stream >>res)?0:res;
+}
+template <typename T>
+std::basic_string<T> itoa(long n,unsigned w=0){
+	std::basic_stringstream<T> stream;
+	if (w){
+		stream.fill('0');
+		stream.width(w);
+	}
+	stream <<n;
+	return stream.str();
+}
+//1 if the s1 begins with s2 at off
+template <typename T>
+bool firstchars(const std::basic_string<T> &s1,size_t off,const std::basic_string<T> &s2){
+	if (s1.size()-off<s2.size())
+		return 0;
+	for (ulong a=0;a<s2.size();a++)
+		if (s1[off+a]!=s2[a])
+			return 0;
+	return 1;
+}
+
+template <typename T>
+bool firstchars(const std::basic_string<T> &s1,size_t off,const T *s2){
+	ulong l=0;
+	while (s2[l])
+		l++;
+	if (s1.size()-off<l)
+		return 0;
+	for (ulong a=0;a<l;a++)
+		if (s1[off+a]!=s2[a])
+			return 0;
+	return 1;
+}
+
+template <typename T>
+std::basic_string<T> string_replace(
+		const std::basic_string<T> &src,
+		const std::basic_string<T> &what,
+		const std::basic_string<T> &with){
+	if (!what.size())
+		return src;
+	std::basic_string<T> res;
+	for (ulong a=0,end=src.size();a<end;){
+		ulong found=src.find(what,a);
+		if (found!=src.npos){
+			res.append(src,a,found-a);
+			res.append(with);
+			a=found+what.size();
+		}else{
+			res.append(src,a,found);
+			a=found;
+		}
+	}
+	return res;
+}
+
+template <typename T>
+inline std::basic_string<T> string_replace(
+		const std::basic_string<T> &src,
+		const T *what,
+		const T *with){
+	if (!what || !*what)
+		return src;
+	std::basic_string<T> res;
+	ulong l=0,l2=0;
+	while (what[l])
+		l++;
+	if (with)
+		while (with[l2])
+			l2++;
+	for (ulong a=0,end=src.size();a<end;){
+		ulong found=src.find(what,a,l);
+		if (found!=src.npos){
+			res.append(src,a,found-a);
+			if (with)
+				res.append(with,l2);
+			a=found+l;
+		}else{
+			res.append(src,a,found);
+			a=found;
+		}
+	}
+	return res;
+}
 
 
 //string parsing
-wchar_t *tagName(const wchar_t *string);
-char *tagName(const char *string);
-wchar_t *tagValue(const wchar_t *string);
-char *tagValue(const char *string);
+template <typename T>
+std::basic_string<T> tagName(const std::basic_string<T> &string,size_t off){
+	if (string[off]!='<')
+		return std::basic_string<T>();
+	ulong a=string.find('>',off+1),
+		b=string.find('=',off+1);
+	a=std::min(a,b);
+	if (a==string.npos)
+		return std::basic_string<T>();
+	std::basic_string<T> temp(string,off+1,a-(off+1));
+	trim_string(temp);
+	return temp;
+}
+template <typename T>
+std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
+	if (string[off]!='<')
+		return std::basic_string<T>();
+	ulong a=string.find('>',off+1),
+		b=string.find('=',off+1);
+	a=std::min(a,b);
+	if (a==string.npos || string[a]=='>')
+		return std::basic_string<T>();
+	a++;
+	ulong c=string.find('>',a);
+	std::basic_string<T> temp(string,a,a-c);
+	trim_string(temp);
+	return temp;
+}
 
 //binary parsing functions
 bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset);

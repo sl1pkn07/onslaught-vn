@@ -190,17 +190,4 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y){
 	*y=y0;
 	return r;
 }
-
-char *inputstr(long max){
-	char *txt=new char[max];
-	char b;
-	long a;
-	for (a=0;(b=std::cin.get())!=10;a++)
-		if (a<max-1)
-			txt[a]=b;
-	if (a>max-1)
-		a=max-1;
-	txt[a]=0;
-	return txt;
-}
 #endif

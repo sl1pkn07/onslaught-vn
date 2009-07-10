@@ -50,7 +50,7 @@ NONS_TreeNode *NONS_TreeNode::getBranch(const std::wstring &name,bool createIfMi
 		pos=name.find('\\');
 	std::wstring name0;
 	std::wstring name1;
-	if (pos>=0){
+	if (pos!=name.npos){
 		name0=name.substr(0,pos);
 		name1=name.substr(pos+1);
 		tolower(name0);
@@ -74,7 +74,7 @@ NONS_TreeNode *NONS_TreeNode::newBranch(const std::wstring &name){
 	if (pos==name.npos)
 		pos=name.find('\\');
 	NONS_TreeNode *res;
-	if (pos<name.npos){
+	if (pos!=name.npos){
 		std::wstring name0=name.substr(0,pos),
 			name1=name.substr(pos+1);
 		res=new NONS_TreeNode(name0);

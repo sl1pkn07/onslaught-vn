@@ -1,4 +1,5 @@
 20090526
+	* Major internal redesign.
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,
         puttext, labellog, underline.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.

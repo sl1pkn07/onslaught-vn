@@ -66,4 +66,7 @@ extern SDL_mutex *screenMutex;
 
 extern std::string save_directory;
 extern std::string config_directory;
+
+extern std::vector<std::wstring> command_list;
+extern std::ofstream textDumpFile;
 #endif

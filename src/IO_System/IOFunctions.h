@@ -32,13 +32,17 @@
 
 #include "../Common.h"
 #include "../ErrorCodes.h"
+#include "../UTF.h"
 #include "InputHandler.h"
 #include "Graphics/VirtualScreen.h"
+#include <string>
 
 ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bool queue,std::wstring extraInfo=L"");
 void waitUntilClick(NONS_EventQueue *queue=0);
 void waitCancellable(long delay,NONS_EventQueue *queue=0);
 void waitNonCancellable(long delay);
 Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y);
-char *inputstr(long max=1024);
+inline std::ostream &operator<<(std::ostream &stream,const std::wstring &str){
+	return stream<<UniToUTF8(str);
+}
 #endif

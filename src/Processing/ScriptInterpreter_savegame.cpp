@@ -35,6 +35,7 @@
 #include "../Globals.h"
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
+#include <iomanip>
 
 extern wchar_t Unicode2SJIS[];
 
@@ -47,28 +48,18 @@ long SJISoffset_to_WCSoffset(wchar_t *buffer,long offset){
 }
 
 bool NONS_ScriptInterpreter::load(int file){
-	//this line makes sure that 'filename' has enough space for sprintf()
-	std::string path=save_directory+"save01.dat";
-	sprintf(&path[0],"%ssave%d.dat",save_directory.c_str(),file);
-	NONS_SaveFile *save=new NONS_SaveFile;
-	save->load(path);
-	if (save->error!=NONS_NO_ERROR){
-		delete save;
+	NONS_SaveFile save;
+	save.load(save_directory+"save"+itoa<char>(file)+".dat");
+	if (save.error!=NONS_NO_ERROR)
 		return 0;
-	}
 	//**********************************************************************
 	//NONS save file
 	//**********************************************************************
-	if (save->version>NONS_SAVEFILE_VERSION){
-		delete save;
+	if (save.version>NONS_SAVEFILE_VERSION)
 		return 0;
-	}
-	for (ulong a=0;a<5;a++){
-		if (save->hash[a]!=this->script->hash[a]){
-			delete save;
+	for (ulong a=0;a<5;a++)
+		if (save.hash[a]!=this->script->hash[a])
 			return 0;
-		}
-	}
 	//stack
 	//flush
 	while (!this->callStack.empty()){
@@ -76,21 +67,36 @@ bool NONS_ScriptInterpreter::load(int file){
 		delete p;
 		this->callStack.pop_back();
 	}
-	for (ulong a=0;a<save->stack.size();a++){
-		NONS_SaveFile::stackEl *el=save->stack[a];
+	for (ulong a=0;a<save.stack.size();a++){
+		NONS_SaveFile::stackEl *el=save.stack[a];
 		NONS_StackElement *push;
-		if (!el->type)
-			push=new NONS_StackElement(this->script->offsetFromBlock(el->label)+el->offset,0,el->textgosubLevel);
-		else{
-			push=new NONS_StackElement(
-				this->store->retrieve(el->variable,0)->intValue,
-				this->script->offsetFromBlock(el->label)+el->offset,
-				0,el->to,el->step,el->textgosubLevel);
+		std::pair<ulong,ulong> pair(this->script->blockFromLabel(el->label)->first_line+el->linesBelow,el->statementNo);
+		switch (el->type){
+			case SUBROUTINE_CALL:
+				push=new NONS_StackElement(
+					pair,
+					NONS_ScriptLine(0,el->leftovers,0,1),
+					0,
+					el->textgosubLevel);
+				break;
+			case FOR_NEST:
+				push=new NONS_StackElement(
+					this->store->retrieve(el->variable,0)->intValue,
+					pair,
+					0,
+					el->to,
+					el->step,
+					el->textgosubLevel);
+				break;
+			//To be implemented in the future:
+			/*case TEXTGOSUB_CALL:
+				push=new NONS_StackElement(el->pages,el->trigger,el->textgosubLevel);*/
 		}
 		this->callStack.push_back(push);
 	}
-	this->interpreter_position=this->script->offsetFromBlock(save->currentLabel)+save->currentOffset;
-	this->saveGame->currentLabel=save->currentLabel;
+	std::pair<ulong,ulong> pair(this->script->blockFromLabel(save.currentLabel)->first_line+save.linesBelow,save.statementNo);
+	this->thread->gotoPair(pair);
+	this->saveGame->currentLabel=save.currentLabel;
 	//variables
 	variables_map_T::iterator first=this->store->variables.begin(),last=first;
 	if (first->first<200){
@@ -98,7 +104,7 @@ bool NONS_ScriptInterpreter::load(int file){
 			delete last->second;
 		this->store->variables.erase(first,last);
 	}
-	for (variables_map_T::iterator i=save->variables.begin();i!=save->variables.end();i++){
+	for (variables_map_T::iterator i=save.variables.begin();i!=save.variables.end();i++){
 		NONS_Variable *var=i->second;
 		NONS_Variable *dst=this->store->retrieve(i->first,0);
 		(*dst)=(*var);
@@ -106,130 +112,117 @@ bool NONS_ScriptInterpreter::load(int file){
 	for (arrays_map_T::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++)
 		delete i->second;
 	this->store->arrays.clear();
-	for (arrays_map_T::iterator i=save->arrays.begin();i!=save->arrays.end();i++)
+	for (arrays_map_T::iterator i=save.arrays.begin();i!=save.arrays.end();i++)
 		this->store->arrays[i->first]=new NONS_VariableMember(*(i->second));
 	//screen
 	//window
 	NONS_ScreenSpace *scr=this->everything->screen;
-	//this->main_font=new NONS_Font("default.ttf",save->fontSize,TTF_STYLE_NORMAL);
-	INIT_NONS_FONT(this->main_font,save->fontSize,this->everything->archive)
-	scr->resetParameters(&save->textWindow,&save->windowFrame,this->main_font,save->fontShadow);
+	//this->main_font=new NONS_Font("default.ttf",save.fontSize,TTF_STYLE_NORMAL);
+	INIT_NONS_FONT(this->main_font,save.fontSize,this->everything->archive)
+	scr->resetParameters(&save.textWindow,&save.windowFrame,this->main_font,save.fontShadow);
 	NONS_StandardOutput *out=scr->output;
-	/*out->shadeLayer->clip_rect=save->textWindow;
-	out->x0=save->windowFrame.x;
-	out->y0=save->windowFrame.y;
-	out->w=save->windowFrame.w;
-	out->h=save->windowFrame.h;*/
-	out->shadeLayer->setShade(save->windowColor.r,save->windowColor.g,save->windowColor.b);
+	/*out->shadeLayer->clip_rect=save.textWindow;
+	out->x0=save.windowFrame.x;
+	out->y0=save.windowFrame.y;
+	out->w=save.windowFrame.w;
+	out->h=save.windowFrame.h;*/
+	out->shadeLayer->setShade(save.windowColor.r,save.windowColor.g,save.windowColor.b);
 	out->shadeLayer->Clear();
-	out->transition->effect=save->windowTransition;
-	out->transition->duration=save->windowTransitionDuration;
-	out->transition->rule=save->windowTransitionRule;
-	this->hideTextDuringEffect=save->hideWindow;
-	out->foregroundLayer->fontCache->foreground=save->windowTextColor;
-	out->display_speed=save->textSpeed;
-	this->main_font->spacing=save->spacing;
-	this->main_font->lineSkip=save->lineSkip;
+	out->transition->effect=save.windowTransition;
+	out->transition->duration=save.windowTransitionDuration;
+	out->transition->rule=save.windowTransitionRule;
+	this->hideTextDuringEffect=save.hideWindow;
+	out->foregroundLayer->fontCache->foreground=save.windowTextColor;
+	out->display_speed=save.textSpeed;
+	this->main_font->spacing=save.spacing;
+	this->main_font->lineSkip=save.lineSkip;
 	out->log.clear();
-	for (ulong a=0;a<save->logPages.size();a++)
-		out->log.push_back(save->logPages[a]);
-	out->currentBuffer=save->currentBuffer;
-	out->x=save->textX;
-	out->y=save->textY;
+	for (ulong a=0;a<save.logPages.size();a++)
+		out->log.push_back(save.logPages[a]);
+	out->currentBuffer=save.currentBuffer;
+	out->x=save.textX;
+	out->y=save.textY;
 	if (this->arrowCursor)
 		delete this->arrowCursor;
-	if (save->arrowCursorString.size())
+	if (this->pageCursor)
+		delete this->pageCursor;
+	if (!save.arrow.string.size())
 		this->arrowCursor=0;
 	else
 		this->arrowCursor=new NONS_Cursor(
-			save->arrowCursorString,
-			save->arrowCursorX,
-			save->arrowCursorY,
-			save->arrowCursorAbs,
+			save.arrow.string,
+			save.arrow.x,
+			save.arrow.y,
+			save.arrow.absolute,
 			this->everything->screen);
-	if (!save->pageCursorString.size()){
-		if (this->pageCursor)
-			delete this->pageCursor;
+	if (!save.page.string.size())
 		this->pageCursor=0;
-	}else{
-		if (this->pageCursor)
-			delete this->pageCursor;
+	else
 		this->pageCursor=new NONS_Cursor(
-			save->pageCursorString,
-			save->pageCursorX,
-			save->pageCursorY,
-			save->pageCursorAbs,
+			save.page.string,
+			save.page.x,
+			save.page.y,
+			save.page.absolute,
 			this->everything->screen);
-	}
 	//graphics
-	if (save->background.size()){
+	if (save.background.size()){
 		if (!scr->Background)
-			scr->Background=new NONS_Layer(&save->background);
+			scr->Background=new NONS_Layer(&save.background);
 		else
-			scr->Background->load(&save->background);
+			scr->Background->load(&save.background);
 	}else{
 		if (!scr->Background){
-			unsigned rgb=(save->bgColor.r<<rshift)|(save->bgColor.g<<gshift)|(save->bgColor.b<<bshift);
+			unsigned rgb=(save.bgColor.r<<rshift)|(save.bgColor.g<<gshift)|(save.bgColor.b<<bshift);
 			scr->Background=new NONS_Layer(&scr->screen->inRect,rgb);
 		}else{
-			scr->Background->setShade(save->bgColor.r,save->bgColor.g,save->bgColor.b);
+			scr->Background->setShade(save.bgColor.r,save.bgColor.g,save.bgColor.b);
 			scr->Background->Clear();
 		}
 	}
-	if (save->version>1)
-		scr->char_baseline=save->char_baseline;
-	scr->leftChar->unload();
-	if (save->leftChar.size()){
-		if (!scr->leftChar)
-			scr->leftChar=new NONS_Layer(&save->leftChar);
+	if (save.version>1)
+		scr->char_baseline=save.char_baseline;
+	else
+		scr->char_baseline=scr->screenBuffer->clip_rect.h-1;
+	NONS_Layer **characters[]={&scr->leftChar,&scr->centerChar,&scr->rightChar};
+	for (int a=0;a<3;a++){
+		(*characters[a])->unload();
+		if (!save.characters[a].string.size())
+			continue;
+		if (!*characters[a])
+			*characters[a]=new NONS_Layer(&save.characters[a].string);
 		else
-			scr->leftChar->load(&save->leftChar);
-		scr->leftChar->centerAround(scr->screen->virtualScreen->w/4);
-		scr->leftChar->useBaseline(scr->char_baseline);
-	}
-	scr->rightChar->unload();
-	if (save->rightChar.size()){
-		if (!scr->rightChar)
-			scr->rightChar=new NONS_Layer(&save->rightChar);
-		else
-			scr->rightChar->load(&save->rightChar);
-		scr->rightChar->centerAround(scr->screen->virtualScreen->w/4*3);
-		scr->rightChar->useBaseline(scr->char_baseline);
-	}
-	scr->centerChar->unload();
-	if (save->centerChar.size()){
-		if (!scr->centerChar)
-			scr->centerChar=new NONS_Layer(&save->centerChar);
-		else
-			scr->centerChar->load(&save->centerChar);
-		scr->centerChar->centerAround(scr->screen->virtualScreen->w/2);
-		scr->centerChar->useBaseline(scr->char_baseline);
+			(*characters[a])->load(&save.characters[a].string);
+		(*characters[a])->position.x=save.characters[a].x;
+		(*characters[a])->position.y=save.characters[a].y;
+		(*characters[a])->visible=save.characters[a].visibility;
+		(*characters[a])->alpha=save.characters[a].alpha;
+		if ((*characters[a])->animated())
+			(*characters[a])->animation.animation_time_offset=save.characters[a].animOffset;
 	}
 	for (ulong a=0;a<scr->layerStack.size();a++){
 		if (!scr->layerStack[a])
 			continue;
 		scr->layerStack[a]->unload();
 	}
-	for (ulong a=0;a<save->sprites.size();a++){
-		NONS_SaveFile::Sprite *spr=save->sprites[a];
+	for (ulong a=0;a<save.sprites.size();a++){
+		NONS_SaveFile::Sprite *spr=save.sprites[a];
 		if (spr)
 			scr->loadSprite(a,spr->string,spr->x,spr->y,0xFF,spr->visibility);
 	}
-	scr->sprite_priority=save->spritePriority;
-	if (save->monochrome){
+	scr->sprite_priority=save.spritePriority;
+	if (save.monochrome){
 		if (!scr->monochrome)
 			scr->monochrome=new NONS_GFX();
 		scr->monochrome->type=POSTPROCESSING;
-		scr->monochrome->color=save->monochromeColor;
+		scr->monochrome->color=save.monochromeColor;
 		scr->monochrome->effect=0;
 	}else if (!!scr->monochrome){
 		delete scr->monochrome;
 		scr->monochrome=0;
 	}
-	if (save->negative){
-		if (!scr->negative){
+	if (save.negative){
+		if (!scr->negative)
 			scr->negative=new NONS_GFX();
-		}
 		scr->negative->type=POSTPROCESSING;
 		scr->negative->effect=1;
 	}else if (!!scr->negative){
@@ -254,19 +247,19 @@ bool NONS_ScriptInterpreter::load(int file){
 	scr->BlendNoCursor(10,1000,0);
 	scr->showText();
 	//audio
-	if (save->musicTrack>=0){
-		char temp[12];
-		sprintf(temp,"track%02u",save->musicTrack);
-		au->playMusic(&std::string(temp),save->loopMp3?-1:0);
-	}else if (save->music.size()){
+	if (save.musicTrack>=0){
+		std::string temp="track";
+		temp+=itoa<char>(save.musicTrack,2);
+		au->playMusic(&temp,save.loopMp3?-1:0);
+	}else if (save.music.size()){
 		ulong size;
-		char *buffer=(char *)this->everything->archive->getFileBuffer(save->music,size);
+		char *buffer=(char *)this->everything->archive->getFileBuffer(save.music,size);
 		if (buffer)
-			au->playMusic(UniToISO88591(save->music),buffer,size,save->loopMp3?-1:0);
+			au->playMusic(UniToISO88591(save.music),buffer,size,save.loopMp3?-1:0);
 	}
-	au->musicVolume(save->musicVolume);
-	for (ushort a=0;a<save->channels.size();a++){
-		NONS_SaveFile::Channel *c=save->channels[a];
+	au->musicVolume(save.musicVolume);
+	for (ushort a=0;a<save.channels.size();a++){
+		NONS_SaveFile::Channel *c=save.channels[a];
 		if (!c->name.size())
 			continue;
 		if (au->bufferIsLoaded(c->name))
@@ -278,7 +271,6 @@ bool NONS_ScriptInterpreter::load(int file){
 				this->everything->audio->playSoundAsync(&c->name,buffer,size,a,c->loop);
 		}
 	}
-	delete save;
 	return 1;
 }
 
@@ -306,27 +298,36 @@ bool NONS_ScriptInterpreter::save(int file){
 		for (std::vector<NONS_StackElement *>::iterator i=this->callStack.begin();i!=this->callStack.end();i++){
 			NONS_SaveFile::stackEl *el=new NONS_SaveFile::stackEl();
 			NONS_StackElement *el0=*i;
-			el->type=(el0->type!=SUBROUTINE_CALL);
-			el->label=this->script->blockFromOffset(el0->offset);
-			el->offset=el0->offset-this->script->offsetFromBlock(el->label);
+			el->type=el0->type;
+			NONS_ScriptBlock *block=this->script->blockFromLine(el0->returnTo.line);
+			el->label=block->name;
+			el->linesBelow=el0->returnTo.line-block->first_line;
+			el->statementNo=el0->returnTo.statement;
 			el->textgosubLevel=el0->textgosubLevel;
-			if (!el->type){
-				el->leftovers=el0->first_interpret_string;
-			}else{
-				el->variable=0;
-				for (variables_map_T::iterator i=this->store->variables.begin();i!=this->store->variables.end() && !el->variable;i++)
-					if (i->second->intValue==el0->var)
-						el->variable=i->first;
-				el->to=el0->to;
-				el->step=el0->step;
+			switch (el->type){
+				case SUBROUTINE_CALL:
+					el->leftovers=el0->interpretAtReturn.toString();
+					break;
+				case FOR_NEST:
+					el->variable=0;
+					for (variables_map_T::iterator i=this->store->variables.begin();i!=this->store->variables.end() && !el->variable;i++)
+						if (i->second->intValue==el0->var)
+							el->variable=i->first;
+					el->to=el0->to;
+					el->step=el0->step;
+					break;
+				/*case TEXTGOSUB_CALL:
+					break;*/
 			}
 			this->saveGame->stack.push_back(el);
 		}
-		this->saveGame->currentLabel=this->script->blockFromOffset(this->previous_interpreter_position);
-		if (this->saveGame->currentLabel.size())
-			this->saveGame->currentOffset=this->previous_interpreter_position-this->script->offsetFromBlock(this->saveGame->currentLabel);
-		else
-			this->saveGame->currentOffset=0;
+		{
+			const NONS_ScriptBlock *block=this->thread->currentBlock;
+			this->saveGame->currentLabel=block->name;
+			NONS_Statement *stmt=this->thread->getCurrentStatement();
+			this->saveGame->linesBelow=stmt->lineOfOrigin->lineNumber-block->first_line;
+			this->saveGame->statementNo=stmt->statementNo;
+		}
 	}
 	//variables
 	{
@@ -362,27 +363,25 @@ bool NONS_ScriptInterpreter::save(int file){
 		this->saveGame->textSpeed=out->display_speed;
 		this->saveGame->fontShadow=!!out->shadowLayer;
 		this->saveGame->spacing=this->main_font->spacing;
-		this->saveGame->lineSkip=
-			this->main_font->lineSkip==this->main_font->fontLineSkip?
-			-1:this->main_font->lineSkip;
+		this->saveGame->lineSkip=this->main_font->lineSkip;
 		for (ulong a=0;a<out->log.size();a++)
-			this->saveGame->logPages.push_back(copyWString((wchar_t *)out->log[a].c_str()));
-		this->saveGame->currentBuffer=copyWString((wchar_t *)out->currentBuffer.c_str());
+			this->saveGame->logPages.push_back(out->log[a]);
+		this->saveGame->currentBuffer=out->currentBuffer;
 		if (!this->arrowCursor || !this->arrowCursor->data)
-			this->saveGame->arrowCursorString.clear();
+			this->saveGame->arrow.string.clear();
 		else{
-			this->saveGame->arrowCursorString=this->arrowCursor->data->animation.getString();
-			this->saveGame->arrowCursorX=this->arrowCursor->xpos;
-			this->saveGame->arrowCursorY=this->arrowCursor->ypos;
-			this->saveGame->arrowCursorAbs=this->arrowCursor->absolute;
+			this->saveGame->arrow.string=this->arrowCursor->data->animation.getString();
+			this->saveGame->arrow.x=this->arrowCursor->xpos;
+			this->saveGame->arrow.y=this->arrowCursor->ypos;
+			this->saveGame->arrow.absolute=this->arrowCursor->absolute;
 		}
 		if (!this->pageCursor || !this->pageCursor->data)
-			this->saveGame->pageCursorString.clear();
+			this->saveGame->page.string.clear();
 		else{
-			this->saveGame->pageCursorString=this->pageCursor->data->animation.getString();
-			this->saveGame->pageCursorX=this->pageCursor->xpos;
-			this->saveGame->pageCursorY=this->pageCursor->ypos;
-			this->saveGame->pageCursorAbs=this->pageCursor->absolute;
+			this->saveGame->page.string=this->pageCursor->data->animation.getString();
+			this->saveGame->page.x=this->pageCursor->xpos;
+			this->saveGame->page.y=this->pageCursor->ypos;
+			this->saveGame->page.absolute=this->pageCursor->absolute;
 		}
 		//graphic
 		{
@@ -398,26 +397,16 @@ bool NONS_ScriptInterpreter::save(int file){
 			}
 		}
 		this->saveGame->char_baseline=scr->char_baseline;
-		{
-			NONS_Image *i=!!scr->leftChar?ImageLoader->elementFromSurface(scr->leftChar->data):0;
-			if (i)
-				this->saveGame->leftChar=i->animation.getString();
-			else
-				this->saveGame->leftChar.clear();
-		}
-		{
-			NONS_Image *i=!!scr->centerChar?ImageLoader->elementFromSurface(scr->centerChar->data):0;
-			if (i)
-				this->saveGame->centerChar=i->animation.getString();
-			else
-				this->saveGame->centerChar.clear();
-		}
-		{
-			NONS_Image *i=!!scr->rightChar?ImageLoader->elementFromSurface(scr->rightChar->data):0;
-			if (i)
-				this->saveGame->rightChar=i->animation.getString();
-			else
-				this->saveGame->rightChar.clear();
+		NONS_Layer **characters[]={&scr->leftChar,&scr->centerChar,&scr->rightChar};
+		for (int a=0;a<3;a++){
+			if (!!*characters[a] && !!(*characters[a])->data){
+				this->saveGame->characters[a].string=(*characters[a])->animation.getString();
+				this->saveGame->characters[a].x=(*characters[a])->position.x;
+				this->saveGame->characters[a].y=(*characters[a])->position.y;
+				this->saveGame->characters[a].visibility=(*characters[a])->visible;
+				this->saveGame->characters[a].alpha=(*characters[a])->alpha;
+			}else
+				this->saveGame->characters[a].string.clear();
 		}
 		//update sprite record
 		for (ulong a=0;a<scr->layerStack.size();a++){
@@ -481,9 +470,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			SDL_UnlockMutex(au->soundcache->mutex);
 		}
 	}
-	std::string path=save_directory+"save01.dat";
-	sprintf(&path[0],"%ssave%d.dat",save_directory,file);
-	bool ret=this->saveGame->save(path);
+	bool ret=this->saveGame->save(save_directory+"save"+itoa<char>(file)+".dat");
 	//Also save user data
 	this->store->saveData();
 	ImageLoader->filelog.writeOut();

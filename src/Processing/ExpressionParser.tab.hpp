@@ -97,7 +97,7 @@ typedef union YYSTYPE
 
 
 	#include <sstream>
-	int yyparse(
+	int expressionParser_yyparse(
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
 		NONS_FileLog *filelog,
@@ -107,12 +107,13 @@ typedef union YYSTYPE
 		NONS_VariableMember **retrievedVar,
 		std::wstring *string
 	);
-	int yylex(YYSTYPE *yylval,
+	int expressionParser_yylex(
+		YYSTYPE *yylval,
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
 		NONS_VariableMember **retrievedVar
 	);
-	void yyerror(
+	void expressionParser_yyerror(
 		std::wstringstream *,
 		NONS_VariableStore *,
 		NONS_FileLog *,

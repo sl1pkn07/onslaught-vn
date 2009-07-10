@@ -50,6 +50,7 @@ void freeVM(NONS_VariableMember *p);
 %pure-parser
 %defines
 %file-prefix="ExpressionParser"
+%name-prefix="expressionParser_yy"
 %code requires {
 	#include <set>
 	#include <vector>
@@ -60,7 +61,7 @@ void freeVM(NONS_VariableMember *p);
 }
 %code provides {
 	#include <sstream>
-	int yyparse(
+	int expressionParser_yyparse(
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
 		NONS_FileLog *filelog,
@@ -70,12 +71,13 @@ void freeVM(NONS_VariableMember *p);
 		NONS_VariableMember **retrievedVar,
 		std::wstring *string
 	);
-	int yylex(YYSTYPE *yylval,
+	int expressionParser_yylex(
+		YYSTYPE *yylval,
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
 		NONS_VariableMember **retrievedVar
 	);
-	void yyerror(
+	void expressionParser_yyerror(
 		std::wstringstream *,
 		NONS_VariableStore *,
 		NONS_FileLog *,
@@ -92,7 +94,7 @@ void freeVM(NONS_VariableMember *p);
 	NONS_VariableMember *obj;
 }
 %token <obj> INTEGER STRING INTEGER_ARRAY ERROR
-%type <obj> expr integer_array operation boolean_operation integer_dereference string_dereference string integer
+%type <obj> expr integer_array operation boolean_operation integer_dereference string_dereference string string_concatenation integer
 %left OR
 %left AND
 %left EQUALS NEQ LOWER LOWEREQ GREATER GREATEREQ
@@ -101,7 +103,8 @@ void freeVM(NONS_VariableMember *p);
 %right '!'
 %right NEG POS
 %left '[' ']'
-%right '%' '$' '?' EVAL FCHK LCHK ATOI ITOA
+%right EVAL FCHK LCHK ATOI ITOA
+%right '%' '$' '?'
 //%right 
 %left '(' ')'
 %start eval
@@ -123,6 +126,17 @@ eval:
 		freeVM($1);
 	}|
 	string {
+		if (!!string){
+			*string=$1->getWcs();
+			freeVM($1);
+		}else if (!!retrievedVar && !$1->temporary)
+			*retrievedVar=$1;
+		else{
+			freeVM($1);
+			YYABORT;
+		}
+	}|
+	string_concatenation {
 		if (!!string){
 			*string=$1->getWcs();
 			freeVM($1);
@@ -165,10 +179,10 @@ integer:
 	INTEGER {
 		$$=$1;
 	}|
-	EVAL string {
+	EVAL '(' string ')' {
 		long temp;
-		ErrorCode error=store->evaluate($2->getWcs(),&temp,0,0,0,0);
-		freeVM($2);
+		ErrorCode error=store->evaluate($3->getWcs(),&temp,0,0,0,0);
+		freeVM($3);
 		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
 			handleErrors(error,0,"yyparse",1);
 			YYABORT;
@@ -176,11 +190,34 @@ integer:
 		$$=new NONS_VariableMember(temp);
 		$$->temporary=1;
 	}|
-	ATOI string {
+	EVAL '(' string_concatenation ')' {
+		long temp;
+		ErrorCode error=store->evaluate($3->getWcs(),&temp,0,0,0,0);
+		freeVM($3);
+		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
+			handleErrors(error,0,"yyparse",1);
+			YYABORT;
+		}
+		$$=new NONS_VariableMember(temp);
+		$$->temporary=1;
+	}|
+	ATOI '(' string ')' {
 		long temp;
 		std::wstringstream stream;
-		stream <<$2->getWcs();
-		freeVM($2);
+		stream <<$3->getWcs();
+		freeVM($3);
+		if (!(stream >>temp)){
+			handleErrors(NONS_LEXICALLY_UNCASTABLE,0,"yyparse",1);
+			YYABORT;
+		}
+		$$=new NONS_VariableMember(temp);
+		$$->temporary=1;
+	}|
+	ATOI '(' string_concatenation ')' {
+		long temp;
+		std::wstringstream stream;
+		stream <<$3->getWcs();
+		freeVM($3);
 		if (!(stream >>temp)){
 			handleErrors(NONS_LEXICALLY_UNCASTABLE,0,"yyparse",1);
 			YYABORT;
@@ -201,7 +238,21 @@ string:
 	string_dereference {
 		$$=$1;
 	}|
+	ITOA '(' expr ')' {
+		std::wstringstream stream;
+		stream <<$3->getInt();
+		freeVM($3);
+		$$=new NONS_VariableMember(stream.str());
+		$$->temporary=1;
+	};
+
+string_concatenation:
 	string '+' string {
+		$$=new NONS_VariableMember($1->getWcs()+$3->getWcs());
+		freeVM($1);
+		freeVM($3);
+	}|
+	string_concatenation '+' string {
 		$$=new NONS_VariableMember($1->getWcs()+$3->getWcs());
 		freeVM($1);
 		freeVM($3);
@@ -438,10 +489,29 @@ boolean_operation:
 		$$->negated=0;
 		freeVM($2);
 	}|
+	FCHK '(' string_concatenation ')' {
+		$$=new NONS_VariableMember(filelog->check($3->getWcs()));
+		$$->temporary=1;
+		$$->negated=0;
+		freeVM($3);
+	}|
 	LCHK string {
 		$$=new NONS_VariableMember(labellog.check($2->getWcs()));
 		$$->temporary=1;
 		freeVM($2);
+	}|
+	//Compensates for the stupid, perfectly legal case of "lchk *134"
+	LCHK '*' INTEGER {
+		std::wstringstream stream;
+		stream <<$3->getInt();
+		$$=new NONS_VariableMember(labellog.check(stream.str()));
+		$$->temporary=1;
+		freeVM($3);
+	}|
+	LCHK '(' string_concatenation ')' {
+		$$=new NONS_VariableMember(labellog.check($3->getWcs()));
+		$$->temporary=1;
+		freeVM($3);
 	};
 %%
 
@@ -449,23 +519,6 @@ void freeVM(NONS_VariableMember *p){
 	if (!!p && p->temporary)
 		delete p;
 }
-
-/*std::string WChar_to_UTF8(std::wstring &string){
-	std::string res;
-	for (std::wstring::iterator i=string.begin();i!=string.end();i++){
-		if (*i<0x80)
-			res.push_back(*i);
-		else if (*i<0x800){
-			res.push_back((*i>>6)|192);
-			res.push_back((*i&63)|128);
-		}else{
-			res.push_back((*i>>12)|224);
-			res.push_back(((*i&4095)>>6)|128);
-			res.push_back((*i&63)|128);
-		}
-	}
-	return res;
-}*/
 
 long atol(std::wstring &str){
 	long res=0;
@@ -485,19 +538,6 @@ long atol(std::wstring &str){
 	return res;
 }
 
-template <typename T>
-int strcmpCI(T *a,T *b){
-    for (;*a || *b;a++,b++){
-		char c=(*a>='A' && *a<='Z')?*a|32:*a,
-			d=(*b>='A' && *b<='Z')?*b|32:*b;
-		if (c<d)
-            return -1;
-        if (c>d)
-            return 1;
-    }
-	return 0;
-}
-
 #define DOUBLEOP(character,ret_value) if (c==(character)){\
 	stream->get();\
 	if (stream->peek()==(character)){\
@@ -507,20 +547,28 @@ int strcmpCI(T *a,T *b){
 	return (ret_value);\
 }
 
-template <typename T>
-T HEX2DEC(T x){
-	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
-}
-
-int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,NONS_VariableMember **retrievedVar){
+int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,NONS_VariableMember **retrievedVar){
 	int c;
-	for (;(c=stream->peek())!=EOF && iswhitespace((wchar_t)c);stream->get());
-	if (c==EOF || c==0xFFFF)
+	while (!stream->eof() && iswhitespace((wchar_t)stream->peek()))
+		stream->get();
+	if (stream->eof())
 		return 0;
+	c=stream->peek();
 	if (NONS_isdigit(c)){
 		std::wstring temp;
-		while (NONS_isdigit(stream->peek()))
+		while (NONS_isdigit(c=stream->peek()))
 			temp.push_back(stream->get());
+		//Handles the case "* 134label". This is the kind of thing that gives me
+		//omnicidal rages. Note: under no other circumstance makes sense that an
+		//integer be followed immediately by an alphabetic character or an
+		//underscore.
+		if (NONS_isid1char(c)){
+			while (NONS_isidnchar(stream->peek()))
+				temp.push_back(stream->get());
+			yylval->obj=new NONS_VariableMember(temp);
+			yylval->obj->temporary=1;
+			return STRING;
+		}
 		yylval->obj=new NONS_VariableMember(atol(temp));
 		yylval->obj->temporary=1;
 		return INTEGER;
@@ -534,39 +582,82 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 			return ERROR;
 		long a=0;
 		for (size_t b=0;b<temp.size();b++)
-			a=a*16+HEX2DEC(temp[b]);
+			a=(a<<4)+HEX2DEC(temp[b]);
 		yylval->obj=new NONS_VariableMember(a);
 		yylval->obj->temporary=1;
 		return INTEGER;
 	}
-	if (c=='\"' || c=='`'){
+	if (c=='\"' || c=='`' || NONS_tolower(c)=='e'){
 		c=stream->get();
-		std::wstring temp;
-		while (stream->peek()!=c && stream->peek()!=EOF && stream->peek()!=0xFFFF)
-			temp.push_back(stream->get());
-		if (stream->peek()!=c)
-			handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
-		else
-			stream->get();
-		yylval->obj=new NONS_VariableMember(temp);
-		yylval->obj->temporary=1;
-		return STRING;
+		bool cont=0,
+			useEscapes=0;
+		if (NONS_tolower(c)=='e'){
+			if (stream->peek()!='\"'){
+				stream->putback(c);
+				cont=1;
+			}else{
+				c=stream->get();
+				useEscapes=1;
+			}
+		}
+		if (!cont){
+			std::wstring temp;
+			while (stream->peek()!=c && !stream->eof()){
+				wchar_t character=stream->get();
+				if (character=='\\' && useEscapes){
+					character=stream->get();
+					switch (character){
+						case '\\':
+						case '\"':
+							temp.push_back(character);
+							break;
+						case 'n':
+						case 'r':
+							temp.push_back('\n');
+							break;
+						case 'x':
+							{
+								std::wstring temp2;
+								for (ulong a=0;NONS_ishexa(stream->peek()) && a<4;a++)
+									temp2.push_back(stream->get());
+								if (temp2.size()<4)
+									return ERROR;
+								wchar_t a=0;
+								for (size_t b=0;b<temp2.size();b++)
+									a=(a<<4)+HEX2DEC(temp2[b]);
+								temp.push_back(a?a:32);
+							}
+							break;
+						default:
+							return ERROR;
+					}
+				}else
+					temp.push_back(character);
+			}
+			if (stream->peek()!=c)
+				handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
+			else
+				stream->get();
+			yylval->obj=new NONS_VariableMember(temp);
+			yylval->obj->temporary=1;
+			return STRING;
+		}
 	}
 	if (c=='*'){
 		std::wstring backup;
 		backup.push_back(stream->get());
 		while (iswhitespace((wchar_t)stream->peek()))
-			backup.push_back(stream->get());
+			stream->get();
 		std::wstring identifier;
 		c=stream->peek();
-		if (c=='_' || NONS_isalpha(c)){
+		if (NONS_isid1char(c)){
 			identifier.push_back(c);
 			backup.push_back(stream->get());
-			while ((c=stream->peek())=='_' || NONS_isalnum(c)){
+			while (NONS_isidnchar(c=stream->peek())){
 				identifier.push_back(c);
 				backup.push_back(stream->get());
 			}
-			if (((NONS_ScriptInterpreter *)gScriptInterpreter)->script->offsetFromBlock(identifier.c_str())>=0){
+			if (!!((NONS_ScriptInterpreter *)gScriptInterpreter)->script->blockFromLabel(identifier)){
 				yylval->obj=new NONS_VariableMember(identifier);
 				yylval->obj->temporary=1;
 				return STRING;
@@ -575,20 +666,20 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 		for (std::wstring::reverse_iterator i=backup.rbegin();i!=backup.rend();i++)
 			stream->putback(*i);
 	}
-	if (c=='_' || NONS_isalpha(c)){
+	if (NONS_isid1char(c)){
 		std::wstring temp;
 		temp.push_back(stream->get());
-		while (NONS_isalnum(c=stream->peek()) || c=='_')
+		while (NONS_isidnchar(stream->peek()))
 			temp.push_back(stream->get());
-		if (!strcmpCI(temp.c_str(),L"fchk"))
+		if (!stdStrCmpCI(temp,L"fchk"))
 			return FCHK;
-		if (!strcmpCI(temp.c_str(),L"lchk"))
+		if (!stdStrCmpCI(temp,L"lchk"))
 			return LCHK;
-		if (!strcmpCI(temp.c_str(),L"_eval"))
-			return LCHK;
-		if (!strcmpCI(temp.c_str(),L"_itoa"))
+		if (!stdStrCmpCI(temp,L"_eval"))
+			return EVAL;
+		if (!stdStrCmpCI(temp,L"_itoa"))
 			return ITOA;
-		if (!strcmpCI(temp.c_str(),L"_atoi"))
+		if (!stdStrCmpCI(temp,L"_atoi"))
 			return ATOI;
 		
 		if (!(yylval->obj=store->getConstant(temp.c_str()))){
@@ -609,38 +700,30 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 		stream->get();
 		if (stream->peek()=='='){
 			stream->get();
-			//yylloc.last_column=stream.getPosition();
 			return NEQ;
 		}
-		//yylloc.last_column=stream.getPosition();
 		return c;
 	}
 	if (c=='<'){
 		stream->get();
 		if (stream->peek()=='='){
 			stream->get();
-			//yylloc.last_column=stream.getPosition();
 			return LOWEREQ;
 		}
 		if (stream->peek()=='>'){
 			stream->get();
-			//yylloc.last_column=stream.getPosition();
 			return NEQ;
 		}
-		//yylloc.last_column=stream.getPosition();
 		return LOWER;
 	}
 	if (c=='>'){
 		stream->get();
 		if (stream->peek()=='='){
 			stream->get();
-			//yylloc.last_column=stream.getPosition();
 			return GREATEREQ;
 		}
-		//yylloc.last_column=stream.getPosition();
 		return GREATER;
 	}
-	//yylloc.last_column=stream.getPosition();
 	if (!multicomparison((wchar_t)c,"+-*/![]%$?()")){
 		wchar_t temp[]={c,0};
 		handleErrors(NONS_UNRECOGNIZED_OPERATOR,0,"yylex",1,temp);
@@ -648,7 +731,7 @@ int yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,N
 	return stream->get();
 }
 
-void yyerror(
+void expressionParser_yyerror(
 		std::wstringstream *,
 		NONS_VariableStore *,
 		NONS_FileLog *,

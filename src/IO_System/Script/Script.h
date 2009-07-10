@@ -38,50 +38,57 @@
 #include <vector>
 #include <map>
 
-struct NONS_ParsedStatement{
-	std::wstring commandName;
-	std::wstring stringParameters;
-	std::vector<std::wstring> parameters;
-	enum StatementType{
-		PARSEDSTMT_EMPTY,
-		PARSEDSTMT_COMMENT,
-		PARSEDSTMT_BLOCK,
-		PARSEDSTMT_JUMP,
-		PARSEDSTMT_PRINTER,
-		PARSEDSTMT_COMMAND,
-		PARSEDSTMT_INVALID,
-	} type;
-	ErrorCode error;
-	NONS_ParsedStatement(const std::wstring &string);
-private:
-	void preparseIf();
-	void preparseFor();
-};
-
 struct NONS_ScriptLine;
+struct NONS_Script;
 
 struct NONS_Statement{
-	std::wstring stmt;
+	std::wstring stmt,
+		commandName,
+		stringParameters;
+	std::vector<std::wstring> parameters;
+	enum StatementType{
+		STATEMENT_EMPTY,
+		STATEMENT_COMMENT,
+		STATEMENT_BLOCK,
+		STATEMENT_JUMP,
+		STATEMENT_PRINTER,
+		STATEMENT_COMMAND,
+		STATEMENT_INVALID,
+	} type;
+	ErrorCode error;
 	NONS_ScriptLine *lineOfOrigin;
-	ulong fileOffset;
-	ulong statementNo;
-	NONS_ParsedStatement *parsed_stmt;
+	ulong fileOffset,
+		statementNo;
 	NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,ulong number,ulong offset,bool terminal=0);
-	NONS_ParsedStatement *parse();
+	NONS_Statement(const NONS_Statement &copy,ulong No=0,NONS_ScriptLine *newLOO=0);
+	NONS_Statement &operator=(const NONS_Statement &copy);
+	void parse(NONS_Script *script);
+private:
+	bool parsed;
+	void preparseIf(NONS_Script *script);
+	void preparseFor(NONS_Script *script);
 };
 
 struct NONS_ScriptLine{
 	ulong lineNumber;
 	std::vector<NONS_Statement *> statements;
-	NONS_ScriptLine(ulong line,const std::wstring &string,ulong off);
+	NONS_ScriptLine(){}
+	NONS_ScriptLine(ulong line,const std::wstring &string,ulong off,bool ignoreEmptyStatements);
+	NONS_ScriptLine(const NONS_ScriptLine &copy,ulong startAt=0);
+	NONS_ScriptLine &operator=(const NONS_ScriptLine &copy);
 	~NONS_ScriptLine();
+	std::wstring toString();
 };
 
 struct NONS_ScriptBlock{
-	std::wstring name;
-	NONS_Statement *labelStatement;
+	std::wstring name,
+		data;
+	ulong first_offset,
+		last_offset,
+		first_line,
+		last_line;
 	bool used;
-	NONS_ScriptBlock(NONS_Statement *stmt,bool *valid=0);
+	NONS_ScriptBlock(const std::wstring &name,const wchar_t *buffer,ulong start,ulong end,ulong line_start,ulong line_end);
 };
 
 inline bool sortBlocksByName(const NONS_ScriptBlock *a,const NONS_ScriptBlock *b){
@@ -93,24 +100,82 @@ inline int findBlocksByName(const std::wstring &a,NONS_ScriptBlock * const &b){
 }
 
 inline int findBlocksByOffset(const ulong &a,NONS_ScriptBlock * const &b){
-	ulong b0=b->labelStatement->fileOffset;
-	if (a==b0)
+	ulong start=b->first_offset,
+		end=b->last_offset;
+	if (a>=start && a<=end)
 		return 0;
-	if (a<b0)
+	if (a<start)
 		return -1;
 	return 1;
 }
 
+inline int findBlocksByLine(const ulong &a,NONS_ScriptBlock * const &b){
+	ulong start=b->first_line,
+		end=b->last_line;
+	if (a>=start && a<=end)
+		return 0;
+	if (a<start)
+		return -1;
+	return 1;
+}
+
+#define NONS_FIRST_BLOCK L"0BOF0"
+
 struct NONS_Script{
-	std::vector<NONS_ScriptLine *> script;
-	std::vector<NONS_ScriptBlock *> blocksByLine;
-	std::vector<NONS_ScriptBlock *> blocksByName;
-	std::vector<NONS_Statement *> jumps;
+	ulong scriptSize;
+	std::vector<NONS_ScriptBlock *> blocksByLine,
+		blocksByName;
+	//First: line No. of the jump. Second: file offset of the jump.
+	std::vector<std::pair<ulong,ulong> > jumps;
+	std::vector<ulong> lineOffsets;
 	unsigned hash[5];
 	NONS_Script();
 	~NONS_Script();
 	ErrorCode init(const char *scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption);
-	NONS_Statement *statementFromLabel(std::wstring name);
-	std::wstring statementFromOffset(ulong offset);
+	NONS_ScriptBlock *blockFromLabel(std::wstring name);
+	NONS_ScriptBlock *blockFromOffset(ulong offset);
+	NONS_ScriptBlock *blockFromLine(ulong line);
+	size_t blockIndexFromLine(ulong line);
+	std::wstring labelFromOffset(ulong offset);
+	size_t jumpIndexForBackwards(ulong offset);
+	size_t jumpIndexForForward(ulong offset);
+	ulong offsetFromLine(ulong line);
+};
+
+struct NONS_ScriptThread{
+	NONS_Script *script;
+	const NONS_ScriptBlock *currentBlock;
+	ulong currentLine,
+		currentStatement,
+		nextLine,
+		nextStatement,
+		first_offset,
+		last_offset,
+		first_line,
+		last_line;
+	std::vector<NONS_ScriptLine *> lines;
+	bool valid;
+	NONS_ScriptThread(NONS_Script *script);
+	//0 if can't advance, 1 otherwise.
+	bool advanceToNextStatement();
+	bool gotoLabel(const std::wstring &label);
+	bool skip(long offset);
+	NONS_Statement *getCurrentStatement(){
+		if (this->currentLine>=this->lines.size())
+			return 0;
+		NONS_ScriptLine *line=this->lines[this->currentLine];
+		if (this->currentStatement>=line->statements.size())
+			return 0;
+		return line->statements[this->currentStatement];
+	}
+	bool gotoPair(const std::pair<ulong,ulong> &to);
+	bool gotoJumpBackwards(ulong offset);
+	bool gotoJumpForward(ulong offset);
+	std::pair<ulong,ulong> getNextStatementPair();
+private:
+	//start_at_offset: offset from the start of block->data.
+	//block->first_offset+start_at_offset is the real offset from BOF.
+	//The same applies for start_at_line.
+	bool readBlock(const NONS_ScriptBlock &block,ulong start_at_offset=0,ulong start_at_line=0);
 };
 #endif

@@ -35,6 +35,35 @@
 #include "../Globals.h"
 #include "FileIO.h"
 
+template<typename dst,typename src>
+dst *copyString_template(const src *str,ulong len){
+	if (!str)
+		return 0;
+	if (!len)
+		for (;str[len];len++);
+	dst *res=new dst[len+1];
+	res[len]=0;
+	for (ulong a=0;a<len;a++)
+		res[a]=str[a];
+	return res;
+}
+
+wchar_t *copyWString(const wchar_t *str,ulong len=0){
+	return copyString_template<wchar_t,wchar_t>(str,len);
+}
+
+wchar_t *copyWString(const char *str,ulong len=0){
+	return copyString_template<wchar_t,char>(str,len);
+}
+
+char *copyString(const wchar_t *str,ulong len=0){
+	return copyString_template<char,wchar_t>(str,len);
+}
+
+char *copyString(const char *str,ulong len=0){
+	return copyString_template<char,char>(str,len);
+}
+
 long nextLine(const wchar_t *buffer,long offset,long l){
 	for (;offset<l && buffer[offset]!=13 && buffer[offset]!=10;offset++);
 	for (;offset<l && (buffer[offset]==13 || buffer[offset]==10);offset++);

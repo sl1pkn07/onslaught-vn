@@ -45,8 +45,6 @@ NONS_LogStrings::NONS_LogStrings(const char *oldName,const char *newName){
 void NONS_LogStrings::init(const char *oldName,const char *newName){
 	this->commit=0;
 	ulong l;
-	if (!config_directory.size())
-		config_directory=getConfigLocation();
 	this->saveAs=save_directory;
 	this->saveAs.append(newName);
 	char *buffer=(char *)readfile(this->saveAs.c_str(),l);
@@ -54,7 +52,7 @@ void NONS_LogStrings::init(const char *oldName,const char *newName){
 		buffer=(char *)readfile(oldName,l);
 	if (!buffer)
 		return;
-	if (!instr(buffer,"BZh")){
+	if (firstcharsCI(std::string(buffer),0,"BZh")){
 		char *temp=decompressBuffer_BZ2(buffer,l,(unsigned long *)&l);
 		delete[] buffer;
 		buffer=temp;
@@ -65,13 +63,15 @@ void NONS_LogStrings::init(const char *oldName,const char *newName){
 		return;
 	}
 	*str=0;
-	char *copy=copyString(buffer);
-	ulong entries=atol(copy);
-	delete[] copy;
+	ulong entries;
+	{
+		std::stringstream stream(buffer);
+		stream >>entries;
+	}
 	ulong offset=str-buffer+1;
 	for (;buffer[offset]==10 || buffer[offset]==13;offset++);
 	bool newFormat=0;
-	if (!instr(buffer+offset,"NONS")){
+	if (firstcharsCI(std::string(buffer+offset),0,"NONS")){
 		newFormat=1;
 		for (offset+=4;buffer[offset]==10 || buffer[offset]==13;offset++);
 		inPlaceDecryption(buffer+offset,l-offset,XOR84_ENCRYPTION);
