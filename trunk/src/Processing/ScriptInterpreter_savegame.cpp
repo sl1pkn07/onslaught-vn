@@ -49,7 +49,7 @@ long SJISoffset_to_WCSoffset(wchar_t *buffer,long offset){
 
 bool NONS_ScriptInterpreter::load(int file){
 	NONS_SaveFile save;
-	save.load(save_directory+"save"+itoa<char>(file)+".dat");
+	save.load(save_directory+L"save"+itoa<wchar_t>(file)+L".dat");
 	if (save.error!=NONS_NO_ERROR)
 		return 0;
 	//**********************************************************************
@@ -248,14 +248,14 @@ bool NONS_ScriptInterpreter::load(int file){
 	scr->showText();
 	//audio
 	if (save.musicTrack>=0){
-		std::string temp="track";
-		temp+=itoa<char>(save.musicTrack,2);
+		std::wstring temp=L"track";
+		temp+=itoa<wchar_t>(save.musicTrack,2);
 		au->playMusic(&temp,save.loopMp3?-1:0);
 	}else if (save.music.size()){
 		ulong size;
 		char *buffer=(char *)this->everything->archive->getFileBuffer(save.music,size);
 		if (buffer)
-			au->playMusic(UniToISO88591(save.music),buffer,size,save.loopMp3?-1:0);
+			au->playMusic(save.music,buffer,size,save.loopMp3?-1:0);
 	}
 	au->musicVolume(save.musicVolume);
 	for (ushort a=0;a<save.channels.size();a++){
@@ -275,6 +275,8 @@ bool NONS_ScriptInterpreter::load(int file){
 }
 
 bool NONS_ScriptInterpreter::save(int file){
+	if (this->insideTextgosub())
+		return 0;
 	for (ulong a=0;a<this->saveGame->stack.size();a++)
 		delete this->saveGame->stack[a];
 	this->saveGame->stack.clear();
@@ -470,7 +472,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			SDL_UnlockMutex(au->soundcache->mutex);
 		}
 	}
-	bool ret=this->saveGame->save(save_directory+"save"+itoa<char>(file)+".dat");
+	bool ret=this->saveGame->save(save_directory+L"save"+itoa<wchar_t>(file)+L".dat");
 	//Also save user data
 	this->store->saveData();
 	ImageLoader->filelog.writeOut();

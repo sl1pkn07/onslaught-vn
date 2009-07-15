@@ -33,12 +33,11 @@
 #include "FileIO.h"
 #ifndef BARE_FILE
 #include "../Globals.h"
+#include "../UTF.h"
 #endif
 
-uchar *readfile(const char *filename,ulong &len,ulong offset){
-	if (!filename)
-		return 0;
-	std::ifstream file(filename,std::ios::binary);
+uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
+	std::ifstream file(wstrToIOstr(filename).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
 	return readfile(file,len,offset);
@@ -59,8 +58,8 @@ uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
 	return buffer;
 }
 
-uchar *readfile(const char *name,ulong &len){
-	std::ifstream file(name,std::ios::binary);
+uchar *readfile(const std::wstring &name,ulong &len){
+	std::ifstream file(wstrToIOstr(name).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
 	file.seekg(0,std::ios::end);
@@ -77,8 +76,8 @@ uchar *readfile(const char *name,ulong &len){
 #include <windows.h>
 #endif
 
-char writefile(const char *name,char *buffer,ulong size){
-	std::ofstream file(name,std::ios::binary);
+char writefile(const std::wstring &name,char *buffer,ulong size){
+	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
 	if (!file){
 #ifndef BARE_FILE
 #if defined(NONS_SYS_WINDOWS)
@@ -92,10 +91,18 @@ char writefile(const char *name,char *buffer,ulong size){
 	return 0;
 }
 
-bool fileExists(const char *name){
-	std::ifstream file(name);
+bool fileExists(const std::wstring &name){
+	std::ifstream file(wstrToIOstr(name).c_str());
 	bool ret=!!file;
 	file.close();
 	return ret;
+}
+
+std::string wstrToIOstr(const std::wstring &string){
+#ifdef NONS_SYS_LINUX
+	return UniToUTF8(string);
+#else
+	return UniToISO88591(string);
+#endif
 }
 #endif

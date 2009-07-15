@@ -78,12 +78,12 @@ ErrorCode NONS_Everything::init_screen(){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Everything::init_audio(const std::string &musicDir){
+ErrorCode NONS_Everything::init_audio(const std::wstring &musicDir){
 	this->audio=new NONS_Audio(musicDir);
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_Everything::init_script(const std::string &filename,ulong encoding,ulong encryption){
+ErrorCode NONS_Everything::init_script(const std::wstring &filename,ulong encoding,ulong encryption){
 	this->script=new NONS_Script();
 	{
 		ErrorCode error_code=this->script->init(filename.c_str(),this->archive,encoding,encryption);
@@ -97,16 +97,16 @@ ErrorCode NONS_Everything::init_script(const std::string &filename,ulong encodin
 }
 
 ErrorCode NONS_Everything::init_script(ulong encoding){
-	if (this->init_script("0.txt",encoding,NO_ENCRYPTION)==NONS_NO_ERROR)
+	if (this->init_script(L"0.txt",encoding,NO_ENCRYPTION)==NONS_NO_ERROR)
 		return NONS_NO_ERROR;
-	if (this->init_script("00.txt",encoding,NO_ENCRYPTION)==NONS_NO_ERROR)
+	if (this->init_script(L"00.txt",encoding,NO_ENCRYPTION)==NONS_NO_ERROR)
 		return NONS_NO_ERROR;
-	if (this->init_script("nscr_sec.dat",encoding,VARIABLE_XOR_ENCRYPTION)==NONS_NO_ERROR)
+	if (this->init_script(L"nscr_sec.dat",encoding,VARIABLE_XOR_ENCRYPTION)==NONS_NO_ERROR)
 		return NONS_NO_ERROR;
-	ErrorCode error_code=this->init_script("nscript.___",encoding,TRANSFORM_THEN_XOR84_ENCRYPTION);
+	ErrorCode error_code=this->init_script(L"nscript.___",encoding,TRANSFORM_THEN_XOR84_ENCRYPTION);
 	if (error_code==NONS_NO_ERROR)
 		return NONS_NO_ERROR;
-	if (this->init_script("nscript.dat",encoding,XOR84_ENCRYPTION)==NONS_NO_ERROR)
+	if (this->init_script(L"nscript.dat",encoding,XOR84_ENCRYPTION)==NONS_NO_ERROR)
 		return NONS_NO_ERROR;
 	if (error_code==NONS_NOT_IMPLEMENTED)
 		return NONS_NOT_IMPLEMENTED;

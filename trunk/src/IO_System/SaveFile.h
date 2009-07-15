@@ -41,10 +41,10 @@
 
 #define NONS_SAVEFILE_VERSION 2
 
-std::vector<tm *> existing_files(const std::string &location="./");
-std::string getConfigLocation();
-std::string getSaveLocation(unsigned hash[5]);
-tm *getDate(const char *filename);
+std::vector<tm *> existing_files(const std::wstring &location=L"./");
+std::wstring getConfigLocation();
+std::wstring getSaveLocation(unsigned hash[5]);
+tm *getDate(const std::wstring &filename);
 
 struct printingPage;
 
@@ -152,7 +152,7 @@ struct NONS_SaveFile{
 	std::vector<Channel *> channels;
 	NONS_SaveFile();
 	~NONS_SaveFile();
-	void load(std::string filename);
-	bool save(std::string filename);
+	void load(std::wstring filename);
+	bool save(std::wstring filename);
 };
 #endif

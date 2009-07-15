@@ -43,16 +43,15 @@
 #include <unistd.h>
 #endif
 
-tm *getDate(const char *filename){
+tm *getDate(const std::wstring &filename){
 	tm *res=new tm();
 #if defined(NONS_SYS_WINDOWS)
 	FILETIME time;
 	SYSTEMTIME time2;
 #ifdef UNICODE
-	std::wstring copy=UniFromISO88591(filename);
-	HANDLE h=CreateFile(copy.c_str(),FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
+	HANDLE h=CreateFile(filename.c_str(),FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #else
-	HANDLE h=CreateFile(filename,FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
+	HANDLE h=CreateFile(UniToISO88591(filename).c_str(),FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #endif
 	GetFileTime(h,0,0,&time);
 	CloseHandle(h);
@@ -66,7 +65,7 @@ tm *getDate(const char *filename){
 	res->tm_sec=time2.wSecond;
 #elif defined(NONS_SYS_LINUX)
 	struct stat buf;
-	stat(filename,&buf);
+	stat(UniToUTF8(filename).c_str(),&buf);
 	*res=*localtime(&(buf.st_mtime));
 #else
 	res->tm_year=2000;
@@ -79,19 +78,19 @@ tm *getDate(const char *filename){
 	return res;
 }
 
-std::vector<tm *> existing_files(const std::string &location){
+std::vector<tm *> existing_files(const std::wstring &location){
 	std::vector<tm *> res;
 	res.reserve(20);
-	std::string path=location;
+	std::wstring path=location;
 	toforwardslash(path);
 	if (path[path.size()-1]!='/')
 		path.push_back('/');
 	for (short a=1;a<21;a++){
-		std::string filename=path+"save"+itoa<char>(a)+".dat";
-		if (!fileExists(filename.c_str()))
+		std::wstring filename=path+L"save"+itoa<wchar_t>(a)+L".dat";
+		if (!fileExists(filename))
 			res.push_back(0);
 		else
-			res.push_back(getDate(filename.c_str()));
+			res.push_back(getDate(filename));
 	}
 	return res;
 }
@@ -176,17 +175,17 @@ WINDOWS_VERSION getWindowsVersion(){
 #include <unistd.h>
 #endif
 
-std::string getConfigLocation(){
+std::wstring getConfigLocation(){
 #if defined(NONS_SYS_WINDOWS)
 	if (getWindowsVersion()<V2K)
-		return "./";
+		return L"./";
 	HKEY k;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER,TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"),0,KEY_READ,&k)!=ERROR_SUCCESS)
-		return "./";
+		return L"./";
 	DWORD type,size;
 	if (RegQueryValueEx(k,TEXT("Personal"),0,&type,0,&size)!=ERROR_SUCCESS || type!=REG_SZ){
 		RegCloseKey(k);
-		return "./";
+		return L"./";
 	}
 	TCHAR *path=new TCHAR[size/sizeof(TCHAR)];
 	RegQueryValueEx(k,TEXT("Personal"),0,&type,(LPBYTE)path,&size);
@@ -203,43 +202,43 @@ std::string getConfigLocation(){
 		pathStr.append(L".ONSlaught");
 	if (!CreateDirectory((LPCTSTR)pathStr.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS){
 		delete[] path;
-		return "./";
+		return L"./";
 	}
 	pathStr.push_back('/');
-	return UniToISO88591(pathStr);
+	return pathStr;
 #elif defined(NONS_SYS_LINUX)
 	passwd* pwd=getpwuid(getuid());
 	if (!pwd)
-		return "./";
+		return L"./";
 	std::string res=pwd->pw_dir;
 	if (res[res.size()-1]!='/')
-		res.append(L"/.ONSlaught");
+		res.append("/.ONSlaught");
 	else
 		res.append(".ONSlaught");
 	if (mkdir(res.c_str(),~0) && errno!=EEXIST){
-		return "./";
+		return L"./";
 	}
 	res.push_back('/');
-	return res;
+	return UniFromUTF8(res);
 #else
-	return "./";
+	return L"./";
 #endif
 }
 
-std::string getSaveLocation(unsigned hash[5]){
+std::wstring getSaveLocation(unsigned hash[5]){
 #ifdef NONS_SYS_WINDOWS
 	if (getWindowsVersion()<V2K)
-		return "./";
+		return L"./";
 #endif
-	std::string root=config_directory;
+	std::wstring root=config_directory;
 #if defined(NONS_SYS_WINDOWS)
 #ifdef UNICODE
-	std::wstring path=UniFromISO88591(root);
+	std::wstring path=root;
 #else
-	std::string path=root;
+	std::string path=UniToISO88591(root);
 #endif
 #elif defined(NONS_SYS_LINUX)
-	std::string path=root;
+	std::wstring path=root;
 #else
 	return root;
 #endif
@@ -250,14 +249,14 @@ std::string getSaveLocation(unsigned hash[5]){
 		stream <<std::hex<<hash[0]<<" "<<hash[1];
 		path.append(stream.str());
 	}else
-		path.append(UniFromISO88591(CLOptions.savedir));
+		path.append(CLOptions.savedir);
 #if defined(NONS_SYS_WINDOWS)
 	if (!CreateDirectory((LPCTSTR)path.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS)
 		return root;
 	path.push_back('/');
-	return UniToISO88591(path);
+	return path;
 #elif defined(NONS_SYS_LINUX)
-	if (mkdir(path,~0) && errno!=EEXIST)
+	if (mkdir(UniToUTF8(path).c_str(),~0) && errno!=EEXIST)
 		return root;
 	path.push_back('/');
 	return path;
@@ -280,7 +279,7 @@ NONS_VariableMember *readArray(char *buffer,ulong &offset){
 	return var;
 }
 
-void NONS_SaveFile::load(std::string filename){
+void NONS_SaveFile::load(std::wstring filename){
 	ulong l;
 	char *buffer=(char *)readfile(filename.c_str(),l);
 	if (!buffer)
@@ -565,7 +564,7 @@ void writeArray(NONS_VariableMember *var,std::string &buffer){
 		writeDWord(var->getInt(),buffer);
 }
 
-bool NONS_SaveFile::save(std::string filename){
+bool NONS_SaveFile::save(std::wstring filename){
 	if (this->format!='N')
 		return 0;
 	std::string buffer("NONS");
@@ -720,7 +719,7 @@ bool NONS_SaveFile::save(std::string filename){
 			}
 		}
 		std::vector<ulong> intervals;
-		ulong last;
+		ulong last=0;
 		bool set=0;
 		for (ulong a=0;a<this->sprites.size() && !set;a++){
 			if (!!this->sprites[a]){

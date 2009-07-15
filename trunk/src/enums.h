@@ -17,7 +17,7 @@ enum ENCRYPTION{
 
 enum INTERPRETER_MODES{
 	DEFINE,
-	NORMAL,
+	NORMAL
 };
 
 enum StackFrameType{

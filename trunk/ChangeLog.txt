@@ -1,5 +1,5 @@
-20090526
-	* Major internal redesign.
+20090715
+    * Major internal redesign.
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,
         puttext, labellog, underline.
     * Unimplemented: kidokumode, kidokuskip, skipoff, isskip.
@@ -17,7 +17,7 @@
     * The array identification method has changed from C-style identifiers to
       integers. As a result, all savegames for scripts that use arrays will be
       incorrectly loaded.
-    * Labels are now C-style identifiers.
+    * Labels are now C-style identifiers (sort of).
     * Added string concatenation support in expressions.
     * Added asynchronous animation support for all layers.
     * Added full sprite string support (see doc/NScrAPI/NScrAPI.xml#lsp) for the
@@ -31,6 +31,8 @@
     * Fixed a bug that caused loading a sound on channel X to crash if a
       wavestop had been issued on channel X while no sound was loaded at that
       channel.
+    * Fixed crash involving screen interpolation and fullscreen switching.
+    * And so on...
 
 20090307
     * Several bug fixes.

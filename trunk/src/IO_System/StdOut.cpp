@@ -63,7 +63,7 @@ std::ostream &NONS_RedirectedOutput::getstream(){
 
 void NONS_RedirectedOutput::redirect(){
 	if (!!this->file)
-		delete[] this->file;
+		delete this->file;
 	if (!CLOptions.override_stdout){
 		this->file=0;
 		return;

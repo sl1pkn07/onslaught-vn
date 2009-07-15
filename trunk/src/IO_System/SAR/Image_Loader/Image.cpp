@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -299,8 +299,8 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 				SDL_LockSurface(primary->image);
 				SDL_LockSurface(secondary->image);
 				uchar *pixels2=(uchar *)secondary->image->pixels;
-				uchar Roffset2=(secondary->image->format->Rshift)>>3;
-				uchar Goffset2=(secondary->image->format->Gshift)>>3;
+				//uchar Roffset2=(secondary->image->format->Rshift)>>3;
+				//uchar Goffset2=(secondary->image->format->Gshift)>>3;
 				uchar Boffset2=(secondary->image->format->Bshift)>>3;
 				unsigned advance2=secondary->image->format->BytesPerPixel,
 					pitch2=secondary->image->pitch;
@@ -428,11 +428,11 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 	if (this->image)
 		SDL_FreeSurface(this->image);
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
-	SDL_Surface *surface=IMG_Load_RW(rwops,1);
+	SDL_Surface *surface=IMG_Load_RW(rwops,0);
 	this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,surface->w,surface->h,32,rmask,gmask,bmask,amask);
 	SDL_BlitSurface(surface,0,this->image,0);
 	SDL_FreeSurface(surface);
-	//SDL_FreeRW(rwops);
+	SDL_FreeRW(rwops);
 	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;

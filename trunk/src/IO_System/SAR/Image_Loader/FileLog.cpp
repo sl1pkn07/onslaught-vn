@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -38,16 +38,16 @@
 #include "../../../UTF.h"
 #include <cstring>
 
-NONS_LogStrings::NONS_LogStrings(const char *oldName,const char *newName){
+NONS_LogStrings::NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName){
 	this->init(oldName,newName);
 }
 
-void NONS_LogStrings::init(const char *oldName,const char *newName){
+void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newName){
 	this->commit=0;
 	ulong l;
 	this->saveAs=save_directory;
 	this->saveAs.append(newName);
-	char *buffer=(char *)readfile(this->saveAs.c_str(),l);
+	char *buffer=(char *)readfile(this->saveAs,l);
 	if (!buffer)
 		buffer=(char *)readfile(oldName,l);
 	if (!buffer)
@@ -71,7 +71,7 @@ void NONS_LogStrings::init(const char *oldName,const char *newName){
 	ulong offset=str-buffer+1;
 	for (;buffer[offset]==10 || buffer[offset]==13;offset++);
 	bool newFormat=0;
-	if (firstcharsCI(std::string(buffer+offset),0,"NONS")){
+	if (offset+4<l && firstcharsCI(std::string(buffer+offset,4),0,"NONS")){
 		newFormat=1;
 		for (offset+=4;buffer[offset]==10 || buffer[offset]==13;offset++);
 		inPlaceDecryption(buffer+offset,l-offset,XOR84_ENCRYPTION);
@@ -114,7 +114,7 @@ void NONS_LogStrings::writeOut(){
 	inPlaceDecryption(&buf[startEncryption],buf.size()-startEncryption,XOR84_ENCRYPTION);
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2(&buf[0],buf.size(),&l);
-	writefile(this->saveAs.c_str(),writebuffer,l);
+	writefile(this->saveAs,writebuffer,l);
 	delete[] writebuffer;
 }
 

@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -36,7 +36,7 @@
 #include "../FileIO.h"
 #include <bzlib.h>
 
-NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
+NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
 	this->file=0;
 	this->loaded=0;
@@ -49,7 +49,7 @@ NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
 		this->root=0;
 		return;
 	}
-	std::wstring temp0=UniFromISO88591(filename);
+	std::wstring temp0=filename;
 	toforwardslash(temp0);
 	size_t pos=temp0.rfind('/');
 	if (pos!=temp0.npos)
@@ -58,20 +58,20 @@ NONS_Archive::NONS_Archive(const char *filename,bool failSilently){
 		if (temp0[a]=='.')
 			temp0[a]='_';
 	this->root=new NONS_TreeNode(temp0);
-	this->file=new std::ifstream(filename,std::ios::binary);
+	this->file=new std::ifstream(wstrToIOstr(filename).c_str(),std::ios::binary);
 	this->path=filename;
 	pos=this->path.rfind('.');
-	std::string ext;
+	std::wstring ext;
 	if (pos!=this->path.npos)
 		ext=this->path.substr(pos+1);
 	tolower(ext);
-	if (ext=="sar")
+	if (ext==L"sar")
 		this->archive_type=SAR_ARCHIVE;
-	else if (ext=="nsa")
+	else if (ext==L"nsa")
 		this->archive_type=NSA_ARCHIVE;
-	else if (ext=="ns2")
+	else if (ext==L"ns2")
 		this->archive_type=NS2_ARCHIVE;
-	else if (ext=="ns3")
+	else if (ext==L"ns3")
 		this->archive_type=NS3_ARCHIVE;
 	else
 		this->archive_type=UNRECOGNIZED;
@@ -209,7 +209,7 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 					}else{
 						uchar a=getbits(compressedbuffer,8,&byteoffset,&bitoffset);
 						uchar b=getbits(compressedbuffer,4,&byteoffset,&bitoffset);
-						for (long c=0;c<=b+1;c++){
+						for (long c=0;c<=b+1 && len<original_length;c++){
 							uchar d=decompression_buffer[(a+c)&0xFF];
 							res[len++]=d;
 							decompression_buffer[decompresssion_buffer_offset++]=d;

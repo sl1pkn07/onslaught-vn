@@ -227,8 +227,8 @@ SDL_mutex *screenMutex=0;
 ulong cpu_count=1;
 #endif
 
-std::string save_directory;
-std::string config_directory;
+std::wstring save_directory;
+std::wstring config_directory;
 
 //Stores the complete list of commands. It's initialized by the interpreter at
 //run time. After being initialized, it's guaranteed to be sorted, so look up

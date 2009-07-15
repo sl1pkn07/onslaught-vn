@@ -36,44 +36,47 @@
 #include "../FileIO.h"
 
 NONS_GeneralArchive::NONS_GeneralArchive(){
-	this->archive=new NONS_Archive("arc.sar",1);
+	std::wstring path;
+	if (CLOptions.archiveDirectory.size())
+		path=CLOptions.archiveDirectory+L"/";
+	else
+		path=L"./";
+	this->archive=new NONS_Archive(path+L"arc.sar",1);
 	this->archive->readArchive();
 	if (!this->archive->loaded){
 		delete this->archive;
-		this->archive=new NONS_Archive("ARC.SAR",1);
+		this->archive=new NONS_Archive(path+L"ARC.SAR",1);
 		this->archive->readArchive();
 		if (!this->archive->loaded){
 			delete this->archive;
 			this->archive=0;
 		}
 	}
-	{
-		const char *filenames[]={
-			"arc.nsa",
-			"ARC.NSA",
-			"arc1.nsa",
-			"ARC1.NSA",
-			"arc2.nsa",
-			"ARC2.NSA",
-			"arc3.nsa",
-			"ARC3.NSA",
-			"arc4.nsa",
-			"ARC4.NSA",
-			"arc5.nsa",
-			"ARC5.NSA",
-			"arc6.nsa",
-			"ARC6.NSA",
-			"arc7.nsa",
-			"ARC7.NSA",
-			"arc8.nsa",
-			"ARC8.NSA",
-			"arc9.nsa",
-			"ARC9.NSA",
-			0
-		};
-		for (short a=0;filenames[a];a++)
-			this->init(filenames[a],1,1);
-	}
+	const wchar_t *filenames[]={
+		L"arc.nsa",
+		L"ARC.NSA",
+		L"arc1.nsa",
+		L"ARC1.NSA",
+		L"arc2.nsa",
+		L"ARC2.NSA",
+		L"arc3.nsa",
+		L"ARC3.NSA",
+		L"arc4.nsa",
+		L"ARC4.NSA",
+		L"arc5.nsa",
+		L"ARC5.NSA",
+		L"arc6.nsa",
+		L"ARC6.NSA",
+		L"arc7.nsa",
+		L"ARC7.NSA",
+		L"arc8.nsa",
+		L"ARC8.NSA",
+		L"arc9.nsa",
+		L"ARC9.NSA",
+		0
+	};
+	for (const wchar_t **p=filenames;*p;p++)
+		this->init(path+*p,1,1);
 }
 
 NONS_GeneralArchive::~NONS_GeneralArchive(){
@@ -84,9 +87,7 @@ NONS_GeneralArchive::~NONS_GeneralArchive(){
 			delete this->NSAarchives[a];
 }
 
-ErrorCode NONS_GeneralArchive::init(const char *filename,bool which,bool failSilently){
-	if (!filename)
-		return NONS_INTERNAL_INVALID_PARAMETER;
+ErrorCode NONS_GeneralArchive::init(const std::wstring &filename,bool which,bool failSilently){
 	if (!which && this->archive)
 		return NONS_ALREADY_INITIALIZED;
 	NONS_Archive *temp=new NONS_Archive(filename,failSilently);
@@ -116,7 +117,7 @@ uchar *NONS_GeneralArchive::getFileBuffer(const std::wstring &filepath,ulong &bu
 	}
 	if (this->archive && (res=this->archive->getFileBuffer(filepath,buffersize)))
 		return res;
-	res=readfile(UniToISO88591(filepath).c_str(),buffersize);
+	res=readfile(filepath,buffersize);
 	return res;
 }
 
@@ -126,6 +127,6 @@ bool NONS_GeneralArchive::exists(const std::wstring &filepath){
 			return 1;
 	if (this->archive && this->archive->exists(filepath))
 		return 1;
-	return fileExists(UniToISO88591(filepath).c_str());
+	return fileExists(filepath);
 }
 #endif

@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -46,11 +46,12 @@ struct NONS_TreeNode{
 		ulong offset;
 		ulong length;
 		long original_length;
-		NONS_ArchivedFile()
-			:offset(0),
-			length(0),
-			original_length(0),
-			compression_type(NO_COMPRESSION){}
+		NONS_ArchivedFile(){
+			this->offset=0;
+			this->length=0;
+			this->original_length=0;
+			this->compression_type=NO_COMPRESSION;
+		}
 	} data;
 	std::vector<NONS_TreeNode *> branches;
 	NONS_TreeNode(const std::wstring &name);

@@ -31,168 +31,24 @@
 #define NONS_INIsection_CPP
 
 #include "INIfile.h"
+#include "INIParser.tab.hpp"
 #include "../Functions.h"
 #include "../Globals.h"
 #include "FileIO.h"
 
-template<typename dst,typename src>
-dst *copyString_template(const src *str,ulong len){
-	if (!str)
-		return 0;
-	if (!len)
-		for (;str[len];len++);
-	dst *res=new dst[len+1];
-	res[len]=0;
-	for (ulong a=0;a<len;a++)
-		res[a]=str[a];
-	return res;
-}
+/*void INIvalue::setIntValue(long a){
+	this->value=itoa<wchar_t>(a);
+}*/
 
-wchar_t *copyWString(const wchar_t *str,ulong len=0){
-	return copyString_template<wchar_t,wchar_t>(str,len);
-}
-
-wchar_t *copyWString(const char *str,ulong len=0){
-	return copyString_template<wchar_t,char>(str,len);
-}
-
-char *copyString(const wchar_t *str,ulong len=0){
-	return copyString_template<char,wchar_t>(str,len);
-}
-
-char *copyString(const char *str,ulong len=0){
-	return copyString_template<char,char>(str,len);
-}
-
-long nextLine(const wchar_t *buffer,long offset,long l){
-	for (;offset<l && buffer[offset]!=13 && buffer[offset]!=10;offset++);
-	for (;offset<l && (buffer[offset]==13 || buffer[offset]==10);offset++);
-	return offset;
-}
-
-template <typename T>
-bool isanumber(const T *string){
-	if (*string!='-' && (*string<'0' || *string>'9'))
-		return 0;
-	for (string++;*string;string++)
-		if (*string<'0' || *string>'9')
-			return 0;
-	return 1;
-}
-
-INIvalue::INIvalue(long a){
-	this->type='i';
-	this->intValue=a;
-}
-
-INIvalue::INIvalue(const std::wstring &a){
-	this->type='s';
-	this->intValue=0;
-	this->strValue=a;
-}
-
-void INIvalue::setIntValue(long a){
-	if (this->type!='i')
-		return;
-	this->intValue=a;
-}
-
-void INIvalue::setStrValue(const std::wstring &a){
-	if (this->type!='s')
-		return;
-	this->strValue=a;
-}
-
-char INIvalue::getType(){
-	return this->type;
-}
-
-long INIvalue::getIntValue(){
-	return this->intValue;
-}
-
-const std::wstring &INIvalue::getStrValue(){
-	return this->strValue;
-}
-
-INIsection::~INIsection(){
-	for (std::map<std::wstring,INIvalue *>::iterator i=this->variables.begin();i!=this->variables.end();i++)
-		delete i->second;
-}
-
-INIsection::INIsection(const wchar_t *buffer,long *offset,long l){
-	this->readFile(buffer,offset,l);
-}
-
-void INIsection::readFile(const wchar_t *buffer,long *offset,long l){
-	for (long offset2=*offset;offset2<l;){
-		switch (buffer[offset2]){
-			case 13:case 10:case ';':
-				offset2=nextLine(buffer,offset2,l);
-				break;
-			case '[':
-				*offset=offset2;
-				return;
-			default:
-				{
-					long equals=wcspbrk(buffer+offset2,L"=")-buffer,
-						nextline=nextLine(buffer,offset2,l);
-					if (equals>=nextline){
-						offset2=nextline;
-						continue;
-					}
-					for (;iswhitespace((char)buffer[offset2]);offset2++);
-					long nameend=equals-1;
-					for (;iswhitespace((char)buffer[nameend]);nameend--);
-					nameend-=offset2-1;
-					wchar_t *name=copyWString(buffer+offset2,nameend);
-					if (wcspbrk(name,L";"))
-						delete[] name;
-						offset2=nextline;
-						continue;
-					long valstart=equals+1,valend=valstart;
-					for (;iswhitespace((char)buffer[valstart]);valstart++);
-					if (buffer[valstart]=='"'){
-						valstart++;
-						long quote=wcspbrk(buffer+valstart,L"\"")-buffer;
-						if (quote>=nextline){
-							delete[] name;
-							offset2=nextline;
-							continue;
-						}
-						valend=quote-valstart;
-					}else{
-						for (;buffer[valend]!=13 && buffer[valend]!=10 && buffer[valend]!=';';valend++);
-						valend-=valstart;
-					}
-					if (INIvalue *val=this->getValue(name)){
-						delete[] name;
-						val->setStrValue(std::wstring(buffer+valstart,valend));
-					}else{
-						wchar_t *strval=copyWString(buffer+valstart,valend);
-						if (isanumber(strval)){
-							char *strval2=copyString(strval);
-							delete[] strval;
-							long number=atol(strval2);
-							delete[] strval2;
-							INIvalue *p=new INIvalue(number);
-							this->variables[name]=p;
-						}else{
-							INIvalue *p=new INIvalue(std::wstring(strval));
-							this->variables[name]=p;
-						}
-					}
-					offset2=nextline;
-					continue;
-				}
-		}
-	}
+INIsection::INIsection(const std::map<std::wstring,std::wstring> &vars){
+	for (std::map<std::wstring,std::wstring>::const_iterator i=vars.begin(),end=vars.end();i!=end;i++)
+		this->variables[i->first]=INIvalue(i->second);
 }
 
 void INIsection::setIntValue(const std::wstring &index,long a){
 	INIvalue *v=this->getValue(index);
 	if (!v)
-		this->variables[index]=new INIvalue(a);
+		this->variables[index]=INIvalue(a);
 	else
 		v->setIntValue(a);
 }
@@ -200,16 +56,9 @@ void INIsection::setIntValue(const std::wstring &index,long a){
 void INIsection::setStrValue(const std::wstring &index,const std::wstring &a){
 	INIvalue *v=this->getValue(index);
 	if (!v)
-		this->variables[index]=new INIvalue(a);
+		this->variables[index]=INIvalue(a);
 	else
 		v->setStrValue(a);
-}
-
-char INIsection::getType(const std::wstring &index){
-	INIvalue *v=this->getValue(index);
-	if (!v)
-		return 0;
-	return v->getType();
 }
 
 long INIsection::getIntValue(const std::wstring &index){
@@ -229,96 +78,56 @@ const std::wstring &INIsection::getStrValue(const std::wstring &index){
 }
 
 INIvalue *INIsection::getValue(const std::wstring &a){
-	std::map<std::wstring,INIvalue *>::iterator i=this->variables.find(a);
+	std::map<std::wstring,INIvalue>::iterator i=this->variables.find(a);
 	if (i==this->variables.end())
 		return 0;
-	return i->second;
+	return &i->second;
 }
 
 INIfile::INIfile(){}
 
-INIfile::INIfile(const std::string &filename,ENCODINGS encoding){
-	this->readFile(filename);
-}
-
-INIfile::INIfile(const char *buffer,long l,ENCODINGS encoding){
-	this->readFile(buffer,l,encoding);
-}
-
-INIfile::INIfile(const wchar_t *buffer,long l){
-	this->readFile(buffer,l);
-}
-
-INIfile::~INIfile(){
-	for (std::map<std::wstring,INIsection *>::iterator i=this->sections.begin();i!=this->sections.end();i++)
-		if (i->second)
-			delete i->second;
-}
-
-ErrorCode INIfile::readFile(const std::string &filename,ENCODINGS encoding){
+INIfile::INIfile(const std::wstring &filename,ENCODINGS encoding){
 	ulong l;
-	char *buffer=(char *)readfile(filename.c_str(),l);
-	if (!buffer)
-		return NONS_FILE_NOT_FOUND;
-	this->readFile(buffer,l,encoding);
-	return NONS_NO_ERROR;
+	char *buffer=(char *)readfile(filename,l);
+	if (!!buffer){
+		this->readFile(buffer,l,encoding);
+		delete buffer;
+	}
 }
 
-void INIfile::readFile(const char *buffer,long l,ENCODINGS encoding){
+INIfile::INIfile(const char *buffer,ulong size,ENCODINGS encoding){
+	this->readFile(buffer,size,encoding);
+}
+
+void INIfile::readFile(const char *buffer,ulong size,ENCODINGS encoding){
 	std::wstring buffer2;
 	switch (encoding){
 		case ISO_8859_1_ENCODING:
-			buffer2=UniFromISO88591(std::string(buffer,l));
+			buffer2=UniFromISO88591(std::string(buffer,size));
 			break;
 		case SJIS_ENCODING:
-			buffer2=UniFromSJIS(std::string(buffer,l));
+			buffer2=UniFromSJIS(std::string(buffer,size));
 			break;
 		case UCS2_ENCODING:
-			buffer2=UniFromUCS2(std::string(buffer,l),UNDEFINED_ENDIANNESS);
+			buffer2=UniFromUCS2(std::string(buffer,size),UNDEFINED_ENDIANNESS);
 			break;
 		case UTF8_ENCODING:
-			buffer2=UniFromUTF8(std::string(buffer,l));
+			buffer2=UniFromUTF8(std::string(buffer,size));
 	}
-	this->readFile(&buffer2[0],buffer2.size());
-}
-
-void INIfile::readFile(const wchar_t *buffer,long l){
-	long offset=0;
-	INIsection *sec=this->getSection(L"");
-	if (!sec){
-		INIsection *p=new INIsection(buffer,&offset,l);
-		this->sections[copyWString("")]=p;
-	}else
-		this->sections[(wchar_t *)L""]->readFile(buffer,&offset,l);
-	for (;offset<l;){
-		if (buffer[offset]=='['){
-			long closing=wcspbrk(buffer+offset,L"]")-buffer,
-				nextline=nextLine(buffer,offset,l);
-			if (closing>=nextline){
-				offset=nextline;
-				continue;
-			}
-			for (offset++;iswhitespace((char)buffer[offset]);offset++);
-			for (closing--;iswhitespace((char)buffer[closing]);closing--);
-			closing-=offset-1;
-			wchar_t *str=copyWString(buffer+offset,closing);
-			if (sec=this->getSection(str)){
-				delete[] str;
-				offset=nextLine(buffer,offset,l);
-				sec->readFile(buffer,&offset,l);
-				continue;
-			}
-			INIsection *p=new INIsection(buffer,&offset,l);
-			this->sections[str]=p;
-		}else
-			offset=nextLine(buffer,offset,l);
+	std::wstringstream stream;
+	stream <<'\0'<<buffer2;
+	std::map<std::wstring,std::map<std::wstring,std::wstring> > *map;
+	if (!INIParser_yyparse(stream,map)){
+		for (std::map<std::wstring,std::map<std::wstring,std::wstring> >::iterator i=map->begin(),end=map->end();i!=end;i++)
+			this->sections[i->first]=INIsection(i->second);
+		delete map;
 	}
 }
 
 INIsection *INIfile::getSection(const std::wstring &index){
-	std::map<std::wstring,INIsection *>::iterator i=this->sections.find(index);
+	std::map<std::wstring,INIsection>::iterator i=this->sections.find(index);
 	if (i==this->sections.end())
 		return 0;
-	return i->second;
+	return &i->second;
 }
 #endif

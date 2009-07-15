@@ -64,8 +64,8 @@ extern SDL_mutex *screenMutex;
 
 #include "Parallelization.h"
 
-extern std::string save_directory;
-extern std::string config_directory;
+extern std::wstring save_directory;
+extern std::wstring config_directory;
 
 extern std::vector<std::wstring> command_list;
 extern std::ofstream textDumpFile;

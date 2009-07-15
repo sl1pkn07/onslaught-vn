@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -60,8 +60,8 @@ bool multicomparison(char character,const wchar_t *characters);
 bool multicomparison(wchar_t character,const wchar_t *characters);
 template <typename T>
 void toforwardslash(std::basic_string<T> &s){
-	for (std::basic_string<T>::iterator i=s.begin(),end=s.end();i!=end;i++)
-		*i=(*i==0x5C)?0x2F:*i;
+	for (ulong a=0,size=s.size();a<size;a++)
+		s[a]=(s[a]==0x5C)?0x2F:s[a];
 }
 
 template <typename T>
@@ -89,18 +89,6 @@ std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &
 /*bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1);
 bool filenames_are_equal(const char *str0,const char *str1);*/
 template <typename T>
-void trim_string(std::basic_string<T> &str){
-	std::basic_string<T>::iterator start=str.begin();
-	for (;start!=str.end() && iswhitespace(*start);start++);
-	if (start==str.end()){
-		str.clear();
-		return;
-	}
-	std::basic_string<T>::iterator end=start;
-	for (;end!=str.end() && !iswhitespace(*end);end++);
-	str=std::wstring(start,end);
-}
-template <typename T>
 bool isValidIdentifier(const std::basic_string<T> &str){
 	if (!NONS_isid1char(str[0]))
 		return 0;
@@ -118,7 +106,6 @@ bool isValidLabel(const std::basic_string<T> &str){
 			return 0;
 	return 1;
 }
-std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out=0);
 template <typename T>
 inline T HEX2DEC(T x){
 	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
@@ -261,7 +248,7 @@ void writeString(const std::wstring &a,std::string &str);
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
 	std::vector<Sint32> intervals;
-	ulong last=i->first;
+	Sint32 last=i->first;
 	intervals.push_back(last++);
 	while (++i!=end){
 		if (i->first!=last){

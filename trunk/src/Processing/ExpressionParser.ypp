@@ -100,7 +100,6 @@ void freeVM(NONS_VariableMember *p);
 %left EQUALS NEQ LOWER LOWEREQ GREATER GREATEREQ
 %left '+' '-'
 %left '*' '/'
-%right '!'
 %right NEG POS
 %left '[' ']'
 %right EVAL FCHK LCHK ATOI ITOA
@@ -477,12 +476,6 @@ boolean_operation:
 		freeVM($1);
 		freeVM($3);
 	}|
-	'!' expr {
-		$$=new NONS_VariableMember(!$2->getInt());
-		$$->temporary=1;
-		$$->negated=0;
-		freeVM($2);
-	}|
 	FCHK string {
 		$$=new NONS_VariableMember(filelog->check($2->getWcs()));
 		$$->temporary=1;
@@ -602,7 +595,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 		}
 		if (!cont){
 			std::wstring temp;
-			while (stream->peek()!=c && !stream->eof()){
+			while ((wchar_t)stream->peek()!=c && !stream->eof()){
 				wchar_t character=stream->get();
 				if (character=='\\' && useEscapes){
 					character=stream->get();
@@ -634,7 +627,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 				}else
 					temp.push_back(character);
 			}
-			if (stream->peek()!=c)
+			if ((wchar_t)stream->peek()!=c)
 				handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
 			else
 				stream->get();
@@ -724,7 +717,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 		}
 		return GREATER;
 	}
-	if (!multicomparison((wchar_t)c,"+-*/![]%$?()")){
+	if (!multicomparison((wchar_t)c,"+-*/[]%$?()")){
 		wchar_t temp[]={c,0};
 		handleErrors(NONS_UNRECOGNIZED_OPERATOR,0,"yylex",1,temp);
 	}

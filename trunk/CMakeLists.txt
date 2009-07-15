@@ -27,11 +27,11 @@ add_executable(ONSlaught
 	src/Globals.cpp
 	src/ONSlaught.cpp
 	src/SJIS.table.cpp
-	src/strCmpT.cpp
 	src/UTF.cpp
 	src/IO_System/ConfigFile.cpp
 	src/IO_System/FileIO.cpp
 	src/IO_System/INIfile.cpp
+	src/IO_System/INIParser.tab.cpp
 	src/IO_System/InputHandler.cpp
 	src/IO_System/IOFunctions.cpp
 	src/IO_System/SaveFile.cpp
@@ -59,8 +59,8 @@ add_executable(ONSlaught
 	src/IO_System/SAR/Image_Loader/FileLog.cpp
 	src/IO_System/SAR/Image_Loader/Image.cpp
 	src/IO_System/SAR/Image_Loader/ImageLoader.cpp
+	src/IO_System/Script/commandPreParser.tab.cpp
 	src/IO_System/Script/Script.cpp
-	src/IO_System/Script/ScriptBlock.cpp
 	src/IO_System/Script/sha1.cpp
 	src/Processing/ExpressionParser.tab.cpp
 	src/Processing/ParsedLine.cpp

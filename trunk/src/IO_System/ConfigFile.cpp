@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -66,15 +66,11 @@ char getDataType(const std::wstring &string){
 ConfigFile::ConfigFile(){
 }
 
-ConfigFile::ConfigFile(const char *filename,ENCODINGS encoding){
+ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
 	this->init(filename,encoding);
 }
 
-ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
-	this->init(UniToISO88591(filename).c_str(),encoding);
-}
-
-void ConfigFile::init(const char *filename,ENCODINGS encoding){
+void ConfigFile::init(const std::wstring &filename,ENCODINGS encoding){
 	ulong l;
 	char *buffer=(char *)readfile(filename,l);
 	if (!buffer)
@@ -96,9 +92,16 @@ void ConfigFile::init(const char *filename,ENCODINGS encoding){
 	delete[] buffer;
 	if (decoded[decoded.size()-1]!=10 && decoded[decoded.size()-1]!=13)
 		decoded.push_back(10);
-	for (std::wstring::iterator i=decoded.begin(),end=decoded.end();i!=end;){
-		std::wstring line=readline(i,end,&i);
-		std::wstring var,val;
+	for (ulong a=0,size=decoded.size();a<size;a++){
+		while (a<size && (decoded[a]==13 || decoded[a]==10))
+			a++;
+		ulong second=a;
+		while (second<size && decoded[second]!=13 && decoded[second]!=10)
+			second++;
+		std::wstring line=decoded.substr(a,second-a);
+		a=second;
+		std::wstring var,
+			val;
 		getMembers(line,var,val);
 		if (!var.size() || !val.size())
 			continue;
@@ -115,14 +118,6 @@ std::wstring ConfigFile::getWString(const std::wstring &index,ulong subindex){
 	if (i==this->entries.end())
 		return L"";
 	return i->second[subindex];
-}
-
-template <typename T>
-int atoi2(T *str){
-	char *temp=copyString(str);
-	int res=atoi(temp);
-	delete[] temp;
-	return res;
 }
 
 long ConfigFile::getInt(const std::wstring &index,ulong subindex){
@@ -186,8 +181,8 @@ void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
 	}
 }
 
-void ConfigFile::writeOut(const char *filename,ENCODINGS encoding){
-	std::ofstream file(filename,std::ios::binary);
+void ConfigFile::writeOut(const std::wstring &filename,ENCODINGS encoding){
+	std::ofstream file(wstrToIOstr(filename).c_str(),std::ios::binary);
 	std::string temp=this->writeOut(encoding);
 	file.write(&temp[0],temp.size());
 }

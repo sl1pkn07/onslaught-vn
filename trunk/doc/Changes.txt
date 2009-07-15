@@ -172,17 +172,16 @@ literals are expressions.
 An expression that evaluates to a string (e.g. $0, _itoa(10)) is invalid.
 Likewise, when a string is required, it's illegal to provide an expression.
 The following operators are supported (ordered from higher to lower precedence):
-10. lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion
-    operators, and recursive evaluation operator.
-9.  %, $, ?: dereference operators.
-8.  []: offset operator.
-7.  +, -: unary NOP and sign inversion.
-6.  !: boolean NOT.
-5.  *, /: multiplication and division.
-4.  +, -: addition, subtraction, and string concatenation.
-3.  ==, =, !=, <>, <, >=, >, <=: relational operators.
-2.  &&, &: boolean AND.
-1.  ||, |: boolean NOT.
+9. lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion
+   operators, and recursive evaluation operator.
+8. %, $, ?: dereference operators.
+7. []: offset operator.
+6. +, -: unary NOP and sign inversion.
+5. *, /: multiplication and division.
+4. +, -: addition, subtraction, and string concatenation.
+3. ==, =, !=, <>, <, >=, >, <=: relational operators.
+2. &&, &: boolean AND.
+1. ||, |: boolean NOT.
 
 Note: In the following subsections, an {expression} can be any of the following:
 * An integer literal
@@ -190,7 +189,7 @@ Note: In the following subsections, an {expression} can be any of the following:
 * The result of _atoi
 * An integer dereference
 
-1.7.1. 10th order operators
+1.7.1. 9th order operators
 lchk{string} (Label check operator)
 See the original documentation.
 
@@ -211,7 +210,7 @@ _eval({string}) (Recursive evaluation operator)
 Evaluates the string to its right as an expression and returns the result.
 Example: _eval("1+1"), _eval($84)
 
-1.7.2. 9th order operators
+1.7.2. 8th order operators
 % and $ (Integer dereference and string dereference operators)
 %{integer}
 %({expression})
@@ -235,7 +234,7 @@ The array cannot be used directly. It has to be indexed with the offset
 operator, which is explained in the next subsection.
 E.g. ?0, ?(1+1), ?%0, ?_atoi($0), ?(_atoi($%0)+1)
 
-1.7.3. 8th order operators
+1.7.3. 7th order operators
 [] (Offset operator)
 {array dereference}[{expression}]
 {array obtained from []}[{expression}]
@@ -253,7 +252,7 @@ For an array declared as ?array[10][10]
 ?array[10][11] ;<-- The element doesn't exist. This is known as a buffer 
                ;    overflow
 
-1.7.4. 7th order operators
+1.7.4. 6th order operators
 + (unary NOP operator)
 +{expression}
 Produces the same value as the operand.
@@ -262,13 +261,7 @@ Produces the same value as the operand.
 -{expression}
 Inverts the sign of the operand.
 
-1.7.5. 6th order operators
-!{expression} (Boolean NOT)
-Evaluates to non-zero if the operand is zero, and to zero otherwise.
-E.g. !$0, !(%0==0), !(%0==0 && %5==4) (note: this is one of the recommendable
-alternatives to notif)
-
-1.7.6. 4th order operators
+1.7.5. 4th order operators
 {string}+{string}[+{string}[...]] (String concatenation operator)
 A special note needs to be made on this operator.
 In reality, this should be an eleventh order operator, so that (lchk $0+$0+$0)
@@ -284,7 +277,7 @@ if fchk "directory/"+"file" command ;<- NOT OK! It's parsed as equivalent to
                                     ;in a syntax error
 if fchk("directory/"+"file") command ;<- ok
 
-1.7.7. 3rd order operators
+1.7.6. 3rd order operators
 All operators in this subsection take two {expressions} as their operands. All
 operands compare their operands and evaluate to non-zero if the condition is
 met, and zero otherwise.
@@ -295,12 +288,12 @@ met, and zero otherwise.
 <: Lower than
 >= Greater than or equal to
 
-1.7.8. 2nd order operators
+1.7.7. 2nd order operators
 && or & (Boolean AND)
 {expression}&&{expression}
 Evaluates to non-zero if both operands are non-zero.
 
-1.7.9. 1st order operators
+1.7.8. 1st order operators
 || or | (Boolean OR)
 {expression}||{expression}
 Evaluates to non-zero if either operand is non-zero.

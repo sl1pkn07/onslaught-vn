@@ -37,11 +37,13 @@ typedef unsigned long ulong;
 typedef unsigned short ushort;
 typedef unsigned char uchar;
 #endif
+#include <string>
 #include <fstream>
 
-uchar *readfile(const char *filename,ulong &len,ulong offset);
+uchar *readfile(const std::wstring &filename,ulong &len,ulong offset);
 uchar *readfile(std::ifstream &file,ulong &len,ulong offset);
-uchar *readfile(const char *name,ulong &len);
-char writefile(const char *name,char *buffer,ulong size);
-bool fileExists(const char *name);
+uchar *readfile(const std::wstring &name,ulong &len);
+char writefile(const std::wstring &name,char *buffer,ulong size);
+bool fileExists(const std::wstring &name);
+std::string wstrToIOstr(const std::wstring &string);
 #endif

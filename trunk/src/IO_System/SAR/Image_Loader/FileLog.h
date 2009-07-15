@@ -37,20 +37,20 @@
 typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > logSet_t;
 
 struct NONS_LogStrings{
-	std::string saveAs;
+	std::wstring saveAs;
 	logSet_t log;
 	bool commit;
 	NONS_LogStrings():commit(0){}
-	NONS_LogStrings(const char *oldName,const char *newName);
+	NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName);
 	~NONS_LogStrings();
-	void init(const char *oldName,const char *newName);
+	void init(const std::wstring &oldName,const std::wstring &newName);
 	void writeOut();
 	virtual bool addString(const std::wstring &string);
 	virtual bool check(const std::wstring &string);
 };
 
 struct NONS_FileLog:NONS_LogStrings{
-	NONS_FileLog(const char *oldName,const char *newName)
+	NONS_FileLog(const std::wstring &oldName,const std::wstring &newName)
 		:NONS_LogStrings(oldName,newName){}
 	bool addString(const std::wstring &string);
 	bool check(std::wstring string);
@@ -59,7 +59,7 @@ struct NONS_FileLog:NONS_LogStrings{
 struct NONS_LabelLog:NONS_LogStrings{
 	NONS_LabelLog()
 		:NONS_LogStrings(){}
-	NONS_LabelLog(const char *oldName,const char *newName)
+	NONS_LabelLog(const std::wstring &oldName,const std::wstring &newName)
 		:NONS_LogStrings(oldName,newName){}
 	bool addString(const std::wstring &string);
 	bool check(const std::wstring &string);

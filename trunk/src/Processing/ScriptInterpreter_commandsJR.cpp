@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -149,8 +149,8 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 	}
 	if (name[0]=='*'){
 		int track=atoi(UniToISO88591(name.substr(1)).c_str());
-		std::string temp="track";
-		temp+=itoa<char>(track,2);
+		std::wstring temp=L"track";
+		temp+=itoa<wchar_t>(track,2);
 		error=this->everything->audio->playMusic(&temp,this->mp3_loop?-1:0);
 		if (error==NONS_NO_ERROR)
 			this->saveGame->musicTrack=track;
@@ -163,7 +163,7 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 		if (!buffer)
 			error=NONS_FILE_NOT_FOUND;
 		else
-			error=this->everything->audio->playMusic(UniToUTF8(name),buffer,size,this->mp3_loop?-1:0);
+			error=this->everything->audio->playMusic(name,buffer,size,this->mp3_loop?-1:0);
 		if (error==NONS_NO_ERROR)
 			this->saveGame->music=name;
 		else
@@ -327,7 +327,6 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 	if (stmt.parameters.size()>4)
 		_GETINTVALUE(alpha,4,)
 	_GETWCSVALUE(str,1,)
-	ErrorCode error=NONS_NO_ERROR;
 	if (alpha>255)
 		alpha=255;
 	if (alpha<0)

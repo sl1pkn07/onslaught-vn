@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -35,8 +35,8 @@
 #include "../../../UTF.h"
 #include "../../../Globals.h"
 
-#define LOG_FILENAME_OLD "NScrflog.dat"
-#define LOG_FILENAME_NEW "nonsflog.dat"
+#define LOG_FILENAME_OLD L"NScrflog.dat"
+#define LOG_FILENAME_NEW L"nonsflog.dat"
 
 NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize)
 		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW){
@@ -76,9 +76,9 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *r
 			}
 			if (el->animation.method==anim.method){
 				if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
-					if (fileMatch==a && maskMatch==a)
+					if ((ulong)fileMatch==a && (ulong)maskMatch==a)
 						bestFit=a;
-				}else if (fileMatch==a)
+				}else if ((ulong)fileMatch==a)
 					bestFit=a;
 			}
 		}
@@ -130,7 +130,7 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *r
 	}
 	NONS_Image *image=new NONS_Image(&anim,primary,secondary,rects);
 	image->refCount++;
-	this->addElementToCache(image,1);	
+	this->addElementToCache(image,1);
 	if (freePrimary && !this->addElementToCache(primary,0))
 		delete primary;
 	if (freeSecondary && !this->addElementToCache(secondary,0))
@@ -151,8 +151,8 @@ bool NONS_ImageLoader::addElementToCache(NONS_Image *img,bool force){
 	else
 		this->imageCache[append]=img;
 	ulong cachesize=this->getCacheSize();
-	if (this->maxCacheSize>0 && cachesize>this->maxCacheSize)
-		this->freeOldest(cachesize-this->maxCacheSize);
+	if (this->maxCacheSize>0 && cachesize>(ulong)this->maxCacheSize)
+		this->freeOldest(cachesize-(ulong)this->maxCacheSize);
 	return 1;
 }
 
