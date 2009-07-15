@@ -1,0 +1,556 @@
+﻿This file is meant to complement the reference included in
+doc/ONScripter_reference/. It contains corrections and additions pertinent to
+ONSlaught.
+
+0. How to read this document
+1. Syntax
+1.1. Literals
+1.2. Identifiers
+1.3. Constants
+1.4. Data Types
+1.5. Variables
+1.6. Commands
+1.7. Expressions
+1.8. Arrays
+2. Unimplemented Commands
+3. Changed Behaviors
+4. New commands
+5. Undocumented commands
+
+0. How to read this document
+This section describes the syntax that will be used to document the commands.
+
+THE SYNTAX DESCRIBED IN THIS SECTION HERE IS MERELY FOR THE PURPOSE OF
+DOCUMENTATION, AND IS UNRELATED TO THE ONE USED BY THE ENGINE.
+
+Example:
+command %num_var, $str_var, c%num_const, c$str_const, c#hex_color_value
+Identifier names will be descriptive of the purpose of the parameter.
+When an identifier is preceded by c% or c$, it means that the command expects as
+that parameter either a number or a string that will not be modified, so
+literals (1.1) expressions (1.7), or variables (1.5) may be used.
+When an identifier is preceded by c#, it means that the command expects a
+numerical constant, but that using a hexadecimal literal (1.1) will be easier.
+When an identifier is preceded by % or $, it means that the command expects as
+that parameter a numerical or string variable. Only variables may be used for
+that parameter.
+When an identifier is preceded by ?, it means that the command expects an array
+of some number of dimensions.
+[] syntax: This means that whatever is inside the brackets is optional. Brackets
+may be nested. Example: command [%a[, %b, %c[...]]] This means that command can
+take no, 1, 3, or more parameters.
+{|} syntax: This means that it's necessary to choose one of two or more options.
+Examples:
+command {%a|$a} This means that command may take an integer or string variable.
+command {%a|$a|some other thing} This means that command may take an integer
+variable, a string variable, or some other thing.
+command {%a|$a[, c%b]} This means that command may take an integer, or a string
+with an optional integer.
+
+
+1. Syntax
+1.1. Literals
+Literals are symbols with a certain meaning. There are two kinds: integral
+literals, and string literals.
+Integral literals are translated into a number. There are two kinds: decimal and
+hexadecimal. A decimal integral literal is just a number. For example, "10"
+(without quotes). A hexadecimal integral literal is a base 16 number prefixed
+with a #. E.g. "#00FF00" (without quotes, case is ignored). They are
+normally used to represent colors, but a decimal literal can be used in their
+place, and viceversa. When used to represent color, the first two digits are
+red, the third and fourth are green, and the fifth and sixth are blue. So it's
+RRGGBB. Hexadecimal literals have to be exactly six digits long to be
+considered valid. The # is not a digit.
+String literals are enclosed by either double quotes (", U+0022), or grave
+accents (`, U+0060). E.g. "<--This `is a` string-->" and
+`<--This "is a" string-->`. In both examples, the first character is < and the
+last is >. String literals have to be in a single line. E.g. "This string
+literal is invalid."
+
+Update (2009-06-13):
+Extended strings: Enclosed by e"" or E"" (whitespace between the 'e' and the
+quote is not allowed. See below), these work just like ""-enclosed strings, with
+the addition of escape sequences:
+\\ - Backslash
+\" - Quote
+\n - Newline
+\r - Newline (does exactly the same as \n)
+\x#### - Translates to the Unicode character U+####. \x0000 is not allowed, and
+         is automatically replaced by \x0020 (space). The digits A, B, C, D, E,
+         and F may be both upper and lower case.
+Example (see section 3 for an explanation of the /):
+literal_print e"This is an \"advanced\\string.\nAnd now, \"ONSLAUGHT\" in katak/
+ana: \x30aa\x30f3\x30b9\x30ed\x30c3\x30c8\n"
+
+1.2. Identifiers
+Identifiers are used to name various things, and they follow the C scheme. Only
+Latin alphabet upper and lower case letters (A-Z and a-z, U+0041-U+005A and
+U+0061-U+007A), Arabic numerals (0-9, U+0030-U+0039), and underscores (_,
+U+005F). Numerals cannot be used as the first character for an identifier.
+Identifiers can be of any length.
+Examples:
+Valid:
+id
+_variable
+var126
+var_126
+_
+__
+_10
+Invalid:
+10_var
+ЏαҐЫЮ
+Ю_var
+var 126
+
+Update (2009-05-08):
+I've just confirmed through source code that this is the scheme used by, at
+least, ONScripter-en so this rule will never change.
+
+1.3. Constants
+Constants (called aliases in the original documentation) are declared with the
+commands numalias and stralias, which declare numerical and string constants
+respectively.
+Constants use identifiers as names.
+The values of constants cannot be changed, so they cannot be used as parameters
+for a command that requires a variable as a parameter.
+
+1.4. Data Types
+There are two data types: integer (%, U+0025), and string ($, U+0024).
+At this moment (2009-03-16), the range of integer is not guaranteed to be
+anything, but it can hold both positive and negative values, and in the future
+it will be guaranteed to at least be [-2147483648;2147483647].
+Strings are Unicode, and are guaranteed to at least hold all values in the range
+[U+0001;U+FFFF].
+
+1.5. Variables
+Variables are used to store data. They don't need to be declared.
+Variables are accessed with a numerical index. The valid range for this index is
+[-1073741824;1073741823].
+Each index stores an integer-string pair. To access either, prefix % for the
+integer or $ for the string to the index. E.g. %0, $0, %1024, $32768. A constant
+can be used instead of a literal: %constant, $constant.
+<Optional reading>
+After the %, any expression (see section 1.7) can be used. Keep in mind that,
+since % and $ (they're called reference operators. The third is ?) have a very
+low precedence, you'll have to use parentheses.
+E.g. %%0 is fine, but %%0+1 is the same as (%%0)+1, not %(%0+1).
+</Optional reading>
+Variables with an index lower than 200 (i.e. up to 199) are saved in each
+savegame. Use them to store values such as health, money, etc.
+Indices from 200 on are global, and they always keep their values between
+executions. Use them to store data such as configuration, how many times the
+game's been run, etc.
+
+1.6. Commands
+Commands have to be separated from the parameters by at least 1 non-line-braking
+whitespace, such as space or tab. Their names are case-insensitive.
+Parameters are separated by commas. Whitespace between the parameters is
+ignored.
+If the last non-whitespace character in a line is a comma, the parameter list is
+assumed to continue in the line below.
+A colon (:, U+003A) can be used to have more than one command on a single line.
+The colon is also used to make the if command execute more than one command if
+the condition is true.
+Examples:
+command
+command parameter
+command parameter1, parameter2 ,parameter3 , parameter4 , "string",123456789
+command parameter1,
+    parameter2:command parameter
+command parameter1,
+    parameter2,
+parameter3,
+    parameter4
+if %0==0 command:command parameter1 : command parameter1,
+    parameter2
+
+1.7. Expressions
+An expression is a formula. Whenever a command asks for a constant, an
+expression may be used instead (e.g. mov %0, 10*10). Note that decimal numerical
+literals are expressions.
+An expression that evaluates to a string (e.g. $0, _itoa(10)) is invalid.
+Likewise, when a string is required, it's illegal to provide an expression.
+The following operators are supported (ordered from higher to lower precedence):
+9. lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion
+   operators, and recursive evaluation operator.
+8. %, $, ?: dereference operators.
+7. []: offset operator.
+6. +, -: unary NOP and sign inversion.
+5. *, /: multiplication and division.
+4. +, -: addition, subtraction, and string concatenation.
+3. ==, =, !=, <>, <, >=, >, <=: relational operators.
+2. &&, &: boolean AND.
+1. ||, |: boolean NOT.
+
+Note: In the following subsections, an {expression} can be any of the following:
+* An integer literal
+* The result of _eval
+* The result of _atoi
+* An integer dereference
+
+1.7.1. 9th order operators
+lchk{string} (Label check operator)
+See the original documentation.
+
+fchk{string} (File check operator)
+See the original documentation.
+
+_itoa({expression}) (Lexical string-to-integer cast operator)
+Converts the number to its right to a string. If the number is a variable, it
+doesn't change its value.
+Example: _itoa(16), _itoa(%0)
+
+_atoi({string}) (Lexical integer-to-string cast operator)
+Converts the string to its right to an integer. If the string is a variable, it
+doesn't change its value.
+Example: _atoi("145"), _atoi($12)
+
+_eval({string}) (Recursive evaluation operator)
+Evaluates the string to its right as an expression and returns the result.
+Example: _eval("1+1"), _eval($84)
+
+1.7.2. 8th order operators
+% and $ (Integer dereference and string dereference operators)
+%{integer}
+%({expression})
+${integer}
+$({expression})
+These operators take integers as operands, but can also take expressions wrapped
+around parentheses.
+Variables are allocated in a table and indexed by an integer. What these
+operators do is find the variable that corresponds to the operand and get the
+integer or string component (as mentioned on section 1.5, variables are an 
+integer-string pair) respectively.
+E.g. %0, %%0, $0, $%0, %(%0+1), %_atoi($0), $%(_atoi($0)+1)
+
+?{integer} (Array dereference operator)
+?({expression})
+Does the same as % and $, except it evaluates to an array, instead of a
+variable (scalar).
+Unlike variables, arrays are not automatically declared, and also, they occupy a
+different namespace (i.e. variable 12 is unrelated to array 12).
+The array cannot be used directly. It has to be indexed with the offset
+operator, which is explained in the next subsection.
+E.g. ?0, ?(1+1), ?%0, ?_atoi($0), ?(_atoi($%0)+1)
+
+1.7.3. 7th order operators
+[] (Offset operator)
+{array dereference}[{expression}]
+{array obtained from []}[{expression}]
+Placed at the right of an array obtained using the array dereference operator,
+it gets the element determined by the expression inside the brackets. Note that
+matrices (e.g. an array declared as ?84[10][10], or ?165[10][10][10])
+Are arrays of arrays, or arrays of arrays of ..., so just one offset operator
+isn't enough to obtain the final element. Likewise, using the operator after the
+final element has been obtained is also invalid.
+Examples:
+For an array declared as ?array[10][10]
+?array+10 ;<-- Invalid. Can't get the integer value of an array
+?array[10]+10 ;<-- Same as above
+?array[10][10]+10 ;<-- OK
+?array[10][11] ;<-- The element doesn't exist. This is known as a buffer 
+               ;    overflow
+
+1.7.4. 6th order operators
++ (unary NOP operator)
++{expression}
+Produces the same value as the operand.
+
+- (unary sign inversion)
+-{expression}
+Inverts the sign of the operand.
+
+1.7.5. 4th order operators
+{string}+{string}[+{string}[...]] (String concatenation operator)
+A special note needs to be made on this operator.
+In reality, this should be an eleventh order operator, so that (lchk $0+$0+$0)
+produced the expected result. Because of some weird behavior on the part of
+Bison, I'm unable to do that, so please follow this simple rule: if the
+expression consists at the top level of a string concatenation, use the legacy
+rules; if the string concatenation is used as an operand for an operator that
+accepts a string, surround the concatenation with parentheses.
+Examples:
+mov $0,$0+"string"+"string" ;<- ok
+if fchk "directory/"+"file" command ;<- NOT OK! It's parsed as equivalent to
+                                    ;(fchk "directory")+"file", which results in
+                                    ;in a syntax error
+if fchk("directory/"+"file") command ;<- ok
+
+1.7.6. 3rd order operators
+All operators in this subsection take two {expressions} as their operands. All
+operands compare their operands and evaluate to non-zero if the condition is
+met, and zero otherwise.
+== and =: Equals
+!= and <>: Not equals
+>: Greater than
+<=: Lower than or equal to
+<: Lower than
+>= Greater than or equal to
+
+1.7.7. 2nd order operators
+&& or & (Boolean AND)
+{expression}&&{expression}
+Evaluates to non-zero if both operands are non-zero.
+
+1.7.8. 1st order operators
+|| or | (Boolean OR)
+{expression}||{expression}
+Evaluates to non-zero if either operand is non-zero.
+Note: Using || inside a classical notif has undefined behavior. Refer to the
+original documentation to see the kind of expressions notif supports. If you
+want to use advanced expressions, don't use notif, or use use_new_if to force
+using the corrected behavior of notif.
+
+
+1.8. Arrays
+An array is a finite set of integers.
+Arrays are allocated in a table and identified by an integer.
+To declare an array, use the dim command.
+E.g. dim ?8[5] ; create a one-dimensional array at poisition 8 i nthe table with
+elements [0..5].
+Arrays can have any number of dimensions, but keep in mind that each element in
+the array uses memory.
+E.g. dim ?3[5][5], dim ?74[1][2][5][3]
+Arrays can be used with the ?[] syntax:
+mov %var,?array[3]
+mov %var2,?array[%var*?array[%var]]
+As you can see, the value in [] is an expression itself, and arrays can appear
+inside expressions. This allows expressions of arbitrary complexity. See
+section 1.7 for more information.
+
+
+2. Unimplemented Commands
+linepage
+Reason: Redundant functionality.
+
+versionstr
+Reason: Unused.
+
+avi
+Reason: Functionality depends on a myriad of factors.
+
+zenkakko
+Reason: Unknown purpose.
+
+soundpressplgin
+Reason: Deprecated and not portable.
+
+spi
+Reason: Not portable.
+
+getreg
+Reason: Not portable.
+
+killmenu
+Reason: Not portable.
+
+kidokuskip
+Reason: Doesn't seem to do anything useful.
+
+kidokumode
+Reason: Doesn't seem to do anything useful.
+
+skipoff
+Reason: Doesn't seem to do anything useful.
+
+isskip
+Reason: Related to kidokumode.
+
+
+
+3. Changed Behaviors
+if
+Expression syntax has changed. See section 1.7.
+Also see use_new_if in section 4.
+
+arc
+Does nothing.
+
+nsa
+Does nothing.
+
+setwindow c%frameStartX,
+          c%frameStartY,
+          c%frameEndX,
+          c%frameEndY,
+          c%fontHeight,
+          c%extraHSpacing,
+          c%extraVSpacing,
+          c%textSpeed,
+          c%useBoldFont,
+          c%renderShadow,
+          {
+          c#textWindowColor,
+          c%windowStartX,
+          c%windowStartY,
+          c%windowEndX,
+          c%windowEndY
+          |
+          c$fileString,
+          c%windowStartX,
+          c%windowStartY
+          }
+The behavior changes if the command is used after a new_set_window.
+Prefer this one over the older one, as it's more predictable.
+All units of space are in pixels.
+The parameters are:
+c%frameStartX        X coordinate of the upper left corner of the text frame.
+                     (The text frame is the area where text can possibly be
+                     written, and it's used to compute text wrapping. It has no
+                     color.)
+c%frameStartY        Y coordinate of the upper left corner of the text frame.
+c%frameEndX          X coordinate of the lower right corner of the text frame.
+c%frameEndY          Y coordinate of the lower right corner of the text frame.
+c%fontHeight         Height of the font.
+c%extraHSpacing      Extra horinzontal spacing between characters.
+c%extraVSpacing      Extra vertical spacing between lines.
+c%textSpeed          Delay between characters in milliseconds.
+c%useBoldFont        Use bold font (zero is no, non-zero is yes). (Ignored).
+c%renderShadow       Put shadow below text.
+{
+c#textWindowColor    Color of the text window. Preferably use a hex literal.
+c%windowStartX       X coordinate of the upper left corner of the text window.
+                     (The text window is the colored area over which text
+                     normally appears, but note that the text frame is not
+                     bounded to it.)
+c%windowStartY       Y coordinate of the upper left corner of the text window.
+c%windowEndX         X coordinate of the lower right corner of the text window.
+c%windowEndY         Y coordinate of the lower right corner of the text window.
+|
+c$fileString         This image file will be used as the background for the text
+                     window. The size of the window is determined by the size of
+                     the image.
+c%windowStartX       X coordinate of the upper left corner of the text window.
+c%windowStartY       Y coordinate of the upper left corner of the text window.
+}
+
+
+/
+When a slash is the last character in a line (that is, the next character has to
+be either carriage return [U+000D] or line feed [U+000A]), both the slash and
+the newline are ignored.
+This processing is done before *anything* else.
+Example:
+mov $0,"stri/
+ng"
+;$0 now contains "string".
+mov %0,2//
+2
+;%0 now contains 1
+This expands the behavior from ONScripter, where the slash only worked in
+printing lines.
+Note: If an error occurs while executing the command, the error message will
+report that the error occurred on the line number where the split line began.
+For example,
+(Line 10) command some/
+(Line 11) thing:command2
+If an error occurs when executing command2, the error message will report that
+the error occurred on line 10
+
+4. New commands
+date2
+The same as "date", but the year is returned in YYYY format, not YY.
+
+getini
+It is back from NScripter.
+
+new_setwindow
+Uses the new version of setwindow.
+
+set_default_font_size c%
+Changes the default font size. Meant to be used with new_setwindow.
+
+unalias
+Undefine a previously defined alias.
+
+literal_print {c$|c%}[, {c$|c%}[...]]
+Mostly reserved for debugging. It takes both strings and expressions as
+parameters. Strings are printed verbatim (with line and page wrapping) and
+expressions are evaluated and their results printed.
+Example:
+mov $0,"1+2*3"
+literal_print e"This is an \"advanced\\string.\nAnd now, \"ONSLAUGHT\" in katak/
+ana: \x30aa\x30f3\x30b9\x30ed\x30c3\x30c8\n$0 = \"",$0,e"\" -evaluates to-> ", /
+_eval($0)
+
+use_new_if
+There was a problem with the if in the old ONScripter.
+According to boolean algebra, "NOT (a AND b)" is not the same as
+"(NOT a) AND (NOT b)". Apparently, the original coder missed that class, and
+using
+notif a!=0 && b!=0
+is the same as using
+if a==0 && b==0
+instead of the correct form,
+if (a!=0 && b!=0)==0
+use_new_if corrects this behavior.
+
+centerh c%pivot
+Sets the center pivot to a horizontal percentage of the screen. For example,
+centerh 0 (the default) is left justified, centerh 50 is centered, and
+centerh 100 is right justified.
+c%pivot must be in the range [0;100]. If it's below the range, zero is assumed.
+If above, 100 is assumed.
+
+centerv c%pivot
+Works the same as centerh, but for vertical centering. In order to support this
+command, a new escape sequence was added: "!nl". It is replaced by a newline
+during the printing process.
+It is important when using centerv that all printing commands end with a \:
+`Sample vertically!nlcentered text.\ ;<-- Ok.
+`Sample vertically!nlcentered text.  ;<-- May produce strange artifacts.
+\                                    ;<-- If this appears before the next
+                                     ;printing command, there's no problem.
+Also, at the moment vertical centering produces incorrect results when the size
+of a page of text is greater than the size of the screen. This will probably be
+fixed in future releases. The syntax is identical to centerh.
+
+An example of text printed to the center of the screen:
+centerh 50
+centerv 50
+`Go tell the Spartans, passerby,!nlthat here, by Spartan law, we lie.\
+centerh 0
+centerv 0
+
+savetime2 c%fileno, %year, %month, %day, %hour, %minute, %second
+The same as savetime, but also gives the year and the second the savegame was
+generated.
+
+5. Undocumented commands
+These are commands that, while existing in ONScripter, their documentation is
+either lacking or missing.
+
+fileexist %var, c$filename
+If c$filename is either in the file system or in the archives, %var is set to
+non-zero. Otherwise, it's set to zero.
+
+savescreenshot c$file
+savescreenshot2 c$file
+Save the contents of the screen to the $file.
+
+isdown %var
+Sets %var to 1 if the left mouse button is being pressed, and to 0 otherwise.
+
+isfull %var
+Sets %var to 1 if the engine is in fullscreen, and to 0 otherwise.
+
+getcursorpos %x, %y
+Sets %x and %y to the horizontal and vertical pixel coordinates where the next
+character will be printed. The coordinates refer to the upper left corner of the
+glyph.
+
+textgosub [*label[, c%recurse]]
+Sets a label to gosub to every time there's a @ or \ in the script.
+If c%recurse!=0, @s and \s inside that block will not recurse.
+textgosub doesn't need to be in the *define block.
+Calling textgosub without parameters disables its effects.
+
+ispage %var
+When called inside the block defined by textgosub, if what caused the fork was
+a \, %var is set to non-zero; otherwise, it's set zero.
+When called from anywhere else, %var is set to zero.
+
+puttext c$string
+Has the same behavior as literal_print.
+
