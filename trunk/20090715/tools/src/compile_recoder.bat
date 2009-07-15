@@ -1,0 +1,1 @@
+g++ recoder.cpp -I NONS_src -o recoder -O3 -s -fexpensive-optimizations

@@ -1,0 +1,1 @@
+Copy "../../src" to "./NONS_src" to compile any of the tools.
