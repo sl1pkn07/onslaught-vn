@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -56,20 +56,22 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 		if (!isValidIdentifier(stmt.parameters[0]))
 			return NONS_INVALID_ID_NAME;
 		NONS_VariableMember *val;
-		if (stmt.parameters.size()>1){
-			if (!stdStrCmpCI(stmt.commandName,L"numalias")){
+		if (!stdStrCmpCI(stmt.commandName,L"numalias")){
+			val=new NONS_VariableMember(INTEGER);
+			if (stmt.parameters.size()>1){
 				long temp;
 				_GETINTVALUE(temp,1,)
-				val=new NONS_VariableMember(INTEGER);
-				val->set(temp);
-			}else{
-				std::wstring temp;
-				_GETWCSVALUE(temp,1,)
-				val=new NONS_VariableMember(STRING);
 				val->set(temp);
 			}
-			val->makeConstant();
+		}else{
+			val=new NONS_VariableMember(STRING);
+			if (stmt.parameters.size()>1){
+				std::wstring temp;
+				_GETWCSVALUE(temp,1,)
+				val->set(temp);
+			}
 		}
+		val->makeConstant();
 		this->store->constants[stmt.parameters[0]]=val;
 		return NONS_NO_ERROR;
 	}
@@ -124,7 +126,6 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_Statement &stmt){
 	if (!res)
 		return NONS_NO_ERROR;
 	ret=NONS_NO_ERROR;
-	std::wstring &ifblock=stmt.parameters[1];
 	NONS_ScriptLine line(0,stmt.parameters[1],0,1);
 	for (ulong a=0;a<line.statements.size();a++){
 		ErrorCode error=this->interpretString(*line.statements[a]);
@@ -365,20 +366,19 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_Statement &stmt){
 	NONS_VariableMember *dst;
 	_GETVARIABLE(dst,0,)
 	std::wstring section,
-		wfilename,
+		filename,
 		key;
-	_GETWCSVALUE(wfilename,0,);
+	_GETWCSVALUE(filename,0,);
 	_GETWCSVALUE(section,1,)
 	_GETWCSVALUE(key,2,)
-	std::string filename=UniToISO88591(wfilename);
 	INIcacheType::iterator i=this->INIcache.find(filename);
-	INIfile *file;
+	INIfile *file=0;
 	if (i==this->INIcache.end()){
 		ulong l;
-		char *buffer=(char *)this->everything->archive->getFileBuffer(wfilename,l);
+		char *buffer=(char *)this->everything->archive->getFileBuffer(filename,l);
 		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
-		INIfile *file=new INIfile(buffer,l,CLOptions.scriptencoding);
+		file=new INIfile(buffer,l,CLOptions.scriptencoding);
 		this->INIcache[filename]=file;
 	}else
 		file=i->second;
@@ -388,12 +388,13 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_Statement &stmt){
 	INIvalue *val=sec->getValue(key);
 	if (!val)
 		return NONS_INI_KEY_NOT_FOUND;
-	switch (val->getType()){
-		case 'i':
+	switch (dst->getType()){
+		case INTEGER:
 			dst->set(val->getIntValue());
 			break;
-		case 's':
+		case STRING:
 			dst->set(val->getStrValue());
+			break;
 	}
 	return NONS_NO_ERROR;
 }

@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -91,28 +91,27 @@ NONS_Statement::NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,
 	this->fileOffset=offset;
 	this->statementNo=number;
 	this->parsed=0;
-	if (!string.size()){
-		this->type=STATEMENT_EMPTY;
-		return;
+	this->type=STATEMENT_EMPTY;
+	if (string.size()){
+		if (multicomparison(string[0],";*`\\@!#~%$?") || string[0]>0x7F){
+			switch (string[0]){
+				case ';':
+					this->type=STATEMENT_COMMENT;
+					return;
+				case '*':
+					this->type=STATEMENT_BLOCK;
+					this->commandName=string.substr(1);
+					trim_string(this->commandName);
+					break;
+				case '~':
+					this->type=STATEMENT_JUMP;
+					return;
+				default:
+					this->type=STATEMENT_PRINTER;
+			}
+		}else
+			this->type=STATEMENT_COMMAND;
 	}
-	if (multicomparison(string[0],";*`\\@!#~%$?") || string[0]>0x7F){
-		switch (string[0]){
-			case ';':
-				this->type=STATEMENT_COMMENT;
-				return;
-			case '*':
-				this->type=STATEMENT_BLOCK;
-				this->commandName=string.substr(1);
-				trim_string(this->commandName);
-				break;
-			case '~':
-				this->type=STATEMENT_JUMP;
-				return;
-			default:
-				this->type=STATEMENT_PRINTER;
-		}
-	}else
-		this->type=STATEMENT_COMMAND;
 }
 
 NONS_Statement::NONS_Statement(const NONS_Statement &copy,ulong No,NONS_ScriptLine *newLOO){
@@ -130,6 +129,7 @@ NONS_Statement &NONS_Statement::operator=(const NONS_Statement &copy){
 	this->error=copy.error;
 	this->lineOfOrigin=0;
 	this->statementNo=0;
+	this->parsed=copy.parsed;
 	return *this;
 }
 
@@ -308,9 +308,9 @@ NONS_Script::NONS_Script(){
 	memset(this->hash,0,sizeof(unsigned)*5);
 }
 
-ErrorCode NONS_Script::init(const char *scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
+ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
 	ulong l;
-	char *temp=(char *)archive->getFileBuffer(UniFromISO88591(scriptname),l);
+	char *temp=(char *)archive->getFileBuffer(scriptname,l);
 	if (!temp)
 		return NONS_FILE_NOT_FOUND;
 	{
@@ -713,7 +713,7 @@ readBlock_000:
 			}
 			NONS_ScriptLine *line=new NONS_ScriptLine(lineNo0,lineCopy,block.first_offset+a,1);
 			if (line->statements.size()){
-				if (line->statements.back()->type==NONS_Statement::STATEMENT_COMMAND && 
+				if (line->statements.back()->type==NONS_Statement::STATEMENT_COMMAND &&
 						lineCopy[lineCopy.find_last_not_of(WCS_WHITESPACE)]==','){
 					delete line;
 

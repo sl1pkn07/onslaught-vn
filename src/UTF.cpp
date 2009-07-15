@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -67,9 +67,9 @@ char checkNativeEndianness(){
 char nativeEndianness=checkNativeEndianness();
 
 inline wchar_t invertWC(wchar_t val){
-#if WCHAR_MAX==0xFFFF
+#if WCHAR_MAX<=0xFFFF
 	return (val>>8)|(val<<8);
-#elif WCHAR_MAX==0xFFFFFFFF
+#elif WCHAR_MAX<=0xFFFFFFFF
 	return (val>>16)|0xFF&(val>>8)|0xFF00&(val<<8)|(val<<16);
 #endif
 }
@@ -90,7 +90,7 @@ void ISO_WC(wchar_t *dst,const uchar *src,ulong srcl){
 void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++){
 		uchar byte=*src++;
-		wchar_t c;
+		wchar_t c=0;
 		if (!(byte&128))
 			c=byte;
 		else if ((byte&192)==128)
@@ -113,9 +113,9 @@ void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			c<<=6;
 			c|=src[1]&63;
 			c<<=6;
-			c|=*src[2]&63;
+			c|=src[2]&63;
 			c<<=6;
-			c|=*src[3]&63;
+			c|=src[3]&63;
 #endif
 		}
 		*dst++=c;
@@ -242,7 +242,7 @@ std::wstring UniFromUTF8(const std::string &str){
 		start+=3;
 	const uchar *str2=(const uchar *)&str[0]+start;
 	ulong size=0;
-	for (ulong a=0,end=str.size();a<end;a++,str2++)
+	for (ulong a=start,end=str.size();a<end;a++,str2++)
 		if (*str2<128 || (*str2&192)==192)
 			size++;
 	std::wstring res;
@@ -435,11 +435,13 @@ bool isValidSJIS(const char *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++,unsigned_buffer++){
 		if (!IS_SJIS_WIDE(*unsigned_buffer)){
-			if (*unsigned_buffer>=0x80 && *unsigned_buffer<=0xA0 || *unsigned_buffer>=0xE0)
+			//Don't bother trying to understand what's going on here. It took
+			//*me* around ten minutes. It works, and that's all you need to
+			//know.
+			if (*unsigned_buffer>=0x80 && *unsigned_buffer<=0xA0 || *unsigned_buffer>=0xF0)
 				return 0;
 			continue;
 		}
-		bool even=!(*unsigned_buffer&1);
 		a++;
 		unsigned_buffer++;
 		if (*unsigned_buffer<0x40 || *unsigned_buffer>0xFC || *unsigned_buffer==0x7F)

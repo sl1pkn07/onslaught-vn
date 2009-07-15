@@ -35,23 +35,23 @@
 #include "../UTF.h"
 #include "../enums.h"
 #include "FileIO.h"
+#include <string>
 
 typedef std::map<std::wstring,std::vector<std::wstring>,stdStringCmpCI<wchar_t> > config_map_t;
 
 struct ConfigFile{
 	ConfigFile();
-	ConfigFile(const char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	ConfigFile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	~ConfigFile();
 	std::wstring getWString(const std::wstring &index,ulong subindex=0);
 	long getInt(const std::wstring &index,ulong subindex=0);
 	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=0);
 	void assignInt(const std::wstring &var,long val,ulong subindex=0);
-	void writeOut(const char *filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	void writeOut(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	std::string writeOut(ENCODINGS encoding=ISO_8859_1_ENCODING);
 	bool exists(const std::wstring &var);
 private:
 	config_map_t entries;
-	void init(const char *filename,ENCODINGS encoding);
+	void init(const std::wstring &filename,ENCODINGS encoding);
 };
 #endif

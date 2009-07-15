@@ -42,13 +42,13 @@ typedef std::map<int,NONS_SoundEffect *> channels_map_t;
 
 struct NONS_Audio{
 	NONS_Music *music;
-	std::string musicDir;
-	std::string musicFormat;
+	std::wstring musicDir;
+	std::wstring musicFormat;
 	NONS_SoundCache *soundcache;
-	NONS_Audio(const std::string &musicDir);
+	NONS_Audio(const std::wstring &musicDir);
 	~NONS_Audio();
-	ErrorCode playMusic(const std::string *filename,long times=-1);
-	ErrorCode playMusic(const std::string &filename,char *buffer,long l,long times=-1);
+	ErrorCode playMusic(const std::wstring *filename,long times=-1);
+	ErrorCode playMusic(const std::wstring &filename,char *buffer,long l,long times=-1);
 	ErrorCode stopMusic();
 	ErrorCode pauseMusic();
 	ErrorCode playSoundAsync(const std::wstring *filename,char *buffer,long l,int channel,long times=-1);

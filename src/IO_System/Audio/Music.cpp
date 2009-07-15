@@ -32,17 +32,18 @@
 
 #include "Music.h"
 #include "../../Functions.h"
+#include "../FileIO.h"
 #include "../../Globals.h"
 
-NONS_Music::NONS_Music(const std::string &filename){
-	this->data=Mix_LoadMUS(filename.c_str());
+NONS_Music::NONS_Music(const std::wstring &filename){
+	this->data=Mix_LoadMUS(wstrToIOstr(filename).c_str());
 	this->buffer=0;
 	this->buffersize=0;
 	this->filename=filename;
 	this->RWop=0;
 }
 
-NONS_Music::NONS_Music(const std::string &filename,char *databuffer,long size){
+NONS_Music::NONS_Music(const std::wstring &filename,char *databuffer,long size){
 	this->buffer=databuffer;
 	this->buffersize=size;
 	this->RWop=SDL_RWFromMem((void *)databuffer,size);

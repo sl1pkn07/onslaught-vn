@@ -176,8 +176,6 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 		bmask,
 		amask);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
-	/*long currentPage=this->output->log.size()-1,
-		end=currentPage+1;*/
 	long end=this->output->log.size(),
 		currentPage=end-1;
 	this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);

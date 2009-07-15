@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -382,7 +382,7 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 			return NONS_INSUFFICIENT_PARAMETERS;
 		selnum=0;
 	}
-	NONS_VariableMember *var;
+	NONS_VariableMember *var=0;
 	if (selnum)
 		_GETINTVARIABLE(var,0,)
 	std::vector<std::wstring> strings,jumps;
@@ -646,11 +646,8 @@ ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 	_GETINTVALUE(file,1,)
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	std::stringstream stream;
-	//std::string path;
-	stream <<save_directory<<"save"<<file<<".dat";
-	//std::getline(stream,path);
-	dst->set(fileExists(stream.str().c_str()));
+	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
+	dst->set(fileExists(path));
 	return NONS_NO_ERROR;
 }
 
@@ -675,19 +672,14 @@ ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_Statement &stmt){
 	_GETINTVALUE(file,0,)
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	std::string path;
-	{
-		std::stringstream stream;
-		stream <<save_directory<<"save"<<file<<".dat";
-		path=stream.str();
-	}
-	if (!fileExists(path.c_str())){
+	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
+	if (!fileExists(path)){
 		day->set(0);
 		month->set(0);
 		hour->set(0);
 		minute->set(0);
 	}else{
-		tm *date=getDate(path.c_str());
+		tm *date=getDate(path);
 		day->set(date->tm_mon+1);
 		month->set(date->tm_mday);
 		hour->set(date->tm_hour);
@@ -710,13 +702,8 @@ ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_Statement &stmt){
 	_GETINTVALUE(file,0,)
 		if (file<1)
 			return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	std::string path;
-	{
-		std::stringstream stream;
-		stream <<save_directory<<"save"<<file<<".dat";
-		path=stream.str();
-	}
-	if (!fileExists(path.c_str())){
+	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
+	if (!fileExists(path)){
 		year->set(0);
 		month->set(0);
 		day->set(0);
@@ -746,22 +733,26 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_Statement &stmt){
 	for (ulong a=2;a<stmt.parameters.size();a++){
 		NONS_VariableMember *var;
 		_GETVARIABLE(var,a,)
+		/*
 		if (var->getType()==INTEGER)
 			var->set(0);
 		else
 			var->set(L"");
+		*/
 		dsts.push_back(var);
 	}
 	ulong middle=0;
 	for (ulong a=0;a<dsts.size();a++){
 		ulong next=srcStr.find(searchStr,middle);
-		if (next==srcStr.npos){
-			dsts[a]->set(srcStr.substr(middle));
+		bool _break=(next==srcStr.npos);
+		std::wstring copy=(!_break)?srcStr.substr(middle,next-middle):srcStr.substr(middle);
+		if (dsts[a]->getType()==INTEGER)
+			dsts[a]->set(atoi(copy));
+		else
+			dsts[a]->set(copy);
+		if (_break)
 			break;
-		}
-		std::wstring copy(srcStr,middle,next-middle);
-		dsts[a]->set(copy);
-		middle+=next+=searchStr.size();
+		middle=next+searchStr.size();
 	}
 	return NONS_NO_ERROR;
 }

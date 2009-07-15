@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -69,7 +69,7 @@ NONS_GFX::NONS_GFX(const NONS_GFX &b){
 
 NONS_GFX &NONS_GFX::operator=(const NONS_GFX &b){
 	this->effect=b.effect;
-	this->duration=b.effect;
+	this->duration=b.duration;
 	this->rule=b.rule;
 	this->type=b.type;
 	this->stored=b.stored;
@@ -1260,7 +1260,8 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 			parameters[b].pos2=parameters[0].pos2+parameters[b].pitch2*Sint16(b*division);
 
 		manualBlit(copyDst,0,dst->virtualScreen,0);
-		long w0=dst->virtualScreen->w,h0=dst->virtualScreen->h;
+		//long w0=dst->virtualScreen->w,
+		//	h0=dst->virtualScreen->h;
 		SDL_LockSurface(src0);
 		SDL_LockSurface(src1);
 		SDL_LockSurface(dst->virtualScreen);
@@ -1509,19 +1510,22 @@ void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &col
 	for (long y=0;y<h;y++){
 		uchar *pos0=pos;
 		for (long x=0;x<w;x++){
-			ulong r1,g1,b1;
-			r1=long(pos[Roffset])*long(color.r)+
-				long(pos[Goffset])*long(color.r)+
-				long(pos[Boffset])*long(color.r);
-			r1/=255*3;
-			g1=long(pos[Roffset])*long(color.g)+
-				long(pos[Goffset])*long(color.g)+
-				long(pos[Boffset])*long(color.g);
-			g1/=255*3;
-			b1=long(pos[Roffset])*long(color.b)+
-				long(pos[Goffset])*long(color.b)+
-				long(pos[Boffset])*long(color.b);
-			b1/=255*3;
+			ulong r0=ulong(pos[Roffset])*3/10,
+				g0=ulong(pos[Goffset])*59/100,
+				b0=ulong(pos[Boffset])*11/100,
+				r1,g1,b1;
+			r1=r0*ulong(color.r)+
+				g0*ulong(color.r)+
+				b0*ulong(color.r);
+			r1/=255*3/10+255*59/100+255*11/100;
+			g1=r0*ulong(color.g)+
+				g0*ulong(color.g)+
+				b0*ulong(color.g);
+			g1/=255*3/10+255*59/100+255*11/100;
+			b1=r0*ulong(color.b)+
+				b0*ulong(color.b)+
+				g0*ulong(color.b);
+			b1/=255*3/10+255*59/100+255*11/100;
 			pos[Roffset]=r1;
 			pos[Goffset]=g1;
 			pos[Boffset]=b1;

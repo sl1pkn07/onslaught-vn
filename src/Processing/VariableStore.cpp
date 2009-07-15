@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -43,10 +43,10 @@ NONS_LabelLog labellog;
 NONS_VariableStore::NONS_VariableStore(){
 	ulong l;
 	this->commitGlobals=0;
-	std::string dir=save_directory+"global.sav";
+	std::wstring dir=save_directory+L"global.sav";
 	uchar *buffer=readfile(dir.c_str(),l);
 	if (!buffer){
-		buffer=readfile("gloval.sav",l);
+		buffer=readfile(L"gloval.sav",l);
 		if (!buffer)
 			return;
 		for (ulong a=0,stackpos=200;a<l;stackpos++){
@@ -123,7 +123,7 @@ void NONS_VariableStore::saveData(){
 		else{
 			variables_map_T::iterator i2=i;
 			std::vector<Sint32> intervals;
-			ulong last=i->first;
+			Sint32 last=i->first;
 			intervals.push_back(last++);
 			for (i++;i!=this->variables.end();i++){
 				if (VARIABLE_HAS_NO_DATA(i->second))
@@ -156,7 +156,7 @@ void NONS_VariableStore::saveData(){
 	}
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
-	std::string dir=save_directory+"global.sav";
+	std::wstring dir=save_directory+L"global.sav";
 	writefile(dir.c_str(),writebuffer,l);
 	delete[] writebuffer;
 }

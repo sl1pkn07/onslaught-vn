@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -103,10 +103,10 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_slow=0;
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
-	
+
 	{
-		std::string settings_filename=config_directory+"settings.cfg";
-		ConfigFile settings(settings_filename.c_str());
+		std::wstring settings_filename=config_directory+L"settings.cfg";
+		ConfigFile settings(settings_filename);
 		if (settings.exists(L"textSpeedMode"))
 			this->current_speed_setting=settings.getInt(L"textSpeedMode");
 		else
@@ -520,10 +520,10 @@ void NONS_ScriptInterpreter::uninit(){
 		delete this->imageButtons;
 	delete this->saveGame;
 	if (config_directory.size()){
-		std::string settings_filename=config_directory+"settings.cfg";
+		std::wstring settings_filename=config_directory+L"settings.cfg";
 		ConfigFile settings;
 		settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-		settings.writeOut(settings_filename.c_str());
+		settings.writeOut(settings_filename);
 	}
 	this->textgosub.clear();
 }
@@ -701,7 +701,6 @@ ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &str){
 }
 
 ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt){
-	ulong offset=0;
 	stmt.parse(this->everything->script);
 	if (CLOptions.verbosity>=3 && stmt.type==NONS_Statement::STATEMENT_COMMAND){
 		o_stderr <<"String: \""<<stmt.commandName<<"\" ";
@@ -768,7 +767,7 @@ std::wstring insertIntoString(const std::wstring &dst,ulong from,ulong l,long sr
 
 std::wstring getInlineExpression(const std::wstring &string,ulong off,ulong *len){
 	ulong l=off;
-	while (multicomparison(string[l],"_+-*/!|&%$?<>=()[]\"`") || NONS_isalnum(string[l])){
+	while (multicomparison(string[l],"_+-*/|&%$?<>=()[]\"`") || NONS_isalnum(string[l])){
 		if (string[l]=='\"' || string[l]=='`'){
 			wchar_t quote=string[l];
 			ulong l2=l+1;
@@ -781,7 +780,7 @@ std::wstring getInlineExpression(const std::wstring &string,ulong off,ulong *len
 		l++;
 	}
 	if (!!len)
-		*len=l;
+		*len=l-off;
 	return std::wstring(string,off,l-off);
 }
 
@@ -793,7 +792,7 @@ void NONS_ScriptInterpreter::reduceString(
 	for (ulong off=0;off<src.size();){
 		switch (src[off]){
 			case '!':
-				if (!src.find(L"!nl",off)){
+				if (src.find(L"!nl",off)==off){
 					dst.push_back('\n');
 					off+=3;
 					break;

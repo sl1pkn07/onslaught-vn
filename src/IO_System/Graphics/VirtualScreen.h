@@ -65,6 +65,7 @@ struct NONS_VirtualScreen{
 	NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh);
 	~NONS_VirtualScreen();
 	void blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rect *dstrect);
+	//Note: Call with the screen unlocked or you'll enter a deadlock.
 	void updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast=0);
 	void updateWholeScreen(bool fast=0);
 	//If 0, to window; if 1, to fullscreen; if 2, toggle.

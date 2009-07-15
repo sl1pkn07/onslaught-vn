@@ -81,6 +81,9 @@ void usage(){
 		"  -save-directory <directory name>\n"
 		"      Override automatic save game directory selection.\n"
 		"      See the documentation for more information.\n"
+		"  -archive-directory <directory>\n"
+		"      Set where to look for archive files.\n"
+		"      Default is \".\"\n"
 		"  -f\n"
 		"      Start in fullscreen.\n"
 		"  -r <virtual width> <virtual height> <real width> <real height>\n"
@@ -110,7 +113,7 @@ void usage(){
 		"      Default is \"./CD\"\n"
 		"  -image-cache-size <size>\n"
 		"      Set the size for the image cache. -1 is infinite, 0 is do not use.\n"
-		"      Default to -1.\n"
+		"      Default to 0.\n"
 		"  -debug\n"
 		"      Enable debug mode.\n"
 		"      If -output-to-file has been used, it is disabled.\n"
@@ -164,6 +167,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-!reset-out-files",
 		L"-!redirect",
 		L"-stop-on-first-error",
+		L"-archive-directory",
 		0
 	};
 
@@ -191,7 +195,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a-1]<<"\""<<std::endl;
 					break;
 				}
-				this->scriptPath=UniToISO88591(arguments[a]);
+				this->scriptPath=arguments[a];
 				switch (atoi(arguments[++a])){
 					case 0:
 						this->scriptEncryption=NO_ENCRYPTION;
@@ -249,7 +253,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 						arguments[a]==L"xm" ||
 						arguments[a]==L"s3m" ||
 						arguments[a]==L"mod"){
-					this->musicFormat=UniToISO88591(arguments[a]);
+					this->musicFormat=arguments[a];
 					break;
 				}
 				std::cerr <<"Unrecognized music format: \""<<arguments[a]<<"\""<<std::endl;
@@ -259,7 +263,8 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 					break;
 				}
-				this->musicDirectory=UniToISO88591(arguments[++a]);
+				this->musicDirectory=arguments[++a];
+				toforwardslash(this->musicDirectory);
 				break;
 			case 5: //-transparency-method-layer
 				break;
@@ -301,8 +306,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 						std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 						break;
 					}
-					std::string name=UniToISO88591(arguments[++a]);
-					textDumpFile.open(name.c_str(),std::ios::app);
+					textDumpFile.open(wstrToIOstr(arguments[++a]).c_str(),std::ios::app);
 				}
 				break;
 			case 14: //-f
@@ -332,7 +336,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				if (a+1>=size)
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 				else{
-					std::string copy=UniToISO88591(arguments[++a]);
+					std::wstring copy=arguments[++a];
 					toforwardslash(copy);
 					copy=copy.substr(0,copy.find('/'));
 					if (copy.size())
@@ -347,6 +351,14 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				break;
 			case 24: //-stop-on-first-error
 				this->stopOnFirstError=1;
+				break;
+			case 25: //-archive-directory
+				if (a+1>=size)
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+				else{
+					this->archiveDirectory=arguments[++a];
+					toforwardslash(this->archiveDirectory);
+				}
 				break;
 			case 17://-sdebug
 			default:

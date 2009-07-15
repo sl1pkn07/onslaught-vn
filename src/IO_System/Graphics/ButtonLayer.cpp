@@ -4,7 +4,7 @@
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright notice, 
+*     * Redistributions of source code must retain the above copyright notice,
 *       this list of conditions and the following disclaimer.
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
@@ -13,7 +13,7 @@
 *       derived from this software without specific prior written permission.
 *     * Products derived from this software may not be called "ONSlaught" nor
 *       may "ONSlaught" appear in their names without specific prior written
-*       permission from the author. 
+*       permission from the author.
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -148,26 +148,52 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				this->buttons[a]->mergeWithoutUpdate(this->screen->screen,screenCopy,0,1);
 		}
 	}
-	//SDL_UpdateRect(this->screen->screen,0,0,0,0);
 	this->screen->screen->updateWholeScreen();
 	NONS_Menu *tempMenu=(NONS_Menu *)this->menu;
 	while (1){
 		queue->WaitForEvent(10);
 		SDL_Event event=queue->pop();
+		//Handle entering to lookback.
+		if (event.type==SDL_KEYDOWN && (event.key.keysym.sym==SDLK_UP || event.key.keysym.sym==SDLK_PAGEUP) ||
+				event.type==SDL_MOUSEBUTTONDOWN && (event.button.button==SDL_BUTTON_WHEELUP || event.button.button==SDL_BUTTON_WHEELDOWN)){
+			this->screen->BlendNoText(0);
+			this->screen->screen->blitToScreen(this->screen->screenBuffer,0,0);
+			LOCKSCREEN;
+			multiplyBlend(
+				this->screen->output->shadeLayer->data,
+				&(this->screen->output->shadeLayer->clip_rect),
+				this->screen->screen->virtualScreen,
+				0);
+			this->screen->lookback->display(this->screen->screen);
+			while (!queue->data.empty())
+				queue->pop();
+			manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
+			UNLOCKSCREEN;
+			getCorrectedMousePosition(this->screen->screen,&x,&y);
+			for (ulong a=0;a<this->buttons.size();a++){
+				NONS_Button *b=this->buttons[a];
+				if (b){
+					if (b->MouseOver(x,y)){
+						mouseOver=a;
+						b->mergeWithoutUpdate(this->screen->screen,screenCopy,1,1);
+					}else
+						this->buttons[a]->mergeWithoutUpdate(this->screen->screen,screenCopy,0,1);
+				}
+			}
+			this->screen->screen->updateWholeScreen();
+			continue;
+		}
 		switch (event.type){
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym){
 					case SDLK_ESCAPE:
 						if (this->exitable){
 							InputObserver.detach(queue);
-							//SDL_BlitSurface(screenCopy,0,this->screen->screen,0);
 							this->screen->screen->blitToScreen(screenCopy,0,0);
-							//SDL_UpdateRect(this->screen->screen,0,0,0,0);
 							this->screen->screen->updateWholeScreen();
 							SDL_FreeSurface(screenCopy);
 							return -1;
 						}else if (tempMenu){
-							//SDL_BlitSurface(screenCopy,0,this->screen->screen,0);
 							this->screen->screen->blitToScreen(screenCopy,0,0);
 							int ret=tempMenu->callMenu();
 							if (ret<0){
@@ -177,7 +203,6 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 							}
 							while (!queue->data.empty())
 								queue->pop();
-							//SDL_BlitSurface(screenCopy,0,this->screen->screen,0);
 							this->screen->screen->blitToScreen(screenCopy,0,0);
 							getCorrectedMousePosition(this->screen->screen,&x,&y);
 							for (ulong a=0;a<this->buttons.size();a++){
@@ -190,41 +215,16 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 										this->buttons[a]->mergeWithoutUpdate(this->screen->screen,screenCopy,0,1);
 								}
 							}
-							//SDL_UpdateRect(this->screen->screen,0,0,0,0);
 							this->screen->screen->updateWholeScreen();
 						}
 						break;
+					//Will never happen:
+					/*
 					case SDLK_UP:
 					case SDLK_PAGEUP:
 						{
-							this->screen->BlendNoText(0);
-							//manualBlit(this->screen->screenBuffer,0,this->screen->screen,0);
-							this->screen->screen->blitToScreen(this->screen->screenBuffer,0,0);
-							LOCKSCREEN;
-							multiplyBlend(
-								this->screen->output->shadeLayer->data,
-								&(this->screen->output->shadeLayer->clip_rect),
-								this->screen->screen->virtualScreen,
-								0);
-							this->screen->lookback->display(this->screen->screen);
-							while (!queue->data.empty())
-								queue->pop();
-							manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
-							UNLOCKSCREEN;
-							getCorrectedMousePosition(this->screen->screen,&x,&y);
-							for (ulong a=0;a<this->buttons.size();a++){
-								NONS_Button *b=this->buttons[a];
-								if (b){
-									if (b->MouseOver(x,y)){
-										mouseOver=a;
-										b->mergeWithoutUpdate(this->screen->screen,screenCopy,1,1);
-									}else
-										this->buttons[a]->mergeWithoutUpdate(this->screen->screen,screenCopy,0,1);
-								}
-							}
-							//SDL_UpdateRect(this->screen->screen,0,0,0,0);
-							this->screen->screen->updateWholeScreen();
 						}
+					*/
 					default:
 						break;
 				}
@@ -279,7 +279,6 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 						LOCKSCREEN;
 						manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
 						UNLOCKSCREEN;
-						//SDL_UpdateRect(this->screen->screen,0,0,0,0);
 						this->screen->screen->updateWholeScreen();
 						SDL_FreeSurface(screenCopy);
 						return mouseOver;
@@ -339,9 +338,9 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 				this->buttons[a]->mergeWithoutUpdate(this->screen->screen,screenCopy,0,1);
 		}
 	}
-	//SDL_UpdateRect(this->screen->screen,0,0,0,0);
 	this->screen->screen->updateWholeScreen();
 	long expire=expiration;
+	//Is this the same as while (1)? I have no idea, but don't touch it, just in case.
 	while (expiration && expire>0 || !expiration){
 		while (!queue->data.empty()){
 			SDL_Event event=queue->pop();
@@ -372,9 +371,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 						if (event.button.button!=SDL_BUTTON_LEFT && event.button.button!=SDL_BUTTON_RIGHT)
 							break;
 						InputObserver.detach(queue);
-						/*LOCKSCREEN;
-						manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
-						UNLOCKSCREEN;*/
 						SDL_FreeSurface(screenCopy);
 						this->screen->screen->updateWholeScreen();
 						if (event.button.button==SDL_BUTTON_RIGHT)
@@ -391,9 +387,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 		expire-=10;
 	}
 	InputObserver.detach(queue);
-	/*LOCKSCREEN;
-	manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
-	UNLOCKSCREEN;*/
 	SDL_FreeSurface(screenCopy);
 	return -2;
 }

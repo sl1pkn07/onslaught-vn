@@ -37,10 +37,11 @@
 
 struct NONS_CommandLineOptions{
 	ENCODINGS scriptencoding;
-	std::string musicFormat;
-	std::string musicDirectory;
+	std::wstring musicFormat;
+	std::wstring musicDirectory;
+	std::wstring archiveDirectory;
 	long cacheSize;
-	std::string scriptPath;
+	std::wstring scriptPath;
 	ENCRYPTION scriptEncryption;
 	bool override_stdout;
 	bool reset_redirection_files;
@@ -51,7 +52,7 @@ struct NONS_CommandLineOptions{
 	bool startFullscreen;
 	uchar verbosity;
 	bool no_sound;
-	std::string savedir;
+	std::wstring savedir;
 	bool stopOnFirstError;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}

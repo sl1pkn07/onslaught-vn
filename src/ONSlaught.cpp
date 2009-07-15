@@ -225,8 +225,7 @@ int main(int argc,char **argv){
 		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
-		"All rights reserved.\n\n"
-		"\"What do I mean by \"do\" and what do I do by \"mean\"?\"\n\n"<<std::endl;
+		"All rights reserved.\n\n"<<std::endl;
 
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
@@ -249,9 +248,9 @@ int main(int argc,char **argv){
 #ifdef NONS_PARALLELIZE
 	//get CPU count
 #if defined(NONS_SYS_WINDOWS)
-	SYSTEM_INFO siSysInfo;
-	GetSystemInfo(&siSysInfo);
-	cpu_count=siSysInfo.dwNumberOfProcessors;
+	SYSTEM_INFO si;
+	GetSystemInfo(&si);
+	cpu_count=si.dwNumberOfProcessors;
 #elif defined(NONS_SYS_LINUX)
 	{
 		/*std::ifstream cpuinfo("/proc/cpuinfo");
@@ -309,7 +308,7 @@ int main(int argc,char **argv){
 		handleErrors(error,-1,"mainThread",0);
 		exit(error);
 	}
-	labellog.init("NScrllog.dat","nonsllog.dat");
+	labellog.init(L"NScrllog.dat",L"nonsllog.dat");
 	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
 	o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
 	o_stdout <<"Local files go in \""<<save_directory<<"\".\n";

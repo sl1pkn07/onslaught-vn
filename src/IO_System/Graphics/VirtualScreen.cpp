@@ -114,15 +114,41 @@ void NONS_VirtualScreen::blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rec
 }
 
 void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast){
+	LOCKSCREEN;
 	if (this->virtualScreen==this->realScreen)
 		SDL_UpdateRect(this->realScreen,x,y,w,h);
 	else{
 		SDL_Rect s={x,y,w,h},
-			d={this->convertX(x),this->convertY(y),this->convertW(w),this->convertH(h)};
+			d={
+				this->convertX(x),
+				this->convertY(y),
+				this->convertW(w),
+				this->convertH(h)
+			};
+		/*
+		The folling plus ones and minus ones are a patch to correct some weird
+		errors. I'd really like to have the patience to track down the real
+		source of the bug, but I don't.
+		Basically, they move the upper-left corner one pixel up and to the left
+		without moving the bottom-right corner.
+		*/
+		if (d.x>0){
+			d.x--;
+			d.w++;
+		}
+		if (d.y>0){
+			d.y--;
+			d.h++;
+		}
 		if (d.x+d.w>this->outRect.w+this->outRect.x)
 			d.w=this->outRect.w-d.x+this->outRect.x;
 		if (d.y+d.h>this->outRect.h+this->outRect.y)
 			d.h=this->outRect.h-d.y+this->outRect.y;
+		/*
+		SDL_FillRect(this->realScreen,&d,gmask|amask);
+		SDL_UpdateRect(this->realScreen,0,0,0,0);
+		SDL_Delay(50);
+		*/
 #ifndef ONLY_NEAREST_NEIGHBOR
 		if (fast)
 			nearestNeighborInterpolation(this->virtualScreen,&s,this->realScreen,&d,this->x_multiplier,this->y_multiplier);
@@ -134,6 +160,7 @@ void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast)
 		SDL_UpdateRect(this->realScreen,d.x,d.y,d.w,d.h);
 		//SDL_UpdateRect(this->realScreen,this->outRect.x,this->outRect.y,this->outRect.w,this->outRect.h);
 	}
+	UNLOCKSCREEN;
 }
 
 void NONS_VirtualScreen::updateWholeScreen(bool fast){
@@ -681,15 +708,16 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	IF_parameters *parameters=new IF_parameters[cpu_count];
 	ulong division0=float(srcRect0.h)/float(cpu_count);
-	ulong division1=float(division0)*(float(y_factor)/256);
+	//ulong division1=float(division0)*(float(y_factor)/256);
+	ulong division1=float(dstRect0.h)/float(cpu_count);
 	ulong total0=0,
 		total1=0;
 	for (ushort a=0;a<cpu_count;a++){
 		rects0[a]=srcRect0;
 		rects1[a]=dstRect0;
-		rects0[a].y+=Sint16(a*division0);
-		//rects0[a].h=Sint16(division0);
-		rects1[a].y+=Sint16(a*division1);
+		rects0[a].y+=Sint16(total0);
+		rects0[a].h=Sint16(division0);
+		rects1[a].y+=Sint16(total1);
 		rects1[a].h=Sint16(division1);
 		
 		total0+=rects0[a].h;
@@ -701,7 +729,7 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 		parameters[a].x_factor=x_factor;
 		parameters[a].y_factor=y_factor;
 	}
-	//rects0[cpu_count-1].h+=srcRect0.h-total0;
+	rects0[cpu_count-1].h+=srcRect0.h-total0;
 	rects1[cpu_count-1].h+=dstRect0.h-total1;
 
 	SDL_LockSurface(src);
@@ -710,6 +738,10 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 		threads[a]=SDL_CreateThread(bilinearInterpolation_threaded,parameters+a);
 	for (ushort a=0;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+	delete[] threads;
+	delete[] rects0;
+	delete[] rects1;
+	delete[] parameters;
 	SDL_UnlockSurface(src);
 	SDL_UnlockSurface(dst);
 }
@@ -739,22 +771,32 @@ void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 	uchar *pos1=pixels1;
 	long X=0,
 		Y=0;
-	ulong advanceX=(src->clip_rect.w<<16)/dst->clip_rect.w,
-		advanceY=(src->clip_rect.h<<16)/dst->clip_rect.h;
+	ulong W0=src->clip_rect.w,
+		H0=src->clip_rect.h,
+		W1=dst->clip_rect.w,
+		H1=dst->clip_rect.h;
+	ulong advanceX=((W0-1)<<16)/W1,
+		advanceY=((H0-1)<<16)/H1;
 	srcRect0.w+=srcRect0.x;
 	dstRect0.w+=dstRect0.x;
 	srcRect0.h+=srcRect0.y;
 	dstRect0.h+=dstRect0.y;
 	for (long y1=dstRect0.y;y1<dstRect0.h;y1++){
+		bool skipY=0;
 		Y=(advanceY>>2)+(y1-dst->clip_rect.y)*advanceY;
 		long y0=Y>>16;
+		if ((ulong)y0+1>=H0)
+			break;
 		uchar *pos00=pos0+pitch0*y0;
 		ulong fractionY=Y&0xFFFF,
 			ifractionY=0xFFFF-fractionY;
 		for (long x1=dstRect0.x;x1<dstRect0.w;x1++){
+			bool skipX=0;
 			pos1=pixels1+pitch1*y1+advance1*x1;
 			X=(advanceX>>2)+(x1-dst->clip_rect.x)*advanceX;
 			long x0=X>>16;
+			if ((ulong)x0+1>=W0)
+				break;
 			ulong fractionX=X&0xFFFF,
 				ifractionX=0xFFFF-fractionX;
 			uchar *pixel0=pos00+advance0*x0,
@@ -779,19 +821,37 @@ void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 				b0=0;
 			}
 			if (weight1){
-				r0+=pixel1[Roffset0]*weight1;
-				g0+=pixel1[Goffset0]*weight1;
-				b0+=pixel1[Boffset0]*weight1;
+				if (!skipX){
+					r0+=pixel1[Roffset0]*weight1;
+					g0+=pixel1[Goffset0]*weight1;
+					b0+=pixel1[Boffset0]*weight1;
+				}else{
+					r0+=pixel0[Roffset0]*weight1;
+					g0+=pixel0[Goffset0]*weight1;
+					b0+=pixel0[Boffset0]*weight1;
+				}
 			}
 			if (weight2){
-				r0+=pixel2[Roffset0]*weight2;
-				g0+=pixel2[Goffset0]*weight2;
-				b0+=pixel2[Boffset0]*weight2;
+				if (!skipY){
+					r0+=pixel2[Roffset0]*weight2;
+					g0+=pixel2[Goffset0]*weight2;
+					b0+=pixel2[Boffset0]*weight2;
+				}else{
+					r0+=pixel0[Roffset0]*weight2;
+					g0+=pixel0[Goffset0]*weight2;
+					b0+=pixel0[Boffset0]*weight2;
+				}
 			}
 			if (weight3){
-				r0+=pixel3[Roffset0]*weight3;
-				g0+=pixel3[Goffset0]*weight3;
-				b0+=pixel3[Boffset0]*weight3;
+				if (!skipX && !skipY){
+					r0+=pixel3[Roffset0]*weight3;
+					g0+=pixel3[Goffset0]*weight3;
+					b0+=pixel3[Boffset0]*weight3;
+				}else{
+					r0+=pixel0[Roffset0]*weight3;
+					g0+=pixel0[Goffset0]*weight3;
+					b0+=pixel0[Boffset0]*weight3;
+				}
 			}
 			*r1=r0/0xFFFF;
 			*g1=g0/0xFFFF;
@@ -804,7 +864,7 @@ void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 #define FLOOR(x) ((x)&0xFFFF0000)
 #define CEIL(x) (((x)&0xFFFF)?(FLOOR(x)+0x10000):FLOOR(x))
 
-//This algorithm works well for scales [0;1]. It's ~50% more expensive than
+//This algorithm works well for scales [0;1). It's ~50% more expensive than
 //bilinearInterpolation().
 #ifndef NONS_PARALLELIZE
 void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){

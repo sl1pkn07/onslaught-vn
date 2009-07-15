@@ -56,6 +56,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Layer *fgLayer,NONS_Layer *shadowL
 	this->horizontalCenterPolicy=0;
 	this->verticalCenterPolicy=0;
 	this->lastStart=-1;
+	this->printingStarted=0;
 }
 
 NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect *frame,bool shadow){
@@ -83,6 +84,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect
 	this->horizontalCenterPolicy=0;
 	this->verticalCenterPolicy=0;
 	this->lastStart=-1;
+	this->printingStarted=0;
 }
 
 NONS_StandardOutput::~NONS_StandardOutput(){
@@ -101,6 +103,7 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	int wordL=0;
 	int lineSkip=this->foregroundLayer->fontCache->font->lineSkip;
 	this->resumePrinting=0;
+	bool check_at_end=1;
 	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
 		wchar_t character=*i;
 		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
@@ -131,9 +134,12 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 		}else{
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0)
 				this->cachedText[lastSpace]=0;
+			check_at_end=0;
 			break;
 		}
 	}
+	if (check_at_end && x0+wordL>=this->w+this->x0 && lastSpace>=0)
+		this->cachedText[lastSpace]=0;
 	this->printingStarted=1;
 	if (this->verticalCenterPolicy>0 && this->currentBuffer.size()>0)
 		return 1;

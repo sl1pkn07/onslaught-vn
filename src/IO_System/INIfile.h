@@ -31,50 +31,54 @@
 #define NONS_INIsection_H
 
 #include "../Common.h"
+#include "../Functions.h"
 #include "../ErrorCodes.h"
 #include "../enums.h"
 #include <map>
 
 class INIvalue{
-	long intValue;
-	std::wstring strValue;
-	char type;
+	std::wstring value;
 public:
-	INIvalue(long a);
-	INIvalue(const std::wstring &a);
-	void setIntValue(long a);
-	void setStrValue(const std::wstring &a);
-	char getType();
-	long getIntValue();
-	const std::wstring &getStrValue();
+	INIvalue(){}
+	INIvalue(long a){
+		this->setIntValue(a);
+	}
+	INIvalue(const std::wstring &a){
+		this->setStrValue(a);
+	}
+	void setIntValue(long a){
+		this->value=itoa<wchar_t>(a);
+	}
+	void setStrValue(const std::wstring &a){
+		this->value=a;
+	}
+	long getIntValue(){
+		return atoi(this->value);
+	}
+	const std::wstring &getStrValue(){
+		return this->value;
+	}
 };
 
 class INIsection{
-	std::map<std::wstring,INIvalue *> variables;
+	std::map<std::wstring,INIvalue> variables;
 public:
-	INIsection();
-	~INIsection();
-	INIsection(const wchar_t *buffer,long *offset,long l);
-	void readFile(const wchar_t *buffer,long *offset,long l);
+	INIsection(){}
+	INIsection(const std::map<std::wstring,std::wstring> &vars);
 	void setIntValue(const std::wstring &index,long a);
 	void setStrValue(const std::wstring &index,const std::wstring &a);
-	char getType(const std::wstring &index);
 	long getIntValue(const std::wstring &index);
 	const std::wstring &getStrValue(const std::wstring &index);
 	INIvalue *getValue(const std::wstring &index);
 };
 
 class INIfile{
-	std::map<std::wstring,INIsection *> sections;
+	std::map<std::wstring,INIsection> sections;
+	void readFile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
 public:
 	INIfile();
-	INIfile(const std::string &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	INIfile(const char *buffer,long l,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	INIfile(const wchar_t *buffer,long l);
-	~INIfile();
-	ErrorCode readFile(const std::string &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	void readFile(const char *buffer,long l,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	void readFile(const wchar_t *buffer,long l);
+	INIfile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	INIfile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	INIsection *getSection(const std::wstring &index);
 };
 #endif

@@ -36,7 +36,7 @@
 #include "../../Globals.h"
 #include <sstream>
 
-NONS_Audio::NONS_Audio(const std::string &musicDir){
+NONS_Audio::NONS_Audio(const std::wstring &musicDir){
 	this->music=0;
 	if (CLOptions.no_sound){
 		this->uninitialized=1;
@@ -50,7 +50,7 @@ NONS_Audio::NONS_Audio(const std::string &musicDir){
 	}
 	Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,512);
 	if (!musicDir.size())
-		this->musicDir="./CD";
+		this->musicDir=L"./CD";
 	else
 		this->musicDir=musicDir;
 	this->musicFormat=CLOptions.musicFormat;
@@ -84,8 +84,8 @@ void NONS_Audio::freeCacheElement(int channel){
 	i->second->unload();
 }
 
-ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
-	static const char *formats[]={"ogg","mp3","it","xm","s3m","mod",0};
+ErrorCode NONS_Audio::playMusic(const std::wstring *filename,long times){
+	static const wchar_t *formats[]={L"ogg",L"mp3",L"it",L"xm",L"s3m",L"mod",0};
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	if (!filename){
@@ -94,7 +94,7 @@ ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
 		this->music->play(times);
 		return NONS_NO_ERROR;
 	}else{
-		std::string temp;
+		std::wstring temp;
 		if (this->music){
 			this->music->stop();
 			delete this->music;
@@ -104,14 +104,14 @@ ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
 			while (1){
 				if (!formats[a])
 					break;
-				temp=this->musicDir+"/"+*filename+"."+formats[a];
-				if (fileExists(temp.c_str()))
+				temp=this->musicDir+L"/"+*filename+L"."+formats[a];
+				if (fileExists(temp))
 					break;
 				a++;
 			}
 		}else
-			temp=this->musicDir+"/"+*filename+"."+this->musicFormat;
-		if (!fileExists(temp.c_str()))
+			temp=this->musicDir+L"/"+*filename+L"."+this->musicFormat;
+		if (!fileExists(temp))
 			return NONS_FILE_NOT_FOUND;
 		this->music=new NONS_Music(temp);
 		if (!this->music->loaded())
@@ -120,7 +120,7 @@ ErrorCode NONS_Audio::playMusic(const std::string *filename,long times){
 	}
 }
 
-ErrorCode NONS_Audio::playMusic(const std::string &filename,char *buffer,long l,long times){
+ErrorCode NONS_Audio::playMusic(const std::wstring &filename,char *buffer,long l,long times){
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	if (buffer && l){

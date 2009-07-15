@@ -32,13 +32,14 @@
 
 #include "../../Common.h"
 #include "TreeNode.h"
+#include <string>
 
 #define READ_LENGTH 4096
 
 struct NONS_Archive{
 	NONS_TreeNode *root;
 	std::ifstream *file;
-	std::string path;
+	std::wstring path;
 	ulong archive_type;
 	enum{
 		UNRECOGNIZED=0,
@@ -48,7 +49,7 @@ struct NONS_Archive{
 		NS3_ARCHIVE=4
 	};
 	bool loaded;
-	NONS_Archive(const char *filename,bool failSilently);
+	NONS_Archive(const std::wstring &filename,bool failSilently);
 	~NONS_Archive();
 	/*
 	1 if the archive has been loaded or if it had already been loaded.

@@ -75,9 +75,9 @@ inline bool NONS_isalnum(unsigned character){ return NONS_isalpha(character) || 
 inline unsigned NONS_toupper(unsigned character){ return NONS_islower(character)?character&223:character; }
 inline unsigned NONS_tolower(unsigned character){ return NONS_isupper(character)?character|32:character; }
 inline bool NONS_ishexa(unsigned character){ return NONS_isdigit(character) || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046; }
-//1 if the character matches [A-Za-z_] (the first character in a C-style identifier)
+//1 if the character matches the regex [A-Za-z_] (the first character in a C-style identifier)
 inline bool NONS_isid1char(unsigned character){ return NONS_isalpha(character) || character==0x005F; }
-//1 if the character matches [A-Za-z_0-9] (the second and beyond character in a C-style identifier)
+//1 if the character matches the regex [A-Za-z_0-9] (the second and beyond character in a C-style identifier)
 inline bool NONS_isidnchar(unsigned character){ return NONS_isid1char(character) || NONS_isdigit(character); }
 
 template <typename T1,typename T2>
@@ -211,5 +211,20 @@ bool firstcharsCI(const std::basic_string<T> &s1,size_t off,const T *s2){
 		if (NONS_tolower(s1[off+a])!=NONS_tolower(s2[a]))
 			return 0;
 	return 1;
+}
+
+template <typename T>
+void trim_string(std::basic_string<T> &str){
+	ulong first=0,
+		second,
+		size=str.size();
+	for (;first<size && iswhitespace(str[first]);first++);
+	if (first==size){
+		str.clear();
+		return;
+	}
+	second=first;
+	for (;second<size && !iswhitespace(str[second]);second++);
+	str=str.substr(first,second-first);
 }
 #endif
