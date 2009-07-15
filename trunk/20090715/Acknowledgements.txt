@@ -1,4 +1,0 @@
-Thanks to:
-* Pierre "Saffran" Bancov for helping with the Japanese documentation.
-* "Sonozaki Futago-tachi" (may be real name or a screen name) for providing the
-    English version of the Japanese documentation.
