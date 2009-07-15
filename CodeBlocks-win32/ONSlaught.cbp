@@ -52,8 +52,6 @@
 		<Unit filename="..\src\CommandLineOptions.h" />
 		<Unit filename="..\src\Common.h" />
 		<Unit filename="..\src\CommonTypes.h" />
-		<Unit filename="..\src\Encryption.cpp" />
-		<Unit filename="..\src\Encryption.h" />
 		<Unit filename="..\src\ErrorCodes.h" />
 		<Unit filename="..\src\Everything.cpp" />
 		<Unit filename="..\src\Everything.h" />
@@ -81,14 +79,10 @@
 		<Unit filename="..\src\IO_System\Graphics\ButtonLayer.h" />
 		<Unit filename="..\src\IO_System\Graphics\Cursor.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\Cursor.h" />
-		<Unit filename="..\src\IO_System\Graphics\Font.cpp" />
-		<Unit filename="..\src\IO_System\Graphics\Font.h" />
 		<Unit filename="..\src\IO_System\Graphics\FontCache.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\FontCache.h" />
 		<Unit filename="..\src\IO_System\Graphics\GFX.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\GFX.h" />
-		<Unit filename="..\src\IO_System\Graphics\Glyph.cpp" />
-		<Unit filename="..\src\IO_System\Graphics\Glyph.h" />
 		<Unit filename="..\src\IO_System\Graphics\Layer.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\Layer.h" />
 		<Unit filename="..\src\IO_System\Graphics\Lookback.cpp" />
@@ -105,6 +99,8 @@
 		<Unit filename="..\src\IO_System\Graphics\StandardOutput.h" />
 		<Unit filename="..\src\IO_System\Graphics\VirtualScreen.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\VirtualScreen.h" />
+		<Unit filename="..\src\IO_System\INIParser.tab.cpp" />
+		<Unit filename="..\src\IO_System\INIParser.tab.hpp" />
 		<Unit filename="..\src\IO_System\INIfile.cpp" />
 		<Unit filename="..\src\IO_System\INIfile.h" />
 		<Unit filename="..\src\IO_System\IOFunctions.cpp" />
@@ -113,8 +109,6 @@
 		<Unit filename="..\src\IO_System\InputHandler.h" />
 		<Unit filename="..\src\IO_System\SAR\Archive.cpp" />
 		<Unit filename="..\src\IO_System\SAR\Archive.h" />
-		<Unit filename="..\src\IO_System\SAR\ArchivedFile.cpp" />
-		<Unit filename="..\src\IO_System\SAR\ArchivedFile.h" />
 		<Unit filename="..\src\IO_System\SAR\GeneralArchive.cpp" />
 		<Unit filename="..\src\IO_System\SAR\GeneralArchive.h" />
 		<Unit filename="..\src\IO_System\SAR\Image_Loader\FileLog.cpp" />
@@ -129,8 +123,8 @@
 		<Unit filename="..\src\IO_System\SaveFile.h" />
 		<Unit filename="..\src\IO_System\Script\Script.cpp" />
 		<Unit filename="..\src\IO_System\Script\Script.h" />
-		<Unit filename="..\src\IO_System\Script\ScriptBlock.cpp" />
-		<Unit filename="..\src\IO_System\Script\ScriptBlock.h" />
+		<Unit filename="..\src\IO_System\Script\commandPreParser.tab.cpp" />
+		<Unit filename="..\src\IO_System\Script\commandPreParser.tab.hpp" />
 		<Unit filename="..\src\IO_System\Script\sha1.cpp" />
 		<Unit filename="..\src\IO_System\Script\sha1.h" />
 		<Unit filename="..\src\IO_System\StdOut.cpp" />
@@ -157,8 +151,6 @@
 		<Unit filename="..\src\UTF.cpp" />
 		<Unit filename="..\src\UTF.h" />
 		<Unit filename="..\src\enums.h" />
-		<Unit filename="..\src\strCmpT.cpp" />
-		<Unit filename="..\src\strCmpT.h" />
 		<Unit filename="..\src\version.h" />
 		<Extensions>
 			<code_completion />
