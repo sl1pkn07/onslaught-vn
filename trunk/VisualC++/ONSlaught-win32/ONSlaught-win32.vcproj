@@ -198,14 +198,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\Encryption.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\Encryption.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\enums.h"
 				>
 			</File>
@@ -250,14 +242,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\strCmpT.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\strCmpT.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\UTF.cpp"
 				>
 			</File>
@@ -294,6 +278,14 @@
 				</File>
 				<File
 					RelativePath="..\..\src\IO_System\INIfile.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\IO_System\INIParser.tab.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\IO_System\INIParser.tab.hpp"
 					>
 				</File>
 				<File
@@ -400,14 +392,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\Graphics\Font.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\Graphics\Font.h"
-						>
-					</File>
-					<File
 						RelativePath="..\..\src\IO_System\Graphics\FontCache.cpp"
 						>
 					</File>
@@ -421,14 +405,6 @@
 					</File>
 					<File
 						RelativePath="..\..\src\IO_System\Graphics\GFX.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\Graphics\Glyph.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\Graphics\Glyph.h"
 						>
 					</File>
 					<File
@@ -500,14 +476,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\SAR\ArchivedFile.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\SAR\ArchivedFile.h"
-						>
-					</File>
-					<File
 						RelativePath="..\..\src\IO_System\SAR\GeneralArchive.cpp"
 						>
 					</File>
@@ -556,19 +524,19 @@
 					Name="Script"
 					>
 					<File
+						RelativePath="..\..\src\IO_System\Script\commandPreParser.tab.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Script\commandPreParser.tab.hpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\src\IO_System\Script\Script.cpp"
 						>
 					</File>
 					<File
 						RelativePath="..\..\src\IO_System\Script\Script.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\Script\ScriptBlock.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\src\IO_System\Script\ScriptBlock.h"
 						>
 					</File>
 					<File
