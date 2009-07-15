@@ -1,0 +1,350 @@
+/*
+* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*     * Redistributions of source code must retain the above copyright notice, 
+*       this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * The name of the author may not be used to endorse or promote products
+*       derived from this software without specific prior written permission. 
+*     * Products derived from this software may not be called "ONSlaught" nor
+*       may "ONSlaught" appear in their names without specific prior written
+*       permission from the author. 
+*
+* THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL HELIOS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+* EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+* WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+* OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+%{
+#include "Script.h"
+#include "../../UTF.h"
+#include "../../Globals.h"
+#include "../../Functions.h"
+%}
+%parse-param {std::wstringstream *stream}
+%parse-param {NONS_Script *script}
+%parse-param {ulong *res}
+%lex-param {std::wstringstream *stream}
+%lex-param {NONS_Script *script}
+%pure-parser
+%defines
+%file-prefix="commandPreParser"
+%name-prefix="commandPreParser_yy"
+%code requires {
+	#include <iostream>
+	#include <sstream>
+	#include <string>
+	#include <climits>
+}
+%code provides {
+	int commandPreParser_yyparse(
+		std::wstringstream *stream,
+		NONS_Script *script,
+		ulong *res
+	);
+	int commandPreParser_yylex(
+		YYSTYPE *yylval,
+		std::wstringstream *stream,
+		NONS_Script *script
+	);
+	void commandPreParser_yyerror(
+		std::wstringstream *stream,
+		NONS_Script *script,
+		ulong *res,
+		char const *
+	);
+	extern int commandPreParser_yydebug;
+}
+%union {
+	ulong position;
+}
+%token <position> IDENTIFIER FOR_TO FOR_STEP EQUALS
+%token INTEGER STRING INTEGER_ARRAY ERROR
+
+%left OR
+%left AND
+%left EQUALS NEQ LOWER LOWEREQ GREATER GREATEREQ
+%left '+' '-'
+%left '*' '/'
+%right NEG POS
+%left '[' ']'
+%right EVAL FCHK LCHK ATOI ITOA
+%right '%' '$' '?'
+%left '(' ')'
+
+%start eval
+%%
+
+eval:
+	expr IDENTIFIER {
+		*res=$2;
+		YYACCEPT;
+	}|
+	expr EQUALS expr FOR_TO expr {
+		res[0]=$2;
+		res[1]=$4;
+		res[2]=ULONG_MAX;
+		YYACCEPT;
+	}|
+	expr EQUALS expr FOR_TO expr FOR_STEP expr {
+		res[0]=$2;
+		res[1]=$4;
+		res[2]=$6;
+		YYACCEPT;
+	}|
+	ERROR {
+		YYABORT;
+	};
+
+expr:
+	integer |
+	integer_array |
+	operation ;
+
+integer:
+	INTEGER |
+	IDENTIFIER |
+	EVAL '(' string ')' |
+	EVAL '(' IDENTIFIER ')' |
+	EVAL '(' string_concatenation ')' |
+	ATOI '(' string ')' |
+	ATOI '(' IDENTIFIER ')' |
+	ATOI '(' string_concatenation ')' |
+	integer_dereference ;
+
+string:
+	STRING |
+	string_dereference |
+	ITOA '(' expr ')' ;
+
+string_concatenation:
+	IDENTIFIER '+' IDENTIFIER |
+	string '+' string |
+	string_concatenation '+' string ;
+	
+integer_array:
+	integer_array '[' expr ']' |
+	'?' integer |
+	'?' '(' expr ')' |
+	'?' error '[' ;
+
+operation:
+	expr '+' expr |
+	expr '-' expr |
+	expr '*' expr |
+	expr '/' expr |
+	boolean_operation |
+	expr OR expr |
+	expr AND expr |
+	'+' expr %prec POS |
+	'-' expr %prec NEG |
+	'(' expr ')' ;
+
+integer_dereference:
+	'%' integer |
+	'%' '(' expr ')' ;
+
+string_dereference:
+	'$' integer |
+	'$' '(' expr ')' ;
+
+boolean_operation:
+	expr EQUALS expr |
+	expr NEQ expr |
+	expr LOWER expr |
+	expr GREATEREQ expr |
+	expr GREATER expr |
+	expr LOWEREQ expr |
+	FCHK string |
+	FCHK IDENTIFIER |
+	FCHK '(' string_concatenation ')' |
+	LCHK string |
+	LCHK IDENTIFIER |
+	LCHK '*' INTEGER |
+	LCHK '(' string_concatenation ')' ;
+%%
+
+#define DOUBLEOP(character,ret_value) if (c==(character)){\
+	stream->get();\
+	if (stream->peek()==(character)){\
+		stream->get();\
+		return (ret_value);\
+	}\
+	return (ret_value);\
+}
+
+int commandPreParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Script *script){
+	int c;
+	while (!stream->eof() && iswhitespace((wchar_t)stream->peek()))
+		stream->get();
+	c=stream->peek();
+	if (stream->eof() || c==';')
+		return 0;
+	if (NONS_isdigit(c)){
+		while (NONS_isdigit(stream->peek()))
+			stream->get();
+		if (NONS_isid1char(stream->peek())){
+			while (NONS_isidnchar(stream->peek()))
+				stream->get();
+			return STRING;
+		}
+		return INTEGER;
+	}
+	if (c=='#'){
+		stream->get();
+		ulong count=0;
+		while (NONS_ishexa(stream->peek())){
+			stream->get();
+			count++;
+		}
+		if (count<6)
+			return ERROR;
+		return INTEGER;
+	}
+	if (c=='\"' || c=='`'){
+		c=stream->get();
+		bool cont=0,
+			useEscapes=0;
+		if (NONS_tolower(c)=='e'){
+			if (stream->peek()!='\"'){
+				stream->putback(c);
+				cont=1;
+			}else{
+				c=stream->get();
+				useEscapes=1;
+			}
+		}
+		if (!cont){
+			while ((wchar_t)stream->peek()!=c && !stream->eof()){
+				wchar_t character=stream->get();
+				if (character=='\\' && useEscapes){
+					character=stream->get();
+					switch (character){
+						case '\\':
+						case '\"':
+						case 'n':
+						case 'r':
+						case 't':
+							break;
+						case 'x':
+							{
+								ulong a=0;
+								for (;NONS_ishexa(stream->peek()) && a<4;a++)
+									stream->get();
+								if (a<5)
+									return ERROR;
+							}
+							break;
+						default:
+							return ERROR;
+					}
+				}
+			}
+			if ((wchar_t)stream->peek()!=c)
+				return ERROR;
+			stream->get();
+			return STRING;
+		}
+	}
+	if (c=='*'){
+		std::wstring backup;
+		backup.push_back(stream->get());
+		while (iswhitespace((wchar_t)stream->peek()))
+			stream->get();
+		c=stream->peek();
+		if (NONS_isid1char(c)){
+			std::wstring id;
+			id.push_back(stream->peek());
+			backup.push_back(stream->get());
+			while (NONS_isidnchar(c=stream->peek())){
+				id.push_back(c);
+				backup.push_back(stream->get());
+			}
+			if (!!script->blockFromLabel(id))
+				return STRING;
+		}
+		for (long a=backup.size()-1;a>=0;a--)
+			stream->putback(backup[a]);
+	}
+	if (NONS_isid1char(c)){
+		std::wstring temp;
+		yylval->position=stream->tellg();
+		temp.push_back(stream->get());
+		while (NONS_isidnchar(stream->peek()))
+			temp.push_back(stream->get());
+		if (!stdStrCmpCI(temp,L"fchk"))
+			return FCHK;
+		if (!stdStrCmpCI(temp,L"lchk"))
+			return LCHK;
+		if (!stdStrCmpCI(temp,L"_eval"))
+			return EVAL;
+		if (!stdStrCmpCI(temp,L"_itoa"))
+			return ITOA;
+		if (!stdStrCmpCI(temp,L"_atoi"))
+			return ATOI;
+		if (!stdStrCmpCI(temp,L"to"))
+			return FOR_TO;
+		if (!stdStrCmpCI(temp,L"step"))
+			return FOR_STEP;
+		return IDENTIFIER;
+	}
+	if (c=='='){
+		yylval->position=stream->tellg();
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			return EQUALS;
+		}
+		return EQUALS;
+	}
+	DOUBLEOP('&',AND)
+	DOUBLEOP('|',OR)
+	if (c=='!'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			return NEQ;
+		}
+		return c;
+	}
+	if (c=='<'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			return LOWEREQ;
+		}
+		if (stream->peek()=='>'){
+			stream->get();
+			return NEQ;
+		}
+		return LOWER;
+	}
+	if (c=='>'){
+		stream->get();
+		if (stream->peek()=='='){
+			stream->get();
+			return GREATEREQ;
+		}
+		return GREATER;
+	}
+	if (!multicomparison((wchar_t)c,"+-*/[]%$?()"))
+		return ERROR;
+	return stream->get();
+}
+
+void commandPreParser_yyerror(
+	std::wstringstream *stream,
+	NONS_Script *script,
+	ulong *res,
+	char const *){}
