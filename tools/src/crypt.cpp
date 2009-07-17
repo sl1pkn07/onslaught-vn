@@ -24,8 +24,14 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#define BARE_FILE
-#include <Encryption.cpp>
+typedef unsigned long ulong;
+
+#define TOOLS_BARE_FILE
+#include <iostream>
+#include <ErrorCodes.h>
+#include <enums.h>
+#include <Functions.cpp>
+#include <UTF.cpp>
 #include <IO_System/FileIO.cpp>
 
 const char *methods[][2]={
@@ -53,18 +59,18 @@ int main(int argc,char **argv){
 		version();
 	if (argc<4 ||!strcmp(argv[1],"-h") || !strcmp(argv[1],"-?") || !strcmp(argv[1],"--help"))
 		usage();
-	char *ifile=argv[1];
-	char *meth=argv[2];
-	char *ofile=argv[3];
-	long l;
-	char *buffer=(char *)readfile(ifile,&l);
+	std::string meth=argv[2];
+	std::wstring ifile=UniFromUTF8(std::string(argv[1])),
+		ofile=UniFromUTF8(std::string(argv[3]));
+	ulong l;
+	char *buffer=(char *)readfile(ifile,l);
 	if (!buffer){
 		std::cout <<"File not found."<<std::endl;
 		return 0;
 	}
 	long method=-1;
 	for (ulong a=0;methods[a][0] && method==-1;a++)
-		if (!strcmp(meth,methods[a][0]))
+		if (meth==methods[a][0])
 			method=a;
 	if (method==-1){
 		std::cout <<"Could not make sense of argument. Method defaults to xor84."<<std::endl;

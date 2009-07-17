@@ -31,9 +31,9 @@
 #define NONS_IMAGE_CPP
 
 #include "Image.h"
-#include "../../../Globals.h"
-#include "../../../Functions.h"
-#include "../../../UTF.h"
+#include "../../Globals.h"
+#include "../../Functions.h"
+#include "../../UTF.h"
 #include <sstream>
 
 void NONS_AnimationInfo::parse(const std::wstring &image_string){

@@ -31,8 +31,10 @@
 #define NONS_FILEIO_CPP
 
 #include "FileIO.h"
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
+#ifndef TOOLS_NSAIO
 #include "../Globals.h"
+#endif
 #include "../UTF.h"
 #endif
 
@@ -72,17 +74,15 @@ uchar *readfile(const std::wstring &name,ulong &len){
 	return buffer;
 }
 
-#if defined(NONS_SYS_WINDOWS)
+#ifdef NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
 
 char writefile(const std::wstring &name,char *buffer,ulong size){
 	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
 	if (!file){
-#ifndef BARE_FILE
-#if defined(NONS_SYS_WINDOWS)
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO) && defined(NONS_SYS_WINDOWS)
 		o_stderr <<"writefile(): "<<GetLastError()<<'\n';
-#endif
 #endif
 		return 1;
 	}

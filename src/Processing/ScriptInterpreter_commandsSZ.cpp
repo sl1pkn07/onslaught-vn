@@ -394,7 +394,7 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 		_GETLABEL(temp,a,)
 		jumps.push_back(temp);
 	}
-	NONS_ButtonLayer layer(this->main_font,this->everything->screen,0,(void *)this->menu);
+	NONS_ButtonLayer layer(this->main_font,this->everything->screen,0,this->menu);
 	layer.makeTextButtons(
 		strings,
 		&this->selectOn,
@@ -528,8 +528,6 @@ ErrorCode NONS_ScriptInterpreter::command_textspeed(NONS_Statement &stmt){
 	_GETINTVALUE(speed,0,);
 	if (speed<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	/*if (!this->everything->screen)
-		this->setDefaultWindow();*/
 	this->everything->screen->output->display_speed=speed;
 	return NONS_NO_ERROR;
 }
@@ -559,11 +557,6 @@ ErrorCode NONS_ScriptInterpreter::command_savename(NONS_Statement &stmt){
 	this->menu->stringSlot=slot;
 	return NONS_NO_ERROR;
 }
-
-/*ErrorCode NONS_ScriptInterpreter::command_skipoff(NONS_Statement &stmt){
-	softwareCtrlIsPressed=0;
-	return NONS_NO_ERROR;
-}*/
 
 ErrorCode NONS_ScriptInterpreter::command_savenumber(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
@@ -733,12 +726,6 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_Statement &stmt){
 	for (ulong a=2;a<stmt.parameters.size();a++){
 		NONS_VariableMember *var;
 		_GETVARIABLE(var,a,)
-		/*
-		if (var->getType()==INTEGER)
-			var->set(0);
-		else
-			var->set(L"");
-		*/
 		dsts.push_back(var);
 	}
 	ulong middle=0;
@@ -784,13 +771,30 @@ ErrorCode NONS_ScriptInterpreter::command_underline(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_stdout(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	std::wstring text=this->convertParametersToString(stmt);
+	if (!stdStrCmpCI(stmt.stmt,L"stdout"))
+		o_stdout <<text<<'\n';
+	else //if (!stdStrCmpCI(stmt.stmt,L"stderr"))
+		o_stderr <<text<<'\n';
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	std::wstring str1,str2;
+	_GETWCSVALUE(str1,0,)
+	_GETWCSVALUE(str2,1,)
+	o_stdout <<"--------------------------------------------------------------------------------\n"
+		"versionstr says:\n"
+		<<str1<<'\n'
+		<<str2<<"\n"
+		"--------------------------------------------------------------------------------\n";
+	return 0;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

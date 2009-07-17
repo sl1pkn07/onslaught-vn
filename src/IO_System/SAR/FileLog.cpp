@@ -31,11 +31,11 @@
 #define NONS_FILELOG_CPP
 
 #include "FileLog.h"
-#include "../../FileIO.h"
-#include "../../SaveFile.h"
-#include "../../../Functions.h"
-#include "../../../Globals.h"
-#include "../../../UTF.h"
+#include "../FileIO.h"
+#include "../SaveFile.h"
+#include "../../Functions.h"
+#include "../../Globals.h"
+#include "../../UTF.h"
 #include <cstring>
 
 NONS_LogStrings::NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName){

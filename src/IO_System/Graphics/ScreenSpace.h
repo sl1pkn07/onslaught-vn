@@ -40,7 +40,7 @@
 
 struct NONS_ScreenSpace{
 	//The stack of layers that will be blended into the final picture. Layers are
-	//blended starting with the highest indexes.
+	//blended starting with the highest indices.
 	std::vector<NONS_Layer *> layerStack;
 	//The bottom layer. This layer is not merged with the screen. Rather, it
 	//replaces its contents.

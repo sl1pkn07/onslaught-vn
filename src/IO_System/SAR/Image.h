@@ -30,7 +30,7 @@
 #ifndef NONS_IMAGE_H
 #define NONS_IMAGE_H
 
-#include "../../../Common.h"
+#include "../../Common.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <vector>

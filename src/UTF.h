@@ -30,7 +30,7 @@
 #ifndef NONS_UTF_H
 #define NONS_UTF_H
 
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
 #include "Common.h"
 #include "Functions.h"
 #else
@@ -61,11 +61,6 @@ typedef unsigned char uchar;
 #define NONS_BIG_ENDIAN 0
 #define NONS_LITTLE_ENDIAN 1
 #define UNDEFINED_ENDIANNESS 2
-
-#ifdef BARE_FILE
-uchar *readfile(const char *name,long *len);
-char writefile(const char *name,char *buffer,long size);
-#endif
 
 inline bool NONS_isdigit(unsigned character){ return character>=0x0030 && character<=0x0039; }
 inline bool NONS_isupper(unsigned character){ return character>=0x0041 && character<=0x005A; }
@@ -136,19 +131,29 @@ std::string UniToISO88591(const std::wstring &str);
 std::string UniToUTF8(const std::wstring &str,bool addBOM=0);
 std::string UniToUCS2(const std::wstring &str,char end=UNDEFINED_ENDIANNESS);
 std::string UniToSJIS(const std::wstring &str);
-inline void toupper(std::wstring &str){
-	std::transform(str.begin(),str.end(),str.begin(),NONS_toupper);
+template <typename T>
+inline void toupper(std::basic_string<T> &str){
+	std::transform<
+		std::basic_string<T>::iterator,
+		std::basic_string<T>::iterator,
+		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_toupper);
 }
-inline void tolower(std::wstring &str){
-	std::transform(str.begin(),str.end(),str.begin(),NONS_tolower);
+template <typename T>
+inline void tolower(std::basic_string<T> &str){
+	std::transform<
+		std::basic_string<T>::iterator,
+		std::basic_string<T>::iterator,
+		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_tolower);
 }
-std::wstring toupperCopy(const std::wstring &str);
-std::wstring tolowerCopy(const std::wstring &str);
-inline void toupper(std::string &str){
-	std::transform(str.begin(),str.end(),str.begin(),NONS_toupper);
+template <typename T>
+inline std::basic_string<T> toupperCopy(std::basic_string<T> str){
+	toupper(str);
+	return str;
 }
-inline void tolower(std::string &str){
-	std::transform(str.begin(),str.end(),str.begin(),NONS_tolower);
+template <typename T>
+inline std::basic_string<T> tolowerCopy(std::basic_string<T> str){
+	tolower(str);
+	return str;
 }
 
 inline std::ostream &operator<<(std::ostream &stream,std::wstring &str){

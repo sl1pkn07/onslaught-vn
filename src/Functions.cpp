@@ -31,9 +31,12 @@
 #define NONS_FUNCTIONS_CPP
 
 #include "Functions.h"
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
 #include <bzlib.h>
+#ifndef TOOLS_NSAIO
 #include "Globals.h"
+#else
+#include "enums.h"
 #endif
 
 #include "UTF.h"
@@ -76,7 +79,7 @@ Uint32 secondsSince1970(){
 	return time(0);
 }
 
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 #ifndef NONS_PARALLELIZE
 void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
@@ -761,16 +764,16 @@ std::string readString(char *buffer,ulong &offset){
 	return r;
 }
 
-void writeByte(Uint8 a,std::string &str,long offset){
+void writeByte(Uint8 a,std::string &str,ulong offset){
 	if (offset<0)
 		str.push_back(a&0xFF);
 	else
 		str[offset]=a&0xFF;
 }
 
-void writeWord(Uint16 a,std::string &str,long offset){
+void writeWord(Uint16 a,std::string &str,ulong offset){
 	ulong off=(offset<0)?str.size():offset;
-	for (char b=0;b<2;b++,off++){
+	for (ulong b=0;b<2;b++,off++){
 		if (str.size()>off)
 			str[off]=a&0xFF;
 		else
@@ -779,14 +782,38 @@ void writeWord(Uint16 a,std::string &str,long offset){
 	}
 }
 
-void writeDWord(Uint32 a,std::string &str,long offset){
+void writeDWord(Uint32 a,std::string &str,ulong offset){
 	ulong off=(offset<0)?str.size():offset;
-	for (char b=0;b<4;b++,off++){
+	for (ulong b=0;b<4;b++,off++){
 		if (str.size()>off)
 			str[off]=a&0xFF;
 		else
 			str.push_back(a&0xFF);
 		a>>=8;
+	}
+}
+
+void writeWordBig(Uint16 a,std::string &str,ulong offset){
+	if (offset<0)
+		offset=str.size();
+	for (ulong b=0;b<2;b++,offset++){
+		if (str.size()>offset)
+			str[offset]=a>>8;
+		else
+			str.push_back(a>>8);
+		a<<=8;
+	}
+}
+
+void writeDWordBig(Uint32 a,std::string &str,ulong offset){
+	if (offset<0)
+		offset=str.size();
+	for (ulong b=0;b<4;b++,offset++){
+		if (str.size()>offset)
+			str[offset]=a>>24;
+		else
+			str.push_back(a>>24);
+		a<<=8;
 	}
 }
 
@@ -795,7 +822,7 @@ void writeString(const std::wstring &a,std::string &str){
 	str.push_back(0);
 }
 
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
 char *compressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl){
 	unsigned long l=srcl,realsize=l;
 	char *dst=new char[l];
@@ -835,32 +862,6 @@ char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl){
 }
 #endif
 
-/*template <typename T1,typename T2>
-bool filenames_are_equal_template(const T1 *str0,const T2 *str1){
-	T1 *copy0=copyString_template<T1>(str0,0);
-	T2 *copy1=copyString_template<T2>(str1,0);
-	toforwardslash_template<T1>(copy0);
-	toforwardslash_template<T2>(copy1);
-	for (;*copy0 || *copy1;copy0++,copy1++){
-		if (*copy0!=*copy1){
-			delete[] copy0;
-			delete[] copy1;
-			return 0;
-		}
-	}
-	delete[] copy0;
-	delete[] copy1;
-	return 1;
-}
-
-bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1){
-	return filenames_are_equal_template<wchar_t,wchar_t>(str0,str1);
-}
-
-bool filenames_are_equal(const char *str0,const char *str1){
-	return filenames_are_equal_template<char,char>(str0,str1);
-}*/
-
 std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out){
 	std::wstring::const_iterator end2=start;
 	for (;end2!=end && *end2!=13 && *end2!=10;end2++);
@@ -870,6 +871,7 @@ std::wstring readline(std::wstring::const_iterator start,std::wstring::const_ite
 	}
 	return std::wstring(start,end2);
 }
+#endif
 
 ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 	switch (mode){
@@ -892,7 +894,7 @@ ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 			}
 		case TRANSFORM_THEN_XOR84_ENCRYPTION:
 			{
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 				o_stderr
 #else
 				std::cerr

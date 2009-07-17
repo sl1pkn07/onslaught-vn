@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TOOLS_NSAIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -182,47 +182,27 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\nsaio_src\Archive.cpp"
+				RelativePath="..\..\nons_src\IO_System\SAR\Archive.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\Archive.h"
+				RelativePath="..\..\nons_src\IO_System\SAR\Archive.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\ArchivedFile.cpp"
+				RelativePath="..\..\nons_src\IO_System\FileIO.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\ArchivedFile.h"
+				RelativePath="..\..\nons_src\IO_System\FileIO.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\Common.h"
+				RelativePath="..\..\nons_src\Functions.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\Encryption.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\Encryption.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\FileIO.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\FileIO.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\Functions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\Functions.h"
+				RelativePath="..\..\nons_src\Functions.h"
 				>
 			</File>
 			<File
@@ -230,23 +210,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\NONS_src\SJIS.table.cpp"
+				RelativePath="..\..\nons_src\SJIS.table.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\TreeNode.cpp"
+				RelativePath="..\..\nons_src\UTF.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nsaio_src\TreeNode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\UTF.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nsaio_src\UTF.h"
+				RelativePath="..\..\nons_src\UTF.h"
 				>
 			</File>
 		</Filter>

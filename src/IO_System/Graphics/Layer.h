@@ -34,7 +34,7 @@
 #include <vector>
 #include "FontCache.h"
 #include "../../Common.h"
-#include "../SAR/Image_Loader/ImageLoader.h"
+#include "../SAR/ImageLoader.h"
 #include "../../enums.h"
 #include <map>
 

@@ -70,7 +70,7 @@ void enditall(){
 	if (!!dbgThread)
 		SDL_KillThread(dbgThread);
 	if (gScriptInterpreter)
-		delete (NONS_ScriptInterpreter *)gScriptInterpreter;
+		delete gScriptInterpreter;
 #ifdef NONS_SYS_LINUX
 	/*
 	This deserves some explanation.
@@ -324,7 +324,7 @@ int main(int argc,char **argv){
 		everything->audio->musicFormat=CLOptions.musicFormat;
 	everything->init_screen();
 	NONS_ScriptInterpreter *interpreter=new NONS_ScriptInterpreter(everything);
-	gScriptInterpreter=(void *)interpreter;
+	gScriptInterpreter=interpreter;
 	thread=SDL_CreateThread(mainThread,0);
 
 	SDL_Event event;
@@ -339,15 +339,14 @@ int main(int argc,char **argv){
 int debugThread(void *nothing);
 
 int mainThread(void *nothing){
-	NONS_ScriptInterpreter *interpreter=(NONS_ScriptInterpreter *)gScriptInterpreter;
 	if (CLOptions.debugMode)
 		dbgThread=SDL_CreateThread(debugThread,0);
-	while (interpreter->interpretNextLine());
+	while (gScriptInterpreter->interpretNextLine());
 	if (CLOptions.debugMode)
 		SDL_KillThread(dbgThread);
 	stopEventHandling=1;
 
-	delete interpreter;
+	delete gScriptInterpreter;
 	delete everything;
 	delete ImageLoader;
 #if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
@@ -364,7 +363,6 @@ int mainThread(void *nothing){
 }
 
 int debugThread(void *nothing){
-	NONS_ScriptInterpreter *interpreter=(NONS_ScriptInterpreter *)gScriptInterpreter;
 	while (1){
 		std::string input;
 		std::getline(std::cin,input);
@@ -372,7 +370,7 @@ int debugThread(void *nothing){
 			return 0;
 		std::wstring winput=UniFromUTF8(input);
 		ErrorCode error;
-		NONS_VariableMember *var=interpreter->store->retrieve(winput,&error);
+		NONS_VariableMember *var=gScriptInterpreter->store->retrieve(winput,&error);
 		if (var){
 			if (var->getType()==INTEGER)
 				std::cout <<"intValue: "<<var->getInt()<<std::endl;
@@ -383,6 +381,6 @@ int debugThread(void *nothing){
 		}else if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"debugThread",0);
 		else
-			handleErrors(interpreter->interpretString(winput),-1,"debugThread",0);
+			handleErrors(gScriptInterpreter->interpretString(winput),-1,"debugThread",0);
 	}
 }

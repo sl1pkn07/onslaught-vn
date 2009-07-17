@@ -36,56 +36,110 @@
 #include <boost/filesystem/fstream.hpp>
 #include <algorithm>
 
-#include "nsaio_src/UTF.h"
-#include "nsaio_src/Archive.h"
-#include "nsaio_src/FileIO.h"
-#include "nsaio_src/Functions.h"
+#include "NONS_src/UTF.h"
+#include "NONS_src/IO_System/SAR/Archive.h"
+#include "NONS_src/IO_System/FileIO.h"
+#include "NONS_src/Functions.h"
 
 #if WCHAR_MAX<0xFFFF
 #error "Wide characters on this platform are too narrow."
 #endif
 
-bool createDirectory(const wchar_t *name){
+bool is_directory(const char *path){
+	return boost::filesystem::is_directory(boost::filesystem::path(path));
+}
+
+bool is_directory(const wchar_t *path){
+#ifndef BOOST_FILESYSTEM_NARROW_ONLY
+	return boost::filesystem::is_directory(boost::filesystem::wpath(path));
+#else
+	return is_directory(UniToUTF8(path));
+#endif
+}
+
+bool is_directory(const std::string &path){
+	return boost::filesystem::is_directory(boost::filesystem::path(path));
+}
+
+bool is_directory(const std::wstring &path){
+#ifndef BOOST_FILESYSTEM_NARROW_ONLY
+	return boost::filesystem::is_directory(boost::filesystem::wpath(path));
+#else
+	return is_directory(UniToUTF8(path));
+#endif
+}
+
+bool create_directory(const std::string &path){
+	return boost::filesystem::create_directory(boost::filesystem::path(path));
+}
+
+bool create_directory(const std::wstring &path){
+#ifndef BOOST_FILESYSTEM_NARROW_ONLY
+	return boost::filesystem::create_directory(boost::filesystem::wpath(path));
+#else
+	return create_directory(UniToUTF8(path));
+#endif
+}
+
+bool file_exists(const std::string &path){
+	return boost::filesystem::exists(boost::filesystem::path(path));
+}
+
+bool file_exists(const std::wstring &path){
+#ifndef BOOST_FILESYSTEM_NARROW_ONLY
+	return boost::filesystem::exists(boost::filesystem::wpath(path.c_str()));
+#else
+	return file_exists(UniToUTF8(path));
+#endif
+}
+
+boost::uintmax_t file_size(const std::string &path){
+	return boost::filesystem::file_size(boost::filesystem::path(path.c_str()));
+}
+
+boost::uintmax_t file_size(const std::wstring &path){
+#ifndef BOOST_FILESYSTEM_NARROW_ONLY
+	return boost::filesystem::file_size(boost::filesystem::wpath(path.c_str()));
+#else
+	return file_size(UniToUTF8(path));
+#endif
+}
+
+bool createDirectory(std::wstring &name){
 	if (!create_directory(name) && !file_exists(name))
 		return 0;
 	return 1;
 }
 
-bool createDirectory(std::wstring &name){
-	return createDirectory(name.c_str());
-}
-
-bool output(NONS_Archive *archive,std::vector<NONS_TreeNode *> *stack,bool write=1){
+bool output(NONS_Archive &archive,std::vector<NONS_TreeNode *> &stack,bool write=1){
 	std::wstring path(L".");
-	for (ulong a=0;a<stack->size();a++){
+	for (ulong a=0;a<stack.size();a++){
 		path.push_back('/');
-		path.append((*stack)[a]->data.name);
+		path.append(stack[a]->data.name);
 	}
 	if (write && !createDirectory(path))
 		return 0;
-	std::vector<NONS_TreeNode *> *branches=(*stack)[stack->size()-1]->branches;
-	for (ulong a=0;a<branches->size();a++){
-		NONS_TreeNode *node=(*branches)[a];
-		if (node->branches){
-			stack->push_back(node);
+	std::vector<NONS_TreeNode *> &branches=stack.back()->branches;
+	for (ulong a=0;a<branches.size();a++){
+		NONS_TreeNode *node=branches[a];
+		if (node->branches.size()){
+			stack.push_back(node);
 			if (!output(archive,stack,write))
 				return 0;
-			stack->pop_back();
+			stack.pop_back();
 		}else{
 			ulong l;
 			uchar *buffer;
 			if (write)
-				buffer=archive->getFileBuffer(node,&l);
+				buffer=archive.getFileBuffer(node,l);
 			std::wstring filename=path;
 			filename.push_back('/');
 			filename.append(node->data.name);
 			{
-				char *temp=WChar_to_UTF8(filename.c_str());
+				std::string temp=UniToUTF8(filename.c_str());
 				if (write)
 					std::cout <<"Writing ";
-				std::cout <<"\""<<temp<<"\""<<std::endl
-					/*<<"\tOffset "<<node->data.offset<<"\n\tcomp "<<node->data.length<<"\n\tdecomp "<<node->data.original_length<<std::endl*/;
-				delete[] temp;
+				std::cout <<"\""<<temp<<"\""<<std::endl;
 			}
 			if (write){
 				writefile(filename,(char *)buffer,(long)l);
@@ -109,13 +163,13 @@ long match(const char *string,const char **options){
 	return -1;
 }
 
-void findfiles(const std::wstring &dir_path,std::vector<std::wstring *> &vec){
+void findfiles(const std::wstring &dir_path,std::vector<std::wstring> &vec){
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 	boost::filesystem::wdirectory_iterator end_itr;
 	for (boost::filesystem::wdirectory_iterator itr(dir_path);itr!=end_itr;itr++){
 		std::wstring filename=itr->path().string();
 		if (!boost::filesystem::is_directory(filename))
-			vec.push_back(new std::wstring(filename));
+			vec.push_back(filename);
 		else
 			findfiles(filename,vec);
 	}
@@ -135,14 +189,13 @@ void findfiles(const std::wstring &dir_path,std::vector<std::wstring *> &vec){
 #endif
 }
 
-void resolveFilenames(std::vector<std::wstring *> &filelist,std::vector<bool> &removes){
-	std::vector<std::wstring *> res;
+void resolveFilenames(std::vector<std::wstring> &filelist,std::vector<bool> &removes){
+	std::vector<std::wstring> res;
 	std::vector<bool> res2;
 	for (ulong a=0;a<filelist.size();a++){
-		if (is_directory(*filelist[a])){
-			findfiles(*filelist[a],res);
-			delete filelist[a];
-		}else
+		if (is_directory(filelist[a]))
+			findfiles(filelist[a],res);
+		else
 			res.push_back(filelist[a]);
 		while (res.size()>res2.size())
 			res2.push_back(removes[a]);
@@ -253,7 +306,7 @@ void writeBits(uchar *buffer,ulong *byteOffset,ulong *bitOffset,ulong data,ushor
 const ulong NN=8,
 	MAXS=4;
 
-char *encode_LZSS(char *buffer,long decompressedSize,long *compressedSize){
+std::string encode_LZSS(char *buffer,ulong decompressedSize){
 	ulong window_bits=NN,
 		window_size=1<<window_bits,
 		max_string_bits=MAXS,
@@ -276,7 +329,8 @@ char *encode_LZSS(char *buffer,long decompressedSize,long *compressedSize){
 	for (ulong a=0;a<decompressedSize;){
 		if (byte==0x3a04)
 			byte=byte;
-		long found=-1,found_size=0,max=-1;
+		long found=-1,max=-1;
+		ulong found_size=0;
 		for (std::vector<ulong>::iterator i2=tree[unsigned_buffer[a]].begin()+starts[unsigned_buffer[a]];i2!=tree[unsigned_buffer[a]].end();i2++){
 			if (a>=window_size && *i2<a-window_size){
 				starts[unsigned_buffer[a]]++;
@@ -287,7 +341,7 @@ char *encode_LZSS(char *buffer,long decompressedSize,long *compressedSize){
 			found_size=compare(unsigned_buffer+a,unsigned_buffer+*i2,max_string_len);
 			if (found_size<threshold)
 				continue;
-			if (max<0 || found_size>max){
+			if (max<0 || found_size>(ulong)max){
 				found=*i2;
 				max=found_size;
 				if (max==max_string_len)
@@ -308,14 +362,12 @@ char *encode_LZSS(char *buffer,long decompressedSize,long *compressedSize){
 		}
 	}
 	byte+=bit?1:0;
-	*compressedSize=byte;
-	uchar *res_buf=new uchar[byte];
-	memcpy(res_buf,res,byte);
+	std::string res_buf((const char *)res,(size_t)byte);
 	delete[] res;
-	return (char *)res_buf;
+	return res_buf;
 }
 
-char *decode_LZSS(char *buffer,long compressedSize,long decompressedSize){
+char *decode_LZSS(char *buffer,ulong compressedSize,ulong decompressedSize){
 	uchar decompression_buffer[256*2];
 	ulong decompresssion_buffer_offset=239;
 	memset(decompression_buffer,0,239);
@@ -342,7 +394,7 @@ char *decode_LZSS(char *buffer,long compressedSize,long decompressedSize){
 	return (char *)res;
 }
 
-char *decode_LZSS2(char *buffer,long compressedSize,long decompressedSize){
+char *decode_LZSS2(char *buffer,ulong compressedSize,ulong decompressedSize){
 	ulong window_bits=NN,
 		window_size=1<<window_bits,
 		max_string_bits=MAXS,
@@ -381,33 +433,16 @@ char *decode_LZSS2(char *buffer,long compressedSize,long decompressedSize){
 	return (char *)res;
 }
 
-char *encode_NBZ(char *buffer,long decompressedSize,ulong *compressedSize){
+std::string encode_NBZ(char *buffer,long decompressedSize){
 	std::string res;
-	writeDWordBig(decompressedSize,&res);
-	char *compressed=compressBuffer_BZ2(buffer,decompressedSize,compressedSize);
-	res.insert(res.end(),compressed,compressed+*compressedSize);
-	delete[] compressed;
-	*compressedSize=res.size();
-	return copyString(res.c_str(),res.size());
+	writeDWordBig(decompressedSize,res);
+	ulong compressedSize;
+	char *compressed=compressBuffer_BZ2(buffer,decompressedSize,&compressedSize);
+	res.append(compressed,compressedSize);
+	return res;
 }
 
 int main(int argc,char **argv){
-	/*long l,l2;
-	char *buffer=(char *)readfile("titlebtn1.png",&l);
-	char *buffer2=encode_LZSS(buffer,l,&l2);
-	writefile("titlebtn1.png.lzss0",buffer2,l2);
-	delete[] buffer;
-	buffer=decode_LZSS2(buffer2,l2,l);
-	writefile("titlebtn1.png.lzss0.png",buffer,l);
-	delete[] buffer2;
-	delete[] buffer;
-	buffer=(char *)readfile("titlebtn1.png",&l);
-	buffer2=encode_LZSS(buffer,l,&l2);
-	writefile("titlebtn1.png.lzss1",buffer2,l2);
-	delete[] buffer;
-	buffer=decode_LZSS2(buffer2,l2,l);
-	writefile("titlebtn1.png.lzss1.png",buffer,l);
-	return 0;*/
 	if (argc<2){
 		std::cout <<"Not enough arguments.";
 		usage();
@@ -429,11 +464,11 @@ int main(int argc,char **argv){
 		"-r",
 		0
 	};
-	std::vector<std::wstring *> filelist;
+	std::vector<std::wstring> filelist;
 	std::vector<bool> removeslist;
 	std::set<std::wstring> NBZlist,LZSSlist,SPBlist;
 	std::wstring outputfile;
-	NONS_Archive::FORMAT outputformat=NONS_Archive::UNRECOGNIZED;
+	ulong outputformat=NONS_Archive::UNRECOGNIZED;
 	bool forcensa=0;
 	for (argv++;*argv;argv++){
 		long option=match(*argv,options);
@@ -454,10 +489,7 @@ int main(int argc,char **argv){
 			case 6:
 				{
 					argv++;
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					outputfile.clear();
-					outputfile.append(temp);
-					delete[] temp;
+					outputfile=UniFromUTF8(*argv);
 				}
 				break;
 			case 7:
@@ -470,9 +502,7 @@ int main(int argc,char **argv){
 			case 8:
 				{
 					argv++;
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					std::wstring wtemp(temp);
-					delete[] temp;
+					std::wstring wtemp(UniFromUTF8(*argv));
 					NBZlist.insert(wtemp);
 					std::set<std::wstring>::iterator lzss=LZSSlist.find(wtemp);
 					if (lzss!=LZSSlist.end())
@@ -486,9 +516,7 @@ int main(int argc,char **argv){
 			case 9:
 				{
 					argv++;
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					std::wstring wtemp(temp);
-					delete[] temp;
+					std::wstring wtemp(UniFromUTF8(*argv));
 					std::set<std::wstring>::iterator nbz=NBZlist.find(wtemp);
 					if (nbz!=NBZlist.end())
 						NBZlist.erase(nbz);
@@ -502,9 +530,7 @@ int main(int argc,char **argv){
 			case 10:
 				{
 					argv++;
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					std::wstring wtemp(temp);
-					delete[] temp;
+					std::wstring wtemp(UniFromUTF8(*argv));
 					std::set<std::wstring>::iterator nbz=NBZlist.find(wtemp);
 					if (nbz!=NBZlist.end())
 						NBZlist.erase(nbz);
@@ -518,17 +544,13 @@ int main(int argc,char **argv){
 			case 11:
 				{
 					argv++;
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					filelist.push_back(new std::wstring(temp));
-					delete[] temp;
+					filelist.push_back(UniFromUTF8(*argv));
 					removeslist.push_back(1);
 				}
 				break;
 			default:
 				{
-					wchar_t *temp=UTF8_to_WChar(*argv);
-					filelist.push_back(new std::wstring(temp));
-					delete[] temp;
+					filelist.push_back(UniFromUTF8(*argv));
 					removeslist.push_back(0);
 				}
 		}
@@ -552,38 +574,32 @@ int main(int argc,char **argv){
 	switch (mode){
 		case EXTRACT:
 			if (outputfile.size()){
-				std::vector<wchar_t *> temp;
+				std::vector<std::wstring> temp;
 				for (ulong a=0;a<filelist.size();a++){
-					temp.push_back(copyWString(filelist[a]->c_str()));
+					temp.push_back(filelist[a]);
 					tolower(temp[a]);
 				}
 				for (ulong a=0,pos=0;archive_names[pos] && a<filelist.size();a++){
 					long m=-1;
 					for (ulong b=pos;m<0 && b<filelist.size();b++)
-						if (!wcscmp(temp[b],archive_names[pos]))
+						if (temp[b]==archive_names[pos])
 							m=b;
 					if (m<0)
 						continue;
 					std::swap(filelist[pos],filelist[m]);
 					std::swap(temp[pos++],temp[m]);
 				}
-				for (ulong a=0;a<temp.size();a++)
-					delete[] temp[a];
 			}
 		case LIST:
 			for (ulong a=0;a<filelist.size();a++){
-				char *temp=copyString(filelist[a]->c_str());
-				NONS_Archive archive(temp);
-				delete[] temp;
+				NONS_Archive archive(filelist[a],0);
 				if (!archive.readArchive())
 					continue;
 				std::vector<NONS_TreeNode *> stack;
-				if (outputfile.size()){
-					delete[] archive.root->data.name;
-					archive.root->data.name=copyWString(outputfile.c_str());
-				}
+				if (outputfile.size())
+					archive.root->data.name=outputfile;
 				stack.push_back(archive.root);
-				output(&archive,&stack,mode==EXTRACT);
+				output(archive,stack,mode==EXTRACT);
 				stack.pop_back();
 			}
 			break;
@@ -599,34 +615,27 @@ int main(int argc,char **argv){
 					ulong dot=outputfile.find_last_of('.');
 					if (dot<outputfile.size()){
 						dot++;
-						wchar_t *ext=copyWString(outputfile.c_str()+dot);
+						std::wstring ext=outputfile.substr(dot);
 						tolower(ext);
-						if (!wcscmp(ext,L"sar"))
+						if (ext==L"sar")
 							outputformat=NONS_Archive::SAR_ARCHIVE;
 						else
 							outputformat=NONS_Archive::NSA_ARCHIVE;
-						delete[] ext;
 					}
 				}
 				resolveFilenames(filelist,removeslist);
 				std::vector<std::wstring> translated_paths;
 				for (ulong a=0;a<filelist.size();a++){
-					if (!file_exists(*filelist[a])){
-						delete filelist[a];
+					if (!file_exists(filelist[a])){
 						filelist.erase(filelist.begin()+a--);
 						continue;
 					}
-					std::wstring str(*filelist[a]);
+					std::wstring str=filelist[a];
 					bool dont_remove=0,
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 						remove_twice=boost::filesystem::wpath(str).has_root_path();
 #else
-						remove_twice;
-					{
-						char *tempcopy=copyString(str.c_str());
-						remove_twice=boost::filesystem::path(tempcopy).has_root_path();
-						delete[] tempcopy;
-					}
+						remove_twice=boost::filesystem::path(UniToUTF8(str)).has_root_path();
 #endif
 					while (!remove_twice && (!str.find(L"../") || !str.find(L"./"))){
 						ulong slash=str.find_first_of('/');
@@ -645,7 +654,7 @@ int main(int argc,char **argv){
 				}
 				if (!filelist.size())
 					break;
-				std::vector<NONS_ArchivedFile::COMPRESSION> compressions(translated_paths.size(),NONS_ArchivedFile::NO_COMPRESSION);
+				std::vector<ulong> compressions(translated_paths.size(),NONS_TreeNode::NONS_ArchivedFile::NO_COMPRESSION);
 
 				//SPB compression is unsupported.
 				if (SPBlist.size())
@@ -655,7 +664,7 @@ int main(int argc,char **argv){
 						ulong p=translated_paths[b].rfind('/');
 						p=(p==std::string::npos)?0:p+1;
 						if (like(translated_paths[b].c_str()+p,i->c_str()))
-							compressions[b]=NONS_ArchivedFile::LZSS_COMPRESSION;
+							compressions[b]=NONS_TreeNode::NONS_ArchivedFile::LZSS_COMPRESSION;
 					}
 				}
 				for (std::set<std::wstring>::iterator i=NBZlist.begin();i!=NBZlist.end();i++){
@@ -663,17 +672,17 @@ int main(int argc,char **argv){
 						ulong p=translated_paths[b].rfind('/');
 						p=(p==std::string::npos)?0:p+1;
 						if (like(translated_paths[b].c_str()+p,i->c_str()))
-							compressions[b]=NONS_ArchivedFile::NBZ_COMPRESSION;
+							compressions[b]=NONS_TreeNode::NONS_ArchivedFile::NBZ_COMPRESSION;
 					}
 				}
 
 				NONS_Archive archive(outputformat);
-				archive.root->makeDirectory();
+				//archive.root->makeDirectory();
 				for (ulong a=0;a<translated_paths.size();a++){
-					NONS_TreeNode *node=archive.root->getBranch((wchar_t *)translated_paths[a].c_str());
+					NONS_TreeNode *node=archive.root->getBranch(translated_paths[a],1);
 					node->data.archivepath=translated_paths[a];
-					node->data.filepath=*filelist[a];
-					node->data.original_length=file_size(*filelist[a]);
+					node->data.filepath=filelist[a];
+					node->data.original_length=file_size(filelist[a]);
 					node->data.compression_type=compressions[a];
 				}
 				archive.root->sort();
@@ -681,51 +690,36 @@ int main(int argc,char **argv){
 				archive.root->vectorizeFiles(allnodes);
 
 				std::string buffer;
-				writeWordBig(translated_paths.size(),&buffer);
+				writeWordBig(translated_paths.size(),buffer);
 				std::vector<ulong> fillout;
 				//Reserve space for the offset of the data stream start.
 				fillout.push_back(buffer.size());
-				writeDWordBig(0,&buffer);
+				writeDWordBig(0,buffer);
 				if (outputformat==NONS_Archive::SAR_ARCHIVE){
 					ulong start=0;
 					for (ulong a=0;a<allnodes.size();a++){
-						char *path=WChar_to_SJIS(allnodes[a]->data.archivepath.c_str());
+						std::string path=UniToSJIS(allnodes[a]->data.archivepath);
 						tobackslash(path);
 						buffer.append(path);
 						buffer.push_back(0);
-						delete[] path;
-						writeDWordBig(start,&buffer);
-						writeDWordBig(allnodes[a]->data.original_length,&buffer);
+						writeDWordBig(start,buffer);
+						writeDWordBig(allnodes[a]->data.original_length,buffer);
 						start+=allnodes[a]->data.original_length;
 					}
-					writeDWordBig(buffer.size(),&buffer,fillout[0]);
+					writeDWordBig(buffer.size(),buffer,fillout[0]);
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 					boost::filesystem::ofstream file(outputfile,std::ios::binary);
 #else
-					boost::filesystem::ofstream file;
-					{
-						char *temp_copy=copyString(outputfile.c_str());
-						file.open(temp_copy,std::ios::binary);
-						delete[] temp_copy;
-					}
+					boost::filesystem::ofstream file(UniToUTF8(outputfile),std::ios::binary);
 #endif
 					file.write(buffer.c_str(),buffer.size());
 					for (ulong a=0;a<filelist.size();a++){
-						{
-							char *temp=WChar_to_UTF8(allnodes[a]->data.archivepath.c_str());
-							std::cout <<"Adding \"/"<<temp<<"\"."<<std::endl;
-							delete[] temp;
-						}
+						std::cout <<"Adding \"/"<<UniToUTF8(allnodes[a]->data.archivepath)<<"\"."<<std::endl;
 						ulong size=allnodes[a]->data.original_length;
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 						boost::filesystem::ifstream tempfile(allnodes[a]->data.filepath,std::ios::binary);
 #else
-						boost::filesystem::ifstream tempfile;
-						{
-							char *temp_copy=copyString(allnodes[a]->data.filepath.c_str());
-							file.open(temp_copy,std::ios::binary);
-							delete[] temp_copy;
-						}
+						boost::filesystem::ifstream tempfile(UniToUTF8(allnodes[a]->data.filepath),std::ios::binary);
 #endif
 						char *tempbuf=new char[size];
 						tempfile.read(tempbuf,size);
@@ -735,22 +729,21 @@ int main(int argc,char **argv){
 					file.close();
 				}else{
 					for (ulong a=0;a<allnodes.size();a++){
-						char *path=WChar_to_SJIS(allnodes[a]->data.archivepath.c_str());
+						std::string path=UniToSJIS(allnodes[a]->data.archivepath);
 						tobackslash(path);
 						buffer.append(path);
 						buffer.push_back(0);
-						delete[] path;
-						writeByte(allnodes[a]->data.compression_type,&buffer);
+						writeByte(allnodes[a]->data.compression_type,buffer);
 						//Reserve space for the offset.
 						fillout.push_back(buffer.size());
-						writeDWordBig(0,&buffer);
+						writeDWordBig(0,buffer);
 						//Reserve space for the compressed size (actual size in
 						//the archive).
 						fillout.push_back(buffer.size());
-						writeDWordBig(0,&buffer);
-						writeDWordBig(allnodes[a]->data.original_length,&buffer);
+						writeDWordBig(0,buffer);
+						writeDWordBig(allnodes[a]->data.original_length,buffer);
 					}
-					writeDWordBig(buffer.size(),&buffer,fillout[0]);
+					writeDWordBig(buffer.size(),buffer,fillout[0]);
 					fillout.erase(fillout.begin());
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 					boost::filesystem::ofstream file(outputfile,std::ios::binary);
@@ -765,57 +758,37 @@ int main(int argc,char **argv){
 					file.write(buffer.c_str(),buffer.size());
 					ulong start=0;
 					for (ulong a=0;a<filelist.size();a++){
-						{
-							char *temp=WChar_to_UTF8(allnodes[a]->data.archivepath.c_str());
-							std::cout <<"Adding \"/"<<temp<<"\"."<<std::endl;
-							delete[] temp;
-						}
-						ulong original_size=allnodes[a]->data.original_length,
-							compressed_size=original_size;
+						std::cout <<"Adding \"/"<<UniToUTF8(allnodes[a]->data.archivepath)<<"\"."<<std::endl;
+						ulong original_size=allnodes[a]->data.original_length;
 #ifndef BOOST_FILESYSTEM_NARROW_ONLY
 						boost::filesystem::ifstream tempfile(allnodes[a]->data.filepath,std::ios::binary);
 #else
-						boost::filesystem::ifstream tempfile;
-						{
-							char *temp_copy=copyString(allnodes[a]->data.filepath.c_str());
-							file.open(temp_copy,std::ios::binary);
-							delete[] temp_copy;
-						}
+						boost::filesystem::ifstream tempfile(UniToUTF8(allnodes[a]->data.filepath),std::ios::binary);
 #endif
-						char *tempbuf=new char[original_size];
-						tempfile.read(tempbuf,original_size);
-						switch (allnodes[a]->data.compression_type){
-							case NONS_ArchivedFile::NO_COMPRESSION:
-								break;
-							case NONS_ArchivedFile::NBZ_COMPRESSION:
-								{
-									char *comp=encode_NBZ(tempbuf,original_size,&compressed_size);
-									delete[] tempbuf;
-									tempbuf=comp;
-								}
-								break;
-							case NONS_ArchivedFile::LZSS_COMPRESSION:
-								{
-									char *comp=encode_LZSS(tempbuf,original_size,(long *)&compressed_size);
-									delete[] tempbuf;
-									tempbuf=comp;
-									/*std::wstring str=allnodes[a]->data.filepath;
-									str.append(L".lzss");
-									{
-										char *strtemp=WChar_to_UTF8(str.c_str());
-										writefile(strtemp,tempbuf,compressed_size);
-										delete[] strtemp;
-									}*/
-								}
-								break;
-							case NONS_ArchivedFile::SPB_COMPRESSION:
-								break;
+						char *ibuffer=new char[original_size];
+						tempfile.read(ibuffer,original_size);
+						{
+							std::string obuffer;
+							switch (allnodes[a]->data.compression_type){
+								case NONS_TreeNode::NONS_ArchivedFile::NO_COMPRESSION:
+									break;
+								case NONS_TreeNode::NONS_ArchivedFile::NBZ_COMPRESSION:
+									obuffer=encode_NBZ(ibuffer,original_size);
+									delete[] ibuffer;
+									break;
+								case NONS_TreeNode::NONS_ArchivedFile::LZSS_COMPRESSION:
+									obuffer=encode_LZSS(ibuffer,original_size);
+									delete[] ibuffer;
+									break;
+								case NONS_TreeNode::NONS_ArchivedFile::SPB_COMPRESSION:
+									break;
+							}
+							file.write(&obuffer[0],obuffer.size());
+							writeDWordBig(start,buffer,fillout[a*2]);
+							writeDWordBig(obuffer.size(),buffer,fillout[a*2+1]);
+							start+=obuffer.size();
 						}
-						file.write(tempbuf,compressed_size);
-						writeDWordBig(start,&buffer,fillout[a*2]);
-						writeDWordBig(compressed_size,&buffer,fillout[a*2+1]);
-						start+=compressed_size;
-						delete[] tempbuf;
+						delete[] ibuffer;
 					}
 					file.seekp(0,std::ios::beg);
 					file.write(buffer.c_str(),buffer.size());
@@ -824,8 +797,6 @@ int main(int argc,char **argv){
 			}
 			break;
 	}
-	for (ulong a=0;a<filelist.size();a++)
-		delete filelist[a];
 	std::cout <<"Done."<<std::endl;
 	return 0;
 }

@@ -36,7 +36,7 @@
 #include "../../Functions.h"
 #include "../IOFunctions.h"
 
-NONS_ButtonLayer::NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,void *menu){
+NONS_ButtonLayer::NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu){
 	this->font=font;
 	this->screen=screen;
 	this->exitable=exitable;
@@ -149,7 +149,6 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 		}
 	}
 	this->screen->screen->updateWholeScreen();
-	NONS_Menu *tempMenu=(NONS_Menu *)this->menu;
 	while (1){
 		queue->WaitForEvent(10);
 		SDL_Event event=queue->pop();
@@ -193,9 +192,9 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 							this->screen->screen->updateWholeScreen();
 							SDL_FreeSurface(screenCopy);
 							return -1;
-						}else if (tempMenu){
+						}else if (this->menu){
 							this->screen->screen->blitToScreen(screenCopy,0,0);
-							int ret=tempMenu->callMenu();
+							int ret=this->menu->callMenu();
 							if (ret<0){
 								SDL_FreeSurface(screenCopy);
 								InputObserver.detach(queue);

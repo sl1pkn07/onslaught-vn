@@ -30,11 +30,12 @@
 #ifndef NONS_FUNCTIONS_H
 #define NONS_FUNCTIONS_H
 
-#ifndef BARE_FILE
-#include "Common.h"
+#ifndef TOOLS_BARE_FILE
 #include "ErrorCodes.h"
-#include <SDL/SDL.h>
 #include <map>
+#ifndef TOOLS_NSAIO
+#include "Common.h"
+#include <SDL/SDL.h>
 #include <iomanip>
 #endif
 
@@ -62,6 +63,11 @@ template <typename T>
 void toforwardslash(std::basic_string<T> &s){
 	for (ulong a=0,size=s.size();a<size;a++)
 		s[a]=(s[a]==0x5C)?0x2F:s[a];
+}
+template <typename T>
+void tobackslash(std::basic_string<T> &s){
+	for (ulong a=0,size=s.size();a<size;a++)
+		s[a]=(s[a]==0x2F)?0x5C:s[a];
 }
 
 template <typename T>
@@ -241,9 +247,11 @@ Uint16 readWord(char *buffer,ulong &offset);
 Sint32 readSignedDWord(char *buffer,ulong &offset);
 Uint32 readDWord(char *buffer,ulong &offset);
 std::string readString(char *buffer,ulong &offset);
-void writeByte(Uint8 a,std::string &str,long offset=-1);
-void writeWord(Uint16 a,std::string &str,long offset=-1);
-void writeDWord(Uint32 a,std::string &str,long offset=-1);
+void writeByte(Uint8 a,std::string &str,ulong offset=-1);
+void writeWord(Uint16 a,std::string &str,ulong offset=-1);
+void writeDWord(Uint32 a,std::string &str,ulong offset=-1);
+void writeWordBig(Uint16 a,std::string &str,ulong offset=-1);
+void writeDWordBig(Uint32 a,std::string &str,ulong offset=-1);
 void writeString(const std::wstring &a,std::string &str);
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
@@ -262,7 +270,7 @@ std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typenam
 	return intervals;
 }
 
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 //bitmap processing functions
 void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha=255);
 void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
@@ -270,7 +278,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 
 //other functions
 Uint32 secondsSince1970();
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
 /*
 Compresses src[0..srcl-1].
 Return value: allocated compressed buffer.
@@ -315,6 +323,7 @@ bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t 
 	}
 	return 0;
 }
+#endif
 
 ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode);
 #endif

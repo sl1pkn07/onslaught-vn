@@ -24,8 +24,9 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#define BARE_FILE
+#define TOOLS_BARE_FILE
 #include <UTF.cpp>
+#include <IO_System/FileIO.cpp>
 #include <iostream>
 
 enum{
@@ -65,26 +66,37 @@ int main(int argc,char **argv){
 		version();
 	if (argc<5 ||!strcmp(argv[1],"-h") || !strcmp(argv[1],"-?") || !strcmp(argv[1],"--help"))
 		usage();
-	char *ienc=argv[1];
-	char *ifile=argv[2];
-	char *oenc=argv[3];
-	char *ofile=argv[4];
+	std::string ienc=argv[1],
+		oenc=argv[3];
+	std::wstring ifile=UniFromUTF8(std::string(argv[2])),
+		ofile=UniFromUTF8(std::string(argv[4]));
 	long inputEncoding=-1,outputEncoding=-1;
 	for (ulong a=0;encodings[a][0] && inputEncoding==-1;a++)
-		if (!strcmp(ienc,encodings[a][0]))
+		if (ienc==encodings[a][0])
 			inputEncoding=a;
 	if (inputEncoding==-1){
 		std::cout <<"Could not make sense of argument. Input encoding defaults to auto."<<std::endl;
 		inputEncoding=AUTO_ENCODING;
 	}
-	long l;
-	char *buffer=(char *)readfile(ifile,&l);
+	ulong l;
+	char *buffer=(char *)readfile(ifile,l);
 	if (!buffer){
 		std::cout <<"File not found."<<std::endl;
 		return 0;
 	}
-	wchar_t *middleBuffer=0;
-switchInputEncoding:
+	std::string middleBuffer(buffer,l);
+	delete[] buffer;
+	std::wstring WmiddleBuffer;
+	if (isValidUTF8(&middleBuffer[0],middleBuffer.size())){
+		std::cout <<"The script seems to be a valid UTF-8 stream. Using it as such.\n";
+		inputEncoding=UTF8_ENCODING;
+	}else if (isValidSJIS(&middleBuffer[0],middleBuffer.size())){
+		std::cout <<"The script seems to be a valid Shift JIS stream. Using it as such.\n";
+		inputEncoding=SJIS_ENCODING;
+	}else{
+		std::cout <<"The script seems to be a valid ISO-8859-1 stream. Using it as such.\n";
+		inputEncoding=ISO_8859_1_ENCODING;
+	}
 	if (inputEncoding!=AUTO_ENCODING){
 		if ((uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C && inputEncoding!=UTF8_ENCODING)
 			std::cout <<"WARNING: The file appears to be a UTF-8."<<std::endl;
@@ -94,39 +106,28 @@ switchInputEncoding:
 			std::cout <<"WARNING: The file appears to be a little endian UCS-2."<<std::endl;
 	}
 	switch (inputEncoding){
-		case AUTO_ENCODING:
-			if ((uchar)buffer[0]==BOM16BA && (uchar)buffer[1]==BOM16BB || (uchar)buffer[0]==BOM16LA && (uchar)buffer[1]==BOM16LB){
-				inputEncoding=UCS2_ENCODING;
-				goto switchInputEncoding;
-			}
-			if ((uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C){
-				inputEncoding=UTF8_ENCODING;
-				goto switchInputEncoding;
-			}
-			std::cout <<"Could not determine input encoding. Terminating."<<std::endl;
-			return 0;
 		case UCS2_ENCODING:
-			middleBuffer=UCS2_to_WChar(buffer,l,&l);
+			WmiddleBuffer=UniFromUCS2(middleBuffer);
 			break;
 		case UCS2L_ENCODING:
-			middleBuffer=UCS2_to_WChar(buffer,l,&l,NONS_LITTLE_ENDIAN);
+			WmiddleBuffer=UniFromUCS2(middleBuffer,NONS_LITTLE_ENDIAN);
 			break;
 		case UCS2B_ENCODING:
-			middleBuffer=UCS2_to_WChar(buffer,l,&l,NONS_BIG_ENDIAN);
+			WmiddleBuffer=UniFromUCS2(middleBuffer,NONS_BIG_ENDIAN);
 			break;
 		case UTF8_ENCODING:
-			middleBuffer=UTF8_to_WChar(buffer,l,&l);
+			WmiddleBuffer=UniFromUTF8(middleBuffer);
 			break;
 		case ISO_8859_1_ENCODING:
-			middleBuffer=ISO88591_to_WChar(buffer,l,&l);
+			WmiddleBuffer=UniFromISO88591(middleBuffer);
 			break;
 		case SJIS_ENCODING:
-			middleBuffer=SJIS_to_WChar(buffer,l,&l);
+			WmiddleBuffer=UniFromSJIS(middleBuffer);
 			break;
 	}
-	delete[] buffer;
+	middleBuffer.clear();
 	for (ulong a=0;encodings[a][0] && outputEncoding==-1;a++)
-		if (!strcmp(oenc,encodings[a][0]))
+		if (oenc==encodings[a][0])
 			outputEncoding=a;
 	if (outputEncoding==-1){
 		std::cout <<"Could not make sense of argument. Output encoding defaults to auto."<<std::endl;
@@ -138,9 +139,9 @@ switchOutputEncoding:
 			{
 				bool canbeISO=1;
 				for (long a=0;a<l && canbeISO;a++)
-					if (middleBuffer[a]>0xFF)
+					if (WmiddleBuffer[a]>0xFF)
 						canbeISO=0;
-				long UTF8size=getUTF8size(middleBuffer,l);
+				long UTF8size=getUTF8size(&WmiddleBuffer[0],WmiddleBuffer.size());
 				long ucs2size=l*2+2;
 				if (canbeISO && float(UTF8size)/float(l)>1.25){
 					outputEncoding=ISO_8859_1_ENCODING;
@@ -153,28 +154,27 @@ switchOutputEncoding:
 				goto switchOutputEncoding;
 			}
 		case UCS2_ENCODING:
-			buffer=WChar_to_UCS2(middleBuffer,l,&l);
+			middleBuffer=UniToUCS2(WmiddleBuffer);
 			break;
 		case UCS2L_ENCODING:
-			buffer=WChar_to_UCS2(middleBuffer,l,&l,NONS_LITTLE_ENDIAN);
+			middleBuffer=UniToUCS2(WmiddleBuffer,NONS_LITTLE_ENDIAN);
 			break;
 		case UCS2B_ENCODING:
-			buffer=WChar_to_UCS2(middleBuffer,l,&l,NONS_BIG_ENDIAN);
+			middleBuffer=UniToUCS2(WmiddleBuffer,NONS_BIG_ENDIAN);
 			break;
 		case UTF8_ENCODING:
-			buffer=WChar_to_UTF8(middleBuffer,l,&l);
+			middleBuffer=UniToUTF8(WmiddleBuffer);
 			break;
 		case ISO_8859_1_ENCODING:
-			buffer=WChar_to_ISO88591(middleBuffer,l,&l);
+			middleBuffer=UniToISO88591(WmiddleBuffer);
 			break;
 		case SJIS_ENCODING:
-			buffer=WChar_to_SJIS(middleBuffer,l,&l);
+			middleBuffer=UniToSJIS(WmiddleBuffer);
 			break;
 	}
-	delete[] middleBuffer;
-	if (writefile(ofile,buffer,l))
+	WmiddleBuffer.clear();
+	if (writefile(ofile,&middleBuffer[0],middleBuffer.size()))
 		std::cout <<"Writing to file failed."<<std::endl;
-	delete[] buffer;
 	return 0;
 }
 

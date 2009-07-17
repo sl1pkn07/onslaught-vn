@@ -337,8 +337,7 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
-	std::wstring string;
-	this->convertParametersToString(stmt,string);
+	std::wstring string=this->convertParametersToString(stmt);
 	if (string.size()){
 		this->everything->screen->showText();
 		if (this->everything->screen->output->prepareForPrinting(string.c_str())){

@@ -32,9 +32,122 @@
 
 #include "Archive.h"
 #include "../../Functions.h"
+#include "../../UTF.h"
+#ifndef TOOLS_NSAIO
 #include "../../Globals.h"
+#endif
 #include "../FileIO.h"
 #include <bzlib.h>
+
+NONS_TreeNode::NONS_TreeNode(const std::wstring &name){
+	this->data.name=name;
+}
+
+NONS_TreeNode::~NONS_TreeNode(){
+	for (ulong a=0;a<this->branches.size();a++)
+		delete this->branches[a];
+}
+
+NONS_TreeNode *NONS_TreeNode::getBranch(const std::wstring &name,bool createIfMissing){
+	size_t pos=name.find('/');
+	if (pos==name.npos)
+		pos=name.find('\\');
+	std::wstring name0;
+	std::wstring name1;
+	if (pos!=name.npos){
+		name0=name.substr(0,pos);
+		name1=name.substr(pos+1);
+		tolower(name0);
+		tolower(name1);
+	}else{
+		name0=name;
+		tolower(name0);
+	}
+	for (std::vector<NONS_TreeNode *>::iterator i=this->branches.begin(),end=this->branches.end();i!=end;i++){
+		if ((*i)->data.name==name0){
+			if (!name1.size())
+				return *i;
+			return (*i)->getBranch(name1,createIfMissing);
+		}
+	}
+	return createIfMissing?this->newBranch(name):0;
+}
+
+NONS_TreeNode *NONS_TreeNode::newBranch(const std::wstring &name){
+	size_t pos=name.find('/');
+	if (pos==name.npos)
+		pos=name.find('\\');
+	NONS_TreeNode *res;
+	if (pos!=name.npos){
+		std::wstring name0=name.substr(0,pos),
+			name1=name.substr(pos+1);
+		res=new NONS_TreeNode(name0);
+		this->branches.push_back(res);
+		res=res->newBranch(name1);
+	}else{
+		res=new NONS_TreeNode(name);
+		this->branches.push_back(res);
+	}
+	return res;
+}
+
+void NONS_TreeNode::sort(){
+	if (!this->branches.size())
+		return;
+	ulong first_directory=0;
+	//Sorting algorithm: selection sort
+	//First, sort nodes by type. First files, then directories.
+	for (ulong a=0;a<this->branches.size();a++){
+		if (!!this->branches[a]->branches.size()){
+			long b=-1;
+			for (ulong c=a+1;c<this->branches.size() && b<0;c++)
+				if (!this->branches[c]->branches.size())
+					b=c;
+			if (b<0)
+				break;
+			std::swap(this->branches[a],this->branches[b]);
+		}
+		first_directory++;
+	}
+	//Now, sort all files.
+	for (ulong a=0;a<first_directory;a++){
+		ulong min=a;
+		for (ulong b=a+1;b<first_directory;b++)
+			if (this->branches[min]->data.name>this->branches[b]->data.name)
+				min=b;
+		if (min==a)
+			continue;
+		std::swap(this->branches[a],this->branches[min]);
+	}
+	//And finally, all directories, recursively.
+	for (ulong a=first_directory;a<this->branches.size();a++){
+		ulong min=a;
+		for (ulong b=a+1;b<this->branches.size();b++)
+			if (this->branches[min]->data.name>this->branches[b]->data.name)
+				min=b;
+		if (min!=a)
+			std::swap(this->branches[a],this->branches[min]);
+		this->branches[a]->sort();
+	}
+}
+
+void NONS_TreeNode::vectorizeFiles(std::vector<NONS_TreeNode *> &vector){
+	if (!this->branches.size()){
+		vector.push_back(this);
+		return;
+	}
+	for (ulong a=0;a<this->branches.size();a++)
+		this->branches[a]->vectorizeFiles(vector);
+}
+
+#ifdef TOOLS_NSAIO
+NONS_Archive::NONS_Archive(ulong archive_type){
+	this->root=new NONS_TreeNode(L".");
+	this->file=0;
+	this->archive_type=archive_type;
+	this->loaded=0;
+}
+#endif
 
 NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
@@ -43,7 +156,11 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->root=0;
 	if (!fileExists(filename)){
 		if (!failSilently)
+#ifndef TOOLS_NSAIO
 			o_stderr <<"Error. Could not open \""<<filename<<"\".\n";
+#else
+			std::cerr <<"Error. Could not open \""<<UniToUTF8(filename)<<"\".\n";
+#endif
 		this->file=0;
 		this->loaded=0;
 		this->root=0;
@@ -335,4 +452,101 @@ uchar *NONS_Archive::getFileBuffer(const std::wstring &filepath,ulong &buffersiz
 bool NONS_Archive::exists(const std::wstring &filepath){
 	return this->loaded && this->root->getBranch(filepath,0)!=0;
 }
+
+#ifndef TOOLS_NSAIO
+NONS_GeneralArchive::NONS_GeneralArchive(){
+	std::wstring path;
+	if (CLOptions.archiveDirectory.size())
+		path=CLOptions.archiveDirectory+L"/";
+	else
+		path=L"./";
+	this->archive=new NONS_Archive(path+L"arc.sar",1);
+	this->archive->readArchive();
+	if (!this->archive->loaded){
+		delete this->archive;
+		this->archive=new NONS_Archive(path+L"ARC.SAR",1);
+		this->archive->readArchive();
+		if (!this->archive->loaded){
+			delete this->archive;
+			this->archive=0;
+		}
+	}
+	const wchar_t *filenames[]={
+		L"arc.nsa",
+		L"ARC.NSA",
+		L"arc1.nsa",
+		L"ARC1.NSA",
+		L"arc2.nsa",
+		L"ARC2.NSA",
+		L"arc3.nsa",
+		L"ARC3.NSA",
+		L"arc4.nsa",
+		L"ARC4.NSA",
+		L"arc5.nsa",
+		L"ARC5.NSA",
+		L"arc6.nsa",
+		L"ARC6.NSA",
+		L"arc7.nsa",
+		L"ARC7.NSA",
+		L"arc8.nsa",
+		L"ARC8.NSA",
+		L"arc9.nsa",
+		L"ARC9.NSA",
+		0
+	};
+	for (const wchar_t **p=filenames;*p;p++)
+		this->init(path+*p,1,1);
+}
+
+NONS_GeneralArchive::~NONS_GeneralArchive(){
+	if (this->archive)
+		delete this->archive;
+	for (ulong a=0;a<this->NSAarchives.size();a++)
+		if (this->NSAarchives[a])
+			delete this->NSAarchives[a];
+}
+
+ErrorCode NONS_GeneralArchive::init(const std::wstring &filename,bool which,bool failSilently){
+	if (!which && this->archive)
+		return NONS_ALREADY_INITIALIZED;
+	NONS_Archive *temp=new NONS_Archive(filename,failSilently);
+	if (!temp->readArchive()){
+		delete temp;
+		return NONS_INVALID_ARCHIVE;
+	}
+	if (!which)
+		this->archive=temp;
+	else{
+		for (ulong a=0;a<this->NSAarchives.size();a++){
+			if (this->NSAarchives[a]->path==filename){
+				delete temp;
+				return NONS_ALREADY_INITIALIZED;
+			}
+		}
+		this->NSAarchives.push_back(temp);
+	}
+	return NONS_NO_ERROR;
+}
+
+uchar *NONS_GeneralArchive::getFileBuffer(const std::wstring &filepath,ulong &buffersize){
+	uchar *res=0;
+	for (long a=this->NSAarchives.size()-1;a>=0;a--){
+		if (res=this->NSAarchives[a]->getFileBuffer(filepath,buffersize))
+			return res;
+	}
+	if (this->archive && (res=this->archive->getFileBuffer(filepath,buffersize)))
+		return res;
+	res=readfile(filepath,buffersize);
+	return res;
+}
+
+bool NONS_GeneralArchive::exists(const std::wstring &filepath){
+	for (long a=this->NSAarchives.size()-1;a>=0;a--)
+		if (this->NSAarchives[a]->exists(filepath))
+			return 1;
+	if (this->archive && this->archive->exists(filepath))
+		return 1;
+	return fileExists(filepath);
+}
+#endif
 #endif
