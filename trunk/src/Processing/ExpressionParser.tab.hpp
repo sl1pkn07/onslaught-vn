@@ -37,7 +37,7 @@
 
 	#include <set>
 	#include <vector>
-	#include "../IO_System/SAR/Image_Loader/FileLog.h"
+	#include "../IO_System/SAR/FileLog.h"
 	class NONS_VariableMember;
 	struct NONS_VariableStore;
 	struct wstrCmp;

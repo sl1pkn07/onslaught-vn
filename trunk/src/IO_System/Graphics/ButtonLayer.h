@@ -35,7 +35,9 @@
 #include "Button.h"
 #include "ScreenSpace.h"
 #include "../Audio/Audio.h"
-#include "../SAR/GeneralArchive.h"
+#include "../SAR/Archive.h"
+
+struct NONS_Menu;
 
 struct NONS_ButtonLayer{
 	std::vector<NONS_Button *> buttons;
@@ -48,10 +50,10 @@ struct NONS_ButtonLayer{
 	NONS_GeneralArchive *archive;
 	SDL_Rect boundingBox;
 	bool exitable;
-	void *menu;
+	NONS_Menu *menu;
 	SDL_Surface *loadedGraphic;
 	NONS_ButtonLayer(SDL_Surface *img,NONS_ScreenSpace *screen);
-	NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,void *menu);
+	NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu);
 	~NONS_ButtonLayer();
 	void makeTextButtons(const std::vector<std::wstring> &arr,
 		SDL_Color *on,

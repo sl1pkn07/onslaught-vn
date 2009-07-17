@@ -30,7 +30,7 @@
 #ifndef NONS_FILEIO_H
 #define NONS_FILEIO_H
 
-#ifndef BARE_FILE
+#ifndef TOOLS_BARE_FILE
 #include "../Common.h"
 #else
 typedef unsigned long ulong;

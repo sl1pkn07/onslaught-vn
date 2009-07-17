@@ -31,8 +31,43 @@
 #define NONS_ARCHIVE_H
 
 #include "../../Common.h"
-#include "TreeNode.h"
+#include "../../ErrorCodes.h"
 #include <string>
+#include <vector>
+
+struct NONS_TreeNode{
+	struct NONS_ArchivedFile{
+		std::wstring name;
+#ifdef TOOLS_NSAIO
+		std::wstring archivepath,
+			filepath;
+#endif
+		ulong compression_type;
+		enum{
+			NO_COMPRESSION=0,
+			SPB_COMPRESSION=1,
+			LZSS_COMPRESSION=2,
+			NBZ_COMPRESSION=4
+		};
+		ulong offset;
+		ulong length;
+		long original_length;
+		NONS_ArchivedFile(){
+			this->offset=0;
+			this->length=0;
+			this->original_length=0;
+			this->compression_type=NO_COMPRESSION;
+		}
+	} data;
+	std::vector<NONS_TreeNode *> branches;
+	NONS_TreeNode(const std::wstring &name);
+	~NONS_TreeNode();
+	NONS_TreeNode *getBranch(const std::wstring &name,bool createIfMissing);
+	void sort();
+	void vectorizeFiles(std::vector<NONS_TreeNode *> &vector);
+private:
+	NONS_TreeNode *newBranch(const std::wstring &name);
+};
 
 #define READ_LENGTH 4096
 
@@ -50,6 +85,9 @@ struct NONS_Archive{
 	};
 	bool loaded;
 	NONS_Archive(const std::wstring &filename,bool failSilently);
+#ifdef TOOLS_NSAIO
+	NONS_Archive(ulong archive_type);
+#endif
 	~NONS_Archive();
 	/*
 	1 if the archive has been loaded or if it had already been loaded.
@@ -59,6 +97,16 @@ struct NONS_Archive{
 	bool readSAR();
 	bool readNSA();
 	uchar *getFileBuffer(NONS_TreeNode *node,ulong &buffersize);
+	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
+	bool exists(const std::wstring &filepath);
+};
+
+struct NONS_GeneralArchive{
+	NONS_Archive *archive;
+	std::vector<NONS_Archive *> NSAarchives;
+	NONS_GeneralArchive();
+	~NONS_GeneralArchive();
+	ErrorCode init(const std::wstring &filename,bool which,bool failSilently);
 	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
 	bool exists(const std::wstring &filepath);
 };

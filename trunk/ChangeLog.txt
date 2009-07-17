@@ -1,3 +1,7 @@
+????????
+    * Implemented: versionstr, cell.
+	
+
 20090715
     * Major internal redesign.
     * Implemented: split, isdown, isfull, getcursorpos, textgosub, ispage,

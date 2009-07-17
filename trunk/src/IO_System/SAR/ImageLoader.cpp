@@ -31,9 +31,9 @@
 #define NONS_IMAGELOADER_CPP
 
 #include "ImageLoader.h"
-#include "../../../Functions.h"
-#include "../../../UTF.h"
-#include "../../../Globals.h"
+#include "../../Functions.h"
+#include "../../UTF.h"
+#include "../../Globals.h"
 
 #define LOG_FILENAME_OLD L"NScrflog.dat"
 #define LOG_FILENAME_NEW L"nonsflog.dat"

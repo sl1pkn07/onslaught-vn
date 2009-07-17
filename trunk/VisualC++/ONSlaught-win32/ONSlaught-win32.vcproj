@@ -476,49 +476,29 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\SAR\GeneralArchive.cpp"
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\FileLog.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\SAR\GeneralArchive.h"
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\FileLog.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\SAR\TreeNode.cpp"
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\Image.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\src\IO_System\SAR\TreeNode.h"
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\Image.h"
 						>
 					</File>
-					<Filter
-						Name="Image_Loader"
+					<File
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\ImageLoader.cpp"
 						>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\FileLog.cpp"
-							>
-						</File>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\FileLog.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\Image.cpp"
-							>
-						</File>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\Image.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\ImageLoader.cpp"
-							>
-						</File>
-						<File
-							RelativePath="..\..\src\IO_System\SAR\Image_Loader\ImageLoader.h"
-							>
-						</File>
-					</Filter>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\SAR\Image_Loader\ImageLoader.h"
+						>
+					</File>
 				</Filter>
 				<Filter
 					Name="Script"

@@ -32,13 +32,11 @@
 #include "CommandLineOptions.h"
 #include "IO_System/InputHandler.h"
 #include "IO_System/StdOut.h"
-#include "IO_System/SAR/Image_Loader/ImageLoader.h"
+#include "IO_System/SAR/ImageLoader.h"
 #include <map>
 #include <vector>
 #include <cassert>
 
-//Who the hell would be willing to pass these to every function?
-//Let's just make them global and get it over with!
 extern NONS_CommandLineOptions CLOptions;
 extern NONS_InputObserver InputObserver;
 extern bool exitLocked;
@@ -58,7 +56,8 @@ extern const int ashift;
 extern uchar trapFlag;
 extern int lastClickX;
 extern int lastClickY;
-extern void *gScriptInterpreter;
+class NONS_ScriptInterpreter;
+extern NONS_ScriptInterpreter *gScriptInterpreter;
 extern SDL_mutex *exitMutex;
 extern SDL_mutex *screenMutex;
 

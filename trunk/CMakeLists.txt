@@ -54,11 +54,9 @@ add_executable(ONSlaught
 	src/IO_System/Graphics/StandardOutput.cpp
 	src/IO_System/Graphics/VirtualScreen.cpp
 	src/IO_System/SAR/Archive.cpp
-	src/IO_System/SAR/GeneralArchive.cpp
-	src/IO_System/SAR/TreeNode.cpp
-	src/IO_System/SAR/Image_Loader/FileLog.cpp
-	src/IO_System/SAR/Image_Loader/Image.cpp
-	src/IO_System/SAR/Image_Loader/ImageLoader.cpp
+	src/IO_System/SAR/FileLog.cpp
+	src/IO_System/SAR/Image.cpp
+	src/IO_System/SAR/ImageLoader.cpp
 	src/IO_System/Script/commandPreParser.tab.cpp
 	src/IO_System/Script/Script.cpp
 	src/IO_System/Script/sha1.cpp

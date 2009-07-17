@@ -31,11 +31,17 @@
 #define NONS_UTF_CPP
 
 #include "UTF.h"
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 #include "Functions.h"
 #include "Globals.h"
 #else
+#ifndef TOOLS_NSAIO
 #include "SJIS.table.cpp"
+#endif
+#include <climits>
+
+typedef unsigned char Uint8;
+typedef unsigned short Uint16;
 #endif
 
 extern wchar_t SJIS2Unicode[];
@@ -135,7 +141,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 		}else
 			c1=c0;
 		if (SJIS2Unicode[c1]=='?' && c1!='?'){
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 			o_stderr.getstream().width(4);
 			o_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<c1<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
 #else
@@ -210,7 +216,7 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 		wchar_t srcc=*src++,
 			character=Unicode2SJIS[srcc];
 		if (character=='?' && srcc!='?'){
-#ifndef BARE_FILE
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 			o_stderr <<"ENCODING ERROR: Character U+";
 			o_stderr.getstream().width(4);
 			o_stderr.getstream() <<std::hex<<srcc;
@@ -312,48 +318,6 @@ std::string UniToSJIS(const std::wstring &str){
 	res.resize(WC_SJIS((uchar *)&str[0],&str[0],str.size()));
 	return res;
 }
-
-std::wstring unistring_toupperCopy(const std::wstring &str){
-	std::wstring res=str;
-	toupper(res);
-	return res;
-}
-
-std::wstring unistring_tolowerCopy(const std::wstring &str){
-	std::wstring res=str;
-	tolower(res);
-	return res;
-}
-
-#ifdef BARE_FILE
-uchar *readfile(const char *name,long *len){
-	std::ifstream file(name,std::ios::binary);
-	if (!file){
-		if (len)
-			*len=-1;
-		return 0;
-	}
-	file.seekg(0,std::ios::end);
-	long pos=file.tellg();
-	if (len)
-		*len=pos;
-	file.seekg(0,std::ios::beg);
-	uchar *buffer=new uchar[pos];
-	file.read((char *)buffer,pos);
-	file.close();
-	return buffer;
-}
-
-char writefile(const char *name,char *buffer,long size){
-	std::ofstream file(name,std::ios::binary);
-	if (!file){
-		return 1;
-	}
-	file.write(buffer,size);
-	file.close();
-	return 0;
-}
-#endif
 
 bool iswhitespace(wchar_t character){
 	static const wchar_t whitespace[]=WCS_WHITESPACE;

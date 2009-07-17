@@ -34,7 +34,7 @@
 #include "../../UTF.h"
 #include "../../ErrorCodes.h"
 #include "../../enums.h"
-#include "../SAR/GeneralArchive.h"
+#include "../SAR/Archive.h"
 #include <vector>
 #include <map>
 

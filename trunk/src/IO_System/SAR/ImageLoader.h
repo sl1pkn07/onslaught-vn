@@ -11,6 +11,9 @@
 *       documentation and/or other materials provided with the distribution.
 *     * The name of the author may not be used to endorse or promote products
 *       derived from this software without specific prior written permission.
+*     * Products derived from this software may not be called "ONSlaught" nor
+*       may "ONSlaught" appear in their names without specific prior written
+*       permission from the author. 
 *
 * THIS SOFTWARE IS PROVIDED BY HELIOS "AS IS" AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -24,18 +27,35 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_FILEIO_H
-#define NONS_FILEIO_H
+#ifndef NONS_IMAGELOADER_H
+#define NONS_IMAGELOADER_H
 
-#include "Common.h"
-#include <fstream>
-#include <string>
+#include "../../Common.h"
+#include "Archive.h"
+#include "FileLog.h"
+#include "Image.h"
+#include <vector>
 
-uchar *readfile(const char *filename,long *len,long offset);
-uchar *readfile(std::ifstream *file,long *len,long offset);
-uchar *readfile(const char *name,long *len);
-char writefile(const char *name,char *buffer,long size);
-char writefile(const wchar_t *name,char *buffer,long size);
-char writefile(const std::wstring &name,char *buffer,long size);
-bool fileExists(const char *name);
+struct NONS_ImageLoader{
+	NONS_GeneralArchive *archive;
+	std::vector<NONS_Image *> imageCache;
+	//<0: infinite (until memory is exhausted)
+	long maxCacheSize;
+	NONS_FileLog filelog;
+	NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize=-1);
+	~NONS_ImageLoader();
+	ulong getCacheSize();
+	//SDL_Surface *fetchImage(const wchar_t *name);
+	//SDL_Surface *fetchCursor(const wchar_t *name,int method);
+	//SDL_Surface *fetchSprite(const wchar_t *string,const wchar_t *name,int method);
+	SDL_Surface *fetchSprite(const std::wstring &string,optim_t *rects=0);
+	bool unfetchImage(SDL_Surface *which);
+	NONS_Image *elementFromSurface(SDL_Surface *srf);
+	long freeOldest(long howMany=1);
+	ulong clearCache();
+	void printCurrent();
+private:
+	//1 if the image was added, 0 otherwise
+	bool addElementToCache(NONS_Image *img,bool force);
+};
 #endif

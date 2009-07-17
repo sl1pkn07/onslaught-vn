@@ -31,6 +31,7 @@
 #define NONS_GLOBALS_CPP
 #include "Globals.h"
 #include <SDL/SDL.h>
+#include "Processing/ScriptInterpreter.h"
 
 NONS_CommandLineOptions CLOptions;
 NONS_InputObserver InputObserver;
@@ -219,7 +220,7 @@ const int ashift=24;
 uchar trapFlag=0;
 int lastClickX=0;
 int lastClickY=0;
-void *gScriptInterpreter=0;
+NONS_ScriptInterpreter *gScriptInterpreter=0;
 SDL_mutex *exitMutex=0;
 SDL_mutex *screenMutex=0;
 

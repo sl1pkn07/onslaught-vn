@@ -38,7 +38,7 @@
 #include "../IO_System/Script/Script.h"
 #include "../IO_System/Graphics/GFX.h"
 #include "../IO_System/INIfile.h"
-#include "../IO_System/SAR/Image_Loader/ImageLoader.h"
+#include "../IO_System/SAR/ImageLoader.h"
 #include "../IO_System/Graphics/Cursor.h"
 #include "../IO_System/Graphics/Menu.h"
 #include "../IO_System/SaveFile.h"
@@ -333,7 +333,27 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_ispage(NONS_Statement &stmt);
 	ErrorCode command_labellog(NONS_Statement &stmt);
 	ErrorCode command_underline(NONS_Statement &stmt);
+	ErrorCode command_stdout(NONS_Statement &stmt);
+	ErrorCode command_versionstr(NONS_Statement &stmt);
+	ErrorCode command_cell(NONS_Statement &stmt);
 	/*ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
+	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
@@ -354,7 +374,7 @@ public:
 	ulong implementedCommands();
 	bool load(int file);
 	bool save(int file);
-	void convertParametersToString(NONS_Statement &line,std::wstring &string);
+	std::wstring convertParametersToString(NONS_Statement &line);
 	ulong getCurrentTextgosubLevel();
 	ulong insideTextgosub();
 	bool goto_label(const std::wstring &label);

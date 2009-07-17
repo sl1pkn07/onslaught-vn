@@ -3,7 +3,7 @@ project (nsaio)
 
 set(EXECUTABLE_OUTPUT_PATH bin-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 set(CMAKE_BUILD_TYPE Release)
-add_definitions(-DNONS_SVN)
+add_definitions(-DNONS_SVN -DTOOLS_NSAIO)
 
 #include_directories(/usr/include/boost-1_37)
 
@@ -19,21 +19,19 @@ endif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR MINGW OR MSYS OR C
 
 add_executable(nsaio
 	nsaio.cpp
-	nsaio_src/Archive.cpp
-	nsaio_src/ArchivedFile.cpp
-	nsaio_src/ArchivedFile.h
-	nsaio_src/Archive.h
-	nsaio_src/Common.h
-	nsaio_src/Encryption.cpp
-	nsaio_src/Encryption.h
-	nsaio_src/FileIO.cpp
-	nsaio_src/FileIO.h
-	nsaio_src/Functions.cpp
-	nsaio_src/Functions.h
-	nsaio_src/TreeNode.cpp
-	nsaio_src/TreeNode.h
-	nsaio_src/UTF.cpp
-	nsaio_src/UTF.h
+	NONS_src/Archive.cpp
+	NONS_src/ArchivedFile.cpp
+	NONS_src/ArchivedFile.h
+	NONS_src/Archive.h
+	NONS_src/Common.h
+	NONS_src/FileIO.cpp
+	NONS_src/FileIO.h
+	NONS_src/Functions.cpp
+	NONS_src/Functions.h
+	NONS_src/TreeNode.cpp
+	NONS_src/TreeNode.h
+	NONS_src/UTF.cpp
+	NONS_src/UTF.h
 	NONS_src/SJIS.table.cpp
 )
 

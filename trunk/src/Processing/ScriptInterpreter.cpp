@@ -208,7 +208,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"btnwait"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"btnwait2"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"caption"]=&NONS_ScriptInterpreter::command_caption;
-	this->commandList[L"cell"]=0;
+	this->commandList[L"cell"]=&NONS_ScriptInterpreter::command_cell;
 	this->commandList[L"cellcheckexbtn"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"cellcheckspbtn"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"checkpage"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -460,7 +460,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"underline"]=0;
 	this->commandList[L"useescspc"]=0;
 	this->commandList[L"usewheel"]=0;
-	this->commandList[L"versionstr"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"versionstr"]=&NONS_ScriptInterpreter::command_versionstr;
 	this->commandList[L"voicevol"]=0;
 	this->commandList[L"vsp"]=&NONS_ScriptInterpreter::command_vsp;
 	this->commandList[L"wait"]=&NONS_ScriptInterpreter::command_wait;
@@ -482,9 +482,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"centerv"]=&NONS_ScriptInterpreter::command_centerv;
 	this->commandList[L"killmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"command_syntax_example"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"stdout"]=&NONS_ScriptInterpreter::command_stdout;
+	this->commandList[L"stderr"]=&NONS_ScriptInterpreter::command_stdout;
 	/*this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
@@ -1126,12 +1126,11 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 		this->everything->screen->clearText();
 		//out->NewLine();
 	}
-//Printer2_000:
 	return NONS_NO_ERROR;
 }
 
-void NONS_ScriptInterpreter::convertParametersToString(NONS_Statement &stmt,std::wstring &string){
-	string.clear();
+std::wstring NONS_ScriptInterpreter::convertParametersToString(NONS_Statement &stmt){
+	std::wstring string;
 	for (ulong a=0;a<stmt.parameters.size();a++){
 		long res;
 		std::wstring &str=stmt.parameters[a];
@@ -1145,6 +1144,7 @@ void NONS_ScriptInterpreter::convertParametersToString(NONS_Statement &stmt,std:
 				continue;
 		}
 	}
+	return string;
 }
 
 ulong NONS_ScriptInterpreter::insideTextgosub(){

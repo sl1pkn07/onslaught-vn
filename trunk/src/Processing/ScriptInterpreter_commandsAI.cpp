@@ -817,10 +817,30 @@ ErrorCode NONS_ScriptInterpreter::command_ispage(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+ErrorCode NONS_ScriptInterpreter::command_cell(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	long sprt,
+		cell;
+	_GETINTVALUE(sprt,0,)
+	_GETINTVALUE(cell,1,)
+	if (sprt<0 || cell<0 || (ulong)sprt>=this->everything->screen->layerStack.size())
+		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	NONS_Layer *layer=this->everything->screen->layerStack[sprt];
+	if (!layer || !layer->data)
+		return NONS_NO_SPRITE_LOADED_THERE;
+	if ((ulong)cell>=layer->animation.animation_length)
+		cell=layer->animation.animation_length-1;
+	layer->animation.resetAnimation();
+	if (!cell)
+		return NONS_NO_ERROR;
+	if (layer->animation.frame_ends.size()==1)
+		layer->animation.advanceAnimation(layer->animation.frame_ends[0]*cell);
+	else
+		layer->animation.advanceAnimation(layer->animation.frame_ends[cell-1]);
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
