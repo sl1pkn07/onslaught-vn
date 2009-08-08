@@ -134,15 +134,15 @@ std::string UniToSJIS(const std::wstring &str);
 template <typename T>
 inline void toupper(std::basic_string<T> &str){
 	std::transform<
-		std::basic_string<T>::iterator,
-		std::basic_string<T>::iterator,
+		typename std::basic_string<T>::iterator,
+		typename std::basic_string<T>::iterator,
 		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_toupper);
 }
 template <typename T>
 inline void tolower(std::basic_string<T> &str){
 	std::transform<
-		std::basic_string<T>::iterator,
-		std::basic_string<T>::iterator,
+		typename std::basic_string<T>::iterator,
+		typename std::basic_string<T>::iterator,
 		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_tolower);
 }
 template <typename T>

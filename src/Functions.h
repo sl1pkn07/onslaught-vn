@@ -247,11 +247,11 @@ Uint16 readWord(char *buffer,ulong &offset);
 Sint32 readSignedDWord(char *buffer,ulong &offset);
 Uint32 readDWord(char *buffer,ulong &offset);
 std::string readString(char *buffer,ulong &offset);
-void writeByte(Uint8 a,std::string &str,ulong offset=-1);
-void writeWord(Uint16 a,std::string &str,ulong offset=-1);
-void writeDWord(Uint32 a,std::string &str,ulong offset=-1);
-void writeWordBig(Uint16 a,std::string &str,ulong offset=-1);
-void writeDWordBig(Uint32 a,std::string &str,ulong offset=-1);
+void writeByte(Uint8 a,std::string &str,ulong offset=ULONG_MAX);
+void writeWord(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
+void writeDWord(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
+void writeWordBig(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
+void writeDWordBig(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
 void writeString(const std::wstring &a,std::string &str);
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){

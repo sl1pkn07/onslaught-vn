@@ -40,6 +40,7 @@
 #include "Processing/ScriptInterpreter.h"
 #include "IO_System/IOFunctions.h"
 #include "IO_System/FileIO.h"
+#include "version.h"
 
 #if defined(NONS_SYS_WINDOWS)
 #include <windows.h>
@@ -142,6 +143,9 @@ void handleInputEvent(SDL_Event &event){
 						else
 							notify=1;
 						break;
+					case SDLK_F12:
+						o_stdout <<"Screenshot saved to \""<<everything->screen->screen->takeScreenshot()<<"\".\n";
+						break;
 					case SDLK_NUMLOCK:
 					case SDLK_CAPSLOCK:
 					case SDLK_SCROLLOCK:
@@ -220,10 +224,10 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 #endif
 
 int main(int argc,char **argv){
-	std::cout <<"ONSlaught ";
+	std::cout <<"ONSlaught: An ONScripter clone with Unicode support."<<std::endl;
 	if (ONSLAUGHT_BUILD_VERSION<99999999)
-		std::cout <<ONSLAUGHT_BUILD_VERSION<<" ";
-	std::cout <<ONSLAUGHT_BUILD_VERSION_STR": An ONScripter clone with Unicode support.\n\n"
+		std::cout <<"Build "<<ONSLAUGHT_BUILD_VERSION<<", ";
+	std::cout <<ONSLAUGHT_BUILD_VERSION_STR"\n\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"<<std::endl;
 

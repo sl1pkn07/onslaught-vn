@@ -772,7 +772,7 @@ void writeByte(Uint8 a,std::string &str,ulong offset){
 }
 
 void writeWord(Uint16 a,std::string &str,ulong offset){
-	ulong off=(offset<0)?str.size():offset;
+	ulong off=(offset==ULONG_MAX)?str.size():offset;
 	for (ulong b=0;b<2;b++,off++){
 		if (str.size()>off)
 			str[off]=a&0xFF;
@@ -783,7 +783,7 @@ void writeWord(Uint16 a,std::string &str,ulong offset){
 }
 
 void writeDWord(Uint32 a,std::string &str,ulong offset){
-	ulong off=(offset<0)?str.size():offset;
+	ulong off=(offset==ULONG_MAX)?str.size():offset;
 	for (ulong b=0;b<4;b++,off++){
 		if (str.size()>off)
 			str[off]=a&0xFF;
@@ -794,7 +794,7 @@ void writeDWord(Uint32 a,std::string &str,ulong offset){
 }
 
 void writeWordBig(Uint16 a,std::string &str,ulong offset){
-	if (offset<0)
+	if (offset==ULONG_MAX)
 		offset=str.size();
 	for (ulong b=0;b<2;b++,offset++){
 		if (str.size()>offset)
@@ -806,7 +806,7 @@ void writeWordBig(Uint16 a,std::string &str,ulong offset){
 }
 
 void writeDWordBig(Uint32 a,std::string &str,ulong offset){
-	if (offset<0)
+	if (offset==ULONG_MAX)
 		offset=str.size();
 	for (ulong b=0;b<4;b++,offset++){
 		if (str.size()>offset)

@@ -32,6 +32,7 @@
 #include "../Globals.h"
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
+#include "../version.h"
 #include <cctype>
 
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP

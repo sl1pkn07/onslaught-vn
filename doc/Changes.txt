@@ -20,8 +20,8 @@ ONSlaught.
 0. How to read this document
 This section describes the syntax that will be used to document the commands.
 
-THE SYNTAX DESCRIBED IN THIS SECTION HERE IS MERELY FOR THE PURPOSE OF
-DOCUMENTATION, AND IS UNRELATED TO THE ONE USED BY THE ENGINE.
+THE SYNTAX DESCRIBED IN THIS SECTION IS MERELY FOR THE PURPOSE OF DOCUMENTATION,
+AND IS UNRELATED TO THE ONE USED BY THE ENGINE.
 
 Example:
 command %num_var, $str_var, c%num_const, c$str_const, c#hex_color_value
@@ -133,7 +133,7 @@ can be used instead of a literal: %constant, $constant.
 <Optional reading>
 After the %, any expression (see section 1.7) can be used. Keep in mind that,
 since % and $ (they're called reference operators. The third is ?) have a very
-low precedence, you'll have to use parentheses.
+high precedence, you'll have to use parentheses.
 E.g. %%0 is fine, but %%0+1 is the same as (%%0)+1, not %(%0+1).
 </Optional reading>
 Variables with an index lower than 200 (i.e. up to 199) are saved in each
@@ -488,8 +488,8 @@ use_new_if corrects this behavior.
 
 centerh c%pivot
 Sets the center pivot to a horizontal percentage of the screen. For example,
-centerh 0 (the default) is left justified, centerh 50 is centered, and
-centerh 100 is right justified.
+centerh 0 (the default) is left-justified, centerh 50 is centered, and
+centerh 100 is right-justified.
 c%pivot must be in the range [0;100]. If it's below the range, zero is assumed.
 If above, 100 is assumed.
 
