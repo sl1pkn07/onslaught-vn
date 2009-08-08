@@ -1,6 +1,6 @@
 ????????
     * Implemented: versionstr, cell.
-	
+    * Added screenshot function.
 
 20090715
     * Major internal redesign.

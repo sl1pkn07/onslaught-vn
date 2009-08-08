@@ -257,6 +257,25 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	return this->fullscreen;
 }
 
+std::string NONS_VirtualScreen::takeScreenshot(){
+	tm t;
+	ulong c;
+	{
+		time_t t2=time(0);
+		c=SDL_GetTicks();
+		t=*localtime(&t2);
+	}
+	std::string filename=
+		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
+		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
+		itoa<char>(c,10)+".bmp";
+	LOCKSCREEN;
+	const char *s=filename.c_str();
+	SDL_SaveBMP(this->virtualScreen,s);
+	UNLOCKSCREEN;
+	return filename;
+}
+
 #ifndef NONS_PARALLELIZE
 void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
 	if (!src || !dst)
