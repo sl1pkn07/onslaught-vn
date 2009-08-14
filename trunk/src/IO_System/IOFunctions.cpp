@@ -102,7 +102,7 @@ ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bo
 				else
 					o_stderr <<"("<<(topError.error&0xFFFF)<<") "<<errorMessages[topError.error&0xFFFF]<<'\n';
 				if (topError.extraInfo.size())
-					o_stderr <<"    Extra information: "<<topError.extraInfo.c_str()<<'\n';
+					o_stderr <<"    Extra information: "<<topError.extraInfo<<'\n';
 			}
 			currentQueue->second.pop();
 		}
@@ -129,7 +129,7 @@ ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bo
 		else
 			o_stderr <<errorMessages[error&0xFFFF]<<'\n';
 		if (extraInfo.size())
-			o_stderr <<"    Extra information: "<<extraInfo.c_str()<<'\n';
+			o_stderr <<"    Extra information: "<<extraInfo<<'\n';
 	}
 	if (CHECK_FLAG(error,NONS_FATAL_ERROR)){
 		o_stderr <<"I'll just go ahead and kill myself.\n";

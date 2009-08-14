@@ -90,7 +90,7 @@ void NONS_Layer::MakeTextLayer(NONS_Font *font,SDL_Color *foreground,bool shadow
 
 void NONS_Layer::Clear(){
 	if (!this->useDataAsDefaultShade){
-		this->load(0);
+		this->load((const std::wstring *)0);
 		SDL_FillRect(this->data,0,this->defaultShade);
 	}
 }
@@ -115,7 +115,8 @@ void NONS_Layer::usePicAsDefaultShade(SDL_Surface *pic){
 
 bool NONS_Layer::load(const std::wstring *string){
 	if (!string){
-		int w=this->data->w,h=this->data->h;
+		int w=this->data->w,
+			h=this->data->h;
 		if (this->unload(1)){
 			this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,w,h,32,rmask,gmask,bmask,amask);
 			this->clip_rect=this->data->clip_rect;
@@ -138,6 +139,14 @@ bool NONS_Layer::load(const std::wstring *string){
 		ulong t1=SDL_GetTicks();
 		std::cout <<"completed in "<<t1-t0<<" msec."<<std::endl;
 	}*/
+	return 1;
+}
+
+bool NONS_Layer::load(SDL_Surface *src){
+	this->unload();
+	this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+	//SDL_FillRect(this->data,0,gmask|amask);
+	manualBlit(src,0,this->data,0);
 	return 1;
 }
 

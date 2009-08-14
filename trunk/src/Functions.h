@@ -272,8 +272,12 @@ std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typenam
 
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 //bitmap processing functions
-void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha=255);
+typedef long manualBlitAlpha_t;
+void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha=255);
 void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
+void FlipSurfaceH(SDL_Surface *src,SDL_Surface *dst);
+void FlipSurfaceV(SDL_Surface *src,SDL_Surface *dst);
+void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst);
 #endif
 
 //other functions

@@ -33,6 +33,8 @@
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 #include "../version.h"
+#undef ABS
+#include "../IO_System/Graphics/SDL_bilinear.h"
 #include <cctype>
 
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
@@ -129,7 +131,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_Statement &stmt){
 	ret=NONS_NO_ERROR;
 	NONS_ScriptLine line(0,stmt.parameters[1],0,1);
 	for (ulong a=0;a<line.statements.size();a++){
-		ErrorCode error=this->interpretString(*line.statements[a]);
+		ErrorCode error=this->interpretString(*line.statements[a],stmt.lineOfOrigin,stmt.fileOffset);
 		if (error==NONS_END)
 			return NONS_END;
 		if (error==NONS_GOSUB)
@@ -421,6 +423,8 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 		_GETWCSVALUE(filename,0,);
 		scr->hideText();
 		scr->Background->load(&filename);
+		scr->Background->position.x=(scr->screen->virtualScreen->w-scr->Background->clip_rect.w)/2;
+		scr->Background->position.y=(scr->screen->virtualScreen->h-scr->Background->clip_rect.h)/2;
 	}
 	scr->leftChar->unload();
 	scr->rightChar->unload();
@@ -841,7 +845,151 @@ ErrorCode NONS_ScriptInterpreter::command_cell(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_bgcopy(NONS_Statement &stmt){
+	LOCKSCREEN;
+	this->everything->screen->Background->load(this->everything->screen->screen->virtualScreen);
+	UNLOCKSCREEN;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_draw(NONS_Statement &stmt){
+	LOCKSCREEN;
+	this->everything->screen->screen->blitToScreen(this->everything->screen->screenBuffer,0,0);
+	UNLOCKSCREEN;
+	this->everything->screen->screen->updateWholeScreen();
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
+	static SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
+	static SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_ResizeSmooth;
+	if (!this->everything->screen->Background && !this->everything->screen->Background->data)
+		SDL_FillRect(this->everything->screen->screenBuffer,0,this->everything->screen->screenBuffer->format->Amask);
+	else if (!stdStrCmpCI(stmt.commandName,L"drawbg"))
+		manualBlit(
+			this->everything->screen->Background->data,
+			0,
+			this->everything->screen->screenBuffer,
+			&this->everything->screen->Background->position);
+	else{
+		MINIMUM_PARAMETERS(5);
+		long x,y,
+			xscale,yscale,
+			angle;
+		_GETINTVALUE(x,0,)
+		_GETINTVALUE(y,1,)
+		_GETINTVALUE(xscale,2,)
+		_GETINTVALUE(yscale,3,)
+		_GETINTVALUE(angle,4,)
+		if (!(xscale*yscale))
+			SDL_FillRect(this->everything->screen->screenBuffer,0,this->everything->screen->screenBuffer->format->Amask);
+		else{
+			SDL_Surface *src=this->everything->screen->Background->data;
+			bool freeSrc=0;
+
+			if (xscale<0 || yscale<0){
+				SDL_Surface *dst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+				if (yscale>0)
+					FlipSurfaceH(src,dst);
+				else if (xscale>0)
+					FlipSurfaceV(src,dst);
+				else
+					FlipSurfaceHV(src,dst);
+				xscale=ABS(xscale);
+				yscale=ABS(yscale);
+				src=dst;
+				freeSrc=1;
+			}
+
+			if (src->format->BitsPerPixel!=32){
+				SDL_Surface *dst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+				manualBlit(src,0,dst,0);
+				freeSrc=1;
+			}
+			SDL_Surface *dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+			if (freeSrc)
+				SDL_FreeSurface(src);
+			src=dst;
+			dst=rotationFunction(src,double(angle)/180*M_PI);
+			SDL_FreeSurface(src);
+			SDL_Rect dstR={
+				-long(dst->clip_rect.w/2)+x,
+				-long(dst->clip_rect.h/2)+y,
+				0,0
+			};
+			manualBlit(dst,0,this->everything->screen->screenBuffer,&dstR);
+			SDL_FreeSurface(dst);
+		}
+	}
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_drawclear(NONS_Statement &stmt){
+	SDL_FillRect(this->everything->screen->screenBuffer,0,0);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_drawfill(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(3);
+	long r,g,b;
+	_GETINTVALUE(r,0,)
+	_GETINTVALUE(g,1,)
+	_GETINTVALUE(b,2,)
+	r=ulong(r)&0xFF;
+	g=ulong(g)&0xFF;
+	b=ulong(b)&0xFF;
+	SDL_Surface *dst=this->everything->screen->screenBuffer;
+	Uint32 rmask=dst->format->Rmask,
+		gmask=dst->format->Gmask,
+		bmask=dst->format->Bmask,
+		amask=dst->format->Amask,
+		R=r,
+		G=g,
+		B=b;
+	R=R|R<<8|R<<16|R<<24;
+	G=G|G<<8|G<<16|G<<24;
+	B=B|B<<8|B<<16|B<<24;
+	SDL_FillRect(dst,0,R&rmask|G&gmask|B&bmask|amask);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(5);
+	long spriteno,
+		cell,
+		alpha,
+		x,y;
+	_GETINTVALUE(spriteno,0,)
+	_GETINTVALUE(cell,1,)
+	_GETINTVALUE(alpha,2,)
+	_GETINTVALUE(x,3,)
+	_GETINTVALUE(y,4,)
+	std::vector<NONS_Layer *> &sprites=this->everything->screen->layerStack;
+	if (spriteno<0 || (ulong)spriteno>sprites.size())
+		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	NONS_Layer *sprite=sprites[spriteno];
+	if (!sprite || !sprite->data)
+		return NONS_NO_SPRITE_LOADED_THERE;
+	if (cell<0 || (ulong)cell>=sprite->animation.animation_length)
+		return NONS_NO_ERROR;
+	SDL_Rect src={
+		sprite->data->w/sprite->animation.animation_length*cell,
+		0,
+		sprite->data->w,
+		sprite->data->h
+	};
+	SDL_Rect dst={x,y,0,0};
+	manualBlit(sprite->data,&src,this->everything->screen->screenBuffer,&dst,(alpha<-0xFF)?-0xFF:((alpha>0xFF)?0xFF:alpha));
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

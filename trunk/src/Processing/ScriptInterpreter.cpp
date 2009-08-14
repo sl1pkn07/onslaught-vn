@@ -188,11 +188,11 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"automode_time"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"automode"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"bar"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"barclear"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"bar"]=0;
+	this->commandList[L"barclear"]=0;
 	this->commandList[L"bg"]=&NONS_ScriptInterpreter::command_bg;
-	this->commandList[L"bgcopy"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"bgcpy"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"bgcopy"]=&NONS_ScriptInterpreter::command_bgcopy;
+	this->commandList[L"bgcpy"]=&NONS_ScriptInterpreter::command_bgcopy;
 	this->commandList[L"bgm"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"bgmonce"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"bgmstop"]=&NONS_ScriptInterpreter::command_playstop;
@@ -236,12 +236,12 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"deletescreenshot"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"dim"]=&NONS_ScriptInterpreter::command_dim;
 	this->commandList[L"div"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"draw"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawbg"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawbg2"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawclear"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawfill"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawsp"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"draw"]=&NONS_ScriptInterpreter::command_draw;
+	this->commandList[L"drawbg"]=&NONS_ScriptInterpreter::command_drawbg;
+	this->commandList[L"drawbg2"]=&NONS_ScriptInterpreter::command_drawbg;
+	this->commandList[L"drawclear"]=&NONS_ScriptInterpreter::command_drawclear;
+	this->commandList[L"drawfill"]=&NONS_ScriptInterpreter::command_drawfill;
+	this->commandList[L"drawsp"]=&NONS_ScriptInterpreter::command_drawsp;
 	this->commandList[L"drawsp2"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"drawsp3"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"drawtext"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -333,6 +333,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"lr_trap"]=&NONS_ScriptInterpreter::command_trap;
 	this->commandList[L"lr_trap2"]=&NONS_ScriptInterpreter::command_trap;
 	this->commandList[L"lsp"]=&NONS_ScriptInterpreter::command_lsp;
+	//this->commandList[L"lsp2"]=&NONS_ScriptInterpreter::command_lsp2;
 	this->commandList[L"lsph"]=&NONS_ScriptInterpreter::command_lsp;
 	this->commandList[L"maxkaisoupage"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"menu_automode"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -689,19 +690,21 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	return 1;
 }
 
-ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &str){
-	NONS_ScriptLine line(0,str,0,1);
+ErrorCode NONS_ScriptInterpreter::interpretString(const std::wstring &str,NONS_ScriptLine *line,ulong offset){
+	NONS_ScriptLine l(0,str,0,1);
 	ErrorCode ret=NONS_NO_ERROR;
-	for (ulong a=0;a<line.statements.size();a++){
-		ErrorCode error=this->interpretString(*line.statements[a]);
+	for (ulong a=0;a<l.statements.size();a++){
+		ErrorCode error=this->interpretString(*l.statements[a],line,offset);
 		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
 			ret=NONS_UNDEFINED_ERROR;
 	}
 	return ret;
 }
 
-ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt){
+ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_ScriptLine *line,ulong offset){
 	stmt.parse(this->everything->script);
+	stmt.lineOfOrigin=line;
+	stmt.fileOffset=offset;
 	if (CLOptions.verbosity>=3 && stmt.type==NONS_Statement::STATEMENT_COMMAND){
 		o_stderr <<"String: \""<<stmt.commandName<<"\" ";
 		if (stmt.parameters.size()){
@@ -722,9 +725,10 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt){
 		case NONS_Statement::STATEMENT_COMMENT:
 			break;
 		case NONS_Statement::STATEMENT_PRINTER:
-			if (this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
+			if (!stmt.lineOfOrigin || this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
 				//softwareCtrlIsPressed=0;
-				this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
+				if (!!stmt.lineOfOrigin)
+					this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
 			}
 			this->Printer(stmt.commandName);
 			break;
@@ -742,7 +746,7 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt){
 						}
 						return NONS_NOT_IMPLEMENTED;
 					}
-					return handleErrors((this->*function)(stmt),stmt.lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::interpretString",1);
+					return handleErrors((this->*function)(stmt),(!!stmt.lineOfOrigin)?stmt.lineOfOrigin->lineNumber:0,"NONS_ScriptInterpreter::interpretString",1);
 				}else{
 					o_stderr <<"NONS_ScriptInterpreter::interpretString(): "
 						"Error. Command \""<<stmt.commandName<<"\" could not be recognized.\n";

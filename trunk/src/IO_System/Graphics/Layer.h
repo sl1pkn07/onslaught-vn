@@ -59,6 +59,7 @@ struct NONS_Layer{
 	~NONS_Layer();
 	void MakeTextLayer(NONS_Font *font,SDL_Color *foreground,bool shadow);
 	bool load(const std::wstring *string);
+	bool load(SDL_Surface *src);
 	//if the parameter is true and the image isn't shared, the call has no effect
 	bool unload(bool youCantTouchThis=0);
 	void usePicAsDefaultShade(SDL_Surface *pic);

@@ -49,7 +49,7 @@ struct PSF_parameters{
 	SDL_Rect *srcRect;
 	SDL_Surface *dst;
 	SDL_Rect *dstRect;
-	uchar alpha;
+	manualBlitAlpha_t alpha;
 	SDL_Color color;
 };
 #endif
@@ -347,11 +347,11 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 	SDL_UnlockSurface(dst);
 	SDL_UnlockSurface(src);
 }
-#else
-void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha);
+#else //NONS_PARALLELIZE
+void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
 int manualBlit_threaded(void *parameters);
 
-void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha){
+void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
 		return;
 	SDL_Rect srcRect0,dstRect0;
@@ -412,7 +412,7 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 
 	SDL_LockSurface(src);
 	SDL_LockSurface(dst);
-	if (cpu_count==1 || srcRect0.w*srcRect0.h<1000){
+	if (cpu_count==1 || srcRect0.w*srcRect0.h<5000){
 		manualBlit_threaded(src,&srcRect0,dst,&dstRect0,alpha);
 		SDL_UnlockSurface(dst);
 		SDL_UnlockSurface(src);
@@ -439,9 +439,10 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	}
 	rects0[cpu_count-1].h+=srcRect0.h-total;
 	//ulong t0=SDL_GetTicks();
-	for (ushort a=0;a<cpu_count;a++)
+	for (ushort a=1;a<cpu_count;a++)
 		threads[a]=SDL_CreateThread(manualBlit_threaded,parameters+a);
-	for (ushort a=0;a<cpu_count;a++)
+	manualBlit_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	//ulong t1=SDL_GetTicks();
 	//o_stderr <<"Done in "<<t1-t0<<" ms."<<std::endl;
@@ -459,7 +460,7 @@ int manualBlit_threaded(void *parameters){
 	return 0;
 }
 
-void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha){
+void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	SDL_Rect &srcRect0=*srcRect,
 		&dstRect0=*dstRect;
 	int w0=srcRect0.w, h0=srcRect0.h;
@@ -488,6 +489,10 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 	bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
 	bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
 
+	bool negate=(alpha<0);
+	if (negate)
+		alpha=-alpha;
+
 	for (int y0=0;y0<h0;y0++){
 		uchar *pos00=pos0;
 		uchar *pos10=pos1;
@@ -495,13 +500,14 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 			uchar r0=pos0[Roffset0];
 			uchar g0=pos0[Goffset0];
 			uchar b0=pos0[Boffset0];
+			uchar a0=255;
 
 			uchar *r1=pos1+Roffset1;
 			uchar *g1=pos1+Goffset1;
 			uchar *b1=pos1+Boffset1;
 
 			if (alpha0){
-				uchar a0=uchar((short(pos0[Aoffset0])*short(alpha))/255);
+				a0=uchar((short(pos0[Aoffset0])*short(alpha))/255);
 				*r1=((255-a0)*(*r1))/255+(a0*r0)/255;
 				*g1=((255-a0)*(*g1))/255+(a0*g0)/255;
 				*b1=((255-a0)*(*b1))/255+(a0*b0)/255;
@@ -511,7 +517,7 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 					*a1=temp>255?255:temp;
 				}
 			}else if (alpha<255){
-				uchar a0=255-alpha;
+				a0=255-alpha;
 				*r1=(a0*(*r1))/255+(alpha*r0)/255;
 				*g1=(a0*(*g1))/255+(alpha*g0)/255;
 				*b1=(a0*(*b1))/255+(alpha*b0)/255;
@@ -524,11 +530,16 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 				*r1=r0;
 				*g1=g0;
 				*b1=b0;
-				if (alpha1){
-					uchar *a1=pos1+Aoffset1;
-					*a1=0xFF;
-				}
+				if (alpha1)
+					pos1[Aoffset1]=0xFF;
 			}
+
+			if (negate && a0){
+				*r1=~*r1;
+				*g1=~*g1;
+				*b1=~*b1;
+			}
+
 			pos0+=advance0;
 			pos1+=advance1;
 		}
@@ -624,9 +635,10 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 		parameters[a].dstRect=rects1+a;
 	}
 	rects0[cpu_count-1].h+=srcRect0.h-total;
-	for (ushort a=0;a<cpu_count;a++)
+	for (ushort a=1;a<cpu_count;a++)
 		threads[a]=SDL_CreateThread(multiplyBlend_threaded,parameters+a);
-	for (ushort a=0;a<cpu_count;a++)
+	multiplyBlend_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	SDL_UnlockSurface(dst);
 	SDL_UnlockSurface(src);
@@ -687,8 +699,287 @@ void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		pos1=pos10+dst->pitch;
 	}
 }
-#endif
-#endif
+#endif //NONS_PARALLELIZE
+
+void FlipSurfaceH(SDL_Surface *src,SDL_Surface *dst){
+	if (!src || !dst || src->w!=dst->w || src->h!=dst->h)
+		return;
+	if (src==dst){
+		SDL_LockSurface(src);
+
+		ulong w=src->w,
+			w0=w,
+			h=src->h;
+		w/=2;
+
+		uchar *pos=(uchar *)src->pixels;
+		
+		unsigned advance=src->format->BytesPerPixel;
+		unsigned pitch=src->pitch;
+
+		Uint32 putMask=(checkNativeEndianness()==NONS_LITTLE_ENDIAN)?((~0)<<(advance*8)):((~0)>>(advance*8)),
+			getMask=~putMask;
+		
+		for (ulong y=0;y<h;y++){
+			uchar *pos0=pos,
+				*pos_reverse=pos+(w0-1)*advance;
+			for (ulong x=0;x<w;x++){
+				Uint32 pixelA=*(Uint32 *)pos&getMask,
+					pixelB=*(Uint32 *)pos_reverse&getMask;
+				*(Uint32 *)pos&=putMask;
+				*(Uint32 *)pos|=pixelB;
+				*(Uint32 *)pos_reverse&=putMask;
+				*(Uint32 *)pos_reverse|=pixelB;
+				pos+=advance;
+				pos_reverse-=advance;
+			}
+			pos=pos0+pitch;
+		}
+
+		SDL_UnlockSurface(src);
+	}else{
+		SDL_LockSurface(src);
+		SDL_LockSurface(dst);
+
+		ulong w=src->w,
+			h=src->h;
+
+		uchar *pos0=(uchar *)src->pixels;
+		uchar *pos1=(uchar *)dst->pixels;
+
+		uchar Roffset0=(src->format->Rshift)>>3;
+		uchar Goffset0=(src->format->Gshift)>>3;
+		uchar Boffset0=(src->format->Bshift)>>3;
+		uchar Aoffset0=(src->format->Ashift)>>3;
+
+		uchar Roffset1=(dst->format->Rshift)>>3;
+		uchar Goffset1=(dst->format->Gshift)>>3;
+		uchar Boffset1=(dst->format->Bshift)>>3;
+		uchar Aoffset1=(dst->format->Ashift)>>3;
+
+		bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
+		bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
+
+		unsigned advance0=src->format->BytesPerPixel;
+		unsigned pitch0=src->pitch;
+		unsigned advance1=dst->format->BytesPerPixel;
+		unsigned pitch1=dst->pitch;
+
+		pos1+=(w-1)*advance1;
+
+		for (ulong y=0;y<h;y++){
+			uchar *pos00=pos0,
+				*pos10=pos1;
+			for (ulong x=0;x<w;x++){
+				pos1[Roffset1]=pos0[Roffset0];
+				pos1[Goffset1]=pos0[Goffset0];
+				pos1[Boffset1]=pos0[Boffset0];
+				if (alpha1){
+					if (alpha0)
+						pos1[Aoffset1]=pos0[Aoffset0];
+					else
+						pos1[Aoffset1]=0xFF;
+				}
+
+				pos0+=advance0;
+				pos1-=advance1;
+			}
+			pos0=pos00+pitch0;
+			pos1=pos10+pitch1;
+		}
+
+		SDL_UnlockSurface(src);
+		SDL_UnlockSurface(dst);
+	}
+}
+
+void FlipSurfaceV(SDL_Surface *src,SDL_Surface *dst){
+	if (!src || !dst || src->w!=dst->w || src->h!=dst->h)
+		return;
+	if (src==dst){
+		SDL_LockSurface(src);
+
+		ulong w=src->w,
+			h=src->h,
+			h0=h;
+		h/=2;
+
+		uchar *pos=(uchar *)src->pixels;
+		
+		unsigned advance=src->format->BytesPerPixel;
+		unsigned pitch=src->pitch;
+
+		Uint32 putMask=(checkNativeEndianness()==NONS_LITTLE_ENDIAN)?((~0)<<(advance*8)):((~0)>>(advance*8)),
+			getMask=~putMask;
+		
+		for (ulong x=0;x<w;x++){
+			uchar *pos0=pos,
+				*pos_reverse=pos+(h0-1)*pitch;
+			for (ulong y=0;y<h;y++){
+				Uint32 pixelA=*(Uint32 *)pos&getMask,
+					pixelB=*(Uint32 *)pos_reverse&getMask;
+				*(Uint32 *)pos&=putMask;
+				*(Uint32 *)pos|=pixelB;
+				*(Uint32 *)pos_reverse&=putMask;
+				*(Uint32 *)pos_reverse|=pixelB;
+				pos+=pitch;
+				pos_reverse-=pitch;
+			}
+			pos=pos0+advance;
+		}
+
+		SDL_UnlockSurface(src);
+	}else{
+		SDL_LockSurface(src);
+		SDL_LockSurface(dst);
+
+		ulong w=src->w,
+			h=src->h;
+
+		uchar *pos0=(uchar *)src->pixels;
+		uchar *pos1=(uchar *)dst->pixels;
+
+		uchar Roffset0=(src->format->Rshift)>>3;
+		uchar Goffset0=(src->format->Gshift)>>3;
+		uchar Boffset0=(src->format->Bshift)>>3;
+		uchar Aoffset0=(src->format->Ashift)>>3;
+
+		uchar Roffset1=(dst->format->Rshift)>>3;
+		uchar Goffset1=(dst->format->Gshift)>>3;
+		uchar Boffset1=(dst->format->Bshift)>>3;
+		uchar Aoffset1=(dst->format->Ashift)>>3;
+
+		bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
+		bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
+
+		unsigned advance0=src->format->BytesPerPixel;
+		unsigned pitch0=src->pitch;
+		unsigned advance1=dst->format->BytesPerPixel;
+		unsigned pitch1=dst->pitch;
+
+		pos1+=(h-1)*pitch1;
+
+		for (ulong x=0;x<w;x++){
+			uchar *pos00=pos0,
+				*pos10=pos1;
+			for (ulong y=0;y<h;y++){
+				pos1[Roffset1]=pos0[Roffset0];
+				pos1[Goffset1]=pos0[Goffset0];
+				pos1[Boffset1]=pos0[Boffset0];
+				if (alpha1){
+					if (alpha0)
+						pos1[Aoffset1]=pos0[Aoffset0];
+					else
+						pos1[Aoffset1]=0xFF;
+				}
+
+				pos0+=pitch0;
+				pos1-=pitch1;
+			}
+			pos0=pos00+advance0;
+			pos1=pos10+advance1;
+		}
+
+		SDL_UnlockSurface(src);
+		SDL_UnlockSurface(dst);
+	}
+}
+
+void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst){
+	if (!src || !dst || src->w!=dst->w || src->h!=dst->h)
+		return;
+	if (src==dst){
+		SDL_LockSurface(src);
+
+		ulong w=src->w,
+			h=src->h,
+			h0=h;
+		h=h/2+h%2;
+
+		uchar *pos=(uchar *)src->pixels;
+		
+		unsigned advance=src->format->BytesPerPixel;
+		unsigned pitch=src->pitch;
+
+		Uint32 putMask=(checkNativeEndianness()==NONS_LITTLE_ENDIAN)?((~0)<<(advance*8)):((~0)>>(advance*8)),
+			getMask=~putMask;
+		
+		for (ulong y=0;y<h;y++){
+			uchar *pos0=pos,
+				*pos_reverse=pos+(w-1)*advance+(h-1)*pitch;
+			if (y>h0/2)
+				w/=2;
+			for (ulong x=0;x<w;x++){
+				Uint32 pixelA=*(Uint32 *)pos&getMask,
+					pixelB=*(Uint32 *)pos_reverse&getMask;
+				*(Uint32 *)pos&=putMask;
+				*(Uint32 *)pos|=pixelB;
+				*(Uint32 *)pos_reverse&=putMask;
+				*(Uint32 *)pos_reverse|=pixelB;
+				pos+=advance;
+				pos_reverse-=advance;
+			}
+			pos=pos0+pitch;
+		}
+
+		SDL_UnlockSurface(src);
+	}else{
+		SDL_LockSurface(src);
+		SDL_LockSurface(dst);
+
+		ulong w=src->w,
+			h=src->h;
+
+		uchar *pos0=(uchar *)src->pixels;
+		uchar *pos1=(uchar *)dst->pixels;
+
+		uchar Roffset0=(src->format->Rshift)>>3;
+		uchar Goffset0=(src->format->Gshift)>>3;
+		uchar Boffset0=(src->format->Bshift)>>3;
+		uchar Aoffset0=(src->format->Ashift)>>3;
+
+		uchar Roffset1=(dst->format->Rshift)>>3;
+		uchar Goffset1=(dst->format->Gshift)>>3;
+		uchar Boffset1=(dst->format->Bshift)>>3;
+		uchar Aoffset1=(dst->format->Ashift)>>3;
+
+		bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
+		bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
+
+		unsigned advance0=src->format->BytesPerPixel;
+		unsigned pitch0=src->pitch;
+		unsigned advance1=dst->format->BytesPerPixel;
+		unsigned pitch1=dst->pitch;
+
+		pos1+=(w-1)*advance1+(h-1)*pitch1;
+
+		for (ulong y=0;y<h;y++){
+			uchar *pos00=pos0,
+				*pos10=pos1;
+			for (ulong x=0;x<w;x++){
+				pos1[Roffset1]=pos0[Roffset0];
+				pos1[Goffset1]=pos0[Goffset0];
+				pos1[Boffset1]=pos0[Boffset0];
+				if (alpha1){
+					if (alpha0)
+						pos1[Aoffset1]=pos0[Aoffset0];
+					else
+						pos1[Aoffset1]=0xFF;
+				}
+
+				pos0+=advance0;
+				pos1-=advance1;
+			}
+			pos0=pos00+pitch0;
+			pos1=pos10-pitch1;
+		}
+
+		SDL_UnlockSurface(src);
+		SDL_UnlockSurface(dst);
+	}
+}
+
+#endif // !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 
 template <typename T,typename T2>
 bool multicomparison_template(T character,const T2 *characters){
@@ -765,7 +1056,7 @@ std::string readString(char *buffer,ulong &offset){
 }
 
 void writeByte(Uint8 a,std::string &str,ulong offset){
-	if (offset<0)
+	if (offset==ULONG_MAX)
 		str.push_back(a&0xFF);
 	else
 		str[offset]=a&0xFF;

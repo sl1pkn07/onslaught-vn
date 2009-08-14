@@ -110,7 +110,10 @@ NONS_VirtualScreen::~NONS_VirtualScreen(){
 }
 
 void NONS_VirtualScreen::blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rect *dstrect){
-	SDL_BlitSurface(src,srcrect,this->virtualScreen,dstrect);
+	if (!!src && src->format->BitsPerPixel<24)
+		SDL_BlitSurface(src,srcrect,this->virtualScreen,dstrect);
+	else
+		manualBlit(src,srcrect,this->virtualScreen,dstrect);
 }
 
 void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast){
@@ -241,13 +244,11 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 			this->realScreen->format->Bmask,
 			this->realScreen->format->Amask
 		);
-		//SDL_BlitSurface
 		manualBlit(this->realScreen,0,tempCopy,0);
 	}
 	this->realScreen=SDL_SetVideoMode(w,h,24,SDL_HWSURFACE|SDL_DOUBLEBUF|((this->fullscreen)?SDL_FULLSCREEN:0));
 	if (a){
 		this->virtualScreen=this->realScreen;
-		//SDL_BlitSurface
 		manualBlit(tempCopy,0,this->realScreen,0);
 		SDL_FreeSurface(tempCopy);
 	}else
@@ -257,7 +258,7 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	return this->fullscreen;
 }
 
-std::string NONS_VirtualScreen::takeScreenshot(){
+std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
 	tm t;
 	ulong c;
 	{
@@ -265,10 +266,11 @@ std::string NONS_VirtualScreen::takeScreenshot(){
 		c=SDL_GetTicks();
 		t=*localtime(&t2);
 	}
-	std::string filename=
-		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
-		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
-		itoa<char>(c,10)+".bmp";
+	std::string filename=(!name.size())?
+			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
+			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
+			itoa<char>(c,10)+".bmp"
+		:name;
 	LOCKSCREEN;
 	const char *s=filename.c_str();
 	SDL_SaveBMP(this->virtualScreen,s);
@@ -310,7 +312,7 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 		dstRect0.x<0 || dstRect0.x>=dst->w || dstRect0.y<0 || dstRect0.y>=dst->h || dstRect0.w<=0 || dstRect0.h<=0)
 		return;
 	if (srcRect0.w==dstRect0.w && srcRect0.h==dstRect0.h){
-		SDL_BlitSurface(src,&srcRect0,dst,&dstRect0);
+		manualBlit(src,&srcRect0,dst,&dstRect0);
 		return;
 	}
 	if (src->format->BitsPerPixel<24 || dst->format->BitsPerPixel<24)
@@ -443,7 +445,7 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 		dstRect0.x<0 || dstRect0.x>=dst->w || dstRect0.y<0 || dstRect0.y>=dst->h || dstRect0.w<=0 || dstRect0.h<=0)
 		return;
 	if (srcRect0.w==dstRect0.w && srcRect0.h==dstRect0.h){
-		SDL_BlitSurface(src,&srcRect0,dst,&dstRect0);
+		manualBlit(src,&srcRect0,dst,&dstRect0);
 		return;
 	}
 	if (src->format->BitsPerPixel<24 || dst->format->BitsPerPixel<24)
@@ -590,7 +592,7 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 		dstRect0.x<0 || dstRect0.x>=dst->w || dstRect0.y<0 || dstRect0.y>=dst->h || dstRect0.w<=0 || dstRect0.h<=0)
 		return;
 	if (srcRect0.w==dstRect0.w && srcRect0.h==dstRect0.h){
-		SDL_BlitSurface(src,&srcRect0,dst,&dstRect0);
+		manualBlit(src,&srcRect0,dst,&dstRect0);
 		return;
 	}
 	if (src->format->BitsPerPixel<24 || dst->format->BitsPerPixel<24)
@@ -919,7 +921,7 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		dstRect0.x<0 || dstRect0.x>=dst->w || dstRect0.y<0 || dstRect0.y>=dst->h || dstRect0.w<=0 || dstRect0.h<=0)
 		return;
 	if (srcRect0.w==dstRect0.w && srcRect0.h==dstRect0.h){
-		SDL_BlitSurface(src,&srcRect0,dst,&dstRect0);
+		manualBlit(src,&srcRect0,dst,&dstRect0);
 		return;
 	}
 	if (src->format->BitsPerPixel<24 || dst->format->BitsPerPixel<24)

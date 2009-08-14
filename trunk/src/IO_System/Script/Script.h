@@ -156,6 +156,7 @@ struct NONS_ScriptThread{
 	std::vector<NONS_ScriptLine *> lines;
 	bool valid;
 	NONS_ScriptThread(NONS_Script *script);
+	~NONS_ScriptThread();
 	//0 if can't advance, 1 otherwise.
 	bool advanceToNextStatement();
 	bool gotoLabel(const std::wstring &label);

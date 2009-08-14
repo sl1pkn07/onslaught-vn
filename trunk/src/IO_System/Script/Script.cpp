@@ -353,6 +353,7 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 		default:
 			break;
 	}
+	delete[] temp;
 	this->scriptSize=wtemp.size();
 	wchar_t *buffer=&wtemp[0];
 	ulong currentLine=1,
@@ -563,6 +564,11 @@ NONS_ScriptThread::NONS_ScriptThread(NONS_Script *script){
 	this->nextStatement=pair.second;
 }
 
+NONS_ScriptThread::~NONS_ScriptThread(){
+	for (ulong a=0;a<this->lines.size();a++)
+		delete this->lines[a];
+}
+
 bool NONS_ScriptThread::advanceToNextStatement(){
 	if (this->nextLine==this->lines[this->currentLine]->lineNumber)
 		this->currentStatement=this->nextStatement;
@@ -582,6 +588,7 @@ bool NONS_ScriptThread::advanceToNextStatement(){
 			return this->advanceToNextStatement();
 		}
 		this->currentLine=moveTo;
+		this->currentStatement=0;
 	}else{
 		NONS_ScriptBlock *block=this->script->blockFromLine(this->nextLine);
 		if (!block)

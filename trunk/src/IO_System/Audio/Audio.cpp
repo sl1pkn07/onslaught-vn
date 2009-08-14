@@ -71,6 +71,7 @@ NONS_Audio::~NONS_Audio(){
 	delete this->soundcache;
 	for (channels_map_t::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
 		delete i->second;
+	SDL_DestroyMutex(this->mutex);
 	Mix_CloseAudio();
 }
 

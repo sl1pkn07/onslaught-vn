@@ -131,8 +131,8 @@ void NONS_Glyph::putGlyph(SDL_Surface *dst,int x,int y,SDL_Color *foreground,boo
 	rect2.w-=2;
 	rect2.h-=2;
 	SDL_FillRect(dst,&rect2,0xFF000000);*/
-	SDL_BlitSurface(this->glyph,0,dst,&rect);
-	//manualBlit(this->glyph,0,dst,&rect);
+	//SDL_BlitSurface(this->glyph,0,dst,&rect);
+	manualBlit(this->glyph,0,dst,&rect);
 }
 
 SDL_Color NONS_Glyph::getforeground(){

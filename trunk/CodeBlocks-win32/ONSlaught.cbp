@@ -89,6 +89,10 @@
 		<Unit filename="..\src\IO_System\Graphics\Lookback.h" />
 		<Unit filename="..\src\IO_System\Graphics\Menu.cpp" />
 		<Unit filename="..\src\IO_System\Graphics\Menu.h" />
+		<Unit filename="..\src\IO_System\Graphics\SDL_bilinear.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\IO_System\Graphics\SDL_bilinear.h" />
 		<Unit filename="..\src\IO_System\Graphics\SDL_ttf.c">
 			<Option compilerVar="CC" />
 		</Unit>
