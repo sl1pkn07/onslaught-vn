@@ -34,7 +34,7 @@
 #include "../../Functions.h"
 #include "../../Globals.h"
 
-NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *store){
+NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->screen=new NONS_VirtualScreen(CLOptions.virtualWidth,CLOptions.virtualHeight,CLOptions.realWidth,CLOptions.realHeight);
 	SDL_Rect size={0,0,CLOptions.virtualWidth,CLOptions.virtualHeight};
 	SDL_Rect frame={framesize,framesize,CLOptions.virtualWidth-framesize*2,CLOptions.virtualHeight-framesize*2};
@@ -51,10 +51,10 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *
 		this->screen->virtualScreen->h,
 		32,
 		rmask,gmask,bmask,amask);
-	if (!store)
+	//if (!store)
 		this->gfx_store=new NONS_GFXstore();
-	else
-		this->gfx_store=store;
+	/*else
+		this->gfx_store=store;*/
 	this->monochrome=0;
 	this->negative=0;
 	this->sprite_priority=25;
@@ -64,7 +64,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font,NONS_GFXstore *
 	this->char_baseline=this->screenBuffer->h-1;
 }
 
-NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow,NONS_GFXstore *store){
+NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow){
 	this->screen=new NONS_VirtualScreen(CLOptions.virtualWidth,CLOptions.virtualHeight,CLOptions.realWidth,CLOptions.realHeight);
 	this->output=new NONS_StandardOutput(font,window,frame);
 	this->output->visible=0;
@@ -80,10 +80,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 		this->screen->virtualScreen->h,
 		32,
 		rmask,gmask,bmask,amask);
-	if (!store)
-		this->gfx_store=new NONS_GFXstore();
-	else
-		this->gfx_store=store;
+	this->gfx_store=new NONS_GFXstore();
 	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
@@ -114,7 +111,7 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 	if (!rects.size())
 		return;
-
+////////////////////////////////////////////////////////////////////////////////
 #define BLEND_OPTIM(p,function) {\
 	if ((p) && (p)->data && (p)->visible){\
 		SDL_Rect src={\
@@ -135,7 +132,7 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 		function((p)->data,&src,this->screenBuffer,&dst);\
 	}\
 }
-
+////////////////////////////////////////////////////////////////////////////////
 	ulong minx=rects[0].x,
 		maxx=minx+rects[0].w,
 		miny=rects[0].y,

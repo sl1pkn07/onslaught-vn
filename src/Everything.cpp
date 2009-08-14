@@ -69,8 +69,8 @@ ErrorCode NONS_Everything::init_screen(){
 		delete[] buffer;
 	}*/
 	INIT_NONS_FONT(font,18,this->archive)
-	NONS_GFXstore *gfx=new NONS_GFXstore();
-	this->screen=new NONS_ScreenSpace(20,font,gfx);
+	//NONS_GFXstore *gfx=new NONS_GFXstore();
+	this->screen=new NONS_ScreenSpace(20,font/*,gfx*/);
 	this->screen->output->shadeLayer->Clear();
 	this->screen->Background->Clear();
 	this->screen->BlendNoCursor(1);

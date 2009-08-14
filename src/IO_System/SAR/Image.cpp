@@ -430,7 +430,10 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
 	SDL_Surface *surface=IMG_Load_RW(rwops,0);
 	this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,surface->w,surface->h,32,rmask,gmask,bmask,amask);
-	SDL_BlitSurface(surface,0,this->image,0);
+	if (!!surface && surface->format->BitsPerPixel<24)
+		SDL_BlitSurface(surface,0,this->image,0);
+	else
+		manualBlit(surface,0,this->image,0);
 	SDL_FreeSurface(surface);
 	SDL_FreeRW(rwops);
 	this->animation.parse(string);

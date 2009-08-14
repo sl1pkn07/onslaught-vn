@@ -48,7 +48,7 @@
 
 int mainThread(void *nothing);
 
-bool useArgumentsFile(const char *filename){
+bool useArgumentsFile(const char *filename,const std::vector<std::wstring> &argc){
 	std::ifstream file(filename);
 	if (!file)
 		return 0;
@@ -56,6 +56,7 @@ bool useArgumentsFile(const char *filename){
 	std::getline(file,str);
 	std::wstring copy=UniFromUTF8(str);
 	std::vector<std::wstring> vec=getParameterList(copy,0);
+	vec.insert(vec.end(),argc.begin(),argc.end());
 	CLOptions.parse(vec);
 	return 1;
 }
@@ -235,12 +236,7 @@ int main(int argc,char **argv){
 	signal(SIGINT,handle_SIGINT);
 
 	std::vector<std::wstring> cmdl_arg=getArgumentsVector(argv);
-	if (cmdl_arg.size() && (
-			cmdl_arg[0]==L"-?" ||
-			cmdl_arg[0]==L"-h" ||
-			cmdl_arg[0]==L"--help" ||
-			cmdl_arg[0]==L"--version"
-			) || !useArgumentsFile("arguments.txt"))
+	if (cmdl_arg.size() && !useArgumentsFile("arguments.txt",cmdl_arg))
 		CLOptions.parse(cmdl_arg);
 
 	if (CLOptions.override_stdout){
@@ -385,6 +381,6 @@ int debugThread(void *nothing){
 		}else if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"debugThread",0);
 		else
-			handleErrors(gScriptInterpreter->interpretString(winput),-1,"debugThread",0);
+			handleErrors(gScriptInterpreter->interpretString(winput,0,0),-1,"debugThread",0);
 	}
 }

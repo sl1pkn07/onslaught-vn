@@ -68,7 +68,7 @@ ErrorCode NONS_ScriptInterpreter::command_return(NONS_Statement &stmt){
 	NONS_ScriptLine &line=popped->interpretAtReturn;
 	ErrorCode ret=NONS_NO_ERROR_BUT_BREAK;
 	for (ulong a=0;a<line.statements.size();a++){
-		ErrorCode error=this->interpretString(*line.statements[a]);
+		ErrorCode error=this->interpretString(*line.statements[a],stmt.lineOfOrigin,stmt.fileOffset);
 		if (error==NONS_END)
 			return NONS_END;
 		if (error==NONS_GOSUB)
@@ -368,9 +368,12 @@ ErrorCode NONS_ScriptInterpreter::command_print(NONS_Statement &stmt){
 		std::wstring rule;
 		if (stmt.parameters.size()>2)
 			_GETWCSVALUE(rule,2,)
+		this->everything->screen->hideText();
 		ret=this->everything->screen->BlendNoCursor(number,duration,&rule);
-	}else
+	}else{
+		this->everything->screen->hideText();
 		ret=this->everything->screen->BlendNoCursor(number);
+	}
 	return ret;
 }
 

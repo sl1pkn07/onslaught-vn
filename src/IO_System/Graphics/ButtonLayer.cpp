@@ -380,6 +380,13 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 							return mouseOver;
 					}
 					break;
+				case SDL_KEYDOWN:
+					if (event.key.keysym.sym==SDLK_ESCAPE){
+						InputObserver.detach(queue);
+						SDL_FreeSurface(screenCopy);
+						this->screen->screen->updateWholeScreen();
+						return -2;
+					}
 			}
 		}
 		SDL_Delay(10);

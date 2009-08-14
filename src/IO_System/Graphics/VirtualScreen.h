@@ -77,7 +77,7 @@ struct NONS_VirtualScreen{
 	ulong convertW(ulong w);
 	ulong convertH(ulong h);
 	void updateWithoutLock(bool fast=0);
-	std::string takeScreenshot();
+	std::string takeScreenshot(const std::string &filename="");
 };
 
 void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);

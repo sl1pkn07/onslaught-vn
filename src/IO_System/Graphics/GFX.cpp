@@ -977,9 +977,10 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 
 		for (ushort b=0;b<cpu_count;b++)
 			parameters[b].a=a;
-		for (ushort b=0;b<cpu_count;b++)
+		for (ushort b=1;b<cpu_count;b++)
 			threads[b]=SDL_CreateThread(effectHardMask_threaded,parameters+b);
-		for (ushort b=0;b<cpu_count;b++)
+		effectHardMask_threaded(parameters);
+		for (ushort b=1;b<cpu_count;b++)
 			SDL_WaitThread(threads[b],0);
 
 		SDL_UnlockSurface(dst->virtualScreen);
@@ -1268,9 +1269,10 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 
 		for (ushort b=0;b<cpu_count;b++)
 			parameters[b].a=a;
-		for (ushort b=0;b<cpu_count;b++)
+		for (ushort b=1;b<cpu_count;b++)
 			threads[b]=SDL_CreateThread(effectSoftMask_threaded,parameters+b);
-		for (ushort b=0;b<cpu_count;b++)
+		effectSoftMask_threaded(parameters);
+		for (ushort b=1;b<cpu_count;b++)
 			SDL_WaitThread(threads[b],0);
 
 		SDL_UnlockSurface(dst->virtualScreen);
@@ -1482,9 +1484,10 @@ void NONS_GFX::effectMonochrome(SDL_Surface *src0,SDL_Surface *dst){
 		parameters[a].color=this->color;
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
-	for (ushort a=0;a<cpu_count;a++)
+	for (ushort a=1;a<cpu_count;a++)
 		threads[a]=SDL_CreateThread(effectMonochrome_threaded,parameters+a);
-	for (ushort a=0;a<cpu_count;a++)
+	effectMonochrome_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	SDL_UnlockSurface(dst);
 	delete[] threads;
@@ -1587,9 +1590,10 @@ void NONS_GFX::effectNegative(SDL_Surface *src0,SDL_Surface *dst){
 		parameters[a].dstRect=rects+a;
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
-	for (ushort a=0;a<cpu_count;a++)
+	for (ushort a=1;a<cpu_count;a++)
 		threads[a]=SDL_CreateThread(effectNegative_threaded,parameters+a);
-	for (ushort a=0;a<cpu_count;a++)
+	effectNegative_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	SDL_UnlockSurface(dst);
 	delete[] threads;
@@ -1677,9 +1681,10 @@ void NONS_GFX::effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst){
 		parameters[a].dstRect=rects+a;
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
-	for (ushort a=0;a<cpu_count;a++)
+	for (ushort a=1;a<cpu_count;a++)
 		threads[a]=SDL_CreateThread(effectNegativeMono_threaded,parameters+a);
-	for (ushort a=0;a<cpu_count;a++)
+	effectNegativeMono_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
 	SDL_UnlockSurface(dst);
 	delete[] threads;

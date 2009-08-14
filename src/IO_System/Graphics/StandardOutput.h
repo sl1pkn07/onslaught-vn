@@ -50,9 +50,9 @@ struct NONS_StandardOutput{
 	int w;
 	//Height of the frame.
 	int h;
-	NONS_Layer *foregroundLayer;
-	NONS_Layer *shadowLayer;
-	NONS_Layer *shadeLayer;
+	NONS_Layer *foregroundLayer,
+		*shadowLayer,
+		*shadeLayer;
 	ulong display_speed;
 	int extraAdvance;
 	bool visible;

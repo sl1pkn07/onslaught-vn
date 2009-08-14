@@ -42,6 +42,7 @@ add_executable(ONSlaught
 	src/IO_System/Audio/SoundCache.cpp
 	src/IO_System/Audio/SoundEffect.cpp
 	src/IO_System/Graphics/SDL_ttf.c
+	src/IO_System/Graphics/SDL_bilinear.c
 	src/IO_System/Graphics/Button.cpp
 	src/IO_System/Graphics/ButtonLayer.cpp
 	src/IO_System/Graphics/Cursor.cpp

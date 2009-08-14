@@ -1,6 +1,10 @@
 ????????
-    * Implemented: versionstr, cell.
+    * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
+        drawclear, drawfill, drawsp.
     * Added screenshot function.
+    * Memory leak the size of the script fixed.
+    * Bug in jumpb and jumpf fixed.
+    * Fixed incorrect behavior of bg for images of size other than the screen.
 
 20090715
     * Major internal redesign.

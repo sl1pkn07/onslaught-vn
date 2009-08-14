@@ -440,6 +440,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\src\IO_System\Graphics\SDL_bilinear.c"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Graphics\SDL_bilinear.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\src\IO_System\Graphics\SDL_ttf.c"
 						>
 					</File>

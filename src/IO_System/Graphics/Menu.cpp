@@ -398,7 +398,7 @@ int NONS_Menu::call(const std::wstring &string){
 	}else if (string==L"skip"){
 		this->skip();
 	}else{
-		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string);
+		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string,0,0);
 		if (error==NONS_END)
 			return NONS_END;
 		if (error!=NONS_NO_ERROR)
