@@ -105,7 +105,7 @@ void usage(){
 		"      Default is \'auto\'.\n"
 		"  -s\n"
 		"      No sound.\n"
-		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}}\n"
+		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}\n"
 		"      Select the music format to be used.\n"
 		"      Default is \'auto\'.\n"
 		"  -music-directory <directory>\n"

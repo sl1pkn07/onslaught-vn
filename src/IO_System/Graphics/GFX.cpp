@@ -36,7 +36,6 @@
 #include "../../Globals.h"
 #include <cmath>
 
-#ifdef NONS_PARALLELIZE
 //(Parallelized surface function)
 struct PSF_parameters{
 	SDL_Surface *src;
@@ -46,7 +45,6 @@ struct PSF_parameters{
 	uchar alpha;
 	SDL_Color color;
 };
-#endif
 
 ulong NONS_GFX::effectblank=0;
 
@@ -553,12 +551,7 @@ void NONS_GFX::effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 	}
 	const long step=1;
 	LOCKSCREEN;
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
+	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
 	UNLOCKSCREEN;
 	float delay=float(this->duration)/float(256/step);
@@ -743,109 +736,6 @@ void NONS_GFX::effectUscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 		waitNonCancellable(NONS_GFX::effectblank);
 }
 
-#ifndef NONS_PARALLELIZE
-void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
-	LOCKSCREEN;
-	if (!src0 || !src1 || !dst || src0->w!=dst->virtualScreen->w || src0->h!=dst->virtualScreen->h){
-		UNLOCKSCREEN;
-		return;
-	}
-	if (CURRENTLYSKIPPING){
-		UNLOCKSCREEN;
-		dst->blitToScreen(src0,0,0);
-		dst->updateWholeScreen();
-		return;
-	}
-	SDL_Surface *copyMask=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
-	SDL_Rect srcrect={0,0,src1->w,src1->h},
-		dstrect=srcrect;
-	for (dstrect.y=0;dstrect.y<dst->virtualScreen->h;dstrect.y+=srcrect.h)
-		for (dstrect.x=0;dstrect.x<dst->virtualScreen->w;dstrect.x+=srcrect.w)
-			manualBlit(src1,&srcrect,copyMask,&dstrect);
-	src1=copyMask;
-	UNLOCKSCREEN;
-	float delay=float(this->duration)/256.0;
-	long idealtimepos=0,
-		lastT=9999,
-		start=SDL_GetTicks();
-	for (long a=0;a<256;a++){
-		long t0=SDL_GetTicks();
-		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<255){
-			idealtimepos+=delay;
-			continue;
-		}
-		{
-			long w0=dst->virtualScreen->w,h0=dst->virtualScreen->h;
-			LOCKSCREEN;
-			SDL_LockSurface(src0);
-			SDL_LockSurface(src1);
-			SDL_LockSurface(dst->virtualScreen);
-
-			uchar *pos0=(uchar *)src0->pixels;
-			uchar *pos1=(uchar *)src1->pixels;
-			uchar *pos2=(uchar *)dst->virtualScreen->pixels;
-
-			uchar Roffset0=(src0->format->Rshift)>>3;
-			uchar Goffset0=(src0->format->Gshift)>>3;
-			uchar Boffset0=(src0->format->Bshift)>>3;
-
-			uchar Boffset1=(src1->format->Bshift)>>3;
-
-			uchar Roffset2=(dst->virtualScreen->format->Rshift)>>3;
-			uchar Goffset2=(dst->virtualScreen->format->Gshift)>>3;
-			uchar Boffset2=(dst->virtualScreen->format->Bshift)>>3;
-
-			unsigned advance0=src0->format->BytesPerPixel;
-			unsigned advance1=src1->format->BytesPerPixel;
-			unsigned advance2=dst->virtualScreen->format->BytesPerPixel;
-
-			for (int y0=0;y0<h0;y0++){
-				for (int x0=0;x0<w0;x0++){
-					uchar r0=pos0[Roffset0];
-					uchar g0=pos0[Goffset0];
-					uchar b0=pos0[Boffset0];
-
-					uchar b1=pos1[Boffset1];
-					uchar *b12=pos1+Boffset1;
-
-					uchar *r2=pos2+Roffset2;
-					uchar *g2=pos2+Goffset2;
-					uchar *b2=pos2+Boffset2;
-
-					if (b1<=a){
-						*r2=r0;
-						*g2=g0;
-						*b2=b0;
-						*b12=0xFF;
-					}
-
-					pos0+=advance0;
-					pos1+=advance1;
-					pos2+=advance2;
-				}
-			}
-			SDL_UnlockSurface(dst->virtualScreen);
-			SDL_UnlockSurface(src1);
-			SDL_UnlockSurface(src0);
-		}
-		dst->updateWithoutLock();
-		UNLOCKSCREEN;
-		long t1=SDL_GetTicks();
-		lastT=t1-t0;
-		if (lastT<delay)
-			SDL_Delay(delay-lastT);
-		idealtimepos+=delay;
-	}
-	SDL_FreeSurface(copyMask);
-	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
-		waitNonCancellable(NONS_GFX::effectblank);
-}
-#else
 struct EHM_parameters{
 	uchar *pos0,
 		*pos1,
@@ -912,12 +802,7 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 		dst->updateWholeScreen();
 		return;
 	}
-	SDL_Surface *copyMask=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
+	SDL_Surface *copyMask=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	SDL_Rect srcrect={0,0,src1->w,src1->h},
 		dstrect=srcrect;
 	//copy the rule as a tile
@@ -999,127 +884,7 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
 }
-#endif
 
-#ifndef NONS_PARALLELIZE
-void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
-	LOCKSCREEN;
-	if (!src0 || !src1 || !dst || src0->w!=dst->virtualScreen->w || src0->h!=dst->virtualScreen->h){
-		UNLOCKSCREEN;
-		return;
-	}
-	if (CURRENTLYSKIPPING){
-		UNLOCKSCREEN;
-		dst->blitToScreen(src0,0,0);
-		dst->updateWholeScreen();
-		return;
-	}
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
-	manualBlit(dst->virtualScreen,0,copyDst,0);
-	SDL_Surface *copyMask=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
-	SDL_Rect srcrect={0,0,src1->w,src1->h},
-		dstrect=srcrect;
-	for (dstrect.y=0;dstrect.y<dst->virtualScreen->h;dstrect.y+=srcrect.h)
-		for (dstrect.x=0;dstrect.x<dst->virtualScreen->w;dstrect.x+=srcrect.w)
-			manualBlit(src1,&srcrect,copyMask,&dstrect);
-	UNLOCKSCREEN;
-	src1=copyMask;
-	float delay=float(this->duration)/512.0;
-	long idealtimepos=0,
-		lastT=9999,
-		start=SDL_GetTicks();
-	for (long a=0;a<512;a++){
-		long t0=SDL_GetTicks();
-		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<511){
-			idealtimepos+=delay;
-			continue;
-		}
-		LOCKSCREEN;
-		manualBlit(copyDst,0,dst->virtualScreen,0);
-		{
-			long w0=dst->virtualScreen->w,h0=dst->virtualScreen->h;
-			SDL_LockSurface(src0);
-			SDL_LockSurface(src1);
-			SDL_LockSurface(dst->virtualScreen);
-
-			uchar *pos0=(uchar *)src0->pixels;
-			uchar *pos1=(uchar *)src1->pixels;
-			uchar *pos2=(uchar *)dst->virtualScreen->pixels;
-
-			uchar Roffset0=(src0->format->Rshift)>>3;
-			uchar Goffset0=(src0->format->Gshift)>>3;
-			uchar Boffset0=(src0->format->Bshift)>>3;
-
-			uchar Boffset1=(src1->format->Bshift)>>3;
-
-			uchar Roffset2=(dst->virtualScreen->format->Rshift)>>3;
-			uchar Goffset2=(dst->virtualScreen->format->Gshift)>>3;
-			uchar Boffset2=(dst->virtualScreen->format->Bshift)>>3;
-
-			unsigned advance0=src0->format->BytesPerPixel;
-			unsigned advance1=src1->format->BytesPerPixel;
-			unsigned advance2=dst->virtualScreen->format->BytesPerPixel;
-
-			for (int y0=0;y0<h0;y0++){
-				for (int x0=0;x0<w0;x0++){
-					short r0=pos0[Roffset0];
-					short g0=pos0[Goffset0];
-					short b0=pos0[Boffset0];
-
-					uchar b1=pos1[Boffset1];
-					uchar *b12=pos1+Boffset1;
-
-					uchar *r2=pos2+Roffset2;
-					uchar *g2=pos2+Goffset2;
-					uchar *b2=pos2+Boffset2;
-
-					if (long(b1)<=a){
-						short alpha=a-b1;
-						short deltar=r0-*r2;
-						short deltag=g0-*g2;
-						short deltab=b0-*b2;
-						if (alpha<0) alpha=0;
-						if (alpha>255) alpha=255;
-						(*r2)+=(deltar*alpha)/255;
-						(*g2)+=(deltag*alpha)/255;
-						(*b2)+=(deltab*alpha)/255;
-						if (long(b1)<a-255)
-							*b12=0;
-					}
-
-					pos0+=advance0;
-					pos1+=advance1;
-					pos2+=advance2;
-				}
-			}
-			SDL_UnlockSurface(dst->virtualScreen);
-			SDL_UnlockSurface(src1);
-			SDL_UnlockSurface(src0);
-		}
-		dst->updateWithoutLock();
-		UNLOCKSCREEN;
-		long t1=SDL_GetTicks();
-		lastT=t1-t0;
-		if (lastT<delay)
-			SDL_Delay(delay-lastT);
-		idealtimepos+=delay;
-	}
-	SDL_FreeSurface(copyMask);
-	SDL_FreeSurface(copyDst);
-	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
-		waitNonCancellable(NONS_GFX::effectblank);
-}
-#else
 struct ESM_parameters{
 	uchar *pos0,
 		*pos1,
@@ -1190,19 +955,9 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 		return;
 	}
 	LOCKSCREEN;
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
+	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
-	SDL_Surface *copyMask=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
+	SDL_Surface *copyMask=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	SDL_Rect srcrect={0,0,src1->w,src1->h},
 		dstrect=srcrect;
 	for (dstrect.y=0;dstrect.y<dst->virtualScreen->h;dstrect.y+=srcrect.h)
@@ -1292,7 +1047,6 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
 }
-#endif
 
 void NONS_GFX::effectMosaicIn(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
 	LOCKSCREEN;
@@ -1419,43 +1173,6 @@ void NONS_GFX::effectMosaicOut(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 		waitNonCancellable(NONS_GFX::effectblank);
 }
 
-#ifndef NONS_PARALLELIZE
-void NONS_GFX::effectMonochrome(SDL_Surface *src0,SDL_Surface *dst){
-	if (!dst || dst->format->BitsPerPixel<24)
-		return;
-	long w=dst->w,h=dst->h;
-	SDL_LockSurface(dst);
-	uchar *pos=(uchar *)dst->pixels;
-	long advance=dst->format->BytesPerPixel;
-	uchar Roffset=(dst->format->Rshift)>>3;
-	uchar Goffset=(dst->format->Gshift)>>3;
-	uchar Boffset=(dst->format->Bshift)>>3;
-	for (long y=0;y<h;y++){
-		uchar *pos0=pos;
-		for (long x=0;x<w;x++){
-			ulong r1,g1,b1;
-			r1=long(pos[Roffset])*long(this->color.r)+
-				long(pos[Goffset])*long(this->color.r)+
-				long(pos[Boffset])*long(this->color.r);
-			r1/=255*3;
-			g1=long(pos[Roffset])*long(this->color.g)+
-				long(pos[Goffset])*long(this->color.g)+
-				long(pos[Boffset])*long(this->color.g);
-			g1/=255*3;
-			b1=long(pos[Roffset])*long(this->color.b)+
-				long(pos[Goffset])*long(this->color.b)+
-				long(pos[Boffset])*long(this->color.b);
-			b1/=255*3;
-			pos[Roffset]=r1;
-			pos[Goffset]=g1;
-			pos[Boffset]=b1;
-			pos+=advance;
-		}
-		pos=pos0+dst->pitch;
-	}
-	SDL_UnlockSurface(dst);
-}
-#else
 void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &color);
 int effectMonochrome_threaded(void *parameters);
 
@@ -1537,32 +1254,7 @@ void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &col
 		pos=pos0+dst->pitch;
 	}
 }
-#endif
 
-#ifndef NONS_PARALLELIZE
-void NONS_GFX::effectNegative(SDL_Surface *src0,SDL_Surface *dst){
-	if (!dst || dst->format->BitsPerPixel<24)
-		return;
-	long w=dst->w,h=dst->h;
-	SDL_LockSurface(dst);
-	uchar *pos=(uchar *)dst->pixels;
-	long advance=dst->format->BytesPerPixel;
-	uchar Roffset=(dst->format->Rshift)>>3;
-	uchar Goffset=(dst->format->Gshift)>>3;
-	uchar Boffset=(dst->format->Bshift)>>3;
-	for (long y=0;y<h;y++){
-		uchar *pos0=pos;
-		for (long x=0;x<w;x++){
-			pos[Roffset]=255-pos[Roffset];
-			pos[Goffset]=255-pos[Goffset];
-			pos[Boffset]=255-pos[Boffset];
-			pos+=advance;
-		}
-		pos=pos0+dst->pitch;
-	}
-	SDL_UnlockSurface(dst);
-}
-#else
 void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect);
 int effectNegative_threaded(void *parameters);
 
@@ -1627,33 +1319,7 @@ void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
 		pos=pos0+pitch;
 	}
 }
-#endif
 
-#ifndef NONS_PARALLELIZE
-void NONS_GFX::effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst){
-	if (!dst || dst->format->BitsPerPixel<24)
-		return;
-	long w=dst->w,h=dst->h;
-	SDL_LockSurface(dst);
-	uchar *pos=(uchar *)dst->pixels;
-	long advance=dst->format->BytesPerPixel;
-	uchar Roffset=(dst->format->Rshift)>>3;
-	uchar Goffset=(dst->format->Gshift)>>3;
-	uchar Boffset=(dst->format->Bshift)>>3;
-	for (long y=0;y<h;y++){
-		uchar *pos0=pos;
-		for (long x=0;x<w;x++){
-			ushort rgb=((255-pos[Roffset])+(255-pos[Goffset])+(255-pos[Boffset]))/3;
-			pos[Roffset]=rgb;
-			pos[Goffset]=rgb;
-			pos[Boffset]=rgb;
-			pos+=advance;
-		}
-		pos=pos0+dst->pitch;
-	}
-	SDL_UnlockSurface(dst);
-}
-#else
 void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect);
 int effectNegativeMono_threaded(void *parameters);
 
@@ -1719,7 +1385,7 @@ void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
 		pos=pos0+pitch;
 	}
 }
-#endif
+
 NONS_GFXstore::NONS_GFXstore(){
 	this->effects[0]=new NONS_GFX();
 	this->effects[0]->stored=1;

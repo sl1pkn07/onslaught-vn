@@ -123,6 +123,10 @@ typedef unsigned long ErrorCode;
 #define NONS_DUPLICATE_LABEL						(73|NONS_SYNTAX_ERROR)
 #define NONS_INVALID_COMMAND_NAME					(74|NONS_SYNTAX_ERROR)
 #define NONS_NOT_ENOUGH_LINES_TO_SKIP				75
+#define NONS_BAD_MATRIX								(76|NONS_WARNING)
+#define NONS_NOT_ENOUGH_VARIABLE_INDICES			77
+#define NONS_NO_SUCH_SAVEGAME						(78|NONS_WARNING)
+#define NONS_HASH_DOES_NOT_MATCH					79
 
 extern const char *errorMessages[];
 #endif

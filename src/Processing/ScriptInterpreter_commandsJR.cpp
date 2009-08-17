@@ -614,7 +614,7 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 void shake(SDL_Surface *dst,long amplitude,ulong duration){
 	SDL_Rect srcrect=dst->clip_rect,
 		dstrect=srcrect;
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,dst->w,dst->h,32,rmask,gmask,bmask,amask);
+	SDL_Surface *copyDst=makeSurface(dst->w,dst->h,32);
 	manualBlit(dst,0,copyDst,0);
 	ulong start=SDL_GetTicks();
 	SDL_Rect last=dstrect;
@@ -689,7 +689,7 @@ ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_Statement &stmt){
 	_GETINTVALUE(file,0,)
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	return this->load(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
+	return this->load(file);
 }
 
 ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_Statement &stmt){
@@ -702,13 +702,51 @@ ErrorCode NONS_ScriptInterpreter::command_labellog(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
+	ulong functionVersion=atoi(stmt.commandName.substr(3));
+	MINIMUM_PARAMETERS(functionVersion+1);
+	NONS_VariableMember *first;
+	_GETVARIABLE(first,0,)
+	Sint32 index=this->store->getVariableIndex(first);
+	if (Sint32(index+functionVersion)>NONS_VariableStore::indexUpperLimit)
+		return NONS_NOT_ENOUGH_VARIABLE_INDICES;
+	std::vector<long> intvalues;
+	std::vector<std::wstring> strvalues;
+	for (ulong a=0;a<functionVersion;a++){
+		if (first->getType()==INTEGER){
+			long val;
+			_GETINTVALUE(val,a+1,)
+			intvalues.push_back(val);
+		}else{
+			std::wstring val;
+			_GETWCSVALUE(val,a+1,)
+			strvalues.push_back(val);
+		}
+	}
+	for (ulong a=0;a<functionVersion;a++){
+		if (first->getType()==INTEGER){
+			NONS_Variable *var=this->store->retrieve(index+a,0);
+			var->intValue->set(intvalues[a]);
+		}else{
+			NONS_Variable *var=this->store->retrieve(index+a,0);
+			var->wcsValue->set(strvalues[a]);
+		}
+	}
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_ofscopy(NONS_Statement &stmt){
+	//TODO: What does this do?
+	/*
+	LOCKSCREEN;
+	manualBlit(this->
+	this->everything->screen->Background->load(this->everything->screen->screen->virtualScreen);
+	UNLOCKSCREEN;
+	*/
+	return NONS_UNDOCUMENTED_COMMAND;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

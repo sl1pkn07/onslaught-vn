@@ -190,6 +190,14 @@ const char *errorMessages[]={
 	"Invalid command name. Only [A-Za-z_][A-Za-z_0-9]*",
 	//NONS_NOT_ENOUGH_LINES_TO_SKIP
 	"There aren't enough lines to skip. The skip will be ignored.",
+	//NONS_BAD_MATRIX
+	"The matrix cannot be applied.",
+	//NONS_NOT_ENOUGH_VARIABLE_INDICES
+	"There aren't enough upper indices to complete the mov operation.",
+	//NONS_NO_SUCH_SAVEGAME
+	"The savegame doesn't exist.",
+	//NONS_HASH_DOES_NOT_MATCH
+	"The savegame doesn't appear to belong to this script.",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);
@@ -224,9 +232,7 @@ NONS_ScriptInterpreter *gScriptInterpreter=0;
 SDL_mutex *exitMutex=0;
 SDL_mutex *screenMutex=0;
 
-#ifdef NONS_PARALLELIZE
 ulong cpu_count=1;
-#endif
 
 std::wstring save_directory;
 std::wstring config_directory;

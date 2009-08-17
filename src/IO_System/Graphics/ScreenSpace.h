@@ -44,6 +44,7 @@ struct NONS_ScreenSpace{
 		*leftChar,
 		*rightChar,
 		*centerChar,
+		**characters[3],
 		*cursor;
 	NONS_VirtualScreen *screen;
 	SDL_Surface *screenBuffer;
@@ -54,6 +55,8 @@ struct NONS_ScreenSpace{
 	ulong sprite_priority;
 	NONS_Lookback *lookback;
 	ulong char_baseline;
+	bool blendSprites;
+	std::vector<ulong> charactersBlendOrder;
 
 	NONS_ScreenSpace(int framesize,NONS_Font *font);
 	NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow);

@@ -124,15 +124,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 		}
 	}
 	NONS_EventQueue *queue=InputObserver.attach();
-	SDL_Surface *screenCopy=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		this->screen->screen->inRect.w,
-		this->screen->screen->inRect.h,
-		32,
-		rmask,
-		gmask,
-		bmask,
-		amask);
+	SDL_Surface *screenCopy=makeSurface(this->screen->screen->inRect.w,this->screen->screen->inRect.h,32);
 	LOCKSCREEN;
 	manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
 	UNLOCKSCREEN;
@@ -311,15 +303,7 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 	}
 	NONS_EventQueue *queue=InputObserver.attach();
 	LOCKSCREEN;
-	SDL_Surface *screenCopy=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		this->screen->screen->virtualScreen->w,
-		this->screen->screen->virtualScreen->h,
-		32,
-		rmask,
-		gmask,
-		bmask,
-		amask);
+	SDL_Surface *screenCopy=makeSurface(this->screen->screen->virtualScreen->w,this->screen->screen->virtualScreen->h,32);
 	UNLOCKSCREEN;
 	LOCKSCREEN;
 	manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);

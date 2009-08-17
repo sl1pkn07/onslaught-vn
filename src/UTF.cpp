@@ -142,8 +142,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			c1=c0;
 		if (SJIS2Unicode[c1]=='?' && c1!='?'){
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-			o_stderr.getstream().width(4);
-			o_stderr <<"ENCODING ERROR: Character SJIS+"<<std::hex<<c1<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
+			(o_stderr <<"ENCODING ERROR: Character SJIS+").outputHex(c1,4)<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character SJIS+%04x is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n",c1);
 #endif
@@ -217,10 +216,7 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 			character=Unicode2SJIS[srcc];
 		if (character=='?' && srcc!='?'){
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-			o_stderr <<"ENCODING ERROR: Character U+";
-			o_stderr.getstream().width(4);
-			o_stderr.getstream() <<std::hex<<srcc;
-			o_stderr <<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
+			(o_stderr <<"ENCODING ERROR: Character U+").outputHex(srcc,4)<<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
 #else
 			fprintf(stderr,"ENCODING ERROR: Character U+%04x is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n",srcc);
 #endif

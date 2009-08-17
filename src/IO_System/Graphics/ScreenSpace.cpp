@@ -34,6 +34,8 @@
 #include "../../Functions.h"
 #include "../../Globals.h"
 
+#define SCREENBUFFER_BITS 32
+
 NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->screen=new NONS_VirtualScreen(CLOptions.virtualWidth,CLOptions.virtualHeight,CLOptions.realWidth,CLOptions.realHeight);
 	SDL_Rect size={0,0,CLOptions.virtualWidth,CLOptions.virtualHeight};
@@ -43,18 +45,10 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->layerStack.resize(1000,0);
 	this->Background=new NONS_Layer(&size,0xFF000000);
 	this->leftChar=0;
-	this->rightChar=0;
 	this->centerChar=0;
-	this->screenBuffer=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		this->screen->virtualScreen->w,
-		this->screen->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
-	//if (!store)
-		this->gfx_store=new NONS_GFXstore();
-	/*else
-		this->gfx_store=store;*/
+	this->rightChar=0;
+	this->screenBuffer=makeSurface(this->screen->virtualScreen->w,this->screen->virtualScreen->h,SCREENBUFFER_BITS);
+	this->gfx_store=new NONS_GFXstore();
 	this->monochrome=0;
 	this->negative=0;
 	this->sprite_priority=25;
@@ -62,6 +56,14 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
 	this->cursor=0;
 	this->char_baseline=this->screenBuffer->h-1;
+	this->blendSprites=1;
+
+	this->characters[0]=&this->leftChar;
+	this->characters[1]=&this->centerChar;
+	this->characters[2]=&this->rightChar;
+	this->charactersBlendOrder.push_back(0);
+	this->charactersBlendOrder.push_back(1);
+	this->charactersBlendOrder.push_back(2);
 }
 
 NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow){
@@ -72,20 +74,23 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 	SDL_Rect size={0,0,CLOptions.virtualWidth,CLOptions.virtualHeight};
 	this->Background=new NONS_Layer(&size,0xFF000000);
 	this->leftChar=0;
-	this->rightChar=0;
 	this->centerChar=0;
-	this->screenBuffer=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		this->screen->virtualScreen->w,
-		this->screen->virtualScreen->h,
-		32,
-		rmask,gmask,bmask,amask);
+	this->rightChar=0;
+	this->screenBuffer=makeSurface(this->screen->virtualScreen->w,this->screen->virtualScreen->h,SCREENBUFFER_BITS);
 	this->gfx_store=new NONS_GFXstore();
 	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
 	this->cursor=0;
 	this->char_baseline=this->screenBuffer->h-1;
+	this->blendSprites=1;
+
+	this->characters[0]=&this->leftChar;
+	this->characters[1]=&this->centerChar;
+	this->characters[2]=&this->rightChar;
+	this->charactersBlendOrder.push_back(0);
+	this->charactersBlendOrder.push_back(1);
+	this->charactersBlendOrder.push_back(2);
 }
 
 NONS_ScreenSpace::~NONS_ScreenSpace(){
@@ -232,43 +237,31 @@ ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect,long timing,const std::ws
 
 ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 	this->BlendOnlyBG(0);
-	for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--)
-		if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
-			manualBlit(
-				this->layerStack[a]->data,
-				&this->layerStack[a]->clip_rect,
-				this->screenBuffer,
-				&this->layerStack[a]->position,
-				this->layerStack[a]->alpha);
-	if (this->leftChar && this->leftChar->data)
-		manualBlit(
-			this->leftChar->data,
-			&this->leftChar->clip_rect,
-			this->screenBuffer,
-			&this->leftChar->position,
-			this->leftChar->alpha);
-	if (this->rightChar && this->rightChar->data)
-		manualBlit(
-			this->rightChar->data,
-			&this->rightChar->clip_rect,
-			this->screenBuffer,
-			&this->rightChar->position,
-			this->rightChar->alpha);
-	if (this->centerChar && this->centerChar->data)
-		manualBlit(
-			this->centerChar->data,
-			&this->centerChar->clip_rect,
-			this->screenBuffer,
-			&this->centerChar->position,
-			this->centerChar->alpha);
-	for (long a=this->sprite_priority;a>=0;a--)
-		if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
-			manualBlit(
-				this->layerStack[a]->data,
-				&this->layerStack[a]->clip_rect,
-				this->screenBuffer,
-				&this->layerStack[a]->position,
-				this->layerStack[a]->alpha);
+	if (this->blendSprites){
+		for (ulong a=this->layerStack.size()-1;a>this->sprite_priority;a--)
+			if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
+				manualBlit(
+					this->layerStack[a]->data,
+					&this->layerStack[a]->clip_rect,
+					this->screenBuffer,
+					&this->layerStack[a]->position,
+					this->layerStack[a]->alpha);
+	}
+	for (ulong a=0;a<this->charactersBlendOrder.size();a++){
+		NONS_Layer *lay=*this->characters[charactersBlendOrder[a]];
+		if (lay && lay->data)
+			manualBlit(lay->data,&lay->clip_rect,this->screenBuffer,&lay->position,lay->alpha);
+	}
+	if (this->blendSprites){
+		for (long a=this->sprite_priority;a>=0;a--)
+			if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
+				manualBlit(
+					this->layerStack[a]->data,
+					&this->layerStack[a]->clip_rect,
+					this->screenBuffer,
+					&this->layerStack[a]->position,
+					this->layerStack[a]->alpha);
+	}
 	if (this->monochrome)
 		this->monochrome->call(0,this->screenBuffer,0);
 	if (this->negative)

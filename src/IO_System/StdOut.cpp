@@ -33,10 +33,14 @@
 #include "StdOut.h"
 #include "../UTF.h"
 #include "../Functions.h"
+#include <sstream>
 #include <ctime>
 
-NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a):cout(a){
+NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a)
+		:cout(a){
 	this->file=0;
+	this->indentation=0;
+	this->addIndentationNext=1;
 }
 
 NONS_RedirectedOutput::~NONS_RedirectedOutput(){
@@ -44,22 +48,69 @@ NONS_RedirectedOutput::~NONS_RedirectedOutput(){
 		this->file->close();
 }
 
-template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a){
-	*this <<std::wstring(a);
+NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(ulong a){
+	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
+	if (this->addIndentationNext)
+		for (ulong a=0;a<this->indentation;a++)
+			stream <<INDENTATION_CHARACTER;
+	this->addIndentationNext=0;
+	stream <<a;
 	return *this;
 }
 
-template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <std::wstring>(const std::wstring &a){
-	*this <<UniToUTF8(a);
+NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
+	std::stringstream s;
+	s.width(w);
+	s <<s.hex<<a;
+	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
+	stream <<s.str();
 	return *this;
 }
 
-std::ostream &NONS_RedirectedOutput::getstream(){
+NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(long a){
+	return *this <<(ulong)a;
+}
+
+/*NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(wchar_t a){
+	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
+	if (this->addIndentationNext)
+		for (ulong a=0;a<this->indentation;a++)
+			stream <<INDENTATION_CHARACTER;
+	this->addIndentationNext=0;
+	stream <<a;
+	return *this;
+}*/
+
+NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const char *a){
+	return *this <<std::string(a);
+}
+
+NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
+	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
+	for (ulong b=0;b<a.size();b++){
+		char c=a[b];
+		if (this->addIndentationNext)
+			for (ulong d=0;d<this->indentation;d++)
+				stream <<INDENTATION_CHARACTER;
+		if (c=='\n')
+			this->addIndentationNext=1;
+		else
+			this->addIndentationNext=0;
+		stream <<c;
+	}
+	return *this;
+}
+
+NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::wstring &a){
+	return *this <<UniToUTF8(a);
+}
+
+/*std::ostream &NONS_RedirectedOutput::getstream(){
 	if (CLOptions.override_stdout)
 		return *(this->file);
 	else
 		return this->cout;
-}
+}*/
 
 void NONS_RedirectedOutput::redirect(){
 	if (!!this->file)
@@ -91,5 +142,17 @@ void NONS_RedirectedOutput::redirect(){
 			"Session "<<str<<"\n"
 			"--------------------------------------------------------------------------------"<<std::endl;
 	}
+}
+
+void NONS_RedirectedOutput::indent(long a){
+	if (!a)
+		return;
+	if (a<0){
+		if (ulong(-a)>this->indentation)
+			this->indentation=0;
+		else
+			this->indentation-=-a;
+	}else
+		this->indentation+=a;
 }
 #endif

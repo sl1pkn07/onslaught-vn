@@ -39,7 +39,7 @@
 #include <ctime>
 #include <SDL/SDL.h>
 
-#define NONS_SAVEFILE_VERSION 2
+#define NONS_SAVEFILE_VERSION 3
 
 std::vector<tm *> existing_files(const std::wstring &location=L"./");
 std::wstring getConfigLocation();
@@ -89,10 +89,9 @@ struct NONS_SaveFile{
 		ulong animOffset;
 		Sprite():x(0),y(0),visibility(1),alpha(255),animOffset(0){}
 	};
-	//Sprite leftChar;
-	//Sprite centerChar;
-	//Sprite rightChar;
 	Sprite characters[3];
+	uchar charactersBlendOrder[3];
+	bool blendSprites;
 	std::vector<Sprite *> sprites;
 	variables_map_T variables;
 	arrays_map_T arrays;

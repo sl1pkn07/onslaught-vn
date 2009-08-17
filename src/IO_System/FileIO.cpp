@@ -82,7 +82,7 @@ char writefile(const std::wstring &name,char *buffer,ulong size){
 	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
 	if (!file){
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO) && defined(NONS_SYS_WINDOWS)
-		o_stderr <<"writefile(): "<<GetLastError()<<'\n';
+		o_stderr <<"writefile(): "<<GetLastError()<<"\n";
 #endif
 		return 1;
 	}

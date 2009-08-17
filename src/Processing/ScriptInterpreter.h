@@ -51,9 +51,8 @@
 #include <ctime>
 //#include <SDL/smpeg.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+extern SDL_Surface *(*rotationFunction)(SDL_Surface *,double);
+extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
 #define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)),extra)
@@ -340,12 +339,12 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_drawclear(NONS_Statement &stmt);
 	ErrorCode command_drawfill(NONS_Statement &stmt);
 	ErrorCode command_drawsp(NONS_Statement &stmt);
+	ErrorCode command_drawtext(NONS_Statement &stmt);
+	ErrorCode command_allsphide(NONS_Statement &stmt);
+	ErrorCode command_movN(NONS_Statement &stmt);
+	ErrorCode command_ofscopy(NONS_Statement &stmt);
+	ErrorCode command_humanorder(NONS_Statement &stmt);
 	/*ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
@@ -370,7 +369,7 @@ public:
 	ErrorCode interpretString(const std::wstring &str,NONS_ScriptLine *lineNo,ulong offset);
 	ulong totalCommands();
 	ulong implementedCommands();
-	bool load(int file);
+	ErrorCode load(int file);
 	bool save(int file);
 	std::wstring convertParametersToString(NONS_Statement &line);
 	ulong getCurrentTextgosubLevel();

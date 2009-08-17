@@ -42,7 +42,6 @@
 #include "UTF.h"
 #include <cmath>
 
-#ifdef NONS_PARALLELIZE
 //(Parallelized surface function)
 struct PSF_parameters{
 	SDL_Surface *src;
@@ -52,7 +51,6 @@ struct PSF_parameters{
 	manualBlitAlpha_t alpha;
 	SDL_Color color;
 };
-#endif
 
 bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset){
 	bool res=(arr[*byteoffset]>>(7-*bitoffset))&1;
@@ -80,274 +78,6 @@ Uint32 secondsSince1970(){
 }
 
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-#ifndef NONS_PARALLELIZE
-void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,uchar alpha){
-	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
-		return;
-	SDL_Rect srcRect0,dstRect0;
-	if (!srcRect){
-		srcRect0.x=0;
-		srcRect0.y=0;
-		srcRect0.w=src->w;
-		srcRect0.h=src->h;
-	}else
-		srcRect0=*srcRect;
-	if (!dstRect){
-		dstRect0.x=0;
-		dstRect0.y=0;
-		dstRect0.w=dst->w;
-		dstRect0.h=dst->h;
-	}else
-		dstRect0=*dstRect;
-
-	if (srcRect0.x<0){
-		if (srcRect0.w<=-srcRect0.x)
-			return;
-		srcRect0.w+=srcRect0.x;
-		srcRect0.x=0;
-	}else if (srcRect0.x>=src->w)
-		return;
-	if (srcRect0.y<0){
-		if (srcRect0.h<=-srcRect0.y)
-			return;
-		srcRect0.h+=srcRect0.y;
-		srcRect0.y=0;
-	}else if (srcRect0.y>=src->h)
-		return;
-	if (srcRect0.x+srcRect0.w>src->w)
-		srcRect0.w-=srcRect0.x+srcRect0.w-src->w;
-	if (srcRect0.y+srcRect0.h>src->h)
-		srcRect0.h-=srcRect0.y+srcRect0.h-src->h;
-	if (dstRect0.x+srcRect0.w>dst->w)
-		srcRect0.w-=dstRect0.x+srcRect0.w-dst->w;
-	if (dstRect0.y+srcRect0.h>dst->h)
-		srcRect0.h-=dstRect0.y+srcRect0.h-dst->h;
-
-	if (dstRect0.x<0){
-		srcRect0.x=-dstRect0.x;
-		srcRect0.w+=dstRect0.x;
-		dstRect0.x=0;
-	}else if (dstRect0.x>=dst->w)
-		return;
-	if (dstRect0.y<0){
-		srcRect0.y=-dstRect0.y;
-		srcRect0.h+=dstRect0.y;
-		dstRect0.y=0;
-	}else if (dstRect0.y>=dst->h)
-		return;
-
-	if (srcRect0.w<=0 || srcRect0.h<=0)
-		return;
-	int w0=srcRect0.w, h0=srcRect0.h;
-
-	SDL_LockSurface(src);
-	SDL_LockSurface(dst);
-
-	uchar *pos0=(uchar *)src->pixels;
-	uchar *pos1=(uchar *)dst->pixels;
-
-	uchar Roffset0=(src->format->Rshift)>>3;
-	uchar Goffset0=(src->format->Gshift)>>3;
-	uchar Boffset0=(src->format->Bshift)>>3;
-	uchar Aoffset0=(src->format->Ashift)>>3;
-
-	uchar Roffset1=(dst->format->Rshift)>>3;
-	uchar Goffset1=(dst->format->Gshift)>>3;
-	uchar Boffset1=(dst->format->Bshift)>>3;
-	uchar Aoffset1=(dst->format->Ashift)>>3;
-
-	unsigned advance0=src->format->BytesPerPixel;
-	unsigned advance1=dst->format->BytesPerPixel;
-
-	pos0+=src->pitch*srcRect0.y+srcRect0.x*advance0;
-	pos1+=dst->pitch*dstRect0.y+dstRect0.x*advance1;
-
-	bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
-	bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
-	//Unused:
-	//bool condition=0;
-
-	for (int y0=0;y0<h0;y0++){
-		uchar *pos00=pos0;
-		uchar *pos10=pos1;
-		for (int x0=0;x0<w0;x0++){
-			uchar r0=pos0[Roffset0];
-			uchar g0=pos0[Goffset0];
-			uchar b0=pos0[Boffset0];
-			//uchar a0=pos0[Aoffset0];
-
-			uchar *r1=pos1+Roffset1;
-			uchar *g1=pos1+Goffset1;
-			uchar *b1=pos1+Boffset1;
-
-			if (alpha0){
-				uchar a0=uchar((short(pos0[Aoffset0])*short(alpha))/255);
-				/*short deltar=r0-*r1;
-				short deltag=g0-*g1;
-				short deltab=b0-*b1;
-				(*r1)+=(deltar*a0)/255;
-				(*g1)+=(deltag*a0)/255;
-				(*b1)+=(deltab*a0)/255;*/
-				*r1=((255-a0)*(*r1))/255+(a0*r0)/255;
-				*g1=((255-a0)*(*g1))/255+(a0*g0)/255;
-				*b1=((255-a0)*(*b1))/255+(a0*b0)/255;
-				if (alpha1){
-					uchar *a1=pos1+Aoffset1;
-					short temp=*a1+a0;
-					*a1=temp>255?255:temp;
-				}
-			}else if (alpha<255){
-				uchar a0=255-alpha;
-				/**r1=(a0*r0)/255+(alpha*(*r1))/255;
-				*g1=(a0*g0)/255+(alpha*(*g1))/255;
-				*b1=(a0*b0)/255+(alpha*(*b1))/255;*/
-				*r1=(a0*(*r1))/255+(alpha*r0)/255;
-				*g1=(a0*(*g1))/255+(alpha*g0)/255;
-				*b1=(a0*(*b1))/255+(alpha*b0)/255;
-				/*short deltar=r0-*r1;
-				short deltag=g0-*g1;
-				short deltab=b0-*b1;
-				(*r1)+=(deltar*a0)/255;
-				(*g1)+=(deltag*a0)/255;
-				(*b1)+=(deltab*a0)/255;*/
-				if (alpha1){
-					uchar *a1=pos1+Aoffset1;
-					short temp=*a1+a0;
-					*a1=temp>255?255:temp;
-				}
-			}else{
-				*r1=r0;
-				*g1=g0;
-				*b1=b0;
-				if (alpha1){
-					uchar *a1=pos1+Aoffset1;
-					*a1=0xFF;
-				}
-			}
-			pos0+=advance0;
-			pos1+=advance1;
-		}
-		pos0=pos00+src->pitch;
-		pos1=pos10+dst->pitch;
-	}
-	SDL_UnlockSurface(dst);
-	SDL_UnlockSurface(src);
-}
-
-void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect){
-	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24)
-		return;
-	SDL_Rect srcRect0,dstRect0;
-	if (!srcRect){
-		srcRect0.x=0;
-		srcRect0.y=0;
-		srcRect0.w=src->w;
-		srcRect0.h=src->h;
-	}else
-		srcRect0=*srcRect;
-	if (!dstRect){
-		dstRect0.x=0;
-		dstRect0.y=0;
-		dstRect0.w=dst->w;
-		dstRect0.h=dst->h;
-	}else
-		dstRect0=*dstRect;
-
-	if (srcRect0.x<0){
-		if (srcRect0.w<=-srcRect0.x)
-			return;
-		srcRect0.w+=srcRect0.x;
-		srcRect0.x=0;
-	}else if (srcRect0.x>=src->w)
-		return;
-	if (srcRect0.y<0){
-		if (srcRect0.h<=-srcRect0.y)
-			return;
-		srcRect0.h+=srcRect0.y;
-		srcRect0.y=0;
-	}else if (srcRect0.y>=src->h)
-		return;
-	if (srcRect0.x+srcRect0.w>src->w)
-		srcRect0.w-=srcRect0.x+srcRect0.w-src->w;
-	if (srcRect0.y+srcRect0.h>src->h)
-		srcRect0.h-=srcRect0.y+srcRect0.h-src->h;
-	if (dstRect0.x+srcRect0.w>dst->w)
-		srcRect0.w-=dstRect0.x+srcRect0.w-dst->w;
-	if (dstRect0.y+srcRect0.h>dst->h)
-		srcRect0.h-=dstRect0.y+srcRect0.h-dst->h;
-
-	if (dstRect0.x<0){
-		srcRect0.x=-dstRect0.x;
-		srcRect0.w+=dstRect0.x;
-		dstRect0.x=0;
-	}else if (dstRect0.x>=dst->w)
-		return;
-	if (dstRect0.y<0){
-		dstRect0.h+=dstRect0.y;
-		dstRect0.y=0;
-	}else if (dstRect0.y>=dst->h)
-		return;
-
-	if (srcRect0.w<=0 || srcRect0.h<=0)
-		return;
-	int w0=srcRect0.w, h0=srcRect0.h;
-
-	SDL_LockSurface(src);
-	SDL_LockSurface(dst);
-
-	uchar *pos0=(uchar *)src->pixels;
-	uchar *pos1=(uchar *)dst->pixels;
-
-	uchar Roffset0=(src->format->Rshift)>>3;
-	uchar Goffset0=(src->format->Gshift)>>3;
-	uchar Boffset0=(src->format->Bshift)>>3;
-	//Unused:
-	//uchar Aoffset0=(src->format->Ashift)>>3;
-
-	uchar Roffset1=(dst->format->Rshift)>>3;
-	uchar Goffset1=(dst->format->Gshift)>>3;
-	uchar Boffset1=(dst->format->Bshift)>>3;
-	//Unused:
-	//uchar Aoffset1=(dst->format->Ashift)>>3;
-
-	unsigned advance0=src->format->BytesPerPixel;
-	unsigned advance1=dst->format->BytesPerPixel;
-
-	pos0+=src->pitch*srcRect0.y+srcRect0.x*advance0;
-	pos1+=dst->pitch*dstRect0.y+dstRect0.x*advance1;
-
-	//Unused:
-	//bool alpha0=(Aoffset0!=Roffset0 && Aoffset0!=Goffset0 && Aoffset0!=Boffset0);
-	//bool alpha1=(Aoffset1!=Roffset1 && Aoffset1!=Goffset1 && Aoffset1!=Boffset1);
-	//bool condition=0;
-
-	for (int y0=0;y0<h0;y0++){
-		uchar *pos00=pos0;
-		uchar *pos10=pos1;
-		for (int x0=0;x0<w0;x0++){
-			uchar r0=pos0[Roffset0];
-			uchar g0=pos0[Goffset0];
-			uchar b0=pos0[Boffset0];
-			//uchar a0=pos0[Aoffset0];
-
-			uchar *r1=pos1+Roffset1;
-			uchar *g1=pos1+Goffset1;
-			uchar *b1=pos1+Boffset1;
-
-			*r1=uchar((short(r0)*short(*r1))/255);
-			*g1=uchar((short(g0)*short(*g1))/255);
-			*b1=uchar((short(b0)*short(*b1))/255);
-
-			pos0+=advance0;
-			pos1+=advance1;
-		}
-		pos0=pos00+src->pitch;
-		pos1=pos10+dst->pitch;
-	}
-	SDL_UnlockSurface(dst);
-	SDL_UnlockSurface(src);
-}
-#else //NONS_PARALLELIZE
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
 int manualBlit_threaded(void *parameters);
 
@@ -699,7 +429,190 @@ void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		pos1=pos10+dst->pitch;
 	}
 }
-#endif //NONS_PARALLELIZE
+
+void getFinalSize(SDL_Surface *src,float matrix[4],ulong &w,ulong &h){
+	ulong w0=src->w,
+		h0=src->h;
+	float coords[][2]={
+		{0,0},
+		{0,h0},
+		{w0,0},
+		{w0,h0}
+	};
+	float minx,miny,maxx,maxy;
+	maxx=minx=coords[0][0]*matrix[0]+coords[0][1]*matrix[1];
+	maxy=miny=coords[0][0]*matrix[2]+coords[0][1]*matrix[3];
+	for (int a=1;a<4;a++){
+		float x=coords[a][0]*matrix[0]+coords[a][1]*matrix[1];
+		float y=coords[a][0]*matrix[2]+coords[a][1]*matrix[3];
+		if (x<minx)
+			minx=x;
+		if (x>maxx)
+			maxx=x;
+		if (y<miny)
+			miny=y;
+		if (y>maxy)
+			maxy=y;
+	}
+	w=maxx-minx;
+	h=maxy-miny;
+}
+
+void invert_matrix(float m[4]){
+	float temp=1/(m[0]*m[3]-m[1]*m[2]);
+	float m2[]={
+		temp*m[3],
+		temp*-m[1],
+		temp*-m[2],
+		temp*m[0]
+	};
+	memcpy(m,m2,4*sizeof(float));
+}
+
+void getCorrected(ulong &x0,ulong &y0,float matrix[4]){
+	float coords[][2]={
+		{0,0},
+		{0,y0},
+		{x0,0},
+		{x0,y0}
+	};
+	float minx,miny;
+	minx=coords[0][0]*matrix[0]+coords[0][1]*matrix[1];
+	miny=coords[0][0]*matrix[2]+coords[0][1]*matrix[3];
+	for (int a=1;a<4;a++){
+		float x=coords[a][0]*matrix[0]+coords[a][1]*matrix[1];
+		float y=coords[a][0]*matrix[2]+coords[a][1]*matrix[3];
+		if (x<minx)
+			minx=x;
+		if (y<miny)
+			miny=y;
+	}
+	x0=-minx;
+	y0=-miny;
+}
+
+struct applyTransformationMatrix_parameters{
+	uchar *src,
+		*dst;
+	ulong x,y,
+		w0,h0,
+		w1,h1,
+		advance0,advance1,
+		pitch0,pitch1;
+	long matrix[4];
+	ulong correct_x,correct_y;
+};
+
+void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param);
+int applyTransformationMatrix_threaded(void *parameters);
+
+SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
+	if (!src || src->format->BitsPerPixel<24 || !(matrix[0]*matrix[3]-matrix[1]*matrix[2]))
+		return 0;
+	ulong w,h;
+	float inv_matrix[4];
+	memcpy(inv_matrix,matrix,4*sizeof(float));
+	invert_matrix(inv_matrix);
+	
+	getFinalSize(src,matrix,w,h);
+	SDL_Surface *res=makeSurface(w,h,src->format->BitsPerPixel,
+		src->format->Rmask,
+		src->format->Gmask,
+		src->format->Bmask,
+		src->format->Amask);
+	//SDL_FillRect(res,0,src->format->Gmask|src->format->Amask);
+	
+	ulong correct_x=src->w,
+		correct_y=src->h;
+	getCorrected(correct_x,correct_y,matrix);
+
+	SDL_UnlockSurface(src);
+	SDL_UnlockSurface(res);
+
+	ulong division=float(h)/float(cpu_count);
+	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	applyTransformationMatrix_parameters *parameters=new applyTransformationMatrix_parameters[cpu_count];
+	ulong total=0;
+	for (ulong a=0;a<cpu_count;a++){
+		parameters[a].src=(uchar *)src->pixels;
+		parameters[a].dst=(uchar *)res->pixels;
+		parameters[a].x=0;
+		parameters[a].y=a*division;
+		parameters[a].w0=src->w;
+		parameters[a].h0=src->h;
+		parameters[a].w1=w;
+		parameters[a].h1=division;
+		total+=division;
+		parameters[a].advance0=src->format->BytesPerPixel;
+		parameters[a].advance1=res->format->BytesPerPixel;
+		parameters[a].pitch0=src->pitch;
+		parameters[a].pitch1=res->pitch;
+
+		parameters[a].dst+=parameters[a].y*parameters[a].pitch1;
+
+		for (int b=0;b<4;b++)
+			parameters[a].matrix[b]=inv_matrix[b]*0x10000;
+		parameters[a].correct_x=correct_x;
+		parameters[a].correct_y=correct_y;
+	}
+	parameters[cpu_count-1].h1+=h-total;
+	for (ulong a=1;a<cpu_count;a++)
+		threads[a]=SDL_CreateThread(applyTransformationMatrix_threaded,parameters+a);
+	applyTransformationMatrix_threaded(parameters);
+	for (ushort a=1;a<cpu_count;a++)
+		SDL_WaitThread(threads[a],0);
+	SDL_UnlockSurface(src);
+	SDL_UnlockSurface(res);
+	delete[] threads;
+	delete[] parameters;
+	return res;
+}
+
+int applyTransformationMatrix_threaded(void *parameters){
+	applyTransformationMatrix_threaded(*(applyTransformationMatrix_parameters *)parameters);
+	return 0;
+}
+
+void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param){
+	uchar *src=param.src,
+		*dst=param.dst;
+	ulong x0=param.x,
+		y0=param.y,
+		w0=param.w0,
+		h0=param.h0,
+		w1=param.w1,
+		h1=param.h1+y0,
+		advance0=param.advance0,
+		advance1=param.advance1,
+		pitch0=param.pitch0,
+		pitch1=param.pitch1,
+		correct_x=param.correct_x,
+		correct_y=param.correct_y;
+	assert(advance0==advance1);
+	const long *matrix=param.matrix;
+	for (ulong y=y0;y<h1;y++){
+		uchar *dst0=dst;
+		bool pixels_were_copied=0;
+		for (ulong x=x0;x<w1;x++){
+			long src_x=(x-correct_x)*matrix[0]+(y-correct_y)*matrix[1];
+			long src_y=(x-correct_x)*matrix[2]+(y-correct_y)*matrix[3];
+			src_x>>=16;
+			src_y>>=16;
+			if (src_x<0 || src_y<0 || (ulong)src_x>=w0 || (ulong)src_y>=h0){
+				if (!pixels_were_copied){
+					dst+=advance1;
+					continue;
+				}
+				break;
+			}
+			uchar *src2=src+src_x*advance0+src_y*pitch0;
+			for (ulong a=0;a<advance0;a++)
+				*dst++=*src2++;
+			pixels_were_copied=1;
+		}
+		dst=dst0+pitch1;
+	}
+}
 
 void FlipSurfaceH(SDL_Surface *src,SDL_Surface *dst){
 	if (!src || !dst || src->w!=dst->w || src->h!=dst->h)
@@ -979,6 +892,180 @@ void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst){
 	}
 }
 
+SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
+	if (!src || src->format->BitsPerPixel<24)
+		return 0;
+	if (!amount){
+		SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,
+			src->format->BitsPerPixel,
+			src->format->Rmask,
+			src->format->Gmask,
+			src->format->Bmask,
+			src->format->Amask
+		);
+		manualBlit(src,0,res,0);
+		return res;
+	}
+
+	ulong w=src->w,
+		h=src->h;
+
+	//ulong resWidth=float(src->w)*(1.0f+ABS(amount));
+	//ulong resWidth=float(src->w)*(1.0f+ABS(amount)*(float(src->h)/float(src->w)));
+	ulong resWidth=src->w+ABS(amount)*float(src->h);
+	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,resWidth,src->h,
+		src->format->BitsPerPixel,
+		src->format->Rmask,
+		src->format->Gmask,
+		src->format->Bmask,
+		src->format->Amask
+	);
+
+	SDL_LockSurface(src);
+	SDL_LockSurface(res);
+
+	uchar *pos0=(uchar *)src->pixels;
+	uchar *pos1=(uchar *)res->pixels;
+
+	ulong advance0=src->format->BytesPerPixel;
+	ulong advance1=res->format->BytesPerPixel;
+	ulong pitch0=src->pitch;
+	ulong pitch1=res->pitch;
+
+	ulong delta=ABS(amount)*0x10000;
+	ulong X=0;
+	ulong x=0;
+
+	if (amount>0){
+		for (ulong y=0;y<h;y++){
+			if (w+x<=resWidth)
+				memcpy(pos1,pos0,advance0*w);
+			else
+				memcpy(pos1,pos0,advance0*(resWidth-w-x));
+			X+=delta;
+			while (X>=0x10000){
+				pos1+=advance1;
+				X-=0x10000;
+				x++;
+			}
+			pos0+=pitch0;
+			pos1+=pitch1;
+		}
+	}else{
+		pos0+=(h-1)*pitch0;
+		pos1+=(h-1)*pitch1;
+		for (ulong y=h-1;y<h;y--){
+			if (w+x<=resWidth)
+				memcpy(pos1,pos0,advance0*w);
+			else
+				memcpy(pos1,pos0,advance0*(resWidth-w-x));
+			X+=delta;
+			while (X>=0x10000){
+				pos1+=advance1;
+				X-=0x10000;
+				x++;
+			}
+			pos0-=pitch0;
+			pos1-=pitch1;
+		}
+	}
+
+	SDL_UnlockSurface(src);
+	SDL_UnlockSurface(res);
+
+	return res;
+}
+
+SDL_Surface *verticalShear(SDL_Surface *src,float amount){
+	if (!src || src->format->BitsPerPixel<24)
+		return 0;
+	if (!amount){
+		SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,
+			src->format->BitsPerPixel,
+			src->format->Rmask,
+			src->format->Gmask,
+			src->format->Bmask,
+			src->format->Amask
+		);
+		manualBlit(src,0,res,0);
+		return res;
+	}
+
+	ulong w=src->w,
+		h=src->h;
+
+	//ulong resHeight=float(src->h)*(1.0f+ABS(amount)*(float(src->w)/float(src->h)));
+	ulong resHeight=src->h+ABS(amount)*float(src->w);
+	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,resHeight,
+		src->format->BitsPerPixel,
+		src->format->Rmask,
+		src->format->Gmask,
+		src->format->Bmask,
+		src->format->Amask
+	);
+
+	SDL_LockSurface(src);
+	SDL_LockSurface(res);
+
+	uchar *pos0=(uchar *)src->pixels;
+	uchar *pos1=(uchar *)res->pixels;
+
+	ulong advance0=src->format->BytesPerPixel;
+	ulong advance1=res->format->BytesPerPixel;
+	ulong pitch0=src->pitch;
+	ulong pitch1=res->pitch;
+
+	ulong delta=ABS(amount)*0x10000;
+	ulong X=0;
+	ulong y=0;
+
+	if (amount>0){
+		for (ulong x=0;x<w;x++){
+			uchar *pos00=pos0,
+				*pos10=pos1;
+			for (ulong y2=y,a=0;a<h && y2<resHeight;y2++,a++){
+				for (ulong b=0;b<advance0;b++)
+					pos10[b]=pos00[b];
+				pos00+=pitch0;
+				pos10+=pitch1;
+			}
+			X+=delta;
+			while (X>=0x10000){
+				pos1+=pitch1;
+				X-=0x10000;
+				y++;
+			}
+			pos0+=advance0;
+			pos1+=advance1;
+		}
+	}else{
+		pos0+=(w-1)*advance0;
+		pos1+=(w-1)*advance1;
+		for (ulong x=w-1;x<w;x--){
+			uchar *pos00=pos0,
+				*pos10=pos1;
+			for (ulong y2=y,a=0;a<h && y2<resHeight;y2++,a++){
+				for (ulong b=0;b<advance0;b++)
+					pos10[b]=pos00[b];
+				pos00+=pitch0;
+				pos10+=pitch1;
+			}
+			X+=delta;
+			while (X>=0x10000){
+				pos1+=pitch1;
+				X-=0x10000;
+				y++;
+			}
+			pos0-=advance0;
+			pos1-=advance1;
+		}
+	}
+
+	SDL_UnlockSurface(src);
+	SDL_UnlockSurface(res);
+
+	return res;
+}
 #endif // !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 
 template <typename T,typename T2>

@@ -38,6 +38,12 @@
 //#include "../UTF.h"
 #include <sstream>
 
+#undef ABS
+#include "../IO_System/Graphics/SDL_bilinear.h"
+
+SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
+SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_ResizeSmooth;
+
 printingPage::printingPage(){
 }
 
@@ -179,8 +185,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 
 	this->commandList[L"abssetcursor"]=&NONS_ScriptInterpreter::command_setcursor;
 	this->commandList[L"add"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"allsphide"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"allspresume"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"allsphide"]=&NONS_ScriptInterpreter::command_allsphide;
+	this->commandList[L"allspresume"]=&NONS_ScriptInterpreter::command_allsphide;
 	this->commandList[L"amsp"]=&NONS_ScriptInterpreter::command_msp;
 	this->commandList[L"arc"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"atoi"]=&NONS_ScriptInterpreter::command_atoi;
@@ -242,9 +248,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"drawclear"]=&NONS_ScriptInterpreter::command_drawclear;
 	this->commandList[L"drawfill"]=&NONS_ScriptInterpreter::command_drawfill;
 	this->commandList[L"drawsp"]=&NONS_ScriptInterpreter::command_drawsp;
-	this->commandList[L"drawsp2"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawsp3"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"drawtext"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"drawsp2"]=&NONS_ScriptInterpreter::command_drawsp;
+	this->commandList[L"drawsp3"]=&NONS_ScriptInterpreter::command_drawsp;
+	this->commandList[L"drawtext"]=&NONS_ScriptInterpreter::command_drawtext;
 	this->commandList[L"dwave"]=&NONS_ScriptInterpreter::command_dwave;
 	this->commandList[L"dwaveload"]=&NONS_ScriptInterpreter::command_dwaveload;
 	this->commandList[L"dwaveloop"]=&NONS_ScriptInterpreter::command_dwave;
@@ -295,13 +301,13 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"globalon"]=&NONS_ScriptInterpreter::command_globalon;
 	this->commandList[L"gosub"]=&NONS_ScriptInterpreter::command_gosub;
 	this->commandList[L"goto"]=&NONS_ScriptInterpreter::command_goto;
-	this->commandList[L"humanorder"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"humanorder"]=&NONS_ScriptInterpreter::command_humanorder;
 	this->commandList[L"humanz"]=&NONS_ScriptInterpreter::command_humanz;
 	this->commandList[L"if"]=&NONS_ScriptInterpreter::command_if;
 	this->commandList[L"inc"]=&NONS_ScriptInterpreter::command_inc;
 	this->commandList[L"indent"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"input"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit;
 	this->commandList[L"isdown"]=&NONS_ScriptInterpreter::command_isdown;
 	this->commandList[L"isfull"]=&NONS_ScriptInterpreter::command_isfull;
@@ -348,14 +354,14 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"mode_saya"]=0;
 	this->commandList[L"monocro"]=&NONS_ScriptInterpreter::command_monocro;
 	this->commandList[L"mov"]=&NONS_ScriptInterpreter::command_mov;
-	this->commandList[L"mov3"]=0;
-	this->commandList[L"mov4"]=0;
-	this->commandList[L"mov5"]=0;
-	this->commandList[L"mov6"]=0;
-	this->commandList[L"mov7"]=0;
-	this->commandList[L"mov8"]=0;
-	this->commandList[L"mov9"]=0;
-	this->commandList[L"mov10"]=0;
+	this->commandList[L"mov3"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov4"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov5"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov6"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov7"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov8"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov9"]=&NONS_ScriptInterpreter::command_movN;
+	this->commandList[L"mov10"]=&NONS_ScriptInterpreter::command_movN;
 	this->commandList[L"movemousecursor"]=0;
 	this->commandList[L"movl"]=&NONS_ScriptInterpreter::command_movl;
 	this->commandList[L"mp3"]=&NONS_ScriptInterpreter::command_play;
@@ -375,8 +381,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"ns3"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"nsadir"]=&NONS_ScriptInterpreter::command_nsadir;
 	this->commandList[L"numalias"]=&NONS_ScriptInterpreter::command_alias;
-	this->commandList[L"ofscopy"]=0;
-	this->commandList[L"ofscpy"]=0;
+	this->commandList[L"ofscopy"]=&NONS_ScriptInterpreter::command_ofscopy;
+	this->commandList[L"ofscpy"]=&NONS_ScriptInterpreter::command_ofscopy;
 	this->commandList[L"play"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playonce"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playstop"]=&NONS_ScriptInterpreter::command_playstop;
@@ -390,7 +396,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"quakey"]=&NONS_ScriptInterpreter::command_sinusoidal_quake;
 	this->commandList[L"repaint"]=&NONS_ScriptInterpreter::command_repaint;
 	this->commandList[L"reset"]=&NONS_ScriptInterpreter::command_reset;
-	this->commandList[L"resetmenu"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"resetmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"resettimer"]=&NONS_ScriptInterpreter::command_resettimer;
 	this->commandList[L"return"]=&NONS_ScriptInterpreter::command_return;
 	this->commandList[L"rmenu"]=&NONS_ScriptInterpreter::command_rmenu;
@@ -416,7 +422,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"selectcolor"]=&NONS_ScriptInterpreter::command_selectcolor;
 	this->commandList[L"selectvoice"]=&NONS_ScriptInterpreter::command_selectvoice;
 	this->commandList[L"selgosub"]=&NONS_ScriptInterpreter::command_select;
-	this->commandList[L"selnum"]=0;
+	this->commandList[L"selnum"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"setcursor"]=&NONS_ScriptInterpreter::command_setcursor;
 	this->commandList[L"setlayer"]=0;
 	this->commandList[L"setwindow"]=&NONS_ScriptInterpreter::command_setwindow;
@@ -444,7 +450,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"tablegoto"]=0;
 	this->commandList[L"tal"]=&NONS_ScriptInterpreter::command_tal;
 	this->commandList[L"tan"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"tateyoko"]=0;
+	this->commandList[L"tateyoko"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"texec"]=0;
 	this->commandList[L"textbtnwait"]=0;
 	this->commandList[L"textclear"]=&NONS_ScriptInterpreter::command_textclear;
@@ -495,7 +501,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	*/
 	ulong total=this->totalCommands(),
 		implemented=this->implementedCommands();
-	std::cout <<"ONSlaught script interpreter v"<<float((implemented*100)/total)/100<<std::endl;
+	std::cout <<"ONSlaught script interpreter v"<<float(implemented*100/total)/100<<std::endl;
 	command_list.clear();
 	command_list.reserve(this->commandList.size());
 	for (commandListType::iterator i=this->commandList.begin(),end=this->commandList.end();i!=end;i++)
@@ -600,21 +606,22 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		return 0;
 	stmt->parse(this->everything->script);
 	if (CLOptions.verbosity>=1)
-		o_stderr <<"Interpreting line "<<stmt->lineOfOrigin->lineNumber<<'\n';
-	//this->previous_interpreter_position=this->interpreter_position;
+		o_stderr <<"Interpreting line "<<stmt->lineOfOrigin->lineNumber<<"\n";
 	if (CLOptions.verbosity>=3 && stmt->type==NONS_Statement::STATEMENT_COMMAND){
-		o_stderr <<'\"'<<stmt->commandName<<"\" ";
+		o_stderr <<"\""<<stmt->commandName<<"\" ";
 		if (stmt->parameters.size()){
-			o_stderr <<"{\n";
+			o_stderr <<"(\n";
+			o_stderr.indent(1);
 			for (ulong a=0;;a++){
-				o_stderr <<"    \""<<stmt->parameters[a]<<'\"';
+				o_stderr <<"\""<<stmt->parameters[a]<<"\"";
 				if (a==stmt->parameters.size()-1){
-					o_stderr <<'\n';
+					o_stderr <<"\n";
 					break;
 				}
 				o_stderr <<",\n";
 			}
-			o_stderr <<"}\n";
+			o_stderr.indent(-1);
+			o_stderr <<")\n";
 		}else
 			o_stderr <<"{NO PARAMETERS}\n";
 	}
@@ -643,8 +650,12 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					commandFunctionPointer function=i->second;
 					if (!function){
 						if (this->implementationErrors.find(i->first)==this->implementationErrors.end()){
-							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
-								"Error near line "<<stmt->lineOfOrigin->lineNumber<<". Command \""<<stmt->commandName<<"\" is not implemented yet.\n"
+							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): ";
+							if (stmt->lineOfOrigin->lineNumber==ULONG_MAX)
+								o_stderr <<"Error";
+							else
+								o_stderr <<"Error near line "<<stmt->lineOfOrigin->lineNumber;
+							o_stderr <<". Command \""<<stmt->commandName<<"\" is not implemented yet.\n"
 								"    Implementation errors are reported only once.\n";
 							this->implementationErrors.insert(i->first);
 						}
@@ -653,29 +664,42 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 						break;
 					}
 					ErrorCode error=(this->*function)(*stmt);
-					if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
+					bool there_was_an_error=!CHECK_FLAG(error,NONS_NO_ERROR_FLAG);
+					if (there_was_an_error){
+						o_stderr <<"{\n";
+						o_stderr.indent(1);
 						o_stderr <<"Line "<<stmt->lineOfOrigin->lineNumber<<": \n"
 							"\""<<stmt->commandName<<"\" ";
 						if (stmt->parameters.size()){
-							o_stderr <<"{\n";
+							o_stderr <<"(\n";
+							o_stderr.indent(1);
 							for (ulong a=0;;a++){
-								o_stderr <<"    \""<<stmt->parameters[a]<<'\"';
+								o_stderr <<"\""<<stmt->parameters[a]<<"\"";
 								if (a==stmt->parameters.size()-1){
-									o_stderr <<'\n';
+									o_stderr <<"\n";
 									break;
 								}
 								o_stderr <<",\n";
 							}
-							o_stderr <<"}\n";
+							o_stderr.indent(-1);
+							o_stderr <<")\n";
 						}else
 							o_stderr <<"{NO PARAMETERS}\n";
 					}
 					handleErrors(error,stmt->lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::interpretNextLine",0);
+					if (there_was_an_error){
+						o_stderr.indent(-1);
+						o_stderr <<"}\n";
+					}
 					if (CLOptions.stopOnFirstError && error!=NONS_UNIMPLEMENTED_COMMAND || error==NONS_END)
 						return 0;
 				}else{
-					o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
-						"Error near line "<<stmt->lineOfOrigin->lineNumber<<". Command \""<<stmt->commandName<<"\" could not be recognized.\n";
+					o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): ";
+					if (stmt->lineOfOrigin->lineNumber==ULONG_MAX)
+						o_stderr <<"Error";
+					else
+						o_stderr <<"Error near line "<<stmt->lineOfOrigin->lineNumber;
+					o_stderr <<". Command \""<<stmt->commandName<<"\" could not be recognized.\n";
 					if (CLOptions.stopOnFirstError)
 						return 0;
 				}
@@ -710,9 +734,9 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 		if (stmt.parameters.size()){
 			o_stderr <<"{\n";
 			for (ulong a=0;;a++){
-				o_stderr <<"    \""<<stmt.parameters[a]<<'\"';
+				o_stderr <<"    \""<<stmt.parameters[a]<<"\"";
 				if (a==stmt.parameters.size()-1){
-					o_stderr <<'\n';
+					o_stderr <<"\n";
 					break;
 				}
 				o_stderr <<",\n";

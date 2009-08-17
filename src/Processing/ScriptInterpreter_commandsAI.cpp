@@ -33,8 +33,6 @@
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 #include "../version.h"
-#undef ABS
-#include "../IO_System/Graphics/SDL_bilinear.h"
 #include <cctype>
 
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
@@ -146,6 +144,93 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_Statement &stmt){
 	return ret;
 }
 
+const long sin_lookup[]={
+	0, 17, 34, 52, 69, 87, 104, 121, 139, 156, 173, 190, 207, 224, 241, 258, 275, 
+	292, 309, 325, 342, 358, 374, 390, 406, 422, 438, 453, 469, 484, 500, 515, 529, 
+	544, 559, 573, 587, 601, 615, 629, 642, 656, 669, 681, 694, 707, 719, 731, 743, 
+	754, 766, 777, 788, 798, 809, 819, 829, 838, 848, 857, 866, 874, 882, 891, 898, 
+	906, 913, 920, 927, 933, 939, 945, 951, 956, 961, 965, 970, 974, 978, 981, 984, 
+	987, 990, 992, 994, 996, 997, 998, 999, 999, 1000, 999, 999, 998, 997, 996, 994, 
+	992, 990, 987, 984, 981, 978, 974, 970, 965, 961, 956, 951, 945, 939, 933, 927, 
+	920, 913, 906, 898, 891, 882, 874, 866, 857, 848, 838, 829, 819, 809, 798, 788, 
+	777, 766, 754, 743, 731, 719, 707, 694, 681, 669, 656, 642, 629, 615, 601, 587, 
+	573, 559, 544, 529, 515, 500, 484, 469, 453, 438, 422, 406, 390, 374, 358, 342, 
+	325, 309, 292, 275, 258, 241, 224, 207, 190, 173, 156, 139, 121, 104, 87, 69, 
+	52, 34, 17, 0, -17, -34, -52, -69, -87, -104, -121, -139, -156, -173, -190, 
+	-207, -224, -241, -258, -275, -292, -309, -325, -342, -358, -374, -390, -406, 
+	-422, -438, -453, -469, -484, -500, -515, -529, -544, -559, -573, -587, -601, 
+	-615, -629, -642, -656, -669, -681, -694, -707, -719, -731, -743, -754, -766, 
+	-777, -788, -798, -809, -819, -829, -838, -848, -857, -866, -874, -882, -891, 
+	-898, -906, -913, -920, -927, -933, -939, -945, -951, -956, -961, -965, -970, 
+	-974, -978, -981, -984, -987, -990, -992, -994, -996, -997, -998, -999, -999, 
+	-1000, -999, -999, -998, -997, -996, -994, -992, -990, -987, -984, -981, -978, 
+	-974, -970, -965, -961, -956, -951, -945, -939, -933, -927, -920, -913, -906, 
+	-898, -891, -882, -874, -866, -857, -848, -838, -829, -819, -809, -798, -788, 
+	-777, -766, -754, -743, -731, -719, -707, -694, -681, -669, -656, -642, -629, 
+	-615, -601, -587, -573, -559, -544, -529, -515, -500, -484, -469, -453, -438, 
+	-422, -406, -390, -374, -358, -342, -325, -309, -292, -275, -258, -241, -224, 
+	-207, -190, -173, -156, -139, -121, -104, -87, -69, -52, -34, -17
+};
+
+const long cos_lookup[]={
+	1000, 999, 999, 998, 997, 996, 994, 992, 990, 987, 984, 981, 978, 974, 970, 965, 
+	961, 956, 951, 945, 939, 933, 927, 920, 913, 906, 898, 891, 882, 874, 866, 857, 
+	848, 838, 829, 819, 809, 798, 788, 777, 766, 754, 743, 731, 719, 707, 694, 681, 
+	669, 656, 642, 629, 615, 601, 587, 573, 559, 544, 529, 515, 500, 484, 469, 453, 
+	438, 422, 406, 390, 374, 358, 342, 325, 309, 292, 275, 258, 241, 224, 207, 190, 
+	173, 156, 139, 121, 104, 87, 69, 52, 34, 17, 0, -17, -34, -52, -69, -87, -104, 
+	-121, -139, -156, -173, -190, -207, -224, -241, -258, -275, -292, -309, -325, 
+	-342, -358, -374, -390, -406, -422, -438, -453, -469, -484, -500, -515, -529, 
+	-544, -559, -573, -587, -601, -615, -629, -642, -656, -669, -681, -694, -707, 
+	-719, -731, -743, -754, -766, -777, -788, -798, -809, -819, -829, -838, -848, 
+	-857, -866, -874, -882, -891, -898, -906, -913, -920, -927, -933, -939, -945, 
+	-951, -956, -961, -965, -970, -974, -978, -981, -984, -987, -990, -992, -994, 
+	-996, -997, -998, -999, -999, -1000, -999, -999, -998, -997, -996, -994, -992, 
+	-990, -987, -984, -981, -978, -974, -970, -965, -961, -956, -951, -945, -939, 
+	-933, -927, -920, -913, -906, -898, -891, -882, -874, -866, -857, -848, -838, 
+	-829, -819, -809, -798, -788, -777, -766, -754, -743, -731, -719, -707, -694, 
+	-681, -669, -656, -642, -629, -615, -601, -587, -573, -559, -544, -529, -515, 
+	-500, -484, -469, -453, -438, -422, -406, -390, -374, -358, -342, -325, -309, 
+	-292, -275, -258, -241, -224, -207, -190, -173, -156, -139, -121, -104, -87, 
+	-69, -52, -34, -17, 0, 17, 34, 52, 69, 87, 104, 121, 139, 156, 173, 190, 207, 
+	224, 241, 258, 275, 292, 309, 325, 342, 358, 374, 390, 406, 422, 438, 453, 469, 
+	484, 500, 515, 529, 544, 559, 573, 587, 601, 615, 629, 642, 656, 669, 681, 694, 
+	707, 719, 731, 743, 754, 766, 777, 788, 798, 809, 819, 829, 838, 848, 857, 866, 
+	874, 882, 891, 898, 906, 913, 920, 927, 933, 939, 945, 951, 956, 961, 965, 970, 
+	974, 978, 981, 984, 987, 990, 992, 994, 996, 997, 998, 999, 999
+};
+
+const long tan_lookup[]={
+	0, 17, 34, 52, 69, 87, 105, 122, 140, 158, 176, 194, 212, 230, 249, 267, 286, 
+	305, 324, 344, 363, 383, 404, 424, 445, 466, 487, 509, 531, 554, 577, 600, 624, 
+	649, 674, 700, 726, 753, 781, 809, 839, 869, 900, 932, 965, 1000, 1035, 1072, 
+	1110, 1150, 1191, 1234, 1279, 1327, 1376, 1428, 1482, 1539, 1600, 1664, 1732, 
+	1804, 1880, 1962, 2050, 2144, 2246, 2355, 2475, 2605, 2747, 2904, 3077, 3270, 
+	3487, 3732, 4010, 4331, 4704, 5144, 5671, 6313, 7115, 8144, 9514, 11430, 14300, 
+	19081, 28636, 57289, 0, -57289, -28636, -19081, -14300, -11430, -9514, -8144, 
+	-7115, -6313, -5671, -5144, -4704, -4331, -4010, -3732, -3487, -3270, -3077, 
+	-2904, -2747, -2605, -2475, -2355, -2246, -2144, -2050, -1962, -1880, -1804, 
+	-1732, -1664, -1600, -1539, -1482, -1428, -1376, -1327, -1279, -1234, -1191, 
+	-1150, -1110, -1072, -1035, -1000, -965, -932, -900, -869, -839, -809, -781, 
+	-753, -726, -700, -674, -649, -624, -600, -577, -554, -531, -509, -487, -466, 
+	-445, -424, -404, -383, -363, -344, -324, -305, -286, -267, -249, -230, -212, 
+	-194, -176, -158, -140, -122, -105, -87, -69, -52, -34, -17, 0, 17, 34, 52, 69, 
+	87, 105, 122, 140, 158, 176, 194, 212, 230, 249, 267, 286, 305, 324, 344, 363, 
+	383, 404, 424, 445, 466, 487, 509, 531, 554, 577, 600, 624, 649, 674, 700, 726, 
+	753, 781, 809, 839, 869, 900, 932, 965, 1000, 1035, 1072, 1110, 1150, 1191, 
+	1234, 1279, 1327, 1376, 1428, 1482, 1539, 1600, 1664, 1732, 1804, 1880, 1962, 
+	2050, 2144, 2246, 2355, 2475, 2605, 2747, 2904, 3077, 3270, 3487, 3732, 4010, 
+	4331, 4704, 5144, 5671, 6313, 7115, 8144, 9514, 11430, 14300, 19081, 28636, 
+	57289, 0, -57289, -28636, -19081, -14300, -11430, -9514, -8144, -7115, -6313, 
+	-5671, -5144, -4704, -4331, -4010, -3732, -3487, -3270, -3077, -2904, -2747, 
+	-2605, -2475, -2355, -2246, -2144, -2050, -1962, -1880, -1804, -1732, -1664, 
+	-1600, -1539, -1482, -1428, -1376, -1327, -1279, -1234, -1191, -1150, -1110, 
+	-1072, -1035, -1000, -965, -932, -900, -869, -839, -809, -781, -753, -726, -700, 
+	-674, -649, -624, -600, -577, -554, -531, -509, -487, -466, -445, -424, -404, 
+	-383, -363, -344, -324, -305, -286, -267, -249, -230, -212, -194, -176, -158, 
+	-140, -122, -105, -87, -69, -52, -34, -17
+};
+
 ErrorCode NONS_ScriptInterpreter::command_add(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *var;
@@ -172,15 +257,33 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_Statement &stmt){
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"sin")){
-			var->set(sin(M_PI*val/180.0)*1000.0);
+			//var->set(sin(M_PI*val/180.0)*1000.0);
+			if (val>0){
+				val%=360;
+				var->set(sin_lookup[val]);
+			}else{
+				val=-val%360;
+				var->set(-sin_lookup[val]);
+			}
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"cos")){
-			var->set(cos(M_PI*val/180.0)*1000.0);
+			//var->set(cos(M_PI*val/180.0)*1000.0);
+			if (val<0)
+				val=-val;
+			val%=360;
+			var->set(cos_lookup[val]);
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"tan")){
-			var->set(tan(M_PI*val/180.0)*1000.0);
+			//var->set(tan(M_PI*val/180.0)*1000.0);
+			if (val>0){
+				val%=360;
+				var->set(cos_lookup[val]);
+			}else{
+				val=-val%360;
+				var->set(-cos_lookup[val]);
+			}
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"mod")){
@@ -629,15 +732,10 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 	std::wstring filename;
 	_GETWCSVALUE(filename,0,)
 	if (!filename.size()){
-		SDL_Surface *tmpSrf=SDL_CreateRGBSurface(
-			SDL_HWSURFACE|SDL_SRCALPHA,
+		SDL_Surface *tmpSrf=makeSurface(
 			this->everything->screen->screen->virtualScreen->w,
 			this->everything->screen->screen->virtualScreen->h,
-			32,
-			rmask,
-			gmask,
-			bmask,
-			amask);
+			32);
 		this->imageButtons=new NONS_ButtonLayer(tmpSrf,this->everything->screen);
 		return NONS_NO_ERROR;
 	}
@@ -861,8 +959,6 @@ ErrorCode NONS_ScriptInterpreter::command_draw(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
-	static SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
-	static SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_ResizeSmooth;
 	if (!this->everything->screen->Background && !this->everything->screen->Background->data)
 		SDL_FillRect(this->everything->screen->screenBuffer,0,this->everything->screen->screenBuffer->format->Amask);
 	else if (!stdStrCmpCI(stmt.commandName,L"drawbg"))
@@ -888,7 +984,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			bool freeSrc=0;
 
 			if (xscale<0 || yscale<0){
-				SDL_Surface *dst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+				SDL_Surface *dst=makeSurface(src->w,src->h,32);
 				if (yscale>0)
 					FlipSurfaceH(src,dst);
 				else if (xscale>0)
@@ -902,7 +998,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			}
 
 			if (src->format->BitsPerPixel!=32){
-				SDL_Surface *dst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+				SDL_Surface *dst=makeSurface(src->w,src->h,32);
 				manualBlit(src,0,dst,0);
 				freeSrc=1;
 			}
@@ -912,13 +1008,14 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			src=dst;
 			dst=rotationFunction(src,double(angle)/180*M_PI);
 			SDL_FreeSurface(src);
+			src=dst;
 			SDL_Rect dstR={
-				-long(dst->clip_rect.w/2)+x,
-				-long(dst->clip_rect.h/2)+y,
+				-long(src->clip_rect.w/2)+x,
+				-long(src->clip_rect.h/2)+y,
 				0,0
 			};
-			manualBlit(dst,0,this->everything->screen->screenBuffer,&dstR);
-			SDL_FreeSurface(dst);
+			manualBlit(src,0,this->everything->screen->screenBuffer,&dstR);
+			SDL_FreeSurface(src);
 		}
 	}
 	return NONS_NO_ERROR;
@@ -958,32 +1055,216 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 	long spriteno,
 		cell,
 		alpha,
-		x,y;
+		x,y,
+		xscale=0,yscale=0,
+		rotation,
+		matrix_00=0,matrix_01=0,
+		matrix_10=0,matrix_11=0;
 	_GETINTVALUE(spriteno,0,)
 	_GETINTVALUE(cell,1,)
 	_GETINTVALUE(alpha,2,)
 	_GETINTVALUE(x,3,)
 	_GETINTVALUE(y,4,)
+	ulong functionVersion=1;
+	if (!stdStrCmpCI(stmt.commandName,L"drawsp2"))
+		functionVersion=2;
+	else if (!stdStrCmpCI(stmt.commandName,L"drawsp3"))
+		functionVersion=3;
+	switch (functionVersion){
+		case 2:
+			MINIMUM_PARAMETERS(8);
+			_GETINTVALUE(xscale,5,)
+			_GETINTVALUE(yscale,6,)
+			_GETINTVALUE(rotation,7,)
+			break;
+		case 3:
+			MINIMUM_PARAMETERS(9);
+			_GETINTVALUE(matrix_00,5,)
+			_GETINTVALUE(matrix_01,6,)
+			_GETINTVALUE(matrix_10,7,)
+			_GETINTVALUE(matrix_11,8,)
+			break;
+	}
+
+
 	std::vector<NONS_Layer *> &sprites=this->everything->screen->layerStack;
 	if (spriteno<0 || (ulong)spriteno>sprites.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	NONS_Layer *sprite=sprites[spriteno];
 	if (!sprite || !sprite->data)
 		return NONS_NO_SPRITE_LOADED_THERE;
+	SDL_Surface *src=sprite->data;
 	if (cell<0 || (ulong)cell>=sprite->animation.animation_length)
 		return NONS_NO_ERROR;
-	SDL_Rect src={
-		sprite->data->w/sprite->animation.animation_length*cell,
+	if (functionVersion==2 && !(xscale*yscale))
+		return NONS_NO_ERROR;
+
+
+	SDL_Rect srcRect={
+		src->w/sprite->animation.animation_length*cell,
 		0,
-		sprite->data->w,
-		sprite->data->h
+		sprite->clip_rect.w,
+		sprite->clip_rect.h
 	};
-	SDL_Rect dst={x,y,0,0};
-	manualBlit(sprite->data,&src,this->everything->screen->screenBuffer,&dst,(alpha<-0xFF)?-0xFF:((alpha>0xFF)?0xFF:alpha));
+	SDL_Rect dstRect={x,y,0,0};
+
+
+	bool freeSrc=0;
+	if (functionVersion>1){
+		SDL_Surface *temp=makeSurface(srcRect.w,srcRect.h,32);
+		manualBlit(src,&srcRect,temp,0);
+		src=temp;
+		freeSrc=1;
+	}
+	switch (functionVersion){
+		case 2:
+			{
+				SDL_Surface *dst;
+				if (xscale<0 || yscale<0){
+					dst=makeSurface(srcRect.w,srcRect.h,32);
+					if (yscale>0)
+						FlipSurfaceH(src,dst);
+					else if (xscale>0)
+						FlipSurfaceV(src,dst);
+					else
+						FlipSurfaceHV(src,dst);
+					SDL_FreeSurface(src);
+					xscale=ABS(xscale);
+					yscale=ABS(yscale);
+					src=dst;
+				}
+				if (xscale!=100 || yscale!=100){
+					dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+					SDL_FreeSurface(src);
+					src=dst;
+				}
+				if (rotation){
+					dst=rotationFunction(src,double(rotation)/180*M_PI);
+					SDL_FreeSurface(src);
+					src=dst;
+				}
+			}
+			break;
+		case 3:
+			{
+				float matrix[]={
+					float(matrix_00)/1000.0f,
+					float(matrix_01)/1000.0f,
+					float(matrix_10)/1000.0f,
+					float(matrix_11)/1000.0f
+				};
+				SDL_Surface *dst=applyTransformationMatrix(src,matrix);
+				if (!dst)
+					return NONS_BAD_MATRIX;
+				SDL_FreeSurface(src);
+				src=dst;
+				break;
+			}
+	}
+	if (functionVersion>1){
+		srcRect.x=0;
+		srcRect.y=0;
+		srcRect.w=src->w;
+		srcRect.h=src->h;
+		dstRect.x-=srcRect.w/2;
+		dstRect.y-=srcRect.h/2;
+	}
+
+
+	manualBlit(src,&srcRect,this->everything->screen->screenBuffer,&dstRect,(alpha<-0xFF)?-0xFF:((alpha>0xFF)?0xFF:alpha));
+
+
+	if (freeSrc)
+		SDL_FreeSurface(src);
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_drawtext(NONS_Statement &stmt){
+	NONS_ScreenSpace *scr=this->everything->screen;
+	if (!scr->output->shadeLayer->useDataAsDefaultShade)
+		multiplyBlend(
+			scr->output->shadeLayer->data,0,
+			scr->screenBuffer,
+			&scr->output->shadeLayer->clip_rect);
+	else
+		manualBlit(
+			scr->output->shadeLayer->data,0,
+			scr->screenBuffer,
+			&scr->output->shadeLayer->clip_rect);
+	if (scr->output->shadowLayer)
+		manualBlit(
+			scr->output->shadowLayer->data,0,
+			scr->screenBuffer,
+			&scr->output->shadowLayer->clip_rect,
+			scr->output->shadowLayer->alpha);
+	manualBlit(
+		scr->output->foregroundLayer->data,0,
+		scr->screenBuffer,
+		&scr->output->foregroundLayer->clip_rect,
+		scr->output->foregroundLayer->alpha);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_allsphide(NONS_Statement &stmt){
+	this->everything->screen->blendSprites=!stdStrCmpCI(stmt.commandName,L"allspresume");
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	std::wstring order;
+	_GETWCSVALUE(order,0,)
+	std::vector<ulong> porder;
+	bool found[3]={0};
+	ulong offsets[26];
+	offsets['l'-'a']=0;
+	offsets['c'-'a']=1;
+	offsets['r'-'a']=2;
+	for (ulong a=0;a<order.size();a++){
+		wchar_t c=NONS_tolower(order[a]);
+		switch (c){
+			case 'l':
+			case 'c':
+			case 'r':
+				if (found[offsets[c-'a']])
+					break;
+				porder.push_back(offsets[c-'a']);
+				found[offsets[c-'a']]=1;
+				break;
+			default:;
+		}
+	}
+	std::reverse(porder.begin(),porder.end());
+	if (stmt.parameters.size()==1){
+		this->everything->screen->charactersBlendOrder=porder;
+		return NONS_NO_ERROR;
+	}
+	long number,duration;
+	ErrorCode ret;
+	_GETINTVALUE(number,1,)
+	if (stmt.parameters.size()>2){
+		_GETINTVALUE(duration,2,)
+		std::wstring rule;
+		if (stmt.parameters.size()>3)
+			_GETWCSVALUE(rule,3,)
+		this->everything->screen->hideText();
+		this->everything->screen->charactersBlendOrder=porder;
+		ret=this->everything->screen->BlendNoCursor(number,duration,&rule);
+	}else{
+		this->everything->screen->hideText();
+		this->everything->screen->charactersBlendOrder=porder;
+		ret=this->everything->screen->BlendNoCursor(number);
+	}
+	return ret;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

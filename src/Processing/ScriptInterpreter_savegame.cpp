@@ -37,29 +37,19 @@
 #include "../IO_System/IOFunctions.h"
 #include <iomanip>
 
-extern wchar_t Unicode2SJIS[];
-
-long SJISoffset_to_WCSoffset(wchar_t *buffer,long offset){
-	ulong res=0;
-	for (;offset;offset--,res++)
-		if (Unicode2SJIS[buffer[res]]>=0x80)
-			offset--;
-	return res;
-}
-
-bool NONS_ScriptInterpreter::load(int file){
+ErrorCode NONS_ScriptInterpreter::load(int file){
 	NONS_SaveFile save;
 	save.load(save_directory+L"save"+itoa<wchar_t>(file)+L".dat");
 	if (save.error!=NONS_NO_ERROR)
-		return 0;
+		return NONS_NO_SUCH_SAVEGAME;
 	//**********************************************************************
 	//NONS save file
 	//**********************************************************************
 	if (save.version>NONS_SAVEFILE_VERSION)
-		return 0;
+		return NONS_UNSUPPORTED_SAVEGAME_VERSION;
 	for (ulong a=0;a<5;a++)
 		if (save.hash[a]!=this->script->hash[a])
-			return 0;
+			return NONS_HASH_DOES_NOT_MATCH;
 	//stack
 	//flush
 	while (!this->callStack.empty()){
@@ -199,6 +189,13 @@ bool NONS_ScriptInterpreter::load(int file){
 		if ((*characters[a])->animated())
 			(*characters[a])->animation.animation_time_offset=save.characters[a].animOffset;
 	}
+	if (save.version>2){
+		scr->charactersBlendOrder.clear();
+		for (ulong a=0;a<3 && save.charactersBlendOrder[a]!=255;a++)
+			scr->charactersBlendOrder.push_back(save.charactersBlendOrder[a]);
+	}
+
+	scr->blendSprites=save.blendSprites;
 	for (ulong a=0;a<scr->layerStack.size();a++){
 		if (!scr->layerStack[a])
 			continue;
@@ -234,11 +231,7 @@ bool NONS_ScriptInterpreter::load(int file){
 	au->stopAllSound();
 	out->ephemeralOut(&out->currentBuffer,0,0,1,0);
 	{
-		SDL_Surface *srf=SDL_CreateRGBSurface(
-			SDL_HWSURFACE|SDL_SRCALPHA,
-			scr->screen->virtualScreen->w,
-			scr->screen->virtualScreen->h,
-			32,rmask,gmask,bmask,amask);
+		SDL_Surface *srf=makeSurface(scr->screen->virtualScreen->w,scr->screen->virtualScreen->h,32);
 		SDL_FillRect(srf,0,amask);
 		NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
 		SDL_FreeSurface(srf);
@@ -271,7 +264,7 @@ bool NONS_ScriptInterpreter::load(int file){
 				this->everything->audio->playSoundAsync(&c->name,buffer,size,a,c->loop);
 		}
 	}
-	return 1;
+	return NONS_NO_ERROR;
 }
 
 bool NONS_ScriptInterpreter::save(int file){
@@ -410,7 +403,10 @@ bool NONS_ScriptInterpreter::save(int file){
 			}else
 				this->saveGame->characters[a].string.clear();
 		}
+		std::copy(scr->charactersBlendOrder.begin(),scr->charactersBlendOrder.end(),this->saveGame->charactersBlendOrder);
+		std::fill(this->saveGame->charactersBlendOrder+scr->charactersBlendOrder.size(),this->saveGame->charactersBlendOrder+3,255);
 		//update sprite record
+		this->saveGame->blendSprites=scr->blendSprites;
 		for (ulong a=0;a<scr->layerStack.size();a++){
 			if (this->saveGame->sprites.size()==a)
 				this->saveGame->sprites.push_back(0);

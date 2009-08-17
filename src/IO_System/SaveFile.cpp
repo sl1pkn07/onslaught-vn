@@ -457,9 +457,8 @@ void NONS_SaveFile::load(std::wstring filename){
 				this->bgColor.g=0;
 				this->bgColor.b=0;
 			}
-			if (this->version>1)
-				this->char_baseline=readDWord(buffer,offset);
 			if (this->version>1){
+				this->char_baseline=readDWord(buffer,offset);
 				for (int a=0;a<3;a++){
 					this->characters[a].string=UniFromUTF8(readString(buffer,offset));
 					if (this->characters[a].string.size()){
@@ -472,6 +471,13 @@ void NONS_SaveFile::load(std::wstring filename){
 			}else
 				for (int a=0;a<3;a++)
 					this->characters[a].string=UniFromUTF8(readString(buffer,offset));
+			if (this->version>2){
+				for (ulong a=0;a<3;a++)
+					this->charactersBlendOrder[a]=readByte(buffer,offset);
+
+				this->blendSprites=!!readByte(buffer,offset);
+			}else
+				this->blendSprites=1;
 			n=readDWord(buffer,offset);
 			std::vector<ulong> intervals;
 			for (ulong a=0;a<n;a++){
@@ -718,6 +724,10 @@ bool NONS_SaveFile::save(std::wstring filename){
 				writeByte(this->characters[a].alpha,buffer);
 			}
 		}
+		for (ulong a=0;a<3;a++)
+			writeByte(this->charactersBlendOrder[a],buffer);
+
+		writeByte(this->blendSprites,buffer);
 		std::vector<ulong> intervals;
 		ulong last=0;
 		bool set=0;
