@@ -222,17 +222,9 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 		return;
 	this->animation=*anim;
 	if (this->animation.method==NONS_AnimationInfo::PARALLEL_MASK)
-		this->image=SDL_CreateRGBSurface(
-			SDL_HWSURFACE|SDL_SRCALPHA,
-			primary->image->w/2,
-			primary->image->h,
-			32,rmask,gmask,bmask,amask);
+		this->image=makeSurface(primary->image->w/2,primary->image->h,32);
 	else
-		this->image=SDL_CreateRGBSurface(
-			SDL_HWSURFACE|SDL_SRCALPHA,
-			primary->image->w,
-			primary->image->h,
-			32,rmask,gmask,bmask,amask);
+		this->image=makeSurface(primary->image->w,primary->image->h,32);
 	uchar *pixels0=(uchar *)this->image->pixels;
 	uchar Roffset0=(this->image->format->Rshift)>>3;
 	uchar Goffset0=(this->image->format->Gshift)>>3;
@@ -379,39 +371,15 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 			break;
 	}
 	this->image->clip_rect.w/=this->animation.animation_length;
-	if (this->animation.animation_length>1){
-		/*switch (this->animation.loop_type){
-			case NONS_AnimationInfo::SAWTOOTH_WAVE_CYCLE:
-				for (ulong a=0;a<this->animation.animation_length-1;a++)
-					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=this->getUpdateRect(a,a+1);
-				this->optimized_updates[
-					std::pair<ulong,ulong>(this->animation.animation_length-1,0)
-				]=this->getUpdateRect(this->animation.animation_length-1,0);
-				break;
-			case NONS_AnimationInfo::SINGLE_CYCLE:
-				for (ulong a=0;a<this->animation.animation_length-1;a++)
-					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=this->getUpdateRect(a,a+1);
-				break;
-			case NONS_AnimationInfo::TRIANGLE_WAVE_CYCLE:
-				for (ulong a=0;a<this->animation.animation_length-1;a++){
-					SDL_Rect temp=this->getUpdateRect(a,a+1);
-					this->optimized_updates[std::pair<ulong,ulong>(a,a+1)]=temp;
-					this->optimized_updates[std::pair<ulong,ulong>(a+1,a)]=temp;
-				}
-				break;
-			case NONS_AnimationInfo::NO_CYCLE:*/
-				for (ulong a=0;a<this->animation.animation_length-1;a++){
-					for (ulong b=a+1;a<this->animation.animation_length;a++){
-						std::pair<ulong,ulong> p(a,b);
-						if (this->optimized_updates.find(p)!=this->optimized_updates.end())
-							continue;
-						SDL_Rect temp=this->getUpdateRect(a,b);
-						this->optimized_updates[p]=temp;
-						this->optimized_updates[std::pair<ulong,ulong>(b,a)]=temp;
-					}
-				}
-		/*		break;
-		}*/
+	for (ulong a=0;a<this->animation.animation_length-1;a++){
+		for (ulong b=a+1;a<this->animation.animation_length;a++){
+			std::pair<ulong,ulong> p(a,b);
+			if (this->optimized_updates.find(p)!=this->optimized_updates.end())
+				continue;
+			SDL_Rect temp=this->getUpdateRect(a,b);
+			this->optimized_updates[p]=temp;
+			this->optimized_updates[std::pair<ulong,ulong>(b,a)]=temp;
+		}
 	}
 	if (!!rects)
 		*rects=this->optimized_updates;
@@ -429,7 +397,7 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		SDL_FreeSurface(this->image);
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
 	SDL_Surface *surface=IMG_Load_RW(rwops,0);
-	this->image=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,surface->w,surface->h,32,rmask,gmask,bmask,amask);
+	this->image=makeSurface(surface->w,surface->h,32);
 	if (!!surface && surface->format->BitsPerPixel<24)
 		SDL_BlitSurface(surface,0,this->image,0);
 	else

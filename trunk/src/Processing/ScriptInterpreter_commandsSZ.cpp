@@ -372,12 +372,10 @@ extern std::ofstream textDumpFile;
 ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 	bool selnum;
 	if (!stdStrCmpCI(stmt.commandName,L"selnum")){
-		MINIMUM_PARAMETERS(3);
-		if (!(stmt.parameters.size()%2))
-			return NONS_INSUFFICIENT_PARAMETERS;
+		MINIMUM_PARAMETERS(2);
 		selnum=1;
 	}else{
-		MINIMUM_PARAMETERS(2);
+		MINIMUM_PARAMETERS(3);
 		if (stmt.parameters.size()%2)
 			return NONS_INSUFFICIENT_PARAMETERS;
 		selnum=0;
@@ -390,9 +388,11 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 		std::wstring temp;
 		_GETWCSVALUE(temp,a,)
 		strings.push_back(temp);
-		a++;
-		_GETLABEL(temp,a,)
-		jumps.push_back(temp);
+		if (!selnum){
+			a++;
+			_GETLABEL(temp,a,)
+			jumps.push_back(temp);
+		}
 	}
 	NONS_ButtonLayer layer(this->main_font,this->everything->screen,0,this->menu);
 	layer.makeTextButtons(
@@ -587,7 +587,7 @@ void quake(SDL_Surface *dst,char axis,ulong amplitude,ulong duration){
 		amp=amplitude;
 	SDL_Rect srcrect=dst->clip_rect,
 		dstrect=srcrect;
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,dst->w,dst->h,32,rmask,gmask,bmask,amask);
+	SDL_Surface *copyDst=makeSurface(dst->w,dst->h,32);
 	manualBlit(dst,0,copyDst,0);
 	ulong start=SDL_GetTicks();
 	while (1){
@@ -775,9 +775,9 @@ ErrorCode NONS_ScriptInterpreter::command_stdout(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring text=this->convertParametersToString(stmt);
 	if (!stdStrCmpCI(stmt.stmt,L"stdout"))
-		o_stdout <<text<<'\n';
+		o_stdout <<text<<"\n";
 	else //if (!stdStrCmpCI(stmt.stmt,L"stderr"))
-		o_stderr <<text<<'\n';
+		o_stderr <<text<<"\n";
 	return NONS_NO_ERROR;
 }
 
@@ -788,10 +788,10 @@ ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
 	_GETWCSVALUE(str2,1,)
 	o_stdout <<"--------------------------------------------------------------------------------\n"
 		"versionstr says:\n"
-		<<str1<<'\n'
+		<<str1<<"\n"
 		<<str2<<"\n"
 		"--------------------------------------------------------------------------------\n";
-	return 0;
+	return NONS_NO_ERROR;
 }
 
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

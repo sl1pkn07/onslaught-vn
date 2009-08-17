@@ -42,6 +42,8 @@
 #include "IO_System/FileIO.h"
 #include "version.h"
 
+#define NONS_PARALLELIZE
+
 #if defined(NONS_SYS_WINDOWS)
 #include <windows.h>
 #endif
@@ -236,7 +238,7 @@ int main(int argc,char **argv){
 	signal(SIGINT,handle_SIGINT);
 
 	std::vector<std::wstring> cmdl_arg=getArgumentsVector(argv);
-	if (cmdl_arg.size() && !useArgumentsFile("arguments.txt",cmdl_arg))
+	if (!useArgumentsFile("arguments.txt",cmdl_arg))
 		CLOptions.parse(cmdl_arg);
 
 	if (CLOptions.override_stdout){
@@ -282,6 +284,8 @@ int main(int argc,char **argv){
 	o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
 #else
 	o_stdout <<"Parallelization disabled."<<std::endl;
+	//Redundant statement, but it doesn't hurt.
+	cpu_count=1
 #endif
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -328,8 +332,8 @@ int main(int argc,char **argv){
 	thread=SDL_CreateThread(mainThread,0);
 
 	SDL_Event event;
-	while (1){
-		while (SDL_WaitEvent(&event)>=0)
+	while (!stopEventHandling){
+		while (SDL_WaitEvent(&event)>=0 && !stopEventHandling)
 			handleInputEvent(event);
 		SDL_Delay(100);
 	}

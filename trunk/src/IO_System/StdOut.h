@@ -37,22 +37,24 @@
 
 extern NONS_CommandLineOptions CLOptions;
 
+#define INDENTATION_CHARACTER "    "
+
 struct NONS_RedirectedOutput{
 	std::ofstream *file;
 	std::ostream &cout;
+	ulong indentation;
+	bool addIndentationNext;
 	NONS_RedirectedOutput(std::ostream &a);
 	~NONS_RedirectedOutput();
-	template <typename T> NONS_RedirectedOutput &operator<<(const T &a){
-		if (CLOptions.override_stdout && this->file)
-			*this->file <<a;
-		else
-			this->cout <<a;
-		return *this;
-	}
+	NONS_RedirectedOutput &operator<<(ulong);
+	NONS_RedirectedOutput &outputHex(ulong,ulong=0);
+	NONS_RedirectedOutput &operator<<(long);
+	//NONS_RedirectedOutput &operator<<(wchar_t);
+	NONS_RedirectedOutput &operator<<(const char *);
+	NONS_RedirectedOutput &operator<<(const std::string &);
+	NONS_RedirectedOutput &operator<<(const std::wstring &);
 	void redirect();
-	std::ostream &getstream();
+	//std::ostream &getstream();
+	void indent(long);
 };
-
-template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <wchar_t *>(wchar_t * const &a);
-template <> NONS_RedirectedOutput &NONS_RedirectedOutput::operator<< <std::wstring>(const std::wstring &a);
 #endif

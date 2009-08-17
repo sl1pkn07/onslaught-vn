@@ -61,7 +61,7 @@ extern NONS_ScriptInterpreter *gScriptInterpreter;
 extern SDL_mutex *exitMutex;
 extern SDL_mutex *screenMutex;
 
-#include "Parallelization.h"
+extern ulong cpu_count;
 
 extern std::wstring save_directory;
 extern std::wstring config_directory;

@@ -34,7 +34,7 @@
 #include "../../Globals.h"
 
 NONS_Layer::NONS_Layer(SDL_Rect *size,unsigned rgba){
-	this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,size->w,size->h,32,rmask,gmask,bmask,amask);
+	this->data=makeSurface(size->w,size->h,32);
 	SDL_FillRect(this->data,0,rgba);
 	this->defaultShade=rgba;
 	this->fontCache=0;
@@ -97,7 +97,7 @@ void NONS_Layer::Clear(){
 
 void NONS_Layer::setShade(uchar r,uchar g,uchar b){
 	if (!this->data)
-		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,this->clip_rect.w,this->clip_rect.h,32,rmask,gmask,bmask,amask);
+		this->data=makeSurface(this->clip_rect.w,this->clip_rect.h,32);
 	SDL_PixelFormat *format=this->data->format;
 	unsigned r0=r,
 		g0=g,
@@ -118,7 +118,7 @@ bool NONS_Layer::load(const std::wstring *string){
 		int w=this->data->w,
 			h=this->data->h;
 		if (this->unload(1)){
-			this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,w,h,32,rmask,gmask,bmask,amask);
+			this->data=makeSurface(w,h,32);
 			this->clip_rect=this->data->clip_rect;
 		}
 		return 1;
@@ -126,7 +126,7 @@ bool NONS_Layer::load(const std::wstring *string){
 	this->unload();
 	this->data=ImageLoader->fetchSprite(*string,&this->optimized_updates);
 	if (!this->data){
-		this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,1,1,24,rmask,gmask,bmask,amask);
+		this->data=makeSurface(1,1,24);
 		SDL_FillRect(this->data,0,this->defaultShade);
 		this->clip_rect=this->data->clip_rect;
 		return 0;
@@ -144,7 +144,7 @@ bool NONS_Layer::load(const std::wstring *string){
 
 bool NONS_Layer::load(SDL_Surface *src){
 	this->unload();
-	this->data=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,32,rmask,gmask,bmask,amask);
+	this->data=makeSurface(src->w,src->h,32);
 	//SDL_FillRect(this->data,0,gmask|amask);
 	manualBlit(src,0,this->data,0);
 	return 1;

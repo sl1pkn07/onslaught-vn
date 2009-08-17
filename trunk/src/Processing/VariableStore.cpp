@@ -40,6 +40,9 @@
 
 NONS_LabelLog labellog;
 
+const Sint32 NONS_VariableStore::indexLowerLimit=-1073741824;
+const Sint32 NONS_VariableStore::indexUpperLimit=1073741823;
+
 NONS_VariableStore::NONS_VariableStore(){
 	ulong l;
 	this->commitGlobals=0;
@@ -177,7 +180,7 @@ ErrorCode NONS_VariableStore::evaluate(
 			if (!!result && CLOptions.verbosity>=2){
 				if (invert_terms)
 					o_stderr <<"notif";
-				o_stderr <<'('<<exp<<")=="<<*result<<'\n';
+				o_stderr <<"("<<exp<<")=="<<*result<<"\n";
 			}
 			return NONS_NO_ERROR;
 		case 1:
@@ -210,7 +213,7 @@ NONS_VariableMember *NONS_VariableStore::retrieve(const std::wstring &name,Error
 }
 
 NONS_Variable *NONS_VariableStore::retrieve(Sint32 position,ErrorCode *error){
-	if (position<-1073741824 || position>1073741823){
+	if (position<indexLowerLimit || position>indexUpperLimit){
 		if (!!error)
 			*error=NONS_VARIABLE_OUT_OF_RANGE;
 		return 0;
@@ -250,5 +253,18 @@ NONS_VariableMember *NONS_VariableStore::getConstant(const std::wstring &name){
 	if (i==this->constants.end())
 		return 0;
 	return i->second;
+}
+
+Sint32 NONS_VariableStore::getVariableIndex(NONS_VariableMember *var){
+	if (var->getType()==INTEGER){
+		for (variables_map_T::iterator i=this->variables.begin(),end=this->variables.end();i!=end;i++)
+			if (i->second->intValue==var)
+				return i->first;
+	}else{
+		for (variables_map_T::iterator i=this->variables.begin(),end=this->variables.end();i!=end;i++)
+			if (i->second->wcsValue==var)
+				return i->first;
+	}
+	return 0;
 }
 #endif

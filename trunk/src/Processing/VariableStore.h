@@ -47,6 +47,9 @@ typedef std::map<Sint32,NONS_Variable *> variables_map_T;
 typedef std::map<Sint32,NONS_VariableMember *> arrays_map_T;
 
 struct NONS_VariableStore{
+	static const Sint32 indexLowerLimit,
+		indexUpperLimit;
+
 	constants_map_T constants;
 	variables_map_T variables;
 	arrays_map_T arrays;
@@ -96,14 +99,13 @@ struct NONS_VariableStore{
 		std::wstring *string);
 	//ErrorCode resolveIndexing(const wchar_t *expression,NONS_VariableMember **res);
 	void push(Sint32 pos,NONS_Variable *var);
-	bool link(wchar_t *name,Sint32 pos);
-	void push(wchar_t *name,NONS_Variable *var);
 	NONS_VariableMember *retrieve(const std::wstring &name,ErrorCode *error);
 	NONS_Variable *retrieve(Sint32 position,ErrorCode *error);
 	//NONS_VariableMember *retrieve(const wchar_t *name,const std::vector<ulong> *index,ErrorCode *error);
 	//NONS_VariableMember *retrieve(const wchar_t *name,ulong *index,ulong size,ErrorCode *error);
 	NONS_VariableMember *getConstant(const std::wstring &name);
 	NONS_VariableMember *getArray(Sint32 arrayNo);
+	Sint32 getVariableIndex(NONS_VariableMember *var);
 
 	ErrorCode getWcsValue(const std::wstring &str,std::wstring &value);
 	ErrorCode getIntValue(const std::wstring &str,long &value);

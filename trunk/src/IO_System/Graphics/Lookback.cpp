@@ -157,24 +157,8 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 	if (!this->output->log.size())
 		return;
 	NONS_EventQueue *queue=InputObserver.attach();
-	SDL_Surface *copyDst=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,
-		gmask,
-		bmask,
-		amask);
-	SDL_Surface *preBlit=SDL_CreateRGBSurface(
-		SDL_HWSURFACE|SDL_SRCALPHA,
-		dst->virtualScreen->w,
-		dst->virtualScreen->h,
-		32,
-		rmask,
-		gmask,
-		bmask,
-		amask);
+	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
+	SDL_Surface *preBlit=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
 	long end=this->output->log.size(),
 		currentPage=end-1;

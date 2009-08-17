@@ -40,7 +40,7 @@ NONS_Font::NONS_Font(const char *fontname,int size,int style){
 	this->font=TTF_OpenFont(fontname,size);
 	if(!font){
 		this->font=0;
-		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<'\n';
+		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<"\n";
 		return;
 	}
 	TTF_SetFontStyle(this->font,style);
@@ -57,7 +57,7 @@ NONS_Font::NONS_Font(SDL_RWops *rwop,int size,int style){
 	this->font=TTF_OpenFontRW(rwop,1,size);
 	if(!font){
 		this->font=0;
-		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<'\n';
+		o_stderr <<"TTF_OpenFont: "<<TTF_GetError()<<"\n";
 		return;
 	}
 	TTF_SetFontStyle(this->font,style);
@@ -131,8 +131,11 @@ void NONS_Glyph::putGlyph(SDL_Surface *dst,int x,int y,SDL_Color *foreground,boo
 	rect2.w-=2;
 	rect2.h-=2;
 	SDL_FillRect(dst,&rect2,0xFF000000);*/
-	//SDL_BlitSurface(this->glyph,0,dst,&rect);
-	manualBlit(this->glyph,0,dst,&rect);
+	//Never, EVER, change this call to manualBlit(). I don't know what sort of
+	//magick SDL_BlitSurface() does, but it's the only method that blits glyphs
+	//correctly.
+	SDL_BlitSurface(this->glyph,0,dst,&rect);
+	//manualBlit(this->glyph,0,dst,&rect);
 }
 
 SDL_Color NONS_Glyph::getforeground(){

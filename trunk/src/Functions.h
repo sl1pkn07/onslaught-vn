@@ -51,7 +51,6 @@
 #define ABS(x) ((x)<0?-(x):(x))
 
 #define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
-#define NONS_NEWSURFACE(w,h,d) SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,(w),(h),(d),rmask,gmask,bmask,amask)
 #define CHECK_FLAG(x,y) (((x)&(y))==(y))
 
 //string functions
@@ -270,6 +269,15 @@ std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typenam
 	return intervals;
 }
 
+extern const int rmask;
+extern const int gmask;
+extern const int bmask;
+extern const int amask;
+
+inline SDL_Surface *makeSurface(ulong w,ulong h,ulong bits,Uint32 r=rmask,Uint32 g=gmask,Uint32 b=bmask,Uint32 a=amask){
+	return SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,w,h,bits,r,g,b,a);
+}
+
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 //bitmap processing functions
 typedef long manualBlitAlpha_t;
@@ -278,6 +286,9 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 void FlipSurfaceH(SDL_Surface *src,SDL_Surface *dst);
 void FlipSurfaceV(SDL_Surface *src,SDL_Surface *dst);
 void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst);
+SDL_Surface *horizontalShear(SDL_Surface *src,float amount);
+SDL_Surface *verticalShear(SDL_Surface *src,float amount);
+SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]);
 #endif
 
 //other functions
@@ -304,7 +315,7 @@ template <typename T1,typename T2>
 bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t &at_offset,int (*comp_f)(const T2 &,const T1 &)){
 	if (begin<=end){
 		size_t size=end-begin+1;
-		while (1){
+		while (begin<=end){
 			size_t pivot=begin+size/2;
 			int cmp=comp_f(value,set[pivot]);
 			if (size==1){

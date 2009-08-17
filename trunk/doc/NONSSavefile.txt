@@ -1,5 +1,5 @@
 //All strings are UTF-8.
-//Latest version: 2
+//Latest version: 3
 
 String. "NONS". (magic word)
 Word. Version.
@@ -184,12 +184,20 @@ Screen section{
 				Byte. Right's alpha.
 			}
 		}
+		if (save_version>2){
+			//Note: For the following, no more characters is signaled by a 255.
+			Byte. First character to blend.
+			Byte. Second character to blend.
+			Byte. Third character to blend.
+			
+			Byte. Blend sprites?
+		}
 		DWord. Number of intervals (n).
 		n*Interval{
 			if (Size of the interval==1)
-				DWord. (First variable in the interval)&0x80000000.
+				DWord. (First number in the interval)&0x80000000.
 			else{
-				DWord. First variable in the interval.
+				DWord. First number in the interval.
 				DWord. Size of the interval.
 			}
 		}
