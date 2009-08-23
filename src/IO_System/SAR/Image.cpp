@@ -390,6 +390,8 @@ NONS_Image::~NONS_Image(){
 		SDL_FreeSurface(this->image);
 }
 
+#undef LoadImage
+
 SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize){
 	if (!buffer || !bufferSize || this->image && this->refCount)
 		return 0;

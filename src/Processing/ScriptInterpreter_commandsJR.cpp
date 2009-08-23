@@ -58,7 +58,7 @@ ErrorCode NONS_ScriptInterpreter::command_return(NONS_Statement &stmt){
 	do{
 		popped=this->callStack.back();
 		this->callStack.pop_back();
-	}while (popped->type!=SUBROUTINE_CALL && popped->type!=TEXTGOSUB_CALL);
+	}while (popped->type!=SUBROUTINE_CALL && popped->type!=TEXTGOSUB_CALL && popped->type!=USERCMD_CALL);
 	this->thread->gotoPair(popped->returnTo.toPair());
 	if (popped->type==TEXTGOSUB_CALL){
 		this->Printer_support(popped->pages,0,0,0);
@@ -743,13 +743,22 @@ ErrorCode NONS_ScriptInterpreter::command_ofscopy(NONS_Statement &stmt){
 	this->everything->screen->Background->load(this->everything->screen->screen->virtualScreen);
 	UNLOCKSCREEN;
 	*/
-	return NONS_UNDOCUMENTED_COMMAND;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_loadgosub(NONS_Statement &stmt){
+	if (!stmt.parameters.size()){
+		this->loadgosub.clear();
+		return NONS_NO_ERROR;
+	}
+	if (!this->script->blockFromLabel(stmt.parameters[0]))
+		return NONS_NO_SUCH_BLOCK;
+	this->loadgosub=stmt.parameters[0];
+	trim_string(this->loadgosub);
+	return NONS_NO_ERROR;
 }
 
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

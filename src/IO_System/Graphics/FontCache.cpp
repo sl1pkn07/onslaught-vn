@@ -34,6 +34,8 @@
 #include "../../Common.h"
 #include "../../Globals.h"
 
+//#define BLEND_WITH_SDLBLIT
+
 NONS_Font::NONS_Font(const char *fontname,int size,int style){
 	if (size<=0)
 		size=20;
@@ -86,7 +88,9 @@ bool NONS_Glyph::equalColors(SDL_Color *a,SDL_Color *b){
 NONS_Glyph::NONS_Glyph(NONS_Font *font,wchar_t character,int ascent,SDL_Color *foreground,bool shadow){
 	this->ttf_font=font->getfont();
 	this->glyph=TTF_RenderGlyph_Blended(this->ttf_font,character,*foreground);
+#ifdef BLEND_WITH_SDLBLIT
 	SDL_SetAlpha(glyph,SDL_SRCALPHA,0);
+#endif
 	int x0,y1;
 	TTF_GlyphMetrics(this->ttf_font,character,&x0,0,0,&y1,&this->advance);
 	this->box=this->glyph->clip_rect;
@@ -123,19 +127,12 @@ void NONS_Glyph::putGlyph(SDL_Surface *dst,int x,int y,SDL_Color *foreground,boo
 	SDL_Rect rect=this->box;
 	rect.x+=x;
 	rect.y+=y;
+#ifdef BLEND_WITH_SDLBLIT
 	SDL_SetAlpha(glyph,(!method)?SDL_SRCALPHA:0,0);
-	/*SDL_FillRect(dst,&rect,0xFF0000FF);
-	SDL_Rect rect2=rect;
-	rect2.x++;
-	rect2.y++;
-	rect2.w-=2;
-	rect2.h-=2;
-	SDL_FillRect(dst,&rect2,0xFF000000);*/
-	//Never, EVER, change this call to manualBlit(). I don't know what sort of
-	//magick SDL_BlitSurface() does, but it's the only method that blits glyphs
-	//correctly.
 	SDL_BlitSurface(this->glyph,0,dst,&rect);
-	//manualBlit(this->glyph,0,dst,&rect);
+#else
+	manualBlit(this->glyph,0,dst,&rect);
+#endif
 }
 
 SDL_Color NONS_Glyph::getforeground(){
@@ -162,7 +159,7 @@ void NONS_FontCache::refreshCache(){
 	this->glyphCache.clear();
 	this->glyphCache.reserve(128);
 	for (wchar_t a=0;a<128;a++){
-		NONS_Glyph *glyph=new NONS_Glyph(this->font,a,this->font->getascent(),&(this->foreground),shadow);
+		NONS_Glyph *glyph=new NONS_Glyph(this->font,a,this->font->getascent(),&this->foreground,shadow);
 		this->glyphCache.push_back(glyph);
 	}
 }

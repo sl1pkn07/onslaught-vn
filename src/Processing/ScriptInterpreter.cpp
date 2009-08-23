@@ -41,8 +41,8 @@
 #undef ABS
 #include "../IO_System/Graphics/SDL_bilinear.h"
 
-SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
-SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_ResizeSmooth;
+SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_Rotate/*Smooth*/;
+SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_Resize/*Smooth*/;
 
 printingPage::printingPage(){
 }
@@ -96,6 +96,16 @@ NONS_StackElement::NONS_StackElement(const std::vector<printingPage> &pages,wcha
 	this->textgosubLevel=level;
 	this->pages=pages;
 	this->textgosubTriggeredBy=trigger;
+}
+
+NONS_StackElement::NONS_StackElement(NONS_StackElement *copy,const std::vector<std::wstring> &vector){
+	this->interpretAtReturn=copy->interpretAtReturn;
+	this->returnTo.line=copy->returnTo.line;
+	this->returnTo.statement=copy->returnTo.statement;
+	this->textgosubLevel=copy->textgosubLevel;
+	this->textgosubTriggeredBy=copy->textgosubTriggeredBy;
+	this->type=USERCMD_CALL;
+	this->parameters=vector;
 }
 
 void NONS_ScriptInterpreter::init(){
@@ -236,7 +246,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"definereset"]=&NONS_ScriptInterpreter::command_reset;
 	this->commandList[L"defmp3vol"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"defsevol"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"defsub"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"defsub"]=&NONS_ScriptInterpreter::command_defsub;
 	this->commandList[L"defvoicevol"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"delay"]=&NONS_ScriptInterpreter::command_delay;
 	this->commandList[L"deletescreenshot"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -284,7 +294,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"getmp3vol"]=&NONS_ScriptInterpreter::command_getmp3vol;
 	this->commandList[L"getpage"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getpageup"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getparam"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getparam"]=&NONS_ScriptInterpreter::command_getparam;
 	this->commandList[L"getreg"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"getret"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getscreenshot"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -326,7 +336,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"linepage"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"linepage2"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"loadgame"]=&NONS_ScriptInterpreter::command_loadgame;
-	this->commandList[L"loadgosub"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"loadgosub"]=&NONS_ScriptInterpreter::command_loadgosub;
 	this->commandList[L"locate"]=&NONS_ScriptInterpreter::command_locate;
 	this->commandList[L"logsp"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"logsp2"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -491,8 +501,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"command_syntax_example"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"stdout"]=&NONS_ScriptInterpreter::command_stdout;
 	this->commandList[L"stderr"]=&NONS_ScriptInterpreter::command_stdout;
+	this->commandList[L""]=&NONS_ScriptInterpreter::command___userCommandCall__;
 	/*this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
@@ -502,10 +512,6 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	ulong total=this->totalCommands(),
 		implemented=this->implementedCommands();
 	std::cout <<"ONSlaught script interpreter v"<<float(implemented*100/total)/100<<std::endl;
-	command_list.clear();
-	command_list.reserve(this->commandList.size());
-	for (commandListType::iterator i=this->commandList.begin(),end=this->commandList.end();i!=end;i++)
-		command_list.push_back(i->first);
 }
 
 void NONS_ScriptInterpreter::uninit(){
@@ -542,13 +548,13 @@ NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
 }
 
 ulong NONS_ScriptInterpreter::totalCommands(){
-	return this->commandList.size();
+	return this->commandList.size()-1;
 }
 
 ulong NONS_ScriptInterpreter::implementedCommands(){
 	ulong res=0;
 	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
-		if (i->second && i->second!=&NONS_ScriptInterpreter::command_undocumented)
+		if (i->first!=L"" && i->second && i->second!=&NONS_ScriptInterpreter::command_undocumented)
 			res++;
 	return res;
 }
@@ -646,6 +652,11 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		case NONS_Statement::STATEMENT_COMMAND:
 			{
 				commandListType::iterator i=this->commandList.find(stmt->commandName);
+				bool is_user_command=0;
+				if (i==this->commandList.end()){
+					if (this->userCommandList.find(stmt->commandName)!=this->userCommandList.end())
+						i=this->commandList.find(L"");
+				}
 				if (i!=this->commandList.end()){
 					commandFunctionPointer function=i->second;
 					if (!function){

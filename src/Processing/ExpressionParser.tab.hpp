@@ -42,7 +42,7 @@
 	struct NONS_VariableStore;
 	struct wstrCmp;
 
-
+#undef ERROR
 
 
 /* Tokens.  */

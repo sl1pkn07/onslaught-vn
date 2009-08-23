@@ -41,9 +41,14 @@ typedef unsigned char uchar;
 #include <fstream>
 
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset);
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+
+uchar *readfile(HANDLE file,ulong &len,ulong offset);
+#else
 uchar *readfile(std::ifstream &file,ulong &len,ulong offset);
+#endif
 uchar *readfile(const std::wstring &name,ulong &len);
 char writefile(const std::wstring &name,char *buffer,ulong size);
 bool fileExists(const std::wstring &name);
-std::string wstrToIOstr(const std::wstring &string);
 #endif

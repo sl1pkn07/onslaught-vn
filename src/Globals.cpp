@@ -198,6 +198,12 @@ const char *errorMessages[]={
 	"The savegame doesn't exist.",
 	//NONS_HASH_DOES_NOT_MATCH
 	"The savegame doesn't appear to belong to this script.",
+	//NONS_DUPLICATE_COMMAND_DEFINITION_BUILTIN
+	"The command already exists as a built-in command.",
+	//NONS_DUPLICATE_COMMAND_DEFINITION_USER
+	"The command already exists as a user command.",
+	//NONS_NOT_IN_A_USER_COMMAND_CALL
+	"Currently not in a user command call.",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);
@@ -237,9 +243,14 @@ ulong cpu_count=1;
 std::wstring save_directory;
 std::wstring config_directory;
 
-//Stores the complete list of commands. It's initialized by the interpreter at
-//run time. After being initialized, it's guaranteed to be sorted, so look up
-//can be performed with binary_search().
-std::vector<std::wstring> command_list;
 std::ofstream textDumpFile;
+
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+HWND mainWindow=0;
+#endif
+
+#ifdef LOOKUP_BLEND_CONSTANT
+uchar blendData[65536];
+#endif
 #endif

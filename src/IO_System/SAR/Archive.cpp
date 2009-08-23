@@ -151,9 +151,11 @@ NONS_Archive::NONS_Archive(ulong archive_type){
 
 NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
-	this->file=0;
 	this->loaded=0;
 	this->root=0;
+#ifdef NONS_SYS_WINDOWS
+	this->file=INVALID_HANDLE_VALUE;
+#endif
 	if (!fileExists(filename)){
 		if (!failSilently)
 #ifndef TOOLS_NSAIO
@@ -161,7 +163,6 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 #else
 			std::cerr <<"Error. Could not open \""<<UniToUTF8(filename)<<"\".\n";
 #endif
-		this->file=0;
 		this->loaded=0;
 		this->root=0;
 		return;
@@ -175,7 +176,11 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 		if (temp0[a]=='.')
 			temp0[a]='_';
 	this->root=new NONS_TreeNode(temp0);
-	this->file=new std::ifstream(wstrToIOstr(filename).c_str(),std::ios::binary);
+#ifdef NONS_SYS_WINDOWS
+	this->file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
+#else
+	this->file.open(wstrToIOstr(filename).c_str(),std::ios::binary);
+#endif
 	this->path=filename;
 	pos=this->path.rfind('.');
 	std::wstring ext;
@@ -198,8 +203,10 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 NONS_Archive::~NONS_Archive(){
 	if (this->root)
 		delete this->root;
-	if (this->file)
-		delete this->file;
+#ifdef NONS_SYS_WINDOWS
+	if (this->file!=INVALID_HANDLE_VALUE)
+		CloseHandle(this->file);
+#endif
 }
 
 bool NONS_Archive::readArchive(){
@@ -222,12 +229,12 @@ bool NONS_Archive::readSAR(){
 	if (!this->file)
 		return 0;
 	ulong size=4;
-	uchar *buffer=readfile(*this->file,size,2);
+	uchar *buffer=readfile(this->file,size,2);
 	long start_of_data_stream=buffer[0]<<24|buffer[1]<<16|buffer[2]<<8|buffer[3];
 	this->root->data.offset=start_of_data_stream;
 	delete[] buffer;
 	size=start_of_data_stream-6;
-	buffer=readfile(*this->file,size,6);
+	buffer=readfile(this->file,size,6);
 	for (ulong pos=0;pos<size;){
 		uchar *str=buffer+pos;
 		std::wstring name=UniFromSJIS((char *)str);
@@ -253,12 +260,12 @@ bool NONS_Archive::readNSA(){
 	if (!this->file)
 		return 0;
 	ulong size=4;
-	uchar *buffer=readfile(*this->file,size,2);
+	uchar *buffer=readfile(this->file,size,2);
 	ulong start_of_data_stream=buffer[0]<<24|buffer[1]<<16|buffer[2]<<8|buffer[3];
 	this->root->data.offset=start_of_data_stream;
 	delete[] buffer;
 	size=start_of_data_stream-6;
-	buffer=readfile(*this->file,size,6);
+	buffer=readfile(this->file,size,6);
 	for (ulong pos=0;pos<size;){
 		uchar *str=buffer+pos;
 		std::wstring name=UniFromSJIS((char *)str);
@@ -296,12 +303,12 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 	switch (node->data.compression_type){
 		case NONS_TreeNode::NONS_ArchivedFile::NO_COMPRESSION:
 			len=node->data.length;
-			res=readfile(*this->file,len,node->data.offset);
+			res=readfile(this->file,len,node->data.offset);
 			break;
 		case NONS_TreeNode::NONS_ArchivedFile::NBZ_COMPRESSION:
 			{
 				ulong compressedlen=node->data.length-4;
-				uchar *compressedbuffer=readfile(*this->file,compressedlen,node->data.offset+4);
+				uchar *compressedbuffer=readfile(this->file,compressedlen,node->data.offset+4);
 				res=(uchar *)decompressBuffer_BZ2((char *)compressedbuffer,compressedlen,&len);
 				delete[] compressedbuffer;
 			}
@@ -309,7 +316,7 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 		case NONS_TreeNode::NONS_ArchivedFile::LZSS_COMPRESSION:
 			{
 				ulong compressedlen=node->data.length;
-				uchar *compressedbuffer=readfile(*this->file,compressedlen,node->data.offset);
+				uchar *compressedbuffer=readfile(this->file,compressedlen,node->data.offset);
 				uchar decompression_buffer[256*2];
 				memset(decompression_buffer,0,239);
 				ulong decompresssion_buffer_offset=239;
@@ -340,7 +347,7 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 		case NONS_TreeNode::NONS_ArchivedFile::SPB_COMPRESSION:
 			{
 				ulong compressedlen=node->data.length;
-				uchar *compressedbuffer=readfile(*this->file,compressedlen,node->data.offset);
+				uchar *compressedbuffer=readfile(this->file,compressedlen,node->data.offset);
 				ulong pos=0;
 				ushort width=(compressedbuffer[pos]<<8)|compressedbuffer[pos+1];
 				pos+=2;

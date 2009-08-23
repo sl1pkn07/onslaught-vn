@@ -34,6 +34,11 @@
 #include "../../ErrorCodes.h"
 #include <string>
 #include <vector>
+#include <fstream>
+
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+#endif
 
 struct NONS_TreeNode{
 	struct NONS_ArchivedFile{
@@ -73,7 +78,11 @@ private:
 
 struct NONS_Archive{
 	NONS_TreeNode *root;
-	std::ifstream *file;
+#ifdef NONS_SYS_WINDOWS
+	HANDLE file;
+#else
+	std::ifstream file;
+#endif
 	std::wstring path;
 	ulong archive_type;
 	enum{

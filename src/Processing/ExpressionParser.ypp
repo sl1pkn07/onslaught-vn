@@ -52,12 +52,13 @@ void freeVM(NONS_VariableMember *p);
 %file-prefix="ExpressionParser"
 %name-prefix="expressionParser_yy"
 %code requires {
-	#include <set>
-	#include <vector>
-	#include "../IO_System/SAR/FileLog.h"
-	class NONS_VariableMember;
-	struct NONS_VariableStore;
-	struct wstrCmp;
+#include <set>
+#include <vector>
+#include "../IO_System/SAR/FileLog.h"
+class NONS_VariableMember;
+struct NONS_VariableStore;
+struct wstrCmp;
+#undef ERROR
 }
 %code provides {
 	#include <sstream>

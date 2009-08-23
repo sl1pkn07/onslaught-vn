@@ -11,7 +11,7 @@ DWord. Start of the audio section.
 Stack section{
 	DWord. Size of the stack (n).
 	n*Stack element{
-		Byte. Type of nest. (0 subroutine, 1 for, 2 textgosub)
+		Byte. Type of nest. (1 subroutine, 2 for, 3 textgosub, 4 user command)
 		String. Label.
 		if (save_version<2){
 			DWord. Offset in wide characters from the label.
@@ -20,13 +20,13 @@ Stack section{
 			DWord. Statement offset (statement 0:statement 1:statement 2).
 			DWord. Level of textgosub recursion.
 		}
-		if (Type of nest==0)
+		if (Type of nest==1)
 			String. A string that must be interpreted before popping the stack.
-		else if (Type of nest==1){
+		else if (Type of nest==2){
 			DWord. A variable stack index used to identify the for index variable.
 			sDWord. The final value of the for (for (;var<=val;)).
 			sDWord. The step of the for (for (;;var+=step)).
-		}else if (Type of nest==2 && save_version>1){
+		}else if (Type of nest==3 && save_version>1){
 			//TODO: Add support for saving from inside textgosub.
 			//DWord. Number of pages (n1).
 			//n1*Page{
@@ -40,6 +40,12 @@ Stack section{
 			//		DWord. Position in the reduced string.
 			//	}
 			//}
+		}else if (Type of nest==4 && save_version>2){
+			String. A string that must be interpreted before popping the stack.
+			DWord. Total parameters (n).
+			n{
+				String. Parameter string.
+			}
 		}
 	}
 	String. Current label.
@@ -49,6 +55,8 @@ Stack section{
 		DWord. Number of lines below the original label.
 		DWord. Statement offset (statement 0:statement 1:statement 2).
 	}
+	if (save_version>=3)
+		String. loadgosub label.
 }
 Variables section{
 	DWord. Number of intervals (n).

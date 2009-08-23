@@ -1,5 +1,5 @@
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
+/* A Bison parser, made by GNU Bison 2.4.  */
 
 /* Skeleton interface for Bison's Yacc-like parsers in C
    
@@ -35,10 +35,11 @@
 /* "%code requires" blocks.  */
 
 
-	#include <iostream>
-	#include <sstream>
-	#include <string>
-	#include <climits>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <climits>
+#undef ERROR
 
 
 

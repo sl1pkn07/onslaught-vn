@@ -306,7 +306,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 						std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 						break;
 					}
-					textDumpFile.open(wstrToIOstr(arguments[++a]).c_str(),std::ios::app);
+					textDumpFile.open(UniToUTF8(arguments[++a]).c_str(),std::ios::app);
 				}
 				break;
 			case 14: //-f

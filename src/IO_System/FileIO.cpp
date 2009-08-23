@@ -39,12 +39,47 @@
 #endif
 
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
+#ifdef NONS_SYS_WINDOWS
+	HANDLE file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
+	if (file==INVALID_HANDLE_VALUE){
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
+		o_stderr <<"readfile(): System error "<<GetLastError()<<"\n";
+#endif
+		return 0;
+	}
+	uchar *ret=readfile(file,len,offset);
+	CloseHandle(file);
+	return ret;
+#else
 	std::ifstream file(wstrToIOstr(filename).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
 	return readfile(file,len,offset);
+#endif
 }
 
+#ifdef NONS_SYS_WINDOWS
+uchar *readfile(HANDLE file,ulong &len,ulong offset){
+	if (file==INVALID_HANDLE_VALUE)
+		return 0;
+	DWORD filesize=GetFileSize(file,0),
+		originalPosition=SetFilePointer(file,0,0,FILE_CURRENT);
+
+	if (offset>=filesize)
+		offset=filesize-1;
+
+	SetFilePointer(file,offset,0,FILE_BEGIN);
+
+	filesize=filesize-offset>=len?len:filesize-offset;
+
+	uchar *buffer=new uchar[filesize];
+	ReadFile(file,buffer,filesize,&filesize,0);
+	CloseHandle(file);
+
+	len=filesize;
+	return buffer;
+}
+#else
 uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
 	if (!file)
 		return 0;
@@ -59,8 +94,27 @@ uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
 	file.seekg(originalPosition,std::ios::beg);
 	return buffer;
 }
+#endif
 
 uchar *readfile(const std::wstring &name,ulong &len){
+#ifdef NONS_SYS_WINDOWS
+	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_FLAG_SEQUENTIAL_SCAN,0);
+	if (file==INVALID_HANDLE_VALUE){
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
+		o_stderr <<"readfile(): System error No. "<<GetLastError()<<".\n";
+#endif
+		return 0;
+	}
+	DWORD filesize;
+	filesize=GetFileSize(file,0);
+	
+	uchar *buffer=new uchar[filesize];
+	ReadFile(file,buffer,filesize,&filesize,0);
+	CloseHandle(file);
+
+	len=filesize;
+	return buffer;
+#else
 	std::ifstream file(wstrToIOstr(name).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
@@ -72,37 +126,44 @@ uchar *readfile(const std::wstring &name,ulong &len){
 	file.read((char *)buffer,pos);
 	file.close();
 	return buffer;
+#endif
 }
 
-#ifdef NONS_SYS_WINDOWS
-#include <windows.h>
-#endif
-
 char writefile(const std::wstring &name,char *buffer,ulong size){
-	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
-	if (!file){
-#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO) && defined(NONS_SYS_WINDOWS)
-		o_stderr <<"writefile(): "<<GetLastError()<<"\n";
+#ifdef NONS_SYS_WINDOWS
+	HANDLE file=CreateFile(&name[0],GENERIC_WRITE,0,0,TRUNCATE_EXISTING,0,0);
+	if (file==INVALID_HANDLE_VALUE)
+		file=CreateFile(&name[0],GENERIC_WRITE,0,0,CREATE_NEW,0,0);
+	if (file==INVALID_HANDLE_VALUE){
+#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
+		o_stderr <<"writefile(): System error No. "<<GetLastError()<<"\n";
 #endif
 		return 1;
 	}
+	WriteFile(file,buffer,size,&size,0);
+	CloseHandle(file);
+	return 0;
+#else
+	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
+	if (!file)
+		return 1;
 	file.write(buffer,size);
 	file.close();
 	return 0;
+#endif
 }
 
 bool fileExists(const std::wstring &name){
-	std::ifstream file(wstrToIOstr(name).c_str());
-	bool ret=!!file;
-	file.close();
-	return ret;
-}
-
-std::string wstrToIOstr(const std::wstring &string){
-#ifdef NONS_SYS_LINUX
-	return UniToUTF8(string);
+	bool ret;
+#ifdef NONS_SYS_WINDOWS
+	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,0,0,OPEN_EXISTING,0,0);
+	ret=(file!=INVALID_HANDLE_VALUE);
+	CloseHandle(file);
 #else
-	return UniToISO88591(string);
+	std::ifstream file(wstrToIOstr(name).c_str());
+	ret=!!file;
+	file.close();
 #endif
+	return ret;
 }
 #endif
