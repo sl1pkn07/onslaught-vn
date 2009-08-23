@@ -1,5 +1,5 @@
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
+/* A Bison parser, made by GNU Bison 2.4.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
    
@@ -46,7 +46,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.4.1"
+#define YYBISON_VERSION "2.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -104,10 +104,11 @@
 /* "%code requires" blocks.  */
 
 
-	#include <iostream>
-	#include <sstream>
-	#include <string>
-	#include <climits>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <climits>
+#undef ERROR
 
 
 
@@ -494,12 +495,12 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    90,    90,    94,   100,   106,   111,   112,   113,   116,
-     117,   118,   119,   120,   121,   122,   123,   124,   127,   128,
-     129,   132,   133,   134,   137,   138,   139,   140,   143,   144,
-     145,   146,   147,   148,   149,   150,   151,   152,   155,   156,
-     159,   160,   163,   164,   165,   166,   167,   168,   169,   170,
-     171,   172,   173,   174,   175
+       0,    91,    91,    95,   101,   107,   112,   113,   114,   117,
+     118,   119,   120,   121,   122,   123,   124,   125,   128,   129,
+     130,   133,   134,   135,   138,   139,   140,   141,   144,   145,
+     146,   147,   148,   149,   150,   151,   152,   153,   156,   157,
+     160,   161,   164,   165,   166,   167,   168,   169,   170,   171,
+     172,   173,   174,   175,   176
 };
 #endif
 
@@ -1544,7 +1545,7 @@ yyreduce:
     {
 		*res=(yyvsp[(2) - (2)].position);
 		YYACCEPT;
-	;}
+	}
     break;
 
   case 3:
@@ -1554,7 +1555,7 @@ yyreduce:
 		res[1]=(yyvsp[(4) - (5)].position);
 		res[2]=ULONG_MAX;
 		YYACCEPT;
-	;}
+	}
     break;
 
   case 4:
@@ -1564,14 +1565,14 @@ yyreduce:
 		res[1]=(yyvsp[(4) - (7)].position);
 		res[2]=(yyvsp[(6) - (7)].position);
 		YYACCEPT;
-	;}
+	}
     break;
 
   case 5:
 
     {
 		YYABORT;
-	;}
+	}
     break;
 
 

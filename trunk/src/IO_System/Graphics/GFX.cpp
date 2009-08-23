@@ -82,7 +82,6 @@ ErrorCode NONS_GFX::callEffect(ulong number,long duration,const std::wstring *ru
 }
 
 ErrorCode NONS_GFX::call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst){
-	//Unused:
 	//ulong t0=SDL_GetTicks();
 	SDL_Surface *ruleFile=0;
 	if (this->rule.size())
@@ -558,6 +557,7 @@ void NONS_GFX::effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
+	ulong steps_done=0;
 	for (long a=step;a<256;a+=step){
 		long t0=SDL_GetTicks();
 		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<255){
@@ -569,12 +569,14 @@ void NONS_GFX::effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 		manualBlit(src0,0,dst->virtualScreen,0,a);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
+		steps_done++;
 		long t1=SDL_GetTicks();
 		lastT=t1-t0;
 		if (lastT<delay)
 			SDL_Delay(delay-lastT);
 		idealtimepos+=delay;
 	}
+	std::cout <<steps_done<<std::endl;
 	SDL_FreeSurface(copyDst);
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);

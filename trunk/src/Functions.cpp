@@ -227,14 +227,19 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 		uchar *pos00=pos0;
 		uchar *pos10=pos1;
 		for (int x0=0;x0<w0;x0++){
-			uchar r0=pos0[Roffset0];
-			uchar g0=pos0[Goffset0];
-			uchar b0=pos0[Boffset0];
-			uchar a0=255;
+			long r0=pos0[Roffset0],
+				g0=pos0[Goffset0],
+				b0=pos0[Boffset0],
+				a0=255;
 
 			uchar *r1=pos1+Roffset1;
 			uchar *g1=pos1+Goffset1;
 			uchar *b1=pos1+Boffset1;
+			uchar *a1=pos1+Aoffset1;
+  
+#if 0
+//BACKUP NOTE: This code had an accuracy problem when blending RGBA -> RGBA, but
+//             I'm keeping it here just in case, since it otherwise works fine.
 
 			if (alpha0){
 				a0=uchar((short(pos0[Aoffset0])*short(alpha))/255);
@@ -263,6 +268,105 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 				if (alpha1)
 					pos1[Aoffset1]=0xFF;
 			}
+#else
+//Accurate version:
+//#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))/255)
+//Fast version:
+#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
+#define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION((a)^0xFF,(c1))+INTEGER_MULTIPLICATION((a),(c0)))
+
+			if (alpha==255){
+				if (!alpha0){
+					*r1=r0;
+					*g1=g0;
+					*b1=b0;
+					if (alpha1)
+						*a1=0xFF;
+				}else{
+					a0=pos0[Aoffset0];
+					if (!alpha1){
+						*r1=APPLY_ALPHA(r0,*r1,a0);
+						*g1=APPLY_ALPHA(g0,*g1,a0);
+						*b1=APPLY_ALPHA(b0,*b1,a0);
+					}else{
+						ulong el;
+#ifdef LOOKUP_BLEND_CONSTANT
+						el=blendData[*a1+(a0<<8)];
+#else
+						if (!a0 && !*a1)
+							el=0;
+						else{
+							*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+							el=(a0<<8)/(*a1);
+							if (el>255)
+								el=255;
+						}
+#endif
+						*r1=APPLY_ALPHA(r0,*r1,el);
+						*g1=APPLY_ALPHA(g0,*g1,el);
+						*b1=APPLY_ALPHA(b0,*b1,el);
+#ifdef LOOKUP_BLEND_CONSTANT
+						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+#endif
+					}
+				}
+			}else{
+				if (!alpha0){
+					if (!alpha1){
+						*r1=APPLY_ALPHA(r0,*r1,alpha);
+						*g1=APPLY_ALPHA(g0,*g1,alpha);
+						*b1=APPLY_ALPHA(b0,*b1,alpha);
+					}else{
+						ulong el;
+#ifdef LOOKUP_BLEND_CONSTANT
+						el=blendData[*a1+(alpha<<8)];
+#else
+						if (!alpha && !*a1)
+							el=0;
+						else{
+							*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
+							el=(alpha<<8)/(*a1);
+							if (el>255)
+								el=255;
+						}
+#endif
+						*r1=APPLY_ALPHA(r0,*r1,el);
+						*g1=APPLY_ALPHA(g0,*g1,el);
+						*b1=APPLY_ALPHA(b0,*b1,el);
+#ifdef LOOKUP_BLEND_CONSTANT
+						*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
+#endif
+					}
+				}else{
+					a0=INTEGER_MULTIPLICATION(pos0[Aoffset0],alpha);
+					if (!alpha1){
+						*r1=APPLY_ALPHA(r0,*r1,a0);
+						*g1=APPLY_ALPHA(g0,*g1,a0);
+						*b1=APPLY_ALPHA(b0,*b1,a0);
+					}else{
+						ulong el;
+#ifdef LOOKUP_BLEND_CONSTANT
+						el=blendData[*a1+(a0<<8)];
+#else
+						if (!a0 && !*a1)
+							el=0;
+						else{
+							*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+							ulong el=(a0<<8)/(*a1);
+							if (el>255)
+								el=255;
+						}
+#endif
+						*r1=APPLY_ALPHA(r0,*r1,el);
+						*g1=APPLY_ALPHA(g0,*g1,el);
+						*b1=APPLY_ALPHA(b0,*b1,el);
+#ifdef LOOKUP_BLEND_CONSTANT
+						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+#endif
+					}
+				}
+			}
+#endif
 
 			if (negate && a0){
 				*r1=~*r1;
@@ -1284,4 +1388,26 @@ ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 	}
 	return NONS_NO_ERROR;
 }
+
+#ifdef NONS_SYS_WINDOWS
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+extern HWND mainWindow;
+#endif
+
+BOOL CALLBACK findMainWindow_callback(HWND handle,LPARAM lparam){
+	const std::wstring *caption=(const std::wstring *)lparam;
+	std::wstring buffer=*caption;
+	GetWindowText(handle,&buffer[0],buffer.size());
+	if (buffer!=*caption)
+		return 1;
+	mainWindow=handle;
+	return 0;
+}
+
+void findMainWindow(const wchar_t *caption){
+	std::wstring string=caption;
+	EnumWindows(findMainWindow_callback,(LPARAM)&string);
+}
+#endif
 #endif

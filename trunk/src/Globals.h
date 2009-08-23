@@ -29,6 +29,7 @@
 
 #ifndef NONS_GLOBALS_H
 #define NONS_GLOBALS_H
+#include "Common.h"
 #include "CommandLineOptions.h"
 #include "IO_System/InputHandler.h"
 #include "IO_System/StdOut.h"
@@ -66,6 +67,10 @@ extern ulong cpu_count;
 extern std::wstring save_directory;
 extern std::wstring config_directory;
 
-extern std::vector<std::wstring> command_list;
 extern std::ofstream textDumpFile;
+
+//#define LOOKUP_BLEND_CONSTANT
+#ifdef LOOKUP_BLEND_CONSTANT
+extern uchar blendData[65536];
+#endif
 #endif

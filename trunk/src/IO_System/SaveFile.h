@@ -109,6 +109,7 @@ struct NONS_SaveFile{
 		ulong textgosubLevel;
 		//std::vector<printingPage> pages;
 		wchar_t trigger;
+		std::vector<std::wstring> parameters;
 	};
 	std::vector<stackEl *> stack;
 	bool monochrome;
@@ -129,6 +130,7 @@ struct NONS_SaveFile{
 	std::vector<std::wstring> logPages;
 	ulong currentLine;
 	ulong currentSubline;
+	std::wstring loadgosub;
 
 	//Current position data:
 	std::wstring currentLabel;

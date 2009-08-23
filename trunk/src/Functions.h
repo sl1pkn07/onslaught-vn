@@ -95,7 +95,7 @@ std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &
 bool filenames_are_equal(const char *str0,const char *str1);*/
 template <typename T>
 bool isValidIdentifier(const std::basic_string<T> &str){
-	if (!NONS_isid1char(str[0]))
+	if (!str.size() || !NONS_isid1char(str[0]))
 		return 0;
 	const T *s=&str[1];
 	for (ulong a=1,size=str.size();a<size;a++,s++)
@@ -207,6 +207,7 @@ inline std::basic_string<T> string_replace(
 }
 
 
+#undef min
 //string parsing
 template <typename T>
 std::basic_string<T> tagName(const std::basic_string<T> &string,size_t off){
@@ -341,4 +342,8 @@ bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t 
 #endif
 
 ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode);
+
+#ifdef NONS_SYS_WINDOWS
+void findMainWindow(const wchar_t *caption);
+#endif
 #endif

@@ -32,6 +32,7 @@
 
 #include "ConfigFile.h"
 #include "../Functions.h"
+#include "FileIO.h"
 
 template <typename T>
 T DEC2HEX(T x){
@@ -182,9 +183,8 @@ void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
 }
 
 void ConfigFile::writeOut(const std::wstring &filename,ENCODINGS encoding){
-	std::ofstream file(wstrToIOstr(filename).c_str(),std::ios::binary);
 	std::string temp=this->writeOut(encoding);
-	file.write(&temp[0],temp.size());
+	writefile(filename,&temp[0],temp.size());
 }
 
 std::string ConfigFile::writeOut(ENCODINGS encoding){

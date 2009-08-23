@@ -56,7 +56,6 @@ extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
 #define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)),extra)
-//#define _GETSTRVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getStrValue(line.parameters[(src)],&(dst)),extra)
 #define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)),extra)
 #define _GETVARIABLE(varName,src,extra){\
 	ErrorCode error;\
@@ -138,28 +137,29 @@ struct NONS_StackElement{
 	ulong textgosubLevel;
 	wchar_t textgosubTriggeredBy;
 	std::vector<printingPage> pages;
+	//User command data
+	std::vector<std::wstring> parameters;
 
 	NONS_StackElement(ulong level);
 	NONS_StackElement(const std::pair<ulong,ulong> &returnTo,const NONS_ScriptLine &interpretAtReturn,ulong beginAtStatement,ulong level);
 	NONS_StackElement(NONS_VariableMember *variable,const std::pair<ulong,ulong> &startStatement,long from,long to,long step,ulong level);
 	NONS_StackElement(const std::vector<printingPage> &pages,wchar_t trigger,ulong level);
+	NONS_StackElement(NONS_StackElement *copy,const std::vector<std::wstring> &vector);
 };
 
 class NONS_ScriptInterpreter{
 	typedef ErrorCode(NONS_ScriptInterpreter::*commandFunctionPointer)(NONS_Statement &);
 	typedef std::map<std::wstring,commandFunctionPointer,stdStringCmpCI<wchar_t> > commandListType;
-	//typedef std::map<std::wstring,ErrorCode(NONS_ScriptInterpreter::*)(NONS_Statement &),stdStringCmpCI<wchar_t> > commandListType;
+	typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > userCommandListType;
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
 	void uninit();
 	void init();
 
-	/*ulong interpreter_position;
-	ulong previous_interpreter_position;*/
 	commandListType commandList;
+	userCommandListType userCommandList;
 	NONS_ScriptThread *thread;
-	//std::set<ulong> errored_lines;
 	std::set<ulong> printed_lines;
 	std::set<std::wstring> implementationErrors;
 	ulong interpreter_mode;
@@ -200,6 +200,7 @@ class NONS_ScriptInterpreter{
 	std::wstring currentBuffer;
 	std::wstring textgosub;
 	bool textgosubRecurses;
+	std::wstring loadgosub;
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);
@@ -344,11 +345,11 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_movN(NONS_Statement &stmt);
 	ErrorCode command_ofscopy(NONS_Statement &stmt);
 	ErrorCode command_humanorder(NONS_Statement &stmt);
+	ErrorCode command_loadgosub(NONS_Statement &stmt);
+	ErrorCode command_defsub(NONS_Statement &stmt);
+	ErrorCode command___userCommandCall__(NONS_Statement &stmt);
+	ErrorCode command_getparam(NONS_Statement &stmt);
 	/*ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);

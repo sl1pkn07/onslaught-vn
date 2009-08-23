@@ -36,7 +36,7 @@
 #include "../../Globals.h"
 
 NONS_Music::NONS_Music(const std::wstring &filename){
-	this->data=Mix_LoadMUS(wstrToIOstr(filename).c_str());
+	this->data=Mix_LoadMUS(UniToUTF8(filename).c_str());
 	this->buffer=0;
 	this->buffersize=0;
 	this->filename=filename;

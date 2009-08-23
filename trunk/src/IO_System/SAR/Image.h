@@ -36,6 +36,8 @@
 #include <vector>
 #include <map>
 
+#undef LoadImage
+
 struct NONS_AnimationInfo{	
 	enum TRANSPARENCY_METHODS{
 		LEFT_UP='l',

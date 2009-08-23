@@ -81,12 +81,24 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 			//To be implemented in the future:
 			/*case TEXTGOSUB_CALL:
 				push=new NONS_StackElement(el->pages,el->trigger,el->textgosubLevel);*/
+			case USERCMD_CALL:
+				push=new NONS_StackElement(
+					pair,
+					NONS_ScriptLine(0,el->leftovers,0,1),
+					0,
+					el->textgosubLevel);
+				{
+					NONS_StackElement *temp=new NONS_StackElement(push,el->parameters);
+					delete push;
+					push=temp;
+				}
 		}
 		this->callStack.push_back(push);
 	}
 	std::pair<ulong,ulong> pair(this->script->blockFromLabel(save.currentLabel)->first_line+save.linesBelow,save.statementNo);
 	this->thread->gotoPair(pair);
 	this->saveGame->currentLabel=save.currentLabel;
+	this->loadgosub=save.loadgosub;
 	//variables
 	variables_map_T::iterator first=this->store->variables.begin(),last=first;
 	if (first->first<200){
@@ -137,7 +149,8 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	if (this->pageCursor)
 		delete this->pageCursor;
 	if (!save.arrow.string.size())
-		this->arrowCursor=0;
+		//this->arrowCursor=new NONS_Cursor(this->everything->screen);
+		this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->everything->screen);
 	else
 		this->arrowCursor=new NONS_Cursor(
 			save.arrow.string,
@@ -146,7 +159,8 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 			save.arrow.absolute,
 			this->everything->screen);
 	if (!save.page.string.size())
-		this->pageCursor=0;
+		//this->pageCursor=new NONS_Cursor(this->everything->screen);
+		this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0,this->everything->screen);
 	else
 		this->pageCursor=new NONS_Cursor(
 			save.page.string,
@@ -264,6 +278,8 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 				this->everything->audio->playSoundAsync(&c->name,buffer,size,a,c->loop);
 		}
 	}
+	if (this->loadgosub.size())
+		this->gosub_label(this->loadgosub);
 	return NONS_NO_ERROR;
 }
 
@@ -313,6 +329,10 @@ bool NONS_ScriptInterpreter::save(int file){
 					break;
 				/*case TEXTGOSUB_CALL:
 					break;*/
+				case USERCMD_CALL:
+					el->leftovers=el0->interpretAtReturn.toString();
+					el->parameters=el0->parameters;
+					break;
 			}
 			this->saveGame->stack.push_back(el);
 		}
@@ -323,6 +343,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			this->saveGame->linesBelow=stmt->lineOfOrigin->lineNumber-block->first_line;
 			this->saveGame->statementNo=stmt->statementNo;
 		}
+		this->saveGame->loadgosub=this->loadgosub;
 	}
 	//variables
 	{

@@ -39,6 +39,7 @@ extern bool ctrlIsPressed;
 
 #if defined(_WIN32) || defined(_WIN64)
 #define NONS_SYS_WINDOWS
+#define WIN32_LEAN_AND_MEAN
 #endif
 #if defined(linux) || defined(__linux)
 #define NONS_SYS_LINUX

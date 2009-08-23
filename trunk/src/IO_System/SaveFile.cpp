@@ -35,7 +35,7 @@
 #include "../Functions.h"
 #include "../Globals.h"
 
-#if defined(NONS_SYS_WINDOWS)
+#ifdef NONS_SYS_WINDOWS
 #include <windows.h>
 #elif defined(NONS_SYS_LINUX)
 #include <sys/types.h>
@@ -324,7 +324,15 @@ void NONS_SaveFile::load(std::wstring filename){
 						el->to=readSignedDWord(buffer,offset);
 						el->step=readSignedDWord(buffer,offset);
 						break;
-					case TEXTGOSUB_CALL:;
+					case TEXTGOSUB_CALL:
+						break;
+					case USERCMD_CALL:
+						el->leftovers=UniFromUTF8(readString(buffer,offset));
+						el->parameters.resize(readDWord(buffer,offset));
+						for (ulong a=0;a<el->parameters.size();a++)
+							el->parameters[a]=UniFromUTF8(readString(buffer,offset));
+						break;
+
 				}
 				this->stack.push_back(el);
 			}
@@ -335,6 +343,8 @@ void NONS_SaveFile::load(std::wstring filename){
 				this->linesBelow=readDWord(buffer,offset);
 				this->statementNo=readDWord(buffer,offset);
 			}
+			if (this->version>2)
+				this->loadgosub=UniFromUTF8(readString(buffer,offset));
 		}
 		//variables
 		offset=header[1];
@@ -603,12 +613,20 @@ bool NONS_SaveFile::save(std::wstring filename){
 					writeDWord(el->to,buffer);
 					writeDWord(el->step,buffer);
 					break;
-				case TEXTGOSUB_CALL:;
+				case TEXTGOSUB_CALL:
+					break;
+				case USERCMD_CALL:
+					writeString(el->leftovers,buffer);
+					writeDWord(el->parameters.size(),buffer);
+					for (ulong a=0;a<el->parameters.size();a++)
+						writeString(el->parameters[a],buffer);
+					break;
 			}
 		}
 		writeString(this->currentLabel,buffer);
 		writeDWord(this->linesBelow,buffer);
 		writeDWord(this->statementNo,buffer);
+		writeString(this->loadgosub,buffer);
 	}
 	//variables
 	writeDWord(buffer.size(),buffer,header[1]);

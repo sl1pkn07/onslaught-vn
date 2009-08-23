@@ -255,7 +255,8 @@ int main(int argc,char **argv){
 	cpu_count=si.dwNumberOfProcessors;
 #elif defined(NONS_SYS_LINUX)
 	{
-		/*std::ifstream cpuinfo("/proc/cpuinfo");
+		/*
+		std::ifstream cpuinfo("/proc/cpuinfo");
 		std::string line;
 		std::set<unsigned> IDs;
 		while (!cpuinfo.eof()){
@@ -272,7 +273,8 @@ int main(int argc,char **argv){
 			IDs.insert(atoi(line.c_str()));
 		}
 		cpu_count=IDs.size();
-		cpuinfo.close();*/
+		cpuinfo.close();
+		*/
 		FILE * fp;
 		char res[128];
 		fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
@@ -303,6 +305,23 @@ int main(int argc,char **argv){
 #endif
 	everything=new NONS_Everything();
 	SDL_WM_SetCaption("ONSlaught ("ONSLAUGHT_BUILD_VERSION_STR")",0);
+#ifdef NONS_SYS_WINDOWS
+	findMainWindow(L"ONSlaught ("ONSLAUGHT_BUILD_VERSION_WSTR L")");
+#endif
+
+#ifdef LOOKUP_BLEND_CONSTANT
+	for (ulong y=0;y<256;y++){
+		for (ulong x=0;x<256;x++){
+#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
+			ulong a=INTEGER_MULTIPLICATION(x^0xFF,y^0xFF)^0xFF;
+			a=(y<<8)/a;
+			if (a>255)
+				a=255;
+			blendData[x+(y<<8)]=a;
+		}
+	}
+#endif
+
 	ErrorCode error=NONS_NO_ERROR;
 	if (CLOptions.scriptPath.size())
 		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);

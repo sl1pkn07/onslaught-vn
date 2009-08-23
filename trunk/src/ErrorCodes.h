@@ -127,6 +127,9 @@ typedef unsigned long ErrorCode;
 #define NONS_NOT_ENOUGH_VARIABLE_INDICES			77
 #define NONS_NO_SUCH_SAVEGAME						(78|NONS_WARNING)
 #define NONS_HASH_DOES_NOT_MATCH					79
+#define NONS_DUPLICATE_COMMAND_DEFINITION_BUILTIN	80
+#define NONS_DUPLICATE_COMMAND_DEFINITION_USER		81
+#define NONS_NOT_IN_A_USER_COMMAND_CALL				82
 
 extern const char *errorMessages[];
 #endif

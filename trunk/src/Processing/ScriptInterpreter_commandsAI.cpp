@@ -35,15 +35,24 @@
 #include "../version.h"
 #include <cctype>
 
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+extern HWND mainWindow;
+#endif
+
 #ifndef NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
 #define NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
 ErrorCode NONS_ScriptInterpreter::command_caption(NONS_Statement &stmt){
 	if (!stmt.parameters.size())
 		SDL_WM_SetCaption("",0);
 	else{
-		std::wstring temp0;
-		_GETWCSVALUE(temp0,0,)
-		SDL_WM_SetCaption(UniToUTF8(temp0).c_str(),0);
+		std::wstring temp;
+		_GETWCSVALUE(temp,0,)
+#ifndef NONS_SYS_WINDOWS
+		SDL_WM_SetCaption(UniToUTF8(temp).c_str(),0);
+#else
+		SetWindowText(mainWindow,temp.c_str());
+#endif
 	}
 	return NONS_NO_ERROR;
 }
@@ -1022,7 +1031,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_drawclear(NONS_Statement &stmt){
-	SDL_FillRect(this->everything->screen->screenBuffer,0,0);
+	SDL_FillRect(this->everything->screen->screenBuffer,0,this->everything->screen->screenBuffer->format->Amask);
 	return NONS_NO_ERROR;
 }
 
@@ -1258,16 +1267,105 @@ ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
 	return ret;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_defsub(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	std::wstring name=stmt.parameters[0];
+	trim_string(name);
+	if (name[0]=='*')
+		name=name.substr(name.find_first_not_of('*'));
+	if (!isValidIdentifier(name))
+		return NONS_INVALID_COMMAND_NAME;
+	if (this->commandList.find(name)!=this->commandList.end())
+		return NONS_DUPLICATE_COMMAND_DEFINITION_BUILTIN;
+	if (this->userCommandList.find(name)!=this->userCommandList.end())
+		return NONS_DUPLICATE_COMMAND_DEFINITION_USER;
+	if (!this->script->blockFromLabel(name))
+		return NONS_NO_SUCH_BLOCK;
+	this->userCommandList.insert(name);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command___userCommandCall__(NONS_Statement &stmt){
+	if (!this->gosub_label(stmt.commandName))
+		return NONS_UNDEFINED_ERROR;
+	NONS_StackElement *el=new NONS_StackElement(this->callStack.back(),stmt.parameters);
+	delete this->callStack.back();
+	this->callStack.back()=el;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
+	std::vector<std::wstring> *parameters=0;
+	for (ulong a=this->callStack.size()-1;a<this->callStack.size() && !parameters;a--)
+		if (this->callStack[a]->type==USERCMD_CALL)
+			parameters=&this->callStack[a]->parameters;
+	if (!parameters)
+		return NONS_NOT_IN_A_USER_COMMAND_CALL;
+	ErrorCode error;
+	std::vector<std::pair<NONS_VariableMember *,std::pair<long,std::wstring> > > actions;
+	for (ulong a=0;a<parameters->size() && a<stmt.parameters.size();a++){
+		wchar_t c=NONS_tolower(stmt.parameters[a][0]);
+		if (c=='i' || c=='s'){
+			NONS_VariableMember *src=this->store->retrieve((*parameters)[a],&error),
+				*dst;
+
+			if (!src)
+				return error;
+			if (src->isConstant())
+				return NONS_EXPECTED_VARIABLE;
+			if (src->getType()==INTEGER_ARRAY)
+				return NONS_EXPECTED_SCALAR;
+
+			dst=this->store->retrieve(stmt.parameters[a].substr(1),&error);
+			if (!dst)
+				return error;
+			if (dst->isConstant())
+				return NONS_EXPECTED_VARIABLE;
+			if (dst->getType()==INTEGER_ARRAY)
+				return NONS_EXPECTED_SCALAR;
+			if (dst->getType()!=INTEGER)
+				return NONS_EXPECTED_NUMERIC_VARIABLE;
+
+			Sint32 index=this->store->getVariableIndex(src);
+			actions.resize(actions.size()+1);
+			actions.back().first=dst;
+			actions.back().second.first=index;
+		}else{
+			NONS_VariableMember *dst=this->store->retrieve(stmt.parameters[a],&error);
+
+			if (!dst)
+				return error;
+			if (dst->isConstant())
+				return NONS_EXPECTED_VARIABLE;
+			if (dst->getType()==INTEGER_ARRAY)
+				return NONS_EXPECTED_SCALAR;
+			if (dst->getType()==INTEGER){
+				long val;
+				_HANDLE_POSSIBLE_ERRORS(this->store->getIntValue((*parameters)[a],val),)
+				actions.resize(actions.size()+1);
+				actions.back().first=dst;
+				actions.back().second.first=val;
+			}else{
+				std::wstring val;
+				_HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue((*parameters)[a],val),)
+				actions.resize(actions.size()+1);
+				actions.back().first=dst;
+				actions.back().second.second=val;
+			}
+		}
+	}
+
+	for (ulong a=0;a<actions.size();a++){
+		if (actions[a].first->getType()==INTEGER)
+			actions[a].first->set(actions[a].second.first);
+		else
+			actions[a].first->set(actions[a].second.second);
+	}
+
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

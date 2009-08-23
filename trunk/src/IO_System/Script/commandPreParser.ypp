@@ -42,10 +42,11 @@
 %file-prefix="commandPreParser"
 %name-prefix="commandPreParser_yy"
 %code requires {
-	#include <iostream>
-	#include <sstream>
-	#include <string>
-	#include <climits>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <climits>
+#undef ERROR
 }
 %code provides {
 	int commandPreParser_yyparse(
