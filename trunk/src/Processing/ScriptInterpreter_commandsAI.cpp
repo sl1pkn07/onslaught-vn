@@ -333,7 +333,15 @@ ErrorCode NONS_ScriptInterpreter::command_itoa(NONS_Statement &stmt){
 	_GETSTRVARIABLE(dst,0,)
 	long src;
 	_GETINTVALUE(src,1,)
-	dst->set(src);
+	std::wstringstream stream;
+	stream <<src;
+	std::wstring str=stream.str();
+	if (!stdStrCmpCI(stmt.commandName,L"itoa2")){
+		for (ulong a=0;a<str.size();a++)
+			if (NONS_isdigit(str[a]))
+				str[a]+=0xFEE0;
+	}
+	dst->set(str);
 	return NONS_NO_ERROR;
 }
 
@@ -746,6 +754,8 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 			this->everything->screen->screen->virtualScreen->h,
 			32);
 		this->imageButtons=new NONS_ButtonLayer(tmpSrf,this->everything->screen);
+		this->imageButtons->inputOptions.Wheel=this->useWheel;
+		this->imageButtons->inputOptions.EscapeSpace=this->useEscapeSpace;
 		return NONS_NO_ERROR;
 	}
 	SDL_Surface *img=ImageLoader->fetchSprite(filename);
@@ -753,6 +763,8 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 		return NONS_FILE_NOT_FOUND;
 	}
 	this->imageButtons=new NONS_ButtonLayer(img,this->everything->screen);
+	this->imageButtons->inputOptions.Wheel=this->useWheel;
+	this->imageButtons->inputOptions.EscapeSpace=this->useEscapeSpace;
 	return NONS_NO_ERROR;
 }
 
@@ -1365,10 +1377,56 @@ ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+ErrorCode NONS_ScriptInterpreter::command_getcursor(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.Cursor=1;
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+ErrorCode NONS_ScriptInterpreter::command_getpage(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.PageUpDown=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getenter(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.Enter=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_gettab(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.Tab=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getfunction(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.Function=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getinsert(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.Insert=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getzxc(NONS_Statement &stmt){
+	if (!this->imageButtons)
+		return NONS_NO_BUTTON_IMAGE;
+	this->imageButtons->inputOptions.ZXC=1;
+	return NONS_NO_ERROR;
+}
+
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

@@ -57,6 +57,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Layer *fgLayer,NONS_Layer *shadowL
 	this->verticalCenterPolicy=0;
 	this->lastStart=-1;
 	this->printingStarted=0;
+	this->shadowPosX=this->shadowPosY=1;
 }
 
 NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect *frame,bool shadow){
@@ -85,6 +86,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect
 	this->verticalCenterPolicy=0;
 	this->lastStart=-1;
 	this->printingStarted=0;
+	this->shadowPosX=this->shadowPosY=1;
 }
 
 NONS_StandardOutput::~NONS_StandardOutput(){
@@ -248,13 +250,35 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		}
 		LOCKSCREEN;
 		if (glyph2){
-			glyph2->putGlyph(this->shadowLayer->data,x0+1-this->shadowLayer->clip_rect.x,y0+1-this->shadowLayer->clip_rect.y,&this->shadowLayer->fontCache->foreground,1);
-			glyph2->putGlyph(dst->virtualScreen,x0+1,y0+1,0);
+			glyph2->putGlyph(
+				this->shadowLayer->data,
+				x0+this->shadowPosX-this->shadowLayer->clip_rect.x,
+				y0+this->shadowPosY-this->shadowLayer->clip_rect.y,
+				&this->shadowLayer->fontCache->foreground,
+				1
+			);
+			glyph2->putGlyph(
+				dst->virtualScreen,
+				x0+this->shadowPosX,
+				y0+this->shadowPosY,
+				0
+			);
 		}
-		glyph->putGlyph(this->foregroundLayer->data,x0-this->foregroundLayer->clip_rect.x,y0-this->foregroundLayer->clip_rect.y,&this->foregroundLayer->fontCache->foreground,1);
+		glyph->putGlyph(
+			this->foregroundLayer->data,
+			x0-this->foregroundLayer->clip_rect.x,
+			y0-this->foregroundLayer->clip_rect.y,
+			&this->foregroundLayer->fontCache->foreground,
+			1
+		);
 		glyph->putGlyph(dst->virtualScreen,x0,y0,0);
 		UNLOCKSCREEN;
-		dst->updateScreen(x0,y0,advance+1,fontLineSkip+1);
+		if (glyph2){
+			long tempX=(this->shadowPosX<=0)?0:this->shadowPosX,
+				tempY=(this->shadowPosY<=0)?0:this->shadowPosY;
+			dst->updateScreen(x0,y0,advance+tempX,fontLineSkip+tempY);
+		}else
+			dst->updateScreen(x0,y0,advance,fontLineSkip);
 		if (printedChars)
 			(*printedChars)++;
 		x0+=advance;

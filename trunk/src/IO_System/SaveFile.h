@@ -54,6 +54,8 @@ struct NONS_SaveFile{
 	ErrorCode error;
 	bool boldFont;
 	bool fontShadow;
+	long shadowPosX,
+		shadowPosY;
 	bool rmode;
 	SDL_Color windowTextColor;
 	struct Cursor{

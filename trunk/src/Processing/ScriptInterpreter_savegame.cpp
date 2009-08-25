@@ -136,6 +136,13 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	this->hideTextDuringEffect=save.hideWindow;
 	out->foregroundLayer->fontCache->foreground=save.windowTextColor;
 	out->display_speed=save.textSpeed;
+	if (save.version>2){
+		out->shadowPosX=save.shadowPosX;
+		out->shadowPosY=save.shadowPosY;
+	}else{
+		out->shadowPosX=1;
+		out->shadowPosY=1;
+	}
 	this->main_font->spacing=save.spacing;
 	this->main_font->lineSkip=save.lineSkip;
 	out->log.clear();
@@ -378,6 +385,8 @@ bool NONS_ScriptInterpreter::save(int file){
 		this->saveGame->windowTextColor=out->foregroundLayer->fontCache->foreground;
 		this->saveGame->textSpeed=out->display_speed;
 		this->saveGame->fontShadow=!!out->shadowLayer;
+		this->saveGame->shadowPosX=out->shadowPosX;
+		this->saveGame->shadowPosY=out->shadowPosY;
 		this->saveGame->spacing=this->main_font->spacing;
 		this->saveGame->lineSkip=this->main_font->lineSkip;
 		for (ulong a=0;a<out->log.size();a++)

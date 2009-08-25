@@ -1,7 +1,10 @@
 ????????
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
         drawclear, drawfill, drawsp, drawsp2, drawsp3, drawtext, allsphide,
-        allspresume, mov3, mov4, ..., mov10, selnum, humanorder.
+        allspresume, mov3, mov4, ..., mov10, selnum, humanorder, loadgosub,
+        defsub, user commands, getparam, getcursor, useescspc, getpage,
+        getenter, gettab, getfunction, getinsert, getzxc, usewheel,
+        shadedistance, tablegoto.
     * Added screenshot function.
     * Improved error reporting system.
     * Memory leak the size of the script fixed.

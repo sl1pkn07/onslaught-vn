@@ -269,10 +269,6 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 					pos1[Aoffset1]=0xFF;
 			}
 #else
-//Accurate version:
-//#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))/255)
-//Fast version:
-#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
 #define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION((a)^0xFF,(c1))+INTEGER_MULTIPLICATION((a),(c0)))
 
 			if (alpha==255){
@@ -293,14 +289,9 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(a0<<8)];
 #else
-						if (!a0 && !*a1)
-							el=0;
-						else{
-							*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
-							el=(a0<<8)/(*a1);
-							if (el>255)
-								el=255;
-						}
+						ulong previous=*a1;
+						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+						el=(!a0 && !previous)?0:(a0*255)/(*a1);
 #endif
 						*r1=APPLY_ALPHA(r0,*r1,el);
 						*g1=APPLY_ALPHA(g0,*g1,el);
@@ -321,14 +312,9 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(alpha<<8)];
 #else
-						if (!alpha && !*a1)
-							el=0;
-						else{
-							*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
-							el=(alpha<<8)/(*a1);
-							if (el>255)
-								el=255;
-						}
+						ulong previous=*a1;
+						*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
+						el=(!alpha && !previous)?0:(alpha*255)/(*a1);
 #endif
 						*r1=APPLY_ALPHA(r0,*r1,el);
 						*g1=APPLY_ALPHA(g0,*g1,el);
@@ -348,14 +334,9 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(a0<<8)];
 #else
-						if (!a0 && !*a1)
-							el=0;
-						else{
-							*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
-							ulong el=(a0<<8)/(*a1);
-							if (el>255)
-								el=255;
-						}
+						ulong previous=*a1;
+						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+						el=(!a0 && !previous)?0:(a0*255)/(*a1);
 #endif
 						*r1=APPLY_ALPHA(r0,*r1,el);
 						*g1=APPLY_ALPHA(g0,*g1,el);

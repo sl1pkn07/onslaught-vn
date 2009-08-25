@@ -52,6 +52,13 @@
 
 #define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
 #define CHECK_FLAG(x,y) (((x)&(y))==(y))
+#ifdef USE_ACCURATE_MULTIPLICATION
+//Accurate version:
+#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))/255)
+#else
+//Fast version:
+#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
+#endif
 
 //string functions
 bool multicomparison(char character,const char *characters);

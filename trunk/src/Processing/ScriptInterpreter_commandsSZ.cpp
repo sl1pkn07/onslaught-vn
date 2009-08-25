@@ -794,6 +794,44 @@ ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_useescspc(NONS_Statement &stmt){
+	this->useEscapeSpace=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_usewheel(NONS_Statement &stmt){
+	this->useWheel=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_shadedistance(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	long x,y;
+	_GETINTVALUE(x,0,)
+	_GETINTVALUE(y,1,)
+	this->everything->screen->output->shadowPosX=x;
+	this->everything->screen->output->shadowPosY=y;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_tablegoto(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	long val;
+	_GETINTVALUE(val,0,)
+	if (val<0)
+		return NONS_NEGATIVE_GOTO_INDEX;
+	std::vector<std::wstring> labels(stmt.parameters.size()-1);
+	for (ulong a=1;a<stmt.parameters.size();a++){
+		_GETLABEL(labels[a-1],a,)
+	}
+	if (val>labels.size())
+		return NONS_NOT_ENOUGH_LABELS;
+	if (!this->script->blockFromLabel(labels[val]))
+		return NONS_NO_SUCH_BLOCK;
+	this->goto_label(labels[val]);
+	return NONS_NO_ERROR;
+}
+
 /*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 

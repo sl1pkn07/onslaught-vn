@@ -204,6 +204,10 @@ const char *errorMessages[]={
 	"The command already exists as a user command.",
 	//NONS_NOT_IN_A_USER_COMMAND_CALL
 	"Currently not in a user command call.",
+	//NONS_NEGATIVE_GOTO_INDEX
+	"Goto index is negative.",
+	//NONS_NOT_ENOUGH_LABELS
+	"The goto index is larger than the goto table.",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);
