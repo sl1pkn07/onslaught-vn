@@ -312,7 +312,6 @@ int main(int argc,char **argv){
 #ifdef LOOKUP_BLEND_CONSTANT
 	for (ulong y=0;y<256;y++){
 		for (ulong x=0;x<256;x++){
-#define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
 			ulong a=INTEGER_MULTIPLICATION(x^0xFF,y^0xFF)^0xFF;
 			a=(y<<8)/a;
 			if (a>255)

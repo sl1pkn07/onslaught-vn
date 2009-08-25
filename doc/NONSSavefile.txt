@@ -137,6 +137,10 @@ Screen section{
 		Byte. Font color B.
 		DWord. Text speed.
 		Byte. Shadow?
+		if (save_version>2){
+			sDWord. Shadow X offset.
+			sDWord. Shadow Y offset.
+		}
 		Word. Font spacing.
 		sWord. Font line skip (-1 is native).
 		DWord. Size of log (n).

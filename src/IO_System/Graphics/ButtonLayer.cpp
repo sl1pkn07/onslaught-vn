@@ -35,6 +35,7 @@
 #include "Menu.h"
 #include "../../Functions.h"
 #include "../IOFunctions.h"
+#include <utility>
 
 NONS_ButtonLayer::NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu){
 	this->font=font;
@@ -42,11 +43,31 @@ NONS_ButtonLayer::NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool
 	this->exitable=exitable;
 	this->menu=menu;
 	this->loadedGraphic=0;
+	this->inputOptions.btnArea=0;
+	this->inputOptions.Cursor=0;
+	this->inputOptions.Enter=0;
+	this->inputOptions.EscapeSpace=0;
+	this->inputOptions.Function=0;
+	this->inputOptions.Wheel=0;
+	this->inputOptions.Insert=0;
+	this->inputOptions.PageUpDown=0;
+	this->inputOptions.Tab=0;
+	this->inputOptions.ZXC=0;
 }
 
 NONS_ButtonLayer::NONS_ButtonLayer(SDL_Surface *img,NONS_ScreenSpace *screen){
 	this->loadedGraphic=img;
 	this->screen=screen;
+	this->inputOptions.btnArea=0;
+	this->inputOptions.Cursor=0;
+	this->inputOptions.Enter=0;
+	this->inputOptions.EscapeSpace=0;
+	this->inputOptions.Function=0;
+	this->inputOptions.Wheel=0;
+	this->inputOptions.Insert=0;
+	this->inputOptions.PageUpDown=0;
+	this->inputOptions.Tab=0;
+	this->inputOptions.ZXC=0;
 }
 
 NONS_ButtonLayer::~NONS_ButtonLayer(){
@@ -323,6 +344,36 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 	}
 	this->screen->screen->updateWholeScreen();
 	long expire=expiration;
+
+
+	std::map<SDLKey,std::pair<int,bool *> > key_bool_map;
+	key_bool_map[SDLK_ESCAPE]=  std::make_pair(-10,&this->inputOptions.EscapeSpace);
+	key_bool_map[SDLK_SPACE]=   std::make_pair(-11,&this->inputOptions.EscapeSpace);
+	key_bool_map[SDLK_PAGEUP]=  std::make_pair(-12,&this->inputOptions.PageUpDown);
+	key_bool_map[SDLK_PAGEDOWN]=std::make_pair(-13,&this->inputOptions.PageUpDown);
+	key_bool_map[SDLK_RETURN]=  std::make_pair(-19,&this->inputOptions.Enter);
+	key_bool_map[SDLK_TAB]=     std::make_pair(-20,&this->inputOptions.Tab);
+	key_bool_map[SDLK_F1]=      std::make_pair(-21,&this->inputOptions.Function);
+	key_bool_map[SDLK_F2]=      std::make_pair(-22,&this->inputOptions.Function);
+	key_bool_map[SDLK_F3]=      std::make_pair(-23,&this->inputOptions.Function);
+	key_bool_map[SDLK_F4]=      std::make_pair(-24,&this->inputOptions.Function);
+	key_bool_map[SDLK_F5]=      std::make_pair(-25,&this->inputOptions.Function);
+	key_bool_map[SDLK_F6]=      std::make_pair(-26,&this->inputOptions.Function);
+	key_bool_map[SDLK_F7]=      std::make_pair(-27,&this->inputOptions.Function);
+	key_bool_map[SDLK_F8]=      std::make_pair(-28,&this->inputOptions.Function);
+	key_bool_map[SDLK_F9]=      std::make_pair(-29,&this->inputOptions.Function);
+	key_bool_map[SDLK_F10]=     std::make_pair(-30,&this->inputOptions.Function);
+	key_bool_map[SDLK_F11]=     std::make_pair(-31,&this->inputOptions.Function);
+	key_bool_map[SDLK_F12]=     std::make_pair(-32,&this->inputOptions.Function);
+	key_bool_map[SDLK_UP]=      std::make_pair(-40,&this->inputOptions.Cursor);
+	key_bool_map[SDLK_RIGHT]=   std::make_pair(-41,&this->inputOptions.Cursor);
+	key_bool_map[SDLK_DOWN]=    std::make_pair(-42,&this->inputOptions.Cursor);
+	key_bool_map[SDLK_LEFT]=    std::make_pair(-43,&this->inputOptions.Cursor);
+	key_bool_map[SDLK_INSERT]=  std::make_pair(-50,&this->inputOptions.Insert);
+	key_bool_map[SDLK_z]=       std::make_pair(-51,&this->inputOptions.ZXC);
+	key_bool_map[SDLK_x]=       std::make_pair(-52,&this->inputOptions.ZXC);
+	key_bool_map[SDLK_c]=       std::make_pair(-53,&this->inputOptions.ZXC);
+
 	//Is this the same as while (1)? I have no idea, but don't touch it, just in case.
 	while (expiration && expire>0 || !expiration){
 		while (!queue->data.empty()){
@@ -351,25 +402,53 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					{
-						if (event.button.button!=SDL_BUTTON_LEFT && event.button.button!=SDL_BUTTON_RIGHT)
+						int button;
+						switch (event.button.button){
+							case SDL_BUTTON_LEFT:
+								button=1;
+								break;
+							case SDL_BUTTON_RIGHT:
+								button=2;
+								break;
+							case SDL_BUTTON_WHEELUP:
+								button=3;
+								break;
+							case SDL_BUTTON_WHEELDOWN:
+								button=4;
+								break;
+							default:
+								button=-1;
+						}
+						if (button<0)
 							break;
 						InputObserver.detach(queue);
 						SDL_FreeSurface(screenCopy);
 						this->screen->screen->updateWholeScreen();
-						if (event.button.button==SDL_BUTTON_RIGHT)
-							return -2;
-						if (mouseOver<0)
-							return -1;
-						else
+						if (button==1){
+							if (mouseOver<0)
+								return -1;
 							return mouseOver;
+						}else
+							return -button;
 					}
 					break;
 				case SDL_KEYDOWN:
-					if (event.key.keysym.sym==SDLK_ESCAPE){
-						InputObserver.detach(queue);
-						SDL_FreeSurface(screenCopy);
-						this->screen->screen->updateWholeScreen();
-						return -2;
+					{
+						SDLKey key=event.key.keysym.sym;
+						std::map<SDLKey,std::pair<int,bool *> >::iterator i=key_bool_map.find(key);
+						int ret=0;
+						if (i!=key_bool_map.end()){
+							if (*(i->second.second))
+								ret=i->second.first-1;
+							else if (key==SDLK_ESCAPE)
+								ret=-2;
+						}
+						if (ret){
+							InputObserver.detach(queue);
+							SDL_FreeSurface(screenCopy);
+							this->screen->screen->updateWholeScreen();
+							return ret;
+						}
 					}
 			}
 		}
@@ -378,6 +457,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 	}
 	InputObserver.detach(queue);
 	SDL_FreeSurface(screenCopy);
-	return -2;
+	return (this->inputOptions.Wheel)?-5:-2;
 }
 #endif

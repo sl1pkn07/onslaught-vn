@@ -54,6 +54,7 @@ struct NONS_CommandLineOptions{
 	bool no_sound;
 	std::wstring savedir;
 	bool stopOnFirstError;
+	bool listImplementation;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);

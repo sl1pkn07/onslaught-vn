@@ -167,6 +167,8 @@ void NONS_ScriptInterpreter::init(){
 	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	this->printed_lines.clear();
 	this->everything->screen->char_baseline=this->everything->screen->screen->inRect.h-1;
+	this->useWheel=0;
+	this->useEscapeSpace=0;
 }
 
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
@@ -284,15 +286,15 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"getbtntimer"]=&NONS_ScriptInterpreter::command_getbtntimer;
 	this->commandList[L"getcselnum"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getcselstr"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getcursor"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getcursor"]=&NONS_ScriptInterpreter::command_getcursor;
 	this->commandList[L"getcursorpos"]=&NONS_ScriptInterpreter::command_getcursorpos;
-	this->commandList[L"getenter"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getfunction"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getinsert"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getenter"]=&NONS_ScriptInterpreter::command_getenter;
+	this->commandList[L"getfunction"]=&NONS_ScriptInterpreter::command_getfunction;
+	this->commandList[L"getinsert"]=&NONS_ScriptInterpreter::command_getinsert;
 	this->commandList[L"getlog"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getmousepos"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getmp3vol"]=&NONS_ScriptInterpreter::command_getmp3vol;
-	this->commandList[L"getpage"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getpage"]=&NONS_ScriptInterpreter::command_getpage;
 	this->commandList[L"getpageup"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getparam"]=&NONS_ScriptInterpreter::command_getparam;
 	this->commandList[L"getreg"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -301,13 +303,13 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"getsevol"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getspmode"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getspsize"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"gettab"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"gettab"]=&NONS_ScriptInterpreter::command_gettab;
 	this->commandList[L"gettag"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"gettext"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"gettimer"]=&NONS_ScriptInterpreter::command_gettimer;
 	this->commandList[L"getversion"]=&NONS_ScriptInterpreter::command_getversion;
 	this->commandList[L"getvoicevol"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getzxc"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getzxc"]=&NONS_ScriptInterpreter::command_getzxc;
 	this->commandList[L"globalon"]=&NONS_ScriptInterpreter::command_globalon;
 	this->commandList[L"gosub"]=&NONS_ScriptInterpreter::command_gosub;
 	this->commandList[L"goto"]=&NONS_ScriptInterpreter::command_goto;
@@ -330,7 +332,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"kidokumode"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"labellog"]=&NONS_ScriptInterpreter::command_labellog;
-	this->commandList[L"layermessage"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"layermessage"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"ld"]=&NONS_ScriptInterpreter::command_ld;
 	this->commandList[L"len"]=&NONS_ScriptInterpreter::command_len;
 	this->commandList[L"linepage"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -434,17 +436,17 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"selgosub"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"selnum"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"setcursor"]=&NONS_ScriptInterpreter::command_setcursor;
-	this->commandList[L"setlayer"]=0;
+	this->commandList[L"setlayer"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"setwindow"]=&NONS_ScriptInterpreter::command_setwindow;
 	this->commandList[L"setwindow2"]=0;
 	this->commandList[L"setwindow3"]=0;
 	this->commandList[L"sevol"]=0;
-	this->commandList[L"shadedistance"]=0;
+	this->commandList[L"shadedistance"]=&NONS_ScriptInterpreter::command_shadedistance;
 	this->commandList[L"sin"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"skip"]=&NONS_ScriptInterpreter::command_skip;
 	this->commandList[L"skipoff"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"soundpressplgin"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"sp_rgb_gradation"]=0;
+	this->commandList[L"sp_rgb_gradation"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"spbtn"]=0;
 	this->commandList[L"spclclk"]=0;
 	this->commandList[L"spi"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -457,7 +459,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"strsp"]=0;
 	this->commandList[L"sub"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"systemcall"]=&NONS_ScriptInterpreter::command_systemcall;
-	this->commandList[L"tablegoto"]=0;
+	this->commandList[L"tablegoto"]=&NONS_ScriptInterpreter::command_tablegoto;
 	this->commandList[L"tal"]=&NONS_ScriptInterpreter::command_tal;
 	this->commandList[L"tan"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"tateyoko"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -474,9 +476,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"transmode"]=0;
 	this->commandList[L"trap"]=&NONS_ScriptInterpreter::command_trap;
 	this->commandList[L"trap2"]=&NONS_ScriptInterpreter::command_trap;
-	this->commandList[L"underline"]=0;
-	this->commandList[L"useescspc"]=0;
-	this->commandList[L"usewheel"]=0;
+	this->commandList[L"underline"]=&NONS_ScriptInterpreter::command_underline;
+	this->commandList[L"useescspc"]=&NONS_ScriptInterpreter::command_useescspc;
+	this->commandList[L"usewheel"]=&NONS_ScriptInterpreter::command_usewheel;
 	this->commandList[L"versionstr"]=&NONS_ScriptInterpreter::command_versionstr;
 	this->commandList[L"voicevol"]=0;
 	this->commandList[L"vsp"]=&NONS_ScriptInterpreter::command_vsp;
@@ -512,6 +514,51 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	ulong total=this->totalCommands(),
 		implemented=this->implementedCommands();
 	std::cout <<"ONSlaught script interpreter v"<<float(implemented*100/total)/100<<std::endl;
+	this->listImplementation();
+}
+
+void NONS_ScriptInterpreter::listImplementation(){
+	std::vector<std::wstring> implemented,
+		notyetimplemented,
+		undocumented,
+		unimplemented;
+	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++){
+		if (!i->second)
+			notyetimplemented.push_back(i->first);
+		else if (i->second==&NONS_ScriptInterpreter::command_undocumented)
+			undocumented.push_back(i->first);
+		else if (i->second==&NONS_ScriptInterpreter::command_unimplemented)
+			unimplemented.push_back(i->first);
+		else if (i->second==&NONS_ScriptInterpreter::command___userCommandCall__)
+			implemented.push_back(L"<user commands>");
+		else
+			implemented.push_back(i->first);
+	}
+	o_stdout.redirect();
+	o_stdout <<"Implemented commands:\n";
+	o_stdout.indent(1);
+	for (ulong a=0;a<implemented.size();a++)
+		o_stdout <<implemented[a]<<"\n";
+	o_stdout.indent(-1);
+	o_stdout <<"Count: "<<(ulong)implemented.size()<<"\n";
+	o_stdout <<"\nNot yet implemented commands (commands that will probably be implemented at some point):\n";
+	o_stdout.indent(1);
+	for (ulong a=0;a<notyetimplemented.size();a++)
+		o_stdout <<notyetimplemented[a]<<"\n";
+	o_stdout.indent(-1);
+	o_stdout <<"Count: "<<(ulong)notyetimplemented.size()<<"\n";
+	o_stdout <<"\nUndocumented commands (commands whose purpose is presently unknown):\n";
+	o_stdout.indent(1);
+	for (ulong a=0;a<undocumented.size();a++)
+		o_stdout <<undocumented[a]<<"\n";
+	o_stdout.indent(-1);
+	o_stdout <<"Count: "<<(ulong)undocumented.size()<<"\n";
+	o_stdout <<"\nUnimplemented commands (commands that will probably remain so):\n";
+	o_stdout.indent(1);
+	for (ulong a=0;a<unimplemented.size();a++)
+		o_stdout <<unimplemented[a]<<"\n";
+	o_stdout.indent(-1);
+	o_stdout <<"Count: "<<(ulong)unimplemented.size()<<"\n";
 }
 
 void NONS_ScriptInterpreter::uninit(){

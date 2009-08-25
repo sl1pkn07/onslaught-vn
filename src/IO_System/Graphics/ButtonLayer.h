@@ -52,6 +52,18 @@ struct NONS_ButtonLayer{
 	bool exitable;
 	NONS_Menu *menu;
 	SDL_Surface *loadedGraphic;
+	struct{
+		bool Wheel,
+			btnArea,
+			EscapeSpace,
+			PageUpDown,
+			Enter,
+			Tab,
+			Function,
+			Cursor,
+			Insert,
+			ZXC;
+	} inputOptions;
 	NONS_ButtonLayer(SDL_Surface *img,NONS_ScreenSpace *screen);
 	NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu);
 	~NONS_ButtonLayer();

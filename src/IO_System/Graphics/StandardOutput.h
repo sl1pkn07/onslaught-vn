@@ -53,6 +53,8 @@ struct NONS_StandardOutput{
 	NONS_Layer *foregroundLayer,
 		*shadowLayer,
 		*shadeLayer;
+	long shadowPosX,
+		shadowPosY;
 	ulong display_speed;
 	int extraAdvance;
 	bool visible;

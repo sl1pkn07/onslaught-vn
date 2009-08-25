@@ -65,7 +65,8 @@ NONS_CommandLineOptions::NONS_CommandLineOptions()
 	startFullscreen(0),
 	verbosity(0),
 	no_sound(0),
-	stopOnFirstError(0){}
+	stopOnFirstError(0),
+	listImplementation(0){}
 
 void usage(){
 	o_stdout <<"Usage: ONSlaught [options]\n"
@@ -76,6 +77,8 @@ void usage(){
 		"      Display this message.\n"
 		"  --version\n"
 		"      Display version number.\n"
+		"  -implementation\n"
+		"      Lists all implemented and unimplemented commands."
 		"  -verbosity <number>\n"
 		"      Set log verbosity level. 0 by default.\n"
 		"  -save-directory <directory name>\n"
@@ -132,8 +135,8 @@ void usage(){
 		"      See \"-redirect\" for more info.\n"
 		"  -!reset-out-files\n"
 		"      Only used with \"-redirect\".\n"
-		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it opens\n"
-		"      them and puts the date and time as identification.\n"
+		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it\n"
+		"      opens them and puts the date and time as identification.\n"
 		"   -stop-on-first-error\n"
 		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
 		"      command\" (when the command will not be implemented) errors don't count.\n";
@@ -142,32 +145,32 @@ void usage(){
 
 void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 	static const wchar_t *options[]={
-		L"--help",
-		L"-script",
-		L"-encoding",
-		L"-music-format",
-		L"-music-directory",
-		L"",
-		L"",
-		L"-image-cache-size",
-		L"-debug",
-		L"-redirect",
-		L"--version",
-		L"-implementation",
-		L"-no-console",
-		L"-dump-text",
-		L"-f",
-		L"-r",
-		L"-verbosity",
-		L"-sdebug",
-		L"-s",
-		L"-h",
-		L"-?",
-		L"-save-directory",
-		L"-!reset-out-files",
-		L"-!redirect",
-		L"-stop-on-first-error",
-		L"-archive-directory",
+		L"--help",                        //0
+		L"-script",                       //1
+		L"-encoding",                     //2
+		L"-music-format",                 //3
+		L"-music-directory",              //4
+		L"",                              //5
+		L"",                              //6
+		L"-image-cache-size",             //7
+		L"-debug",                        //8
+		L"-redirect",                     //9
+		L"--version",                     //10
+		L"-implementation",               //11
+		L"-no-console",                   //12
+		L"-dump-text",                    //13
+		L"-f",                            //14
+		L"-r",                            //15
+		L"-verbosity",                    //16
+		L"-sdebug",                       //17
+		L"-s",                            //18
+		L"-h",                            //19
+		L"-?",                            //20
+		L"-save-directory",               //21
+		L"-!reset-out-files",             //22
+		L"-!redirect",                    //23
+		L"-stop-on-first-error",          //24
+		L"-archive-directory",            //25
 		0
 	};
 
@@ -286,13 +289,13 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				this->override_stdout=1;
 				this->debugMode=0;
 				break;
+			case 11: //-implementation
+				this->listImplementation;
 			case 10: //--version
 				{
 					delete new NONS_ScriptInterpreter(0);
 				}
 				exit(0);
-			case 11: //-implementation
-				break;
 			case 12: //-no-console
 #ifdef NONS_SYS_WINDOWS
 				this->noconsole=1;

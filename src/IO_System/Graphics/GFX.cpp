@@ -30,11 +30,15 @@
 #ifndef NONS_GFX_CPP
 #define NONS_GFX_CPP
 
+#define USE_ACCURATE_MULTIPLICATION
+
 #include "GFX.h"
 #include "../../Functions.h"
 #include "../IOFunctions.h"
 #include "../../Globals.h"
 #include <cmath>
+
+#define BENCHMARK_EFFECTS
 
 //(Parallelized surface function)
 struct PSF_parameters{
@@ -557,7 +561,9 @@ void NONS_GFX::effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
-	ulong steps_done=0;
+#ifdef BENCHMARK_EFFECTS
+	ulong steps=0;
+#endif
 	for (long a=step;a<256;a+=step){
 		long t0=SDL_GetTicks();
 		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<255){
@@ -569,14 +575,18 @@ void NONS_GFX::effectCrossfade(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 		manualBlit(src0,0,dst->virtualScreen,0,a);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
-		steps_done++;
+#ifdef BENCHMARK_EFFECTS
+		steps++;
+#endif
 		long t1=SDL_GetTicks();
 		lastT=t1-t0;
 		if (lastT<delay)
 			SDL_Delay(delay-lastT);
 		idealtimepos+=delay;
 	}
-	std::cout <<steps_done<<std::endl;
+#ifdef BENCHMARK_EFFECTS
+	std::cout <<"effectCrossfade(): "<<float(steps)/(float(this->duration)/1000.0f)<<" steps per second."<<std::endl;
+#endif
 	SDL_FreeSurface(copyDst);
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
@@ -928,14 +938,22 @@ int effectSoftMask_threaded(void *parameters){
 
 			if (long(b1)<=p->a){
 				short alpha=p->a-b1;
-				short deltar=r0-*r2;
+#define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION((a)^0xFF,(c1))+INTEGER_MULTIPLICATION((a),(c0)))
+				/*short deltar=r0-*r2;
 				short deltag=g0-*g2;
-				short deltab=b0-*b2;
-				if (alpha<0) alpha=0;
-				if (alpha>255) alpha=255;
-				(*r2)+=(deltar*alpha)/255;
-				(*g2)+=(deltag*alpha)/255;
-				(*b2)+=(deltab*alpha)/255;
+				short deltab=b0-*b2;*/
+				if (alpha<0)
+					alpha=0;
+				if (alpha>255)
+					alpha=255;
+				*r2=APPLY_ALPHA(r0,*r2,alpha);
+				*g2=APPLY_ALPHA(g0,*g2,alpha);
+				*b2=APPLY_ALPHA(b0,*b2,alpha);
+				/*
+				(*r2)+=INTEGER_MULTIPLICATION(deltar,alpha);
+				(*g2)+=INTEGER_MULTIPLICATION(deltag,alpha);
+				(*b2)+=INTEGER_MULTIPLICATION(deltab,alpha);
+				*/
 				if (long(b1)<p->a-255)
 					*b12=0;
 			}
@@ -1004,6 +1022,9 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
+#ifdef BENCHMARK_EFFECTS
+	ulong steps=0;
+#endif
 	for (long a=0;a<512;a++){
 		long t0=SDL_GetTicks();
 		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<511){
@@ -1037,6 +1058,9 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 		SDL_UnlockSurface(src0);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
+#ifdef BENCHMARK_EFFECTS
+		steps++;
+#endif
 
 		long t1=SDL_GetTicks();
 		lastT=t1-t0;
@@ -1044,6 +1068,9 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 			SDL_Delay(delay-lastT);
 		idealtimepos+=delay;
 	}
+#ifdef BENCHMARK_EFFECTS
+	std::cout <<"effectSoftMask(): "<<float(steps)/(float(this->duration)/1000.0f)<<" steps per second."<<std::endl;
+#endif
 	SDL_FreeSurface(copyMask);
 	SDL_FreeSurface(copyDst);
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
@@ -1220,6 +1247,10 @@ int effectMonochrome_threaded(void *parameters){
 	return 0;
 }
 
+#define RED_MONOCHROME(x) ((x)*3/10)
+#define GREEN_MONOCHROME(x) ((x)*59/100)
+#define BLUE_MONOCHROME(x) ((x)*11/100)
+
 void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &color){
 	long w=dstRect->w,h=dstRect->h;
 	uchar *pos=(uchar *)dst->pixels;
@@ -1232,22 +1263,22 @@ void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &col
 	for (long y=0;y<h;y++){
 		uchar *pos0=pos;
 		for (long x=0;x<w;x++){
-			ulong r0=ulong(pos[Roffset])*3/10,
-				g0=ulong(pos[Goffset])*59/100,
-				b0=ulong(pos[Boffset])*11/100,
+			ulong r0=RED_MONOCHROME(ulong(pos[Roffset])),
+				g0=GREEN_MONOCHROME(ulong(pos[Goffset])),
+				b0=BLUE_MONOCHROME(ulong(pos[Boffset])),
 				r1,g1,b1;
 			r1=r0*ulong(color.r)+
 				g0*ulong(color.r)+
 				b0*ulong(color.r);
-			r1/=255*3/10+255*59/100+255*11/100;
+			r1/=255;
 			g1=r0*ulong(color.g)+
 				g0*ulong(color.g)+
 				b0*ulong(color.g);
-			g1/=255*3/10+255*59/100+255*11/100;
+			g1/=255;
 			b1=r0*ulong(color.b)+
 				b0*ulong(color.b)+
 				g0*ulong(color.b);
-			b1/=255*3/10+255*59/100+255*11/100;
+			b1/=255;
 			pos[Roffset]=r1;
 			pos[Goffset]=g1;
 			pos[Boffset]=b1;
@@ -1313,9 +1344,9 @@ void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
 	for (long y=0;y<h;y++){
 		uchar *pos0=pos;
 		for (long x=0;x<w;x++){
-			pos[Roffset]=255-pos[Roffset];
-			pos[Goffset]=255-pos[Goffset];
-			pos[Boffset]=255-pos[Boffset];
+			pos[Roffset]=~pos[Roffset];
+			pos[Goffset]=~pos[Goffset];
+			pos[Boffset]=~pos[Boffset];
 			pos+=advance;
 		}
 		pos=pos0+pitch;
@@ -1367,7 +1398,8 @@ int effectNegativeMono_threaded(void *parameters){
 }
 
 void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
-	long w=dstRect->w,h=dstRect->h;
+	long w=dstRect->w,
+		h=dstRect->h;
 	uchar *pos=(uchar *)dst->pixels;
 	uchar Roffset=(dst->format->Rshift)>>3;
 	uchar Goffset=(dst->format->Gshift)>>3;
@@ -1378,7 +1410,17 @@ void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
 	for (long y=0;y<h;y++){
 		uchar *pos0=pos;
 		for (long x=0;x<w;x++){
-			ushort rgb=((255-pos[Roffset])+(255-pos[Goffset])+(255-pos[Boffset]))/3;
+			ulong rgb=RED_MONOCHROME(ulong(pos[Roffset]));
+			rgb+=GREEN_MONOCHROME(ulong(pos[Goffset]));
+			rgb+=BLUE_MONOCHROME(ulong(pos[Boffset]));
+			rgb=~rgb;
+
+			/*
+			ushort rgb=~pos[Roffset];
+			rgb+=~pos[Goffset];
+			rgb+=~pos[Boffset];
+			rgb/=3;
+			*/
 			pos[Roffset]=rgb;
 			pos[Goffset]=rgb;
 			pos[Boffset]=rgb;

@@ -439,6 +439,10 @@ void NONS_SaveFile::load(std::wstring filename){
 			this->windowTextColor.b=readByte(buffer,offset);
 			this->textSpeed=readDWord(buffer,offset);
 			this->fontShadow=!!readByte(buffer,offset);
+			if (this->version>2){
+				this->shadowPosX=readSignedDWord(buffer,offset);
+				this->shadowPosY=readSignedDWord(buffer,offset);
+			}
 			this->spacing=readWord(buffer,offset);
 			this->lineSkip=readSignedWord(buffer,offset);
 			ulong n=readDWord(buffer,offset);
@@ -708,6 +712,8 @@ bool NONS_SaveFile::save(std::wstring filename){
 		writeByte(this->windowTextColor.b,buffer);
 		writeDWord(this->textSpeed,buffer);
 		writeByte(this->fontShadow,buffer);
+		writeDWord(this->shadowPosX,buffer);
+		writeDWord(this->shadowPosY,buffer);
 		writeWord(this->spacing,buffer);
 		writeWord(this->lineSkip,buffer);
 		writeDWord(this->logPages.size(),buffer);
