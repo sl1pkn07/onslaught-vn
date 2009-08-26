@@ -169,6 +169,36 @@ void NONS_ScriptInterpreter::init(){
 	this->everything->screen->char_baseline=this->everything->screen->screen->inRect.h-1;
 	this->useWheel=0;
 	this->useEscapeSpace=0;
+	this->screenshot=0;
+}
+
+void NONS_ScriptInterpreter::uninit(){
+	if (this->store)
+		delete this->store;
+	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
+		delete i->second;
+	delete this->thread;
+	this->INIcache.clear();
+	delete this->arrowCursor;
+	delete this->pageCursor;
+	if (this->menu)
+		delete this->menu;
+	this->selectVoiceClick.clear();
+	this->selectVoiceEntry.clear();
+	this->selectVoiceMouseOver.clear();
+	this->clickStr.clear();
+	if (this->imageButtons)
+		delete this->imageButtons;
+	delete this->saveGame;
+	if (config_directory.size()){
+		std::wstring settings_filename=config_directory+L"settings.cfg";
+		ConfigFile settings;
+		settings.assignInt(L"textSpeedMode",this->current_speed_setting);
+		settings.writeOut(settings_filename);
+	}
+	this->textgosub.clear();
+	if (!!this->screenshot)
+		SDL_FreeSurface(this->screenshot);
 }
 
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
@@ -184,6 +214,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->everything=0;
 	this->main_font=0;
 	this->thread=0;
+	this->screenshot=0;
 	if (everything){
 		if (!everything->script){
 			this->everything=0;
@@ -203,8 +234,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"arc"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"atoi"]=&NONS_ScriptInterpreter::command_atoi;
 	this->commandList[L"autoclick"]=&NONS_ScriptInterpreter::command_autoclick;
-	this->commandList[L"automode_time"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"automode"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"automode_time"]=0;
+	this->commandList[L"automode"]=0;
 	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"bar"]=0;
 	this->commandList[L"barclear"]=0;
@@ -220,26 +251,26 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"break"]=&NONS_ScriptInterpreter::command_break;
 	this->commandList[L"btn"]=&NONS_ScriptInterpreter::command_btn;
 	this->commandList[L"btndef"]=&NONS_ScriptInterpreter::command_btndef;
-	this->commandList[L"btndown"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"btndown"]=0;
 	this->commandList[L"btntime"]=&NONS_ScriptInterpreter::command_btntime;
 	this->commandList[L"btntime2"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"btnwait"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"btnwait2"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"caption"]=&NONS_ScriptInterpreter::command_caption;
 	this->commandList[L"cell"]=&NONS_ScriptInterpreter::command_cell;
-	this->commandList[L"cellcheckexbtn"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"cellcheckspbtn"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"checkpage"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"chvol"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"cellcheckexbtn"]=0;
+	this->commandList[L"cellcheckspbtn"]=0;
+	this->commandList[L"checkpage"]=&NONS_ScriptInterpreter::command_checkpage;
+	this->commandList[L"chvol"]=0;
 	this->commandList[L"cl"]=&NONS_ScriptInterpreter::command_cl;
 	this->commandList[L"click"]=&NONS_ScriptInterpreter::command_click;
 	this->commandList[L"clickstr"]=&NONS_ScriptInterpreter::command_clickstr;
 	this->commandList[L"clickvoice"]=0;
 	this->commandList[L"cmp"]=&NONS_ScriptInterpreter::command_cmp;
 	this->commandList[L"cos"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"csel"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"cselbtn"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"cselgoto"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"csel"]=0;
+	this->commandList[L"cselbtn"]=0;
+	this->commandList[L"cselgoto"]=0;
 	this->commandList[L"csp"]=&NONS_ScriptInterpreter::command_csp;
 	this->commandList[L"date"]=&NONS_ScriptInterpreter::command_date;
 	this->commandList[L"dec"]=&NONS_ScriptInterpreter::command_inc;
@@ -251,7 +282,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"defsub"]=&NONS_ScriptInterpreter::command_defsub;
 	this->commandList[L"defvoicevol"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"delay"]=&NONS_ScriptInterpreter::command_delay;
-	this->commandList[L"deletescreenshot"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"deletescreenshot"]=&NONS_ScriptInterpreter::command_deletescreenshot;
 	this->commandList[L"dim"]=&NONS_ScriptInterpreter::command_dim;
 	this->commandList[L"div"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"draw"]=&NONS_ScriptInterpreter::command_draw;
@@ -284,28 +315,28 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"game"]=&NONS_ScriptInterpreter::command_game;
 	this->commandList[L"getbgmvol"]=&NONS_ScriptInterpreter::command_getmp3vol;
 	this->commandList[L"getbtntimer"]=&NONS_ScriptInterpreter::command_getbtntimer;
-	this->commandList[L"getcselnum"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getcselstr"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getcselnum"]=0;
+	this->commandList[L"getcselstr"]=0;
 	this->commandList[L"getcursor"]=&NONS_ScriptInterpreter::command_getcursor;
 	this->commandList[L"getcursorpos"]=&NONS_ScriptInterpreter::command_getcursorpos;
 	this->commandList[L"getenter"]=&NONS_ScriptInterpreter::command_getenter;
 	this->commandList[L"getfunction"]=&NONS_ScriptInterpreter::command_getfunction;
 	this->commandList[L"getinsert"]=&NONS_ScriptInterpreter::command_getinsert;
-	this->commandList[L"getlog"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getmousepos"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getlog"]=&NONS_ScriptInterpreter::command_getlog;
+	this->commandList[L"getmousepos"]=0;
 	this->commandList[L"getmp3vol"]=&NONS_ScriptInterpreter::command_getmp3vol;
 	this->commandList[L"getpage"]=&NONS_ScriptInterpreter::command_getpage;
 	this->commandList[L"getpageup"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getparam"]=&NONS_ScriptInterpreter::command_getparam;
 	this->commandList[L"getreg"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"getret"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getscreenshot"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getret"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"getscreenshot"]=&NONS_ScriptInterpreter::command_getscreenshot;
 	this->commandList[L"getsevol"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getspmode"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"getspsize"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"getspmode"]=0;
+	this->commandList[L"getspsize"]=0;
 	this->commandList[L"gettab"]=&NONS_ScriptInterpreter::command_gettab;
-	this->commandList[L"gettag"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"gettext"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"gettag"]=0;
+	this->commandList[L"gettext"]=&NONS_ScriptInterpreter::command_gettext;
 	this->commandList[L"gettimer"]=&NONS_ScriptInterpreter::command_gettimer;
 	this->commandList[L"getversion"]=&NONS_ScriptInterpreter::command_getversion;
 	this->commandList[L"getvoicevol"]=&NONS_ScriptInterpreter::command_undocumented;
@@ -317,7 +348,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"humanz"]=&NONS_ScriptInterpreter::command_humanz;
 	this->commandList[L"if"]=&NONS_ScriptInterpreter::command_if;
 	this->commandList[L"inc"]=&NONS_ScriptInterpreter::command_inc;
-	this->commandList[L"indent"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"indent"]=&NONS_ScriptInterpreter::command_indent;
 	this->commandList[L"input"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit;
@@ -340,12 +371,12 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"loadgame"]=&NONS_ScriptInterpreter::command_loadgame;
 	this->commandList[L"loadgosub"]=&NONS_ScriptInterpreter::command_loadgosub;
 	this->commandList[L"locate"]=&NONS_ScriptInterpreter::command_locate;
-	this->commandList[L"logsp"]=&NONS_ScriptInterpreter::command_undocumented;
-	this->commandList[L"logsp2"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"logsp"]=0;
+	this->commandList[L"logsp2"]=0;
 	this->commandList[L"lookbackbutton"]=&NONS_ScriptInterpreter::command_lookbackbutton;
 	this->commandList[L"lookbackcolor"]=&NONS_ScriptInterpreter::command_lookbackcolor;
 	this->commandList[L"lookbackflush"]=&NONS_ScriptInterpreter::command_lookbackflush;
-	this->commandList[L"lookbacksp"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"lookbacksp"]=0;
 	this->commandList[L"loopbgm"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"loopbgmstop"]=&NONS_ScriptInterpreter::command_playstop;
 	this->commandList[L"lr_trap"]=&NONS_ScriptInterpreter::command_trap;
@@ -353,7 +384,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"lsp"]=&NONS_ScriptInterpreter::command_lsp;
 	//this->commandList[L"lsp2"]=&NONS_ScriptInterpreter::command_lsp2;
 	this->commandList[L"lsph"]=&NONS_ScriptInterpreter::command_lsp;
-	this->commandList[L"maxkaisoupage"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"maxkaisoupage"]=&NONS_ScriptInterpreter::command_maxkaisoupage;
 	this->commandList[L"menu_automode"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"menu_full"]=&NONS_ScriptInterpreter::command_menu_full;
 	this->commandList[L"menu_window"]=&NONS_ScriptInterpreter::command_menu_full;
@@ -393,12 +424,12 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->commandList[L"ns3"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"nsadir"]=&NONS_ScriptInterpreter::command_nsadir;
 	this->commandList[L"numalias"]=&NONS_ScriptInterpreter::command_alias;
-	this->commandList[L"ofscopy"]=&NONS_ScriptInterpreter::command_ofscopy;
-	this->commandList[L"ofscpy"]=&NONS_ScriptInterpreter::command_ofscopy;
+	this->commandList[L"ofscopy"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"ofscpy"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"play"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playonce"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playstop"]=&NONS_ScriptInterpreter::command_playstop;
-	this->commandList[L"pretextgosub"]=&NONS_ScriptInterpreter::command_undocumented;
+	this->commandList[L"pretextgosub"]=0;
 	this->commandList[L"print"]=&NONS_ScriptInterpreter::command_print;
 	this->commandList[L"prnum"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"prnumclear"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -514,7 +545,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	ulong total=this->totalCommands(),
 		implemented=this->implementedCommands();
 	std::cout <<"ONSlaught script interpreter v"<<float(implemented*100/total)/100<<std::endl;
-	this->listImplementation();
+	if (CLOptions.listImplementation)
+		this->listImplementation();
 }
 
 void NONS_ScriptInterpreter::listImplementation(){
@@ -561,33 +593,6 @@ void NONS_ScriptInterpreter::listImplementation(){
 	o_stdout <<"Count: "<<(ulong)unimplemented.size()<<"\n";
 }
 
-void NONS_ScriptInterpreter::uninit(){
-	if (this->store)
-		delete this->store;
-	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
-		delete i->second;
-	delete this->thread;
-	this->INIcache.clear();
-	delete this->arrowCursor;
-	delete this->pageCursor;
-	if (this->menu)
-		delete this->menu;
-	this->selectVoiceClick.clear();
-	this->selectVoiceEntry.clear();
-	this->selectVoiceMouseOver.clear();
-	this->clickStr.clear();
-	if (this->imageButtons)
-		delete this->imageButtons;
-	delete this->saveGame;
-	if (config_directory.size()){
-		std::wstring settings_filename=config_directory+L"settings.cfg";
-		ConfigFile settings;
-		settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-		settings.writeOut(settings_filename);
-	}
-	this->textgosub.clear();
-}
-
 NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
 	InputObserver.detach(this->inputQueue);
 	this->uninit();
@@ -601,7 +606,7 @@ ulong NONS_ScriptInterpreter::totalCommands(){
 ulong NONS_ScriptInterpreter::implementedCommands(){
 	ulong res=0;
 	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
-		if (i->first!=L"" && i->second && i->second!=&NONS_ScriptInterpreter::command_undocumented)
+		if (i->first!=L"" && i->second)
 			res++;
 	return res;
 }
@@ -721,7 +726,11 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 							return 0;
 						break;
 					}
-					ErrorCode error=(this->*function)(*stmt);
+					ErrorCode error;
+					if (CHECK_FLAG(stmt->error,NONS_NO_ERROR_FLAG))
+						error=(this->*function)(*stmt);
+					else
+						error=stmt->error;
 					bool there_was_an_error=!CHECK_FLAG(error,NONS_NO_ERROR_FLAG);
 					if (there_was_an_error){
 						o_stderr <<"{\n";
@@ -998,7 +1007,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 	std::wstring *str;
 	bool justClicked;
 	for (std::vector<printingPage>::iterator i=pages.begin();i!=pages.end();i++){
-		bool clearscr=out->prepareForPrinting(i->print.c_str());
+		bool clearscr=out->prepareForPrinting(i->print);
 		if (clearscr){
 			if (this->pageCursor->animate(this->menu,this->autoclick)<0){
 				if (!!error)

@@ -648,9 +648,17 @@ ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring filename;
 	_GETWCSVALUE(filename,0,)
-	LOCKSCREEN;
-	SDL_SaveBMP(this->everything->screen->screen->virtualScreen,UniToISO88591(filename).c_str());
-	UNLOCKSCREEN;
+	if (!this->screenshot){
+		LOCKSCREEN;
+		SDL_SaveBMP(this->everything->screen->screen->virtualScreen,UniToUTF8(filename).c_str());
+		UNLOCKSCREEN;
+	}else{
+		SDL_SaveBMP(this->screenshot,UniToUTF8(filename).c_str());
+		if (!stdStrCmpCI(stmt.commandName,L"savescreenshot")){
+			SDL_FreeSurface(this->screenshot);
+			this->screenshot=0;
+		}
+	}
 	return NONS_NO_ERROR;
 }
 
@@ -824,7 +832,7 @@ ErrorCode NONS_ScriptInterpreter::command_tablegoto(NONS_Statement &stmt){
 	for (ulong a=1;a<stmt.parameters.size();a++){
 		_GETLABEL(labels[a-1],a,)
 	}
-	if (val>labels.size())
+	if ((ulong)val>labels.size())
 		return NONS_NOT_ENOUGH_LABELS;
 	if (!this->script->blockFromLabel(labels[val]))
 		return NONS_NO_SUCH_BLOCK;

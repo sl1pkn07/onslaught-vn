@@ -203,6 +203,7 @@ class NONS_ScriptInterpreter{
 	std::wstring loadgosub;
 	bool useWheel,
 		useEscapeSpace;
+	SDL_Surface *screenshot;
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);
@@ -345,7 +346,6 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_drawtext(NONS_Statement &stmt);
 	ErrorCode command_allsphide(NONS_Statement &stmt);
 	ErrorCode command_movN(NONS_Statement &stmt);
-	ErrorCode command_ofscopy(NONS_Statement &stmt);
 	ErrorCode command_humanorder(NONS_Statement &stmt);
 	ErrorCode command_loadgosub(NONS_Statement &stmt);
 	ErrorCode command_defsub(NONS_Statement &stmt);
@@ -362,14 +362,14 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_usewheel(NONS_Statement &stmt);
 	ErrorCode command_shadedistance(NONS_Statement &stmt);
 	ErrorCode command_tablegoto(NONS_Statement &stmt);
+	ErrorCode command_indent(NONS_Statement &stmt);
+	ErrorCode command_getscreenshot(NONS_Statement &stmt);
+	ErrorCode command_deletescreenshot(NONS_Statement &stmt);
+	ErrorCode command_gettext(NONS_Statement &stmt);
+	ErrorCode command_maxkaisoupage(NONS_Statement &stmt);
+	ErrorCode command_checkpage(NONS_Statement &stmt);
+	ErrorCode command_getlog(NONS_Statement &stmt);
 	/*
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);

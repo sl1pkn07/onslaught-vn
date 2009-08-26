@@ -37,7 +37,7 @@
 
 extern NONS_CommandLineOptions CLOptions;
 
-#define INDENTATION_CHARACTER "    "
+#define INDENTATION_STRING "    "
 
 struct NONS_RedirectedOutput{
 	std::ofstream *file;

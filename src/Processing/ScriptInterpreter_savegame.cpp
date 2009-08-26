@@ -149,6 +149,7 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	for (ulong a=0;a<save.logPages.size();a++)
 		out->log.push_back(save.logPages[a]);
 	out->currentBuffer=save.currentBuffer;
+	out->indentationLevel=save.indentationLevel;
 	out->x=save.textX;
 	out->y=save.textY;
 	if (this->arrowCursor)
@@ -392,6 +393,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		for (ulong a=0;a<out->log.size();a++)
 			this->saveGame->logPages.push_back(out->log[a]);
 		this->saveGame->currentBuffer=out->currentBuffer;
+		this->saveGame->indentationLevel=out->indentationLevel;
 		if (!this->arrowCursor || !this->arrowCursor->data)
 			this->saveGame->arrow.string.clear();
 		else{

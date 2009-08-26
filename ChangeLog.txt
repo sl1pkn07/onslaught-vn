@@ -4,9 +4,11 @@
         allspresume, mov3, mov4, ..., mov10, selnum, humanorder, loadgosub,
         defsub, user commands, getparam, getcursor, useescspc, getpage,
         getenter, gettab, getfunction, getinsert, getzxc, usewheel,
-        shadedistance, tablegoto.
+        shadedistance, tablegoto, indent, getscreenshot, deletescreenshot,
+        gettext, maxkaisoupage, checkpage, getlog.
     * Added screenshot function.
     * Improved error reporting system.
+    * Fixed savescreenshot and savescreenshot2.
     * Memory leak the size of the script fixed.
     * Bug in jumpb and jumpf fixed.
     * Fixed incorrect behavior of bg for images of size other than the screen.

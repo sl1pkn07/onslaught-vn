@@ -290,7 +290,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				this->debugMode=0;
 				break;
 			case 11: //-implementation
-				this->listImplementation;
+				this->listImplementation=1;
 			case 10: //--version
 				{
 					delete new NONS_ScriptInterpreter(0);
