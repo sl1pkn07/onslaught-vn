@@ -208,6 +208,8 @@ const char *errorMessages[]={
 	"Goto index is negative.",
 	//NONS_NOT_ENOUGH_LABELS
 	"The goto index is larger than the goto table.",
+	//NONS_NOT_ENOUGH_LOG_PAGES
+	"Not enough pages in the log.",
 	0
 };
 NONS_RedirectedOutput o_stdout(std::cout);

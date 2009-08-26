@@ -146,6 +146,8 @@ Screen section{
 		DWord. Size of log (n).
 		n*String. Log pages.
 		String. Current text buffer.
+		if (save_version>2)
+			DWord. Indentation level.
 		Word. Current text x.
 		Word. Current text y.
 		String. Arrow cursor.

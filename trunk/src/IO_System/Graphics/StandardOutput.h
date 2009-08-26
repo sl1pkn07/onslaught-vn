@@ -61,6 +61,9 @@ struct NONS_StandardOutput{
 	NONS_GFX *transition;
 	std::vector<std::wstring> log;
 	std::wstring currentBuffer;
+	ulong indentationLevel;
+	bool indent_next;
+	long maxLogPages;
 
 	NONS_StandardOutput(NONS_Layer *fgLayer,NONS_Layer *shadowLayer,NONS_Layer *shadeLayer);
 	NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect *frame,bool shadow=1);
@@ -82,6 +85,7 @@ private:
 	int predictTextHeight(std::wstring *arr);
 	int setLineStart(std::wstring *arr,ulong start,SDL_Rect *frame,float center);
 	int setTextStart(std::wstring *arr,SDL_Rect *frame,float center);
+	ulong getIndentationSize();
 	float horizontalCenterPolicy;
 	float verticalCenterPolicy;
 	long lastStart;
@@ -91,4 +95,6 @@ private:
 	bool printingStarted;
 	ulong resumePrintingWhere;
 };
+
+std::wstring removeTags(const std::wstring &str);
 #endif

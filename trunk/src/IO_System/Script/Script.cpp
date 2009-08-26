@@ -92,6 +92,7 @@ NONS_Statement::NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,
 	this->statementNo=number;
 	this->parsed=0;
 	this->type=STATEMENT_EMPTY;
+	this->error=NONS_NO_ERROR;
 	if (string.size()){
 		if (multicomparison(string[0],";*`\\@!#~%$?") || string[0]>0x7F){
 			switch (string[0]){
@@ -158,8 +159,13 @@ void NONS_Statement::parse(NONS_Script *script){
 			while (start<size){
 				end=start;
 				while (end<size && string[end]!=','){
-					if (string[end]=='\"' || string[end]=='`' || end+1<size && NONS_tolower(string[end])=='e' && string[end+1]=='\"')
+					if (string[end]=='\"' || string[end]=='`' || end+1<size && NONS_tolower(string[end])=='e' && string[end+1]=='\"'){
 						end=findEndOfString(string,end);
+						if (end==string.npos){
+							this->error=NONS_UNMATCHED_QUOTES;
+							return;
+						}
+					}
 					for (end++;end<size && iswhitespace(string[end]);end++);
 				}
 				if (end>size)

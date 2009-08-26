@@ -41,12 +41,8 @@
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
 #ifdef NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
-	if (file==INVALID_HANDLE_VALUE){
-#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-		o_stderr <<"readfile(): System error "<<GetLastError()<<"\n";
-#endif
+	if (file==INVALID_HANDLE_VALUE)
 		return 0;
-	}
 	uchar *ret=readfile(file,len,offset);
 	CloseHandle(file);
 	return ret;
@@ -99,12 +95,8 @@ uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
 uchar *readfile(const std::wstring &name,ulong &len){
 #ifdef NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_FLAG_SEQUENTIAL_SCAN,0);
-	if (file==INVALID_HANDLE_VALUE){
-#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-		o_stderr <<"readfile(): System error No. "<<GetLastError()<<".\n";
-#endif
+	if (file==INVALID_HANDLE_VALUE)
 		return 0;
-	}
 	DWORD filesize;
 	filesize=GetFileSize(file,0);
 	
@@ -134,12 +126,8 @@ char writefile(const std::wstring &name,char *buffer,ulong size){
 	HANDLE file=CreateFile(&name[0],GENERIC_WRITE,0,0,TRUNCATE_EXISTING,0,0);
 	if (file==INVALID_HANDLE_VALUE)
 		file=CreateFile(&name[0],GENERIC_WRITE,0,0,CREATE_NEW,0,0);
-	if (file==INVALID_HANDLE_VALUE){
-#if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
-		o_stderr <<"writefile(): System error No. "<<GetLastError()<<"\n";
-#endif
+	if (file==INVALID_HANDLE_VALUE)
 		return 1;
-	}
 	WriteFile(file,buffer,size,&size,0);
 	CloseHandle(file);
 	return 0;

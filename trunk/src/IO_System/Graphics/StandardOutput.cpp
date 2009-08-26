@@ -58,6 +58,8 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Layer *fgLayer,NONS_Layer *shadowL
 	this->lastStart=-1;
 	this->printingStarted=0;
 	this->shadowPosX=this->shadowPosY=1;
+	this->indentationLevel=0;
+	this->maxLogPages=-1;
 }
 
 NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect *frame,bool shadow){
@@ -87,6 +89,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect
 	this->lastStart=-1;
 	this->printingStarted=0;
 	this->shadowPosX=this->shadowPosY=1;
+	this->indentationLevel=0;
 }
 
 NONS_StandardOutput::~NONS_StandardOutput(){
@@ -99,6 +102,13 @@ NONS_StandardOutput::~NONS_StandardOutput(){
 		delete this->transition;
 }
 
+#define INDENTATION_CHARACTER 0x2003
+
+ulong NONS_StandardOutput::getIndentationSize(){
+	NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(INDENTATION_CHARACTER);
+	return this->indentationLevel*(glyph->getadvance()+this->extraAdvance);
+}
+
 bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	long lastSpace=-1;
 	int x0=this->x,y0=this->y;
@@ -106,13 +116,14 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	int lineSkip=this->foregroundLayer->fontCache->font->lineSkip;
 	this->resumePrinting=0;
 	bool check_at_end=1;
-	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
-		wchar_t character=*i;
+	ulong indentationMargin=this->x0+this->getIndentationSize();
+	for (ulong a=0;a<str.size();a++){
+		wchar_t character=str[a];
 		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
 		if (character=='\n'){
 			this->cachedText.push_back(character);
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0){
-				this->cachedText[lastSpace]='\n';
+				this->cachedText[lastSpace]='\r';
 				y0+=lineSkip;
 			}
 			lastSpace=-1;
@@ -121,9 +132,9 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 			wordL=0;
 		}else if (isbreakspace(character)){
 			if (x0+wordL>this->w+this->x0 && lastSpace>=0){
-				this->cachedText[lastSpace]='\n';
+				this->cachedText[lastSpace]='\r';
 				lastSpace=-1;
-				x0=this->x0;
+				x0=indentationMargin;
 				y0+=lineSkip;
 			}
 			x0+=wordL;
@@ -135,14 +146,15 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 			this->cachedText.push_back(character);
 		}else{
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0)
-				this->cachedText[lastSpace]=0;
+				this->cachedText[lastSpace]='\r';
 			check_at_end=0;
 			break;
 		}
 	}
 	if (check_at_end && x0+wordL>=this->w+this->x0 && lastSpace>=0)
-		this->cachedText[lastSpace]=0;
+		this->cachedText[lastSpace]='\r';
 	this->printingStarted=1;
+	this->indent_next=0;
 	if (this->verticalCenterPolicy>0 && this->currentBuffer.size()>0)
 		return 1;
 	SDL_Rect frame={this->x0,this->y0,this->w,this->h};
@@ -161,10 +173,14 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		return 0;
 	NONS_EventQueue *queue=InputObserver.attach();
 	bool enterPressed=0;
-	int x0,y0=this->y;
+	int x0,
+		y0=this->y;
 	SDL_Rect frame={this->x0,this->y0,this->w,this->h};
+	ulong indentationMargin=this->x0+this->getIndentationSize();
 	if (this->x==this->x0){
 		x0=this->setLineStart(&this->cachedText,start,&frame,this->horizontalCenterPolicy);
+		if (this->indent_next && !this->horizontalCenterPolicy)
+			x0=indentationMargin;
 		if (x0!=this->lastStart){
 			this->prebufferedText.append(L"<x=");
 			this->prebufferedText.append(itoa<wchar_t>(x0));
@@ -181,10 +197,11 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		start=this->resumePrintingWhere;
 	for (ulong a=start;a<end && a<this->cachedText.size();a++){
 		t0=SDL_GetTicks();
-		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(this->cachedText[a]);
+		wchar_t character=this->cachedText[a];
+		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
 		NONS_Glyph *glyph2=0;
 		if (this->shadowLayer)
-			glyph2=this->shadowLayer->fontCache->getGlyph(this->cachedText[a]);
+			glyph2=this->shadowLayer->fontCache->getGlyph(character);
 		if (!glyph){
 			if (y0+lineSkip>=this->h+this->y0){
 				this->resumePrinting=1;
@@ -195,10 +212,13 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				this->currentBuffer.append(this->prebufferedText);
 				this->prebufferedText.clear();
 				InputObserver.detach(queue);
+				this->indent_next=(character=='\r');
 				return 1;
 			}
 			if (a<this->cachedText.size()-1){
 				x0=this->setLineStart(&this->cachedText,a+1,&frame,this->horizontalCenterPolicy);
+				if (character=='\r' && !this->horizontalCenterPolicy)
+					x0=indentationMargin;
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
 					this->prebufferedText.append(itoa<wchar_t>(x0));
@@ -208,7 +228,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			}else
 				x0=this->x0;
 			y0+=lineSkip;
-			this->prebufferedText.push_back(10);
+			this->prebufferedText.push_back('\n');
 			continue;
 		}
 		int advance=glyph->getadvance()+this->extraAdvance;
@@ -222,9 +242,12 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				this->currentBuffer.append(this->prebufferedText);
 				this->prebufferedText.clear();
 				InputObserver.detach(queue);
+				this->indent_next=1;
 				return 1;
 			}else{
 				x0=this->setLineStart(&this->cachedText,a,&frame,this->horizontalCenterPolicy);
+				if (!this->horizontalCenterPolicy)
+					x0=indentationMargin;
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
 					this->prebufferedText.append(itoa<wchar_t>(x0));
@@ -370,33 +393,15 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 	return;
 }
 
-/*int NONS_StandardOutput::setLineStart(std::vector<NONS_Glyph *> *arr,long start,SDL_Rect *frame,float center){
-	while (start<arr->size() && !(*arr)[start])
-		start++;
-	int width=this->predictLineLength(arr,start,frame->w);
-	float factor=(center<=.5)?center:1.0-center;
-	int pixelcenter=float(frame->w)*factor;
-	return (width/2>pixelcenter)?frame->x+(frame->w-width)*(center>.5):frame->x+frame->w*center-width/2;
-}*/
-
 int NONS_StandardOutput::setLineStart(std::wstring *arr,ulong start,SDL_Rect *frame,float center){
 	while (start<arr->size() && !(*arr)[start])
 		start++;
 	int width=this->predictLineLength(arr,start,frame->w);
-	float factor=(center<=.5)?center:1.0-center;
+	float factor=(center<=0.5f)?center:1.0f-center;
 	int pixelcenter=float(frame->w)*factor;
-	return (width/2>pixelcenter)?frame->x+(frame->w-width)*(center>.5):frame->x+frame->w*center-width/2;
+	//Magic formula. Don't mess with it.
+	return (width/2>pixelcenter)?frame->x+(frame->w-width)*(center>0.5f):frame->x+frame->w*center-width/2;
 }
-
-/*int NONS_StandardOutput::predictLineLength(std::vector<NONS_Glyph *> *arr,long start,int width){
-	int res=0;
-	for (ulong a=start;a<arr->size() && (*arr)[a];a++){
-		if (res+(*arr)[a]->getadvance()+this->extraAdvance>=width)
-			break;
-		res+=(*arr)[a]->getadvance()+this->extraAdvance;
-	}
-	return res;
-}*/
 
 int NONS_StandardOutput::predictLineLength(std::wstring *arr,long start,int width){
 	int res=0;
@@ -444,7 +449,11 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 				textDumpFile <<UniToUTF8(this->currentBuffer)<<std::endl;
 				textDumpFile.flush();
 			}
-			this->log.push_back(this->currentBuffer);
+			if (this->maxLogPages){
+				this->log.push_back(this->currentBuffer);
+				if (this->maxLogPages>0 && this->log.size()>(ulong)this->maxLogPages)
+					this->log.erase(this->log.begin());
+			}
 			this->currentBuffer.clear();
 		}
 	}
@@ -501,5 +510,24 @@ bool NONS_StandardOutput::NewLine(){
 	else
 		this->currentBuffer.append(L"\n");
 	return 0;
+}
+
+std::wstring removeTags(const std::wstring &str){
+	std::wstring res;
+	res.reserve(str.size());
+	for (ulong a=0;a<str.size();a++){
+		switch (str[a]){
+			case '<':
+				while (str[a]!='>')
+					a++;
+				break;
+			case '\\':
+				a++;
+			default:
+				res.push_back(str[a]);
+				break;
+		}
+	}
+	return res;
 }
 #endif

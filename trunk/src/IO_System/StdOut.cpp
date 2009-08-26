@@ -52,7 +52,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(ulong a){
 	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
 	if (this->addIndentationNext)
 		for (ulong a=0;a<this->indentation;a++)
-			stream <<INDENTATION_CHARACTER;
+			stream <<INDENTATION_STRING;
 	this->addIndentationNext=0;
 	stream <<a;
 	return *this;
@@ -75,7 +75,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(long a){
 	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
 	if (this->addIndentationNext)
 		for (ulong a=0;a<this->indentation;a++)
-			stream <<INDENTATION_CHARACTER;
+			stream <<INDENTATION_STRING;
 	this->addIndentationNext=0;
 	stream <<a;
 	return *this;
@@ -91,7 +91,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
 		char c=a[b];
 		if (this->addIndentationNext)
 			for (ulong d=0;d<this->indentation;d++)
-				stream <<INDENTATION_CHARACTER;
+				stream <<INDENTATION_STRING;
 		if (c=='\n')
 			this->addIndentationNext=1;
 		else

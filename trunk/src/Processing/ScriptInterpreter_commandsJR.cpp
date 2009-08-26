@@ -735,17 +735,6 @@ ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_ofscopy(NONS_Statement &stmt){
-	//TODO: What does this do?
-	/*
-	LOCKSCREEN;
-	manualBlit(this->
-	this->everything->screen->Background->load(this->everything->screen->screen->virtualScreen);
-	UNLOCKSCREEN;
-	*/
-	return NONS_NO_ERROR;
-}
-
 ErrorCode NONS_ScriptInterpreter::command_loadgosub(NONS_Statement &stmt){
 	if (!stmt.parameters.size()){
 		this->loadgosub.clear();
@@ -758,10 +747,17 @@ ErrorCode NONS_ScriptInterpreter::command_loadgosub(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+ErrorCode NONS_ScriptInterpreter::command_maxkaisoupage(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long max;
+	_GETINTVALUE(max,0,)
+	if (max<=0)
+		max=-1;
+	this->everything->screen->output->maxLogPages=max;
+	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+/*ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){

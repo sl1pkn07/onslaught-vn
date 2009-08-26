@@ -132,6 +132,7 @@ typedef unsigned long ErrorCode;
 #define NONS_NOT_IN_A_USER_COMMAND_CALL				82
 #define NONS_NEGATIVE_GOTO_INDEX					83
 #define NONS_NOT_ENOUGH_LABELS						84
+#define NONS_NOT_ENOUGH_LOG_PAGES					85
 
 extern const char *errorMessages[];
 #endif

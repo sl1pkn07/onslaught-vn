@@ -130,6 +130,7 @@ struct NONS_SaveFile{
 	std::wstring loopBGM0,
 		loopBGM1;
 	std::vector<std::wstring> logPages;
+	ulong indentationLevel;
 	ulong currentLine;
 	ulong currentSubline;
 	std::wstring loadgosub;

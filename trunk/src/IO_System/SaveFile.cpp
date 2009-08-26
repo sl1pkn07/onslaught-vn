@@ -449,6 +449,10 @@ void NONS_SaveFile::load(std::wstring filename){
 			for (ulong a=0;a<n;a++)
 				this->logPages.push_back(UniFromUTF8(readString(buffer,offset)));
 			this->currentBuffer=UniFromUTF8(readString(buffer,offset));
+			if (this->version>2)
+				this->indentationLevel=readDWord(buffer,offset);
+			else
+				this->indentationLevel=0;
 			this->textX=readWord(buffer,offset);
 			this->textY=readWord(buffer,offset);
 			this->arrow.string=UniFromUTF8(readString(buffer,offset));
@@ -720,6 +724,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 		for (ulong a=0;a<this->logPages.size();a++)
 			writeString(this->logPages[a],buffer);
 		writeString(this->currentBuffer,buffer);
+		writeDWord(this->indentationLevel,buffer);
 		writeWord(this->textX,buffer);
 		writeWord(this->textY,buffer);
 		writeString(this->arrow.string,buffer);
