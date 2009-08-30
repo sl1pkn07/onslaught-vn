@@ -93,7 +93,7 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_game(NONS_Statement &stmt){
-	this->interpreter_mode=NORMAL;
+	//this->interpreter_mode=NORMAL;
 	if (!this->thread->gotoLabel(L"start"))
 		return NONS_NO_START_LABEL;
 	return NONS_NO_ERROR;

@@ -314,6 +314,8 @@ NONS_Script::NONS_Script(){
 	memset(this->hash,0,sizeof(unsigned)*5);
 }
 
+bool preprocess(std::wstring &dst,const std::wstring &script);
+
 ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
 	ulong l;
 	char *temp=(char *)archive->getFileBuffer(scriptname,l);
@@ -360,6 +362,11 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 			break;
 	}
 	delete[] temp;
+	{
+		std::wstring preprocessed;
+		if (preprocess(preprocessed,wtemp))
+			wtemp=preprocessed;
+	}
 	this->scriptSize=wtemp.size();
 	wchar_t *buffer=&wtemp[0];
 	ulong currentLine=1,

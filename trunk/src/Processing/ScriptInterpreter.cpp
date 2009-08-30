@@ -113,7 +113,7 @@ void NONS_ScriptInterpreter::init(){
 	//this->interpreter_position=0;
 	this->thread=new NONS_ScriptThread(this->script);
 	this->store=new NONS_VariableStore();
-	this->interpreter_mode=DEFINE;
+	//this->interpreter_mode=DEFINE;
 	this->nsadir="./";
 	this->default_speed=0;
 	this->default_speed_slow=0;
@@ -688,8 +688,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	switch (stmt->type){
 		case NONS_Statement::STATEMENT_BLOCK:
 			this->saveGame->currentLabel=stmt->commandName;
-			if (!stdStrCmpCI(stmt->commandName,L"define"))
-				this->interpreter_mode=DEFINE;
+			/*if (!stdStrCmpCI(stmt->commandName,L"define"))
+				this->interpreter_mode=DEFINE;*/
 			break;
 		case NONS_Statement::STATEMENT_JUMP:
 		case NONS_Statement::STATEMENT_COMMENT:
@@ -980,11 +980,11 @@ void findStops(const std::wstring &src,std::vector<std::pair<ulong,ulong> > &sto
 					if (src.size()-a-1>=6){
 						a++;
 						short b;
-						for (b=0;b<6 && NONS_ishexa(src[b]);b++);
+						for (b=0;b<6 && NONS_ishexa(src[a+b]);b++);
 						if (b!=6)
 							a--;
 						else{
-							std::pair<ulong,ulong> push(dst.size(),a);
+							std::pair<ulong,ulong> push(dst.size(),a-1);
 							stopping_points.push_back(push);
 							a+=5;
 							continue;

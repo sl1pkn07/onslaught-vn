@@ -66,7 +66,8 @@ NONS_CommandLineOptions::NONS_CommandLineOptions()
 	verbosity(0),
 	no_sound(0),
 	stopOnFirstError(0),
-	listImplementation(0){}
+	listImplementation(0),
+	preprocessedFile(0){}
 
 void usage(){
 	o_stdout <<"Usage: ONSlaught [options]\n"
@@ -137,9 +138,12 @@ void usage(){
 		"      Only used with \"-redirect\".\n"
 		"      Keeps the contents of stdout.txt, stderr.txt, and stdlog.txt when it\n"
 		"      opens them and puts the date and time as identification.\n"
-		"   -stop-on-first-error\n"
+		"  -stop-on-first-error\n"
 		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
-		"      command\" (when the command will not be implemented) errors don't count.\n";
+		"      command\" (when the command will not be implemented) errors don't count.\n"
+		"  -pp-output\n"
+		"      Writes the preprocessor output to <filename>. The details of each macro\n"
+        "      call are sent to stderr.\n";
 	exit(0);
 }
 
@@ -171,6 +175,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-!redirect",                    //23
 		L"-stop-on-first-error",          //24
 		L"-archive-directory",            //25
+		L"-pp-output",                    //26
 		0
 	};
 
@@ -361,6 +366,15 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				else{
 					this->archiveDirectory=arguments[++a];
 					toforwardslash(this->archiveDirectory);
+				}
+				break;
+			case 26:
+				if (a+1>=size)
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+				else{
+					this->outputPreprocessedFile=1;
+					this->preprocessedFile=arguments[++a];
+					toforwardslash(this->preprocessedFile);
 				}
 				break;
 			case 17://-sdebug

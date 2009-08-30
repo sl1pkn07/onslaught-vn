@@ -520,6 +520,26 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\src\IO_System\Script\MacroParser.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Script\MacroParser.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Script\MacroParser.tab.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Script\MacroParser.tab.hpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\src\IO_System\Script\Preprocessor.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\src\IO_System\Script\Script.cpp"
 						>
 					</File>

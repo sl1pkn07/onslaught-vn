@@ -121,6 +121,11 @@
 		<Unit filename="..\src\IO_System\SAR\ImageLoader.h" />
 		<Unit filename="..\src\IO_System\SaveFile.cpp" />
 		<Unit filename="..\src\IO_System\SaveFile.h" />
+		<Unit filename="..\src\IO_System\Script\MacroParser.cpp" />
+		<Unit filename="..\src\IO_System\Script\MacroParser.h" />
+		<Unit filename="..\src\IO_System\Script\MacroParser.tab.cpp" />
+		<Unit filename="..\src\IO_System\Script\MacroParser.tab.hpp" />
+		<Unit filename="..\src\IO_System\Script\Preprocessor.cpp" />
 		<Unit filename="..\src\IO_System\Script\Script.cpp" />
 		<Unit filename="..\src\IO_System\Script\Script.h" />
 		<Unit filename="..\src\IO_System\Script\commandPreParser.tab.cpp" />

@@ -49,7 +49,7 @@ struct NONS_RedirectedOutput{
 	NONS_RedirectedOutput &operator<<(ulong);
 	NONS_RedirectedOutput &outputHex(ulong,ulong=0);
 	NONS_RedirectedOutput &operator<<(long);
-	//NONS_RedirectedOutput &operator<<(wchar_t);
+	NONS_RedirectedOutput &operator<<(wchar_t);
 	NONS_RedirectedOutput &operator<<(const char *);
 	NONS_RedirectedOutput &operator<<(const std::string &);
 	NONS_RedirectedOutput &operator<<(const std::wstring &);

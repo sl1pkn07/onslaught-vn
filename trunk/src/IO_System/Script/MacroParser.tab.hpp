@@ -35,13 +35,31 @@
 /* "%code requires" blocks.  */
 
 
+#include "../../Common.h"
 #include <set>
 #include <vector>
-#include "../IO_System/SAR/FileLog.h"
-class NONS_VariableMember;
-struct NONS_VariableStore;
-struct wstrCmp;
 #undef ERROR
+
+namespace NONS_Macro{
+struct identifier;
+struct stringOperation;
+struct argument;
+struct expression;
+struct string;
+struct constantExpression;
+struct variableExpression;
+struct fullExpression;
+struct constantString;
+struct variableString;
+struct stringConcatenation;
+struct statement;
+struct macro;
+struct macroFile;
+struct symbol;
+struct symbolTable;
+struct block;
+}
+
 
 
 
@@ -52,25 +70,34 @@ struct wstrCmp;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     INTEGER = 258,
-     STRING = 259,
-     INTEGER_ARRAY = 260,
-     ERROR = 261,
-     OR = 262,
-     AND = 263,
-     GREATEREQ = 264,
-     GREATER = 265,
-     LOWEREQ = 266,
-     LOWER = 267,
-     NEQ = 268,
-     EQUALS = 269,
-     POS = 270,
-     NEG = 271,
-     ITOA = 272,
-     ATOI = 273,
-     LCHK = 274,
-     FCHK = 275,
-     EVAL = 276
+     APOSTROPHE = 258,
+     DEFINE = 259,
+     IF = 260,
+     ELSE = 261,
+     ERROR = 262,
+     FOR = 263,
+     WHILE = 264,
+     IDENTIFIER = 265,
+     STRING = 266,
+     CODE_BLOCK = 267,
+     INTEGER = 268,
+     TRINARY = 269,
+     BOR = 270,
+     BAND = 271,
+     BNOT = 272,
+     NOT_EQUALS = 273,
+     EQUALS = 274,
+     LT_EQUALS = 275,
+     GT_EQUALS = 276,
+     LOWER_THAN = 277,
+     GREATER_THAN = 278,
+     MINUS = 279,
+     PLUS = 280,
+     MOD = 281,
+     DIV = 282,
+     MUL = 283,
+     NEG = 284,
+     POS = 285
    };
 #endif
 
@@ -81,7 +108,19 @@ typedef union YYSTYPE
 {
 
 
-	NONS_VariableMember *obj;
+	NONS_Macro::identifier *id;
+	std::wstring *str;
+	std::vector<std::wstring> *stringVector;
+	NONS_Macro::argument *argument;
+	NONS_Macro::string *string;
+	NONS_Macro::expression *expression;
+	std::vector<NONS_Macro::argument *> *argumentVector;
+	NONS_Macro::statement *stmt;
+	NONS_Macro::macroFile *macro_file;
+	NONS_Macro::symbol *symbol;
+	NONS_Macro::symbolTable *symbol_table;
+	NONS_Macro::block *block;
+	std::vector<NONS_Macro::statement *> *stmt_list;
 
 
 
@@ -93,38 +132,42 @@ typedef union YYSTYPE
 
 
 
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+} YYLTYPE;
+# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
+
+
 
 /* "%code provides" blocks.  */
 
 
 	#include <sstream>
-	int expressionParser_yyparse(
-		std::wstringstream *stream,
-		NONS_VariableStore *store,
-		NONS_FileLog *filelog,
-		long *result,
-		bool invert_terms,
-		std::vector<long> *array_decl,
-		NONS_VariableMember **retrievedVar,
-		std::wstring *string
+	int macroParser_yyparse(
+		std::wstringstream &stream,
+		NONS_Macro::macroFile *&result
 	);
-	int expressionParser_yylex(
+	int macroParser_yylex(
 		YYSTYPE *yylval,
-		std::wstringstream *stream,
-		NONS_VariableStore *store,
-		NONS_VariableMember **retrievedVar
+		YYLTYPE *yylloc,
+		std::wstringstream &stream
 	);
-	void expressionParser_yyerror(
-		std::wstringstream *,
-		NONS_VariableStore *,
-		NONS_FileLog *,
-		long *,
-		bool,
-		std::vector<long> *,
-		NONS_VariableMember **,
-		std::wstring *string,
+	void macroParser_yyerror(
+		YYLTYPE *yylloc,
+		std::wstringstream &,
+		NONS_Macro::macroFile *&result,
+		//NONS_Macro::symbolTable &symbolTable,
 		char const *
 	);
+	extern int macroParser_yydebug;
 
 
 
