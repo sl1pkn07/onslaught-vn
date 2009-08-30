@@ -55,6 +55,8 @@ struct NONS_CommandLineOptions{
 	std::wstring savedir;
 	bool stopOnFirstError;
 	bool listImplementation;
+	bool outputPreprocessedFile;
+	std::wstring preprocessedFile;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);

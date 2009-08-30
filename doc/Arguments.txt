@@ -10,6 +10,10 @@ Shows a message with all options.
 Display version number.
 
 
+-implementation
+Lists all implemented and unimplemented commands.
+
+
 -save-directory <directory name>
 Override the default save game subdirectory with a custom name.
 By default, the engine performs a partial SHA1 on the loaded script (not on the
@@ -92,7 +96,7 @@ be chosen. If your script is in that encoding, you'll need to specify it
 manually.
 
 
--dump-text <file name>
+-dump-text <filename>
 Enables text dump mode. All script text is outputted to the file given. The
 contents of the file are kept between executions.
 
@@ -152,3 +156,8 @@ Since the console can't be used, it also disables -debug.
 -stop-on-first-error
 Stops executing the script when the first error occurs. "Unimplemented command"
 (when the command will not be implemented) errors don't count.
+
+
+-pp-output <filename>
+Writes the preprocessor output to <filename>. The details of each macro call are
+sent to stderr.

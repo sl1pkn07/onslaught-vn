@@ -59,6 +59,9 @@ add_executable(ONSlaught
 	src/IO_System/SAR/Image.cpp
 	src/IO_System/SAR/ImageLoader.cpp
 	src/IO_System/Script/commandPreParser.tab.cpp
+	src/IO_System/Script/MacroParser.cpp
+	src/IO_System/Script/MacroParser.tab.cpp
+	src/IO_System/Script/Preprocessor.cpp
 	src/IO_System/Script/Script.cpp
 	src/IO_System/Script/sha1.cpp
 	src/Processing/ExpressionParser.tab.cpp

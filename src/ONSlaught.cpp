@@ -226,6 +226,8 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 #undef main
 #endif
 
+#include "IO_System/Script/MacroParser.h"
+
 int main(int argc,char **argv){
 	std::cout <<"ONSlaught: An ONScripter clone with Unicode support."<<std::endl;
 	if (ONSLAUGHT_BUILD_VERSION<99999999)
@@ -320,6 +322,35 @@ int main(int argc,char **argv){
 		}
 	}
 #endif
+
+	/*{
+		ulong l;
+		uchar *buffer=readfile(L"macros.txt",l);
+		std::wstring str;
+		str.resize(l);
+		std::copy(buffer,buffer+l,str.begin());
+		delete[] buffer;
+		std::wstringstream stream(str);
+		NONS_Macro::macroFile *file=0;
+		macroParser_yydebug=0;
+		if (macroParser_yyparse(stream,file))
+			return 0;
+		if (!file->checkSymbols()){
+			delete file;
+			return 0;
+		}
+		ulong error;
+		std::vector<std::wstring> parameters;
+		parameters.push_back(L"#FFFFFF");
+		parameters.push_back(L"Hello, World!");
+		str=file->call(L"MACRO",parameters,&error);
+		std::cout <<error<<std::endl;
+		std::string str2=UniToUTF8(str);
+		writefile(L"macroResult.txt",&str2[0],str2.size());
+		if (!!file)
+			delete file;
+		return 0;
+	}*/
 
 	ErrorCode error=NONS_NO_ERROR;
 	if (CLOptions.scriptPath.size())

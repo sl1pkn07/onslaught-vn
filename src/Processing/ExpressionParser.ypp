@@ -89,7 +89,6 @@ struct wstrCmp;
 		std::wstring *string,
 		char const *
 	);
-	long atol(std::wstring &str);
 }
 %union {
 	NONS_VariableMember *obj;
@@ -514,24 +513,6 @@ void freeVM(NONS_VariableMember *p){
 		delete p;
 }
 
-long atol(std::wstring &str){
-	long res=0;
-	size_t a=0;
-	for (;a<str.size() && iswhitespace(str[a]);a++);
-	int sign;
-	if (a<str.size() && str[a]=='-'){
-		sign=-1;
-		a++;
-	}else
-		sign=1;
-	for (;a<str.size();a++){
-		if (!NONS_isdigit(str[a]))
-			return 0;
-		res=res*10+(str[a]-'0')*sign;
-	}
-	return res;
-}
-
 #define DOUBLEOP(character,ret_value) if (c==(character)){\
 	stream->get();\
 	if (stream->peek()==(character)){\
@@ -563,7 +544,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 			yylval->obj->temporary=1;
 			return STRING;
 		}
-		yylval->obj=new NONS_VariableMember(atol(temp));
+		yylval->obj=new NONS_VariableMember(atoi(temp));
 		yylval->obj->temporary=1;
 		return INTEGER;
 	}
