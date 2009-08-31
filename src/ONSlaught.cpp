@@ -249,48 +249,52 @@ int main(int argc,char **argv){
 		o_stderr.redirect();
 		std::cout <<"Redirecting."<<std::endl;
 	}
+	if (!CLOptions.noThreads){
 #ifdef NONS_PARALLELIZE
-	//get CPU count
+		//get CPU count
 #if defined(NONS_SYS_WINDOWS)
-	SYSTEM_INFO si;
-	GetSystemInfo(&si);
-	cpu_count=si.dwNumberOfProcessors;
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+		cpu_count=si.dwNumberOfProcessors;
 #elif defined(NONS_SYS_LINUX)
-	{
-		/*
-		std::ifstream cpuinfo("/proc/cpuinfo");
-		std::string line;
-		std::set<unsigned> IDs;
-		while (!cpuinfo.eof()){
-			std::getline(cpuinfo,line);
-			if (!line.size())
-				continue;
-			if (line.find("processor")!=0)
-				continue;
-			size_t start=line.find(':'),
-				end;
-			for (;line[start]<'0' || line[start]>'9';start++);
-			for (end=start;line[end]>='0' && line[end]<='9';end++);
-			line=line.substr(start,end-start);
-			IDs.insert(atoi(line.c_str()));
+		{
+			/*
+			std::ifstream cpuinfo("/proc/cpuinfo");
+			std::string line;
+			std::set<unsigned> IDs;
+			while (!cpuinfo.eof()){
+				std::getline(cpuinfo,line);
+				if (!line.size())
+					continue;
+				if (line.find("processor")!=0)
+					continue;
+				size_t start=line.find(':'),
+					end;
+				for (;line[start]<'0' || line[start]>'9';start++);
+				for (end=start;line[end]>='0' && line[end]<='9';end++);
+				line=line.substr(start,end-start);
+				IDs.insert(atoi(line.c_str()));
+			}
+			cpu_count=IDs.size();
+			cpuinfo.close();
+			*/
+			FILE * fp;
+			char res[128];
+			fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
+			fread(res, 1, sizeof(res)-1, fp);
+			fclose(fp);
+			cpu_count=atoi(res);
 		}
-		cpu_count=IDs.size();
-		cpuinfo.close();
-		*/
-		FILE * fp;
-		char res[128];
-		fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
-		fread(res, 1, sizeof(res)-1, fp);
-		fclose(fp);
-		cpu_count=atoi(res);
-	}
 #endif
-	o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
+		o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
 #else
-	o_stdout <<"Parallelization disabled."<<std::endl;
-	//Redundant statement, but it doesn't hurt.
-	cpu_count=1
+		o_stdout <<"Parallelization disabled.\n";
+		cpu_count=1;
 #endif
+	}else{
+		o_stdout <<"Parallelization disabled.\n";
+		cpu_count=1;
+	}
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	//exitMutex=SDL_CreateMutex();
@@ -322,35 +326,6 @@ int main(int argc,char **argv){
 		}
 	}
 #endif
-
-	/*{
-		ulong l;
-		uchar *buffer=readfile(L"macros.txt",l);
-		std::wstring str;
-		str.resize(l);
-		std::copy(buffer,buffer+l,str.begin());
-		delete[] buffer;
-		std::wstringstream stream(str);
-		NONS_Macro::macroFile *file=0;
-		macroParser_yydebug=0;
-		if (macroParser_yyparse(stream,file))
-			return 0;
-		if (!file->checkSymbols()){
-			delete file;
-			return 0;
-		}
-		ulong error;
-		std::vector<std::wstring> parameters;
-		parameters.push_back(L"#FFFFFF");
-		parameters.push_back(L"Hello, World!");
-		str=file->call(L"MACRO",parameters,&error);
-		std::cout <<error<<std::endl;
-		std::string str2=UniToUTF8(str);
-		writefile(L"macroResult.txt",&str2[0],str2.size());
-		if (!!file)
-			delete file;
-		return 0;
-	}*/
 
 	ErrorCode error=NONS_NO_ERROR;
 	if (CLOptions.scriptPath.size())
