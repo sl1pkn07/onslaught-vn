@@ -50,24 +50,26 @@
 #define DEFAULT_OUTPUT_HEIGHT DEFAULT_INPUT_HEIGHT
 #endif
 
-NONS_CommandLineOptions::NONS_CommandLineOptions()
-	:scriptencoding(DETECT_ENCODING),
-	cacheSize(0),
-	scriptEncryption(NO_ENCRYPTION),
-	override_stdout(1),
-	reset_redirection_files(1),
-	debugMode(0),
-	noconsole(0),
-	virtualWidth(DEFAULT_INPUT_WIDTH),
-	virtualHeight(DEFAULT_INPUT_HEIGHT),
-	realWidth(DEFAULT_OUTPUT_WIDTH),
-	realHeight(DEFAULT_OUTPUT_HEIGHT),
-	startFullscreen(0),
-	verbosity(0),
-	no_sound(0),
-	stopOnFirstError(0),
-	listImplementation(0),
-	preprocessedFile(0){}
+NONS_CommandLineOptions::NONS_CommandLineOptions(){
+	this->scriptencoding=DETECT_ENCODING;
+	this->cacheSize=0;
+	this->scriptEncryption=NO_ENCRYPTION;
+	this->override_stdout=1;
+	this->reset_redirection_files=1;
+	this->debugMode=0;
+	this->noconsole=0;
+	this->virtualWidth=DEFAULT_INPUT_WIDTH;
+	this->virtualHeight=DEFAULT_INPUT_HEIGHT;
+	this->realWidth=DEFAULT_OUTPUT_WIDTH;
+	this->realHeight=DEFAULT_OUTPUT_HEIGHT;
+	this->startFullscreen=0;
+	this->verbosity=0;
+	this->no_sound=0;
+	this->stopOnFirstError=0;
+	this->listImplementation=0;
+	this->outputPreprocessedFile=0;
+	this->noThreads=0;
+}
 
 void usage(){
 	o_stdout <<"Usage: ONSlaught [options]\n"
@@ -143,7 +145,9 @@ void usage(){
 		"      command\" (when the command will not be implemented) errors don't count.\n"
 		"  -pp-output\n"
 		"      Writes the preprocessor output to <filename>. The details of each macro\n"
-        "      call are sent to stderr.\n";
+        "      call are sent to stderr.\n"
+		"  -disable-threading\n"
+		"      Disables threading for blit operations.\n";
 	exit(0);
 }
 
@@ -176,6 +180,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-stop-on-first-error",          //24
 		L"-archive-directory",            //25
 		L"-pp-output",                    //26
+		L"-disable-threading",            //27
 		0
 	};
 
@@ -376,6 +381,9 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					this->preprocessedFile=arguments[++a];
 					toforwardslash(this->preprocessedFile);
 				}
+				break;
+			case 27:
+				this->noThreads=1;
 				break;
 			case 17://-sdebug
 			default:

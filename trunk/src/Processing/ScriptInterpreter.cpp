@@ -41,8 +41,13 @@
 #undef ABS
 #include "../IO_System/Graphics/SDL_bilinear.h"
 
-SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_Rotate/*Smooth*/;
-SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_Resize/*Smooth*/;
+#if 0
+SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
+SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_ResizeSmooth;
+#else
+SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_Rotate;
+SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_Resize;
+#endif
 
 printingPage::printingPage(){
 }

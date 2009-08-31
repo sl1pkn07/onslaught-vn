@@ -38,7 +38,7 @@
 #include "../../Globals.h"
 #include <cmath>
 
-#define BENCHMARK_EFFECTS
+//#define BENCHMARK_EFFECTS
 
 //(Parallelized surface function)
 struct PSF_parameters{

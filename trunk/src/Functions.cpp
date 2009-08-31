@@ -30,6 +30,7 @@
 #ifndef NONS_FUNCTIONS_CPP
 #define NONS_FUNCTIONS_CPP
 
+#define USE_ACCURATE_MULTIPLICATION
 #include "Functions.h"
 #ifndef TOOLS_BARE_FILE
 #include <bzlib.h>

@@ -179,6 +179,7 @@ long symbol::getInt(){
 		case INTEGER:
 			return this->int_val;
 	}
+	return 0;
 }
 
 std::wstring symbol::getStr(){
@@ -190,6 +191,7 @@ std::wstring symbol::getStr(){
 		case INTEGER:
 			return itoa<wchar_t>(this->int_val);
 	}
+	return L"";
 }
 
 void symbol::initializeTo(expression *expr){
@@ -941,6 +943,7 @@ macro::macro(block *c,symbolTable *b){
 	this->parameters=b;
 	if (!this->parameters)
 		this->parameters=new symbolTable;
+	this->parameters->declare(L"^calls",(long)0,0,0);
 }
 
 macro::~macro(){
@@ -949,6 +952,8 @@ macro::~macro(){
 }
 
 std::wstring macro::perform(const std::vector<std::wstring> &parameters,symbolTable *st,ulong *error){
+	symbol *calls=this->parameters->get(L"^calls");
+	calls->int_val++;
 	ulong first=st->symbols.size();
 	if (this->parameters)
 		st->addFrame(*this->parameters);

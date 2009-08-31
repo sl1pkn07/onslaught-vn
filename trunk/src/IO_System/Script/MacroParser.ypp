@@ -450,7 +450,7 @@ macroParser_yylex_begin:
 		yylval->str=new std::wstring(temp);
 		return STRING;
 	}
-	if (NONS_isid1char(c)){
+	if (NONS_isid1char(c) || c=='^'){
 		std::wstring temp;
 		temp.push_back(stream.get());
 		while (NONS_isidnchar(stream.peek()))

@@ -900,6 +900,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 		else{
 			SDL_Surface *src=this->everything->screen->Background->data;
 			bool freeSrc=0;
+			ulong t0=SDL_GetTicks();
 
 			if (xscale<0 || yscale<0){
 				SDL_Surface *dst=makeSurface(src->w,src->h,32);
@@ -934,6 +935,8 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			};
 			manualBlit(src,0,this->everything->screen->screenBuffer,&dstR);
 			SDL_FreeSurface(src);
+			ulong t1=SDL_GetTicks();
+			std::cout <<t1-t0<<std::endl;
 		}
 	}
 	return NONS_NO_ERROR;

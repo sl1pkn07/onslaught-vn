@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_PREPROCESSOR_CPP
-#define NONS_PREPROCESSOR_CPP
-
 #include "MacroParser.h"
 #include "../../UTF.h"
 #include "../../Globals.h"
@@ -40,7 +37,7 @@
 #include <deque>
 
 //0: no changes; !0: something changed
-bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros);
+bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros,bool output);
 
 bool preprocess(std::wstring &dst,const std::wstring &script){
 	ulong l;
@@ -49,15 +46,25 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 		std::wstringstream stream(UniFromUTF8(std::string(temp,l)));
 		delete[] temp;
 		NONS_Macro::macroFile *macroFile;
-		if (!macroParser_yyparse(stream,macroFile) && preprocess(dst,script,*macroFile)){
+		if (!macroParser_yyparse(stream,macroFile) && macroFile->checkSymbols() && preprocess(dst,script,*macroFile,1)){
 			if (CLOptions.outputPreprocessedFile){
 				std::string str2=UniToUTF8(dst);
 				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
-		}else 
+		}else{
+			if (CLOptions.outputPreprocessedFile){
+				std::string str2=UniToUTF8(script);
+				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
+			}
 			return 0;
-	}else
+		}
+	}else{
+		if (CLOptions.outputPreprocessedFile){
+			std::string str2=UniToUTF8(script);
+			writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
+		}
 		return 0;
+	}
 	return 1;
 }
 
@@ -97,14 +104,14 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 	return 1;
 }
 
-bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros){
+bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros,bool output){
 	ulong first=script.find(L";#call");
 	if (first==script.npos)
 		return 0;
 	std::deque<ulong> calls;
 	while (first!=script.npos && first+7<script.size()){
 		wchar_t c=script[first+6];
-		if (iswhitespace(c) && c!=10 && c!=13)
+		if (iswhitespace(c))
 			calls.push_back(first+6);
 		first=script.find(L";#call",first+6);
 	}
@@ -138,8 +145,8 @@ bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFi
 		{
 			std::vector<std::wstring> arguments;
 			bool found_lparen=0;
+			first++;
 			while (!found_lparen){
-				first++;
 				std::wstring argument;
 				if (partialCompare(script,first,open_block)){
 					do{
@@ -190,9 +197,14 @@ bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFi
 				arguments.push_back(argument);
 			}
 			std::wstring macroResult=macros.call(identifier,arguments);
-			if (macroResult.size())
-				callsCompleted++;
-			if (CLOptions.outputPreprocessedFile)
+			while (1){
+				std::wstring temp;
+				if (!preprocess(temp,macroResult,macros,0))
+					break;
+				macroResult=temp;
+			}
+			callsCompleted++;
+			if (output && CLOptions.outputPreprocessedFile)
 				o_stderr <<"Call to macro \""<<identifier<<"\" on line "<<lineNo<<" was written to the result on line "<<countLinesUntilOffset(dst,dst.size())<<".\n";
 			dst.append(macroResult);
 		}
@@ -206,4 +218,3 @@ preprocess_000:
 	}
 	return !!callsCompleted;
 }
-#endif

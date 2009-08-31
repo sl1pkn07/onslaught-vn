@@ -2,25 +2,6 @@
 <HTML>
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-	<TITLE></TITLE>
-	<META NAME="GENERATOR" CONTENT="OpenOffice.org 3.0  (Win32)">
-	<META NAME="AUTHOR" CONTENT="Helios">
-	<META NAME="CREATED" CONTENT="20090728;15435100">
-	<META NAME="CHANGEDBY" CONTENT="Helios">
-	<META NAME="CHANGED" CONTENT="20090728;16381300">
-	<META NAME="CHANGEDBY" CONTENT="Helios">
-	<STYLE TYPE="text/css">
-	<!--
-		@page { margin: 0.79in }
-		H1 { margin-bottom: 0.08in }
-		H1.western { font-family: "Arial", sans-serif; font-size: 16pt }
-		H1.cjk { font-family: "MS PGothic"; font-size: 16pt }
-		H1.ctl { font-family: "Tahoma"; font-size: 16pt }
-		P { margin-bottom: 0.08in }
-		H3.cjk { font-family: "MS PMincho" }
-		A:link { so-language: zxx }
-	-->
-	</STYLE>
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <P STYLE="margin-bottom: 0in; background: transparent"><I>This file is meant to complement the reference included in </I><FONT FACE="monospace"><SPAN STYLE="font-style: normal">doc/ONScripter_reference/</SPAN></FONT><I>. It contains corrections and additions pertinent to ONSlaught.</I></P>
@@ -44,7 +25,7 @@
 	<LI><A HREF="#5">Undocumented commands
 </OL>
 </FONT>
-<H1><A NAME="0. How to read this document"></A>0. How to read this document</H1>
+<H1><A NAME="0"></A>0. How to read this document</H1>
 This section describes the syntax that will be used to document the commands.<P/>
 <B>THE SYNTAX DESCRIBED IN THIS SECTION IS MERELY FOR THE PURPOSE OF DOCUMENTATION, AND IS UNRELATED TO THE ONE USED BY THE ENGINE.</B><P/>
 Example:<BR>
@@ -82,7 +63,7 @@ Hexadecimal literals have to be exactly six digits long to be considered valid. 
 String literals are enclosed by either double quotes (&quot;, U+0022) or grave accents (`, U+0060). E.g. &quot;&lt;--This `is a` string--&gt;&quot; and `&lt;--This &quot;is a&quot; string--&gt;`. In both examples, the first character is &lt; and the last one is &gt;. String literals have to be in a single line. E.g. &quot;This string<br/>
 literal is invalid.&quot;</P></P>
 
-<b><i>Update (2009-06-13):</i></b></P>
+<b><i>Update (2009-06-13):</i></b><br/>
 Extended strings: Enclosed by e&quot;&quot; or E&quot;&quot; (whitespace between the 'e' and the quote is not allowed. See below), these work just like &quot;&quot;-enclosed strings, with the addition of escape sequences:<P/>
 \\ - Backslash<br/>
 \&quot; - Quote<br/>
@@ -435,7 +416,7 @@ The parameters are:<br/>
 }<p/>
 
 <font face="monospace" color="#ff0000">/</font><br/>
-When a slash is the last character in a line (that is, the next character has to be either carriage return [U+000D] or line feed [U+000A]), both the slash and the newline are ignored. This processing is done before <i>anything</i> else.<p/>
+When a slash is the last character in a line (that is, the next character has to be either carriage return [U+000D] or line feed [U+000A]), both the slash and the newline are ignored. <s>This processing is done before <i>anything</i> else.</s> (See update below.)<p/>
 Example:<br/>
 <font face="monospace">
 <b>mov</b> $0,&quot;stri/<br/>
@@ -452,6 +433,9 @@ For example,<br/>
 (Line 10) <font face="monospace">command some/</font><br/>
 (Line 11) <font face="monospace">thing:command2</font><br/>
 If an error occurs when executing command2, the error message will report that the error occurred on line 10.<p/>
+<i><b>Update (2009-08-30):</b></i><br/>
+/ processing is done after macro processing.<br/>
+The order is therefore: macro processing &#8594; / processing &#8594; everything else<p/>
 
 <font face="monospace" color="#ff0000">textgosub [*label[, c%recurse]]</font><br/>
 Sets a <font face="monospace">*label</font> to gosub to every time there's a @ or \ in the script.<br/>

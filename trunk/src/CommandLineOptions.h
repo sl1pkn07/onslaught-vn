@@ -57,6 +57,7 @@ struct NONS_CommandLineOptions{
 	bool listImplementation;
 	bool outputPreprocessedFile;
 	std::wstring preprocessedFile;
+	bool noThreads;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);
