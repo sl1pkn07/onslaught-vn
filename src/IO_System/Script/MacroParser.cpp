@@ -36,36 +36,36 @@
 #define THROW_MACRO_ID_ERROR(line,errorMsg,id) o_stderr <<"Macro processor: Error on line "<<(line)<<": "errorMsg" '"<<id<<"'.\n"
 
 namespace NONS_Macro{
-bool identifier::checkSymbols(const symbolTable &st,bool expectedVariable){
-	symbol *s=st.get(this->id);
+bool Identifier::checkSymbols(const SymbolTable &st,bool expectedVariable){
+	Symbol *s=st.get(this->id);
 	bool r=1;
 	if (!s){
-		THROW_MACRO_ID_ERROR(this->referenced_on_line,"undefined symbol",this->id);
+		THROW_MACRO_ID_ERROR(this->referenced_on_line,"undefined Symbol",this->id);
 		r=0;
 	}else{
-		if (expectedVariable && s->type!=symbol::INTEGER && s->type!=symbol::STRING){
-			THROW_MACRO_ID_ERROR(this->referenced_on_line,"symbol is not a variable",this->id);
+		if (expectedVariable && s->type!=Symbol::INTEGER && s->type!=Symbol::STRING){
+			THROW_MACRO_ID_ERROR(this->referenced_on_line,"Symbol is not a variable",this->id);
 			r=0;
-		}else if (!expectedVariable && s->type!=symbol::MACRO){
-			THROW_MACRO_ID_ERROR(this->referenced_on_line,"symbol is not a macro",this->id);
+		}else if (!expectedVariable && s->type!=Symbol::MACRO){
+			THROW_MACRO_ID_ERROR(this->referenced_on_line,"Symbol is not a Macro",this->id);
 			r=0;
 		}
 	}
 	return r;
 }
 
-symbol::symbol(const std::wstring &identifier,ulong line){
+Symbol::Symbol(const std::wstring &Identifier,ulong line){
 	this->type=UNDEFINED;
-	this->identifier=identifier;
+	this->Identifier=Identifier;
 	this->declared_on_line=line;
 	this->int_initialization=0;
 	this->str_initialization=0;
 	this->has_been_checked=0;
 }
 
-symbol::symbol(const std::wstring &identifier,NONS_Macro::macro *m,ulong line){
+Symbol::Symbol(const std::wstring &Identifier,NONS_Macro::Macro *m,ulong line){
 	this->type=MACRO;
-	this->identifier=identifier;
+	this->Identifier=Identifier;
 	this->macro=m;
 	this->declared_on_line=line;
 	this->int_initialization=0;
@@ -73,19 +73,19 @@ symbol::symbol(const std::wstring &identifier,NONS_Macro::macro *m,ulong line){
 	this->has_been_checked=0;
 }
 
-symbol::symbol(const std::wstring &identifier,const std::wstring &string,ulong line){
+Symbol::Symbol(const std::wstring &Identifier,const std::wstring &String,ulong line){
 	this->type=STRING;
-	this->identifier=identifier;
-	this->str_val=string;
+	this->Identifier=Identifier;
+	this->str_val=String;
 	this->declared_on_line=line;
 	this->int_initialization=0;
 	this->str_initialization=0;
 	this->has_been_checked=0;
 }
 
-symbol::symbol(const std::wstring &identifier,long val,ulong line){
+Symbol::Symbol(const std::wstring &Identifier,long val,ulong line){
 	this->type=INTEGER;
-	this->identifier=identifier;
+	this->Identifier=Identifier;
 	this->int_val=val;
 	this->declared_on_line=line;
 	this->int_initialization=0;
@@ -93,10 +93,10 @@ symbol::symbol(const std::wstring &identifier,long val,ulong line){
 	this->has_been_checked=0;
 }
 
-symbol::symbol(const symbol &b){
+Symbol::Symbol(const Symbol &b){
 	this->has_been_checked=b.has_been_checked;
 	this->type=b.type;
-	this->identifier=b.identifier;
+	this->Identifier=b.Identifier;
 	this->declared_on_line=b.declared_on_line;
 	switch (this->type){
 		case MACRO:
@@ -112,7 +112,7 @@ symbol::symbol(const symbol &b){
 	}
 }
 
-symbol::~symbol(){
+Symbol::~Symbol(){
 	switch (this->type){
 		case UNDEFINED:
 			break;
@@ -131,7 +131,7 @@ symbol::~symbol(){
 	}
 }
 
-void symbol::reset(){
+void Symbol::reset(){
 	switch (this->type){
 		case UNDEFINED:
 		case MACRO:
@@ -144,7 +144,7 @@ void symbol::reset(){
 	}
 }
 
-void symbol::set(long n){
+void Symbol::set(long n){
 	switch (this->type){
 		case UNDEFINED:
 		case MACRO:
@@ -157,7 +157,7 @@ void symbol::set(long n){
 	}
 }
 
-void symbol::set(const std::wstring &s){
+void Symbol::set(const std::wstring &s){
 	switch (this->type){
 		case UNDEFINED:
 		case MACRO:
@@ -170,7 +170,7 @@ void symbol::set(const std::wstring &s){
 	}
 }
 
-long symbol::getInt(){
+long Symbol::getInt(){
 	switch (this->type){
 		case MACRO:
 			return 0;
@@ -182,7 +182,7 @@ long symbol::getInt(){
 	return 0;
 }
 
-std::wstring symbol::getStr(){
+std::wstring Symbol::getStr(){
 	switch (this->type){
 		case MACRO:
 			return 0;
@@ -194,15 +194,15 @@ std::wstring symbol::getStr(){
 	return L"";
 }
 
-void symbol::initializeTo(expression *expr){
+void Symbol::initializeTo(Expression *expr){
 	this->int_initialization=expr;
 }
 
-void symbol::initializeTo(string *string){
-	this->str_initialization=string;
+void Symbol::initializeTo(String *String){
+	this->str_initialization=String;
 }
 
-ulong symbol::initialize(const symbolTable &st){
+ulong Symbol::initialize(const SymbolTable &st){
 	ulong error;
 	switch (this->type){
 		case STRING:
@@ -226,10 +226,10 @@ ulong symbol::initialize(const symbolTable &st){
 	return MACRO_NO_ERROR;
 }
 
-bool symbol::checkSymbols(const symbolTable &st){
+bool Symbol::checkSymbols(const SymbolTable &st){
 	switch (this->type){
 		case UNDEFINED:
-			THROW_MACRO_ID_ERROR(this->declared_on_line,"symbol of unknown type",this->identifier);
+			THROW_MACRO_ID_ERROR(this->declared_on_line,"Symbol of unknown type",this->Identifier);
 			break;
 		case MACRO:
 			if (!this->has_been_checked){
@@ -243,130 +243,130 @@ bool symbol::checkSymbols(const symbolTable &st){
 	return 1;
 }
 
-bool symbolTable::declare(const std::wstring &identifier,macro *m,ulong line,bool check){
-	if (check && !!this->get(identifier))
+bool SymbolTable::declare(const std::wstring &Identifier,Macro *m,ulong line,bool check){
+	if (check && !!this->get(Identifier))
 		return 0;
-	this->symbols.push_back(new symbol(identifier,m,line));
+	this->symbols.push_back(new Symbol(Identifier,m,line));
 	return 1;
 }
 
-bool symbolTable::declare(const std::wstring &identifier,const std::wstring &string,ulong line,bool check){
-	if (check && !!this->get(identifier))
+bool SymbolTable::declare(const std::wstring &Identifier,const std::wstring &String,ulong line,bool check){
+	if (check && !!this->get(Identifier))
 		return 0;
-	this->symbols.push_back(new symbol(identifier,string,line));
+	this->symbols.push_back(new Symbol(Identifier,String,line));
 	return 1;
 }
 
-bool symbolTable::declare(const std::wstring &identifier,long value,ulong line,bool check){
-	if (check && !!this->get(identifier))
+bool SymbolTable::declare(const std::wstring &Identifier,long value,ulong line,bool check){
+	if (check && !!this->get(Identifier))
 		return 0;
-	this->symbols.push_back(new symbol(identifier,value,line));
+	this->symbols.push_back(new Symbol(Identifier,value,line));
 	return 1;
 }
 
-bool symbolTable::declare(symbol *s,bool check){
-	if (check && !!this->get(s->identifier))
+bool SymbolTable::declare(Symbol *s,bool check){
+	if (check && !!this->get(s->Identifier))
 		return 0;
 	this->symbols.push_back(s);
 	return 1;
 }
 
-void symbolTable::addFrame(const symbolTable &st){
+void SymbolTable::addFrame(const SymbolTable &st){
 	for (ulong b=0;b<st.symbols.size();b++){
-		if (st.symbols[b]->type==symbol::MACRO)
+		if (st.symbols[b]->type==Symbol::MACRO)
 			continue;
-		this->symbols.push_back(new symbol(*st.symbols[b]));
+		this->symbols.push_back(new Symbol(*st.symbols[b]));
 		this->symbols.back()->initialize(st);
 	}
 }
 
-symbol *symbolTable::get(const std::wstring &name) const{
+Symbol *SymbolTable::get(const std::wstring &name) const{
 	for (ulong a=0;a<this->symbols.size();a++)
-		if (this->symbols[a]->identifier==name)
+		if (this->symbols[a]->Identifier==name)
 			return this->symbols[a];
 	return 0;
 }
 
-void symbolTable::resetAll(){
+void SymbolTable::resetAll(){
 	for (ulong a=0;a<this->symbols.size();a++)
 		this->symbols[a]->reset();
 }
 
-bool symbolTable::checkSymbols(){
+bool SymbolTable::checkSymbols(){
 	bool res=1;
 	std::set<std::wstring> s;
 	for (ulong a=0;a<this->symbols.size();a++){
-		if (s.find(this->symbols[a]->identifier)!=s.end()){
-			THROW_MACRO_ID_ERROR(this->symbols[a]->declared_on_line,"duplicate symbol",this->symbols[a]->identifier);
+		if (s.find(this->symbols[a]->Identifier)!=s.end()){
+			THROW_MACRO_ID_ERROR(this->symbols[a]->declared_on_line,"duplicate Symbol",this->symbols[a]->Identifier);
 			res=0;
 		}else
-			s.insert(this->symbols[a]->identifier);
+			s.insert(this->symbols[a]->Identifier);
 		res&=this->symbols[a]->checkSymbols(*this);
 	}
 	return res;
 }
 
-bool symbolTable::checkIntersection(const symbolTable &st) const{
+bool SymbolTable::checkIntersection(const SymbolTable &st) const{
 	bool r=1;
 	std::set<std::wstring> set;
 	for (ulong a=0;a<st.symbols.size();a++){
-		if (this->get(st.symbols[a]->identifier) || set.find(st.symbols[a]->identifier)!=set.end()){
-			THROW_MACRO_ID_ERROR(st.symbols[a]->declared_on_line,"duplicate symbol",st.symbols[a]->identifier);
+		if (this->get(st.symbols[a]->Identifier) || set.find(st.symbols[a]->Identifier)!=set.end()){
+			THROW_MACRO_ID_ERROR(st.symbols[a]->declared_on_line,"duplicate Symbol",st.symbols[a]->Identifier);
 			r=0;
 		}else
-			set.insert(st.symbols[a]->identifier);
+			set.insert(st.symbols[a]->Identifier);
 	}
 	return r;
 }
 
-std::wstring constantExpression::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring ConstantExpression::evaluateToStr(const SymbolTable *st,ulong *error){
 	return itoa<wchar_t>(this->evaluateToInt(st,error));
 }
 
-long constantExpression::evaluateToInt(const symbolTable *st,ulong *error){
+long ConstantExpression::evaluateToInt(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
 	return this->val;
 }
 
-std::wstring variableExpression::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring VariableExpression::evaluateToStr(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
-	symbol *s=st->get(this->id.id);
+	Symbol *s=st->get(this->id.id);
 	return s->getStr();
 }
 
-long variableExpression::evaluateToInt(const symbolTable *st,ulong *error){
+long VariableExpression::evaluateToInt(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
-	symbol *s=st->get(this->id.id);
+	Symbol *s=st->get(this->id.id);
 	return s->getInt();
 }
 
-bool variableExpression::checkSymbols(const symbolTable &st){
+bool VariableExpression::checkSymbols(const SymbolTable &st){
 	return this->id.checkSymbols(st,1);
 }
 
-fullExpression::fullExpression(yytokentype op,expression *A,expression *B,expression *C){
+FullExpression::FullExpression(yytokentype op,Expression *A,Expression *B,Expression *C){
 	this->operation=op;
 	this->operands[0]=A;
 	this->operands[1]=B;
 	this->operands[2]=C;
 }
 
-fullExpression::fullExpression(const fullExpression &b)
+FullExpression::FullExpression(const FullExpression &b)
 		:operation(b.operation){
-	memset(this->operands,0,sizeof(expression *)*3);
+	memset(this->operands,0,sizeof(Expression *)*3);
 	for (ulong a=0;a<3 && b.operands[a];a++)
 		this->operands[a]=b.operands[a]->clone();
 }
 
-fullExpression::~fullExpression(){
+FullExpression::~FullExpression(){
 	for (ulong a=0;a<3 && this->operands[a];a++)
 		delete this->operands[a];
 }
 
-bool fullExpression::simplify(){
+bool FullExpression::simplify(){
 	bool r=1;
 	for (ulong a=0;a<3 && this->operands[a];a++){
 		bool temp=this->operands[a]->simplify();
@@ -374,21 +374,21 @@ bool fullExpression::simplify(){
 		if (temp){
 			long val=this->operands[a]->evaluateToInt();
 			delete this->operands[a];
-			this->operands[a]=new constantExpression(val);
+			this->operands[a]=new ConstantExpression(val);
 		}
 	}
 	return r;
 }
 
-expression *simplifyExpression(expression *e){
+Expression *simplifyExpression(Expression *e){
 	if (!e->simplify())
 		return e;
-	constantExpression *ret=new constantExpression(e->evaluateToInt());
+	ConstantExpression *ret=new ConstantExpression(e->evaluateToInt());
 	delete e;
 	return ret;
 }
 
-std::wstring fullExpression::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring FullExpression::evaluateToStr(const SymbolTable *st,ulong *error){
 	return itoa<wchar_t>(this->evaluateToInt(st,error));
 }
 
@@ -403,7 +403,7 @@ std::wstring fullExpression::evaluateToStr(const symbolTable *st,ulong *error){
 }
 
 
-long fullExpression::evaluateToInt(const symbolTable *st,ulong *error){
+long FullExpression::evaluateToInt(const SymbolTable *st,ulong *error){
 	long ops[3]={0},
 		res;
 	EVALUATETOINT_EVAL(0);
@@ -496,59 +496,59 @@ long fullExpression::evaluateToInt(const symbolTable *st,ulong *error){
 	return res;
 }
 
-bool fullExpression::checkSymbols(const symbolTable &st){
+bool FullExpression::checkSymbols(const SymbolTable &st){
 	bool r=1;
 	for (ulong a=0;a<3 && this->operands[a];a++)
 		r=r & this->operands[a]->checkSymbols(st);
 	return r;
 }
 
-std::wstring constantString::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring ConstantString::evaluateToStr(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
 	return this->val;
 }
 
-long constantString::evaluateToInt(const symbolTable *st,ulong *error){
+long ConstantString::evaluateToInt(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
 	return atoi(this->val);
 }
 
-std::wstring variableString::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring VariableString::evaluateToStr(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
-	symbol *s=st->get(this->id.id);
+	Symbol *s=st->get(this->id.id);
 	return s->getStr();
 }
 
-long variableString::evaluateToInt(const symbolTable *st,ulong *error){
+long VariableString::evaluateToInt(const SymbolTable *st,ulong *error){
 	if (error)
 		*error=MACRO_NO_ERROR;
-	symbol *s=st->get(this->id.id);
+	Symbol *s=st->get(this->id.id);
 	return s->getInt();
 }
 
-bool variableString::checkSymbols(const symbolTable &st){
+bool VariableString::checkSymbols(const SymbolTable &st){
 	return this->id.checkSymbols(st,1);
 }
 
-stringConcatenation::stringConcatenation(string *A,string *B){
+StringConcatenation::StringConcatenation(String *A,String *B){
 	this->operands[0]=A;
 	this->operands[1]=B;
 }
 
-stringConcatenation::stringConcatenation(const stringConcatenation &a){
+StringConcatenation::StringConcatenation(const StringConcatenation &a){
 	this->operands[0]=a.operands[0]->clone();
 	this->operands[1]=a.operands[0]?a.operands[0]->clone():0;
 }
 
-stringConcatenation::~stringConcatenation(){
+StringConcatenation::~StringConcatenation(){
 	delete this->operands[0];
 	delete this->operands[1];
 }
 
-bool stringConcatenation::simplify(){
+bool StringConcatenation::simplify(){
 	bool r=1;
 	for (ulong a=0;a<2 && this->operands[a];a++){
 		bool temp=this->operands[a]->simplify();
@@ -556,21 +556,21 @@ bool stringConcatenation::simplify(){
 		if (temp){
 			std::wstring val=this->operands[a]->evaluateToStr();
 			delete this->operands[a];
-			this->operands[a]=new constantString(val);
+			this->operands[a]=new ConstantString(val);
 		}
 	}
 	return r;
 }
 
-string *simplifyExpression(string *e){
+String *simplifyExpression(String *e){
 	if (!e->simplify())
 		return e;
-	constantString *ret=new constantString(e->evaluateToStr());
+	ConstantString *ret=new ConstantString(e->evaluateToStr());
 	delete e;
 	return ret;
 }
 
-std::wstring stringConcatenation::evaluateToStr(const symbolTable *st,ulong *error){
+std::wstring StringConcatenation::evaluateToStr(const SymbolTable *st,ulong *error){
 	std::wstring res;
 	ulong error2;
 	for (ulong a=0;a<2 && this->operands[a];a++){
@@ -587,18 +587,18 @@ std::wstring stringConcatenation::evaluateToStr(const symbolTable *st,ulong *err
 	return res;
 }
 
-long stringConcatenation::evaluateToInt(const symbolTable *st,ulong *error){
+long StringConcatenation::evaluateToInt(const SymbolTable *st,ulong *error){
 	return atoi(this->evaluateToStr(st,error));
 }
 
-bool stringConcatenation::checkSymbols(const symbolTable &st){
+bool StringConcatenation::checkSymbols(const SymbolTable &st){
 	bool r=1;
 	for (ulong a=0;a<2 && this->operands[a];a++)
 		r&=this->operands[a]->checkSymbols(st);
 	return r;
 }
 
-std::wstring emptyStatement::perform(symbolTable symbol_table,ulong *error){
+std::wstring EmptyStatement::perform(SymbolTable symbol_table,ulong *error){
 	if (!!error)
 		*error=MACRO_NO_ERROR;
 	return L"";
@@ -614,24 +614,24 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 	return 1;
 }
 
-std::wstring dataBlock::replace(const std::wstring &src,const symbolTable &symbol_table){
+std::wstring DataBlock::replace(const std::wstring &src,const SymbolTable &symbol_table){
 	if (!symbol_table.symbols.size())
 		return src;
-	const std::vector<symbol *> &symbols=symbol_table.symbols;
+	const std::vector<Symbol *> &symbols=symbol_table.symbols;
 	std::wstring res;
 	for (ulong a=0;a<src.size();a++){
 		wchar_t c=src[a];
 		bool _continue=0;
 		for (ulong b=0;b<symbols.size() && !_continue;b++){
-			if (partialCompare(src,a,symbols[b]->identifier)){
-				if (symbols[b]->type==symbol::STRING){
+			if (partialCompare(src,a,symbols[b]->Identifier)){
+				if (symbols[b]->type==Symbol::STRING){
 					res.append(symbols[b]->str_val);
-					a+=symbols[b]->identifier.size()-1;
+					a+=symbols[b]->Identifier.size()-1;
 					_continue=1;
-				}else if (symbols[b]->type==symbol::INTEGER){
+				}else if (symbols[b]->type==Symbol::INTEGER){
 					std::wstring temp=itoa<wchar_t>(symbols[b]->int_val);
 					res.append(temp);
-					a+=symbols[b]->identifier.size()-1;
+					a+=symbols[b]->Identifier.size()-1;
 					_continue=1;
 				}
 			}
@@ -643,13 +643,13 @@ std::wstring dataBlock::replace(const std::wstring &src,const symbolTable &symbo
 	return res;
 }
 
-std::wstring dataBlock::perform(symbolTable symbol_table,ulong *error){
+std::wstring DataBlock::perform(SymbolTable symbol_table,ulong *error){
 	if (!!error)
 		*error=MACRO_NO_ERROR;
-	return dataBlock::replace(this->data,symbol_table);
+	return DataBlock::replace(this->data,symbol_table);
 }
 
-std::wstring assignmentStatement::perform(symbolTable st,ulong *error){
+std::wstring AssignmentStatement::perform(SymbolTable st,ulong *error){
 	ulong error2;
 	long val=this->src->evaluateToInt(&st,&error2);
 	if (error2!=MACRO_NO_ERROR){
@@ -663,20 +663,15 @@ std::wstring assignmentStatement::perform(symbolTable st,ulong *error){
 	return L"";
 }
 
-bool assignmentStatement::checkSymbols(const symbolTable &st){
+bool AssignmentStatement::checkSymbols(const SymbolTable &st){
 	return this->dst.checkSymbols(st,1) && this->src->checkSymbols(st);
 }
 
-stringAssignmentStatement::stringAssignmentStatement(const identifier &id,string *e):dst(id){
-	this->symbol=0;
-	this->src=e;
-}
-
-stringAssignmentStatement::~stringAssignmentStatement(){
+StringAssignmentStatement::~StringAssignmentStatement(){
 	delete this->src;
 }
 
-std::wstring stringAssignmentStatement::perform(symbolTable st,ulong *error){
+std::wstring StringAssignmentStatement::perform(SymbolTable st,ulong *error){
 	ulong error2;
 	std::wstring val=this->src->evaluateToStr(&st,&error2);
 	if (error2!=MACRO_NO_ERROR){
@@ -690,24 +685,24 @@ std::wstring stringAssignmentStatement::perform(symbolTable st,ulong *error){
 	return L"";
 }
 
-bool stringAssignmentStatement::checkSymbols(const symbolTable &st){
+bool StringAssignmentStatement::checkSymbols(const SymbolTable &st){
 	return this->dst.checkSymbols(st,1) & this->src->checkSymbols(st);
 }
 
-ifStructure::ifStructure(expression *a,block *b,block *c){
+IfStructure::IfStructure(Expression *a,Block *b,Block *c){
 	this->condition=a;
 	this->true_block=b;
 	this->false_block=c;
 }
 
-ifStructure::~ifStructure(){
+IfStructure::~IfStructure(){
 	delete this->condition;
 	delete this->true_block;
 	if (this->false_block)
 		delete this->false_block;
 }
 
-std::wstring ifStructure::perform(symbolTable st,ulong *error){
+std::wstring IfStructure::perform(SymbolTable st,ulong *error){
 	ulong error2;
 	bool condition=!!this->condition->evaluateToInt(&st,&error2);
 	if (error2!=MACRO_NO_ERROR){
@@ -722,7 +717,7 @@ std::wstring ifStructure::perform(symbolTable st,ulong *error){
 	return L"";
 }
 
-bool ifStructure::checkSymbols(const symbolTable &st){
+bool IfStructure::checkSymbols(const SymbolTable &st){
 	bool r=this->condition->checkSymbols(st);
 	r&=this->true_block->checkSymbols(st);
 	if (this->false_block)
@@ -730,17 +725,17 @@ bool ifStructure::checkSymbols(const symbolTable &st){
 	return r;
 }
 
-whileStructure::whileStructure(expression *a,NONS_Macro::block *b){
+WhileStructure::WhileStructure(Expression *a,NONS_Macro::Block *b){
 	this->condition=a;
 	this->block=b;
 }
 
-whileStructure::~whileStructure(){
+WhileStructure::~WhileStructure(){
 	delete this->condition;
 	delete this->block;
 }
 
-std::wstring whileStructure::perform(symbolTable *st,ulong *error){
+std::wstring WhileStructure::perform(SymbolTable *st,ulong *error){
 	ulong error2=0;
 	std::wstring res;
 	if (this->block->symbol_table)
@@ -766,37 +761,37 @@ std::wstring whileStructure::perform(symbolTable *st,ulong *error){
 	return res;
 }
 
-std::wstring whileStructure::perform(symbolTable st,ulong *error){
+std::wstring WhileStructure::perform(SymbolTable st,ulong *error){
 	return this->perform(&st,error);
 }
 
-bool whileStructure::checkSymbols(const symbolTable &st){
-	symbolTable st2=st;
+bool WhileStructure::checkSymbols(const SymbolTable &st){
+	SymbolTable st2=st;
 	bool r;
 	if (this->block->symbol_table){
 		r=st.checkIntersection(*this->block->symbol_table);
 		st2.addFrame(*this->block->symbol_table);
 	}
-	r&=this->condition->checkSymbols(st);
-	r&=this->block->checkSymbols(st,1);
+	r&=this->condition->checkSymbols(st2);
+	r&=this->block->checkSymbols(st2,1);
 	return r;
 }
 
-forStructure::forStructure(const identifier &s,expression *e1,expression *e2,expression *e3,NONS_Macro::block *b):forIndex(s){
+ForStructure::ForStructure(const Identifier &s,Expression *e1,Expression *e2,Expression *e3,NONS_Macro::Block *b):forIndex(s){
 	this->start=e1;
 	this->end=e2;
 	this->step=e3;
 	this->block=b;
 }
 
-forStructure::~forStructure(){
+ForStructure::~ForStructure(){
 	delete this->start;
 	delete this->end;
 	delete this->step;
 	delete this->block;
 }
 
-std::wstring forStructure::perform(symbolTable *st,ulong *error){
+std::wstring ForStructure::perform(SymbolTable *st,ulong *error){
 	ulong error2=0;
 	std::wstring res;
 	st->declare(this->forIndex.id,(long)0,this->forIndex.referenced_on_line,0);
@@ -808,7 +803,7 @@ std::wstring forStructure::perform(symbolTable *st,ulong *error){
 			*error=error2;
 		return L"";
 	}
-	symbol *s=st->get(this->forIndex.id);
+	Symbol *s=st->get(this->forIndex.id);
 	s->set(start);
 	while (1){
 		long end=this->end->evaluateToInt(st,&error2);
@@ -838,12 +833,12 @@ std::wstring forStructure::perform(symbolTable *st,ulong *error){
 	return res;
 }
 
-std::wstring forStructure::perform(symbolTable st,ulong *error){
+std::wstring ForStructure::perform(SymbolTable st,ulong *error){
 	return this->perform(&st,error);
 }
 
-bool forStructure::checkSymbols(const symbolTable &st){
-	symbolTable st2=st;
+bool ForStructure::checkSymbols(const SymbolTable &st){
+	SymbolTable st2=st;
 	bool r=st2.declare(this->forIndex.id,(long)0,this->forIndex.referenced_on_line,0);
 	if (this->block->symbol_table){
 		r&=st.checkIntersection(*this->block->symbol_table);
@@ -857,7 +852,7 @@ bool forStructure::checkSymbols(const symbolTable &st){
 	return r;
 }
 
-macroCall::~macroCall(){
+MacroCall::~MacroCall(){
 	if (this->arguments){
 		for (ulong a=0;a<this->arguments->size();a++)
 			delete (*this->arguments)[a];
@@ -865,7 +860,7 @@ macroCall::~macroCall(){
 	}
 }
 
-std::wstring macroCall::perform(symbolTable st,ulong *error){
+std::wstring MacroCall::perform(SymbolTable st,ulong *error){
 	std::vector<std::wstring> parameters;
 	if (!!this->arguments){
 		parameters.resize(this->arguments->size());
@@ -882,25 +877,25 @@ std::wstring macroCall::perform(symbolTable st,ulong *error){
 	return st.get(this->id.id)->macro->perform(parameters,&st,error);
 }
 
-bool macroCall::checkSymbols(const symbolTable &st){
+bool MacroCall::checkSymbols(const SymbolTable &st){
 	bool r=this->id.checkSymbols(st,0);
 	for (ulong a=0;a<this->arguments->size();a++)
 		r&=(*this->arguments)[a]->checkSymbols(st);
 	return r;
 }
 
-block::block(std::vector<statement *> *a,symbolTable *b){
+Block::Block(std::vector<Statement *> *a,SymbolTable *b){
 	this->statements=a;
 	this->symbol_table=b;
 }
 
-block::~block(){
+Block::~Block(){
 	for (ulong a=0;a<this->statements->size();a++)
 		delete (*this->statements)[a];
 	delete this->statements;
 }
 
-std::wstring block::perform(symbolTable *symbol_table,ulong *error,bool doNotAddFrame){
+std::wstring Block::perform(SymbolTable *symbol_table,ulong *error,bool doNotAddFrame){
 	if (!doNotAddFrame && this->symbol_table)
 		symbol_table->addFrame(*this->symbol_table);
 	std::wstring res;
@@ -918,18 +913,18 @@ std::wstring block::perform(symbolTable *symbol_table,ulong *error,bool doNotAdd
 	return res;
 }
 
-std::wstring block::perform(symbolTable symbol_table,ulong *error,bool doNotAddFrame){
+std::wstring Block::perform(SymbolTable symbol_table,ulong *error,bool doNotAddFrame){
 	return this->perform(&symbol_table,error,doNotAddFrame);
 }
 
-void block::addStatement(statement *s){
+void Block::addStatement(Statement *s){
 	if (!this->statements)
-		this->statements=new std::vector<statement *>;
+		this->statements=new std::vector<Statement *>;
 	this->statements->push_back(s);
 }
 
-bool block::checkSymbols(const symbolTable &st,bool doNotAddFrame){
-	symbolTable st2=st;
+bool Block::checkSymbols(const SymbolTable &st,bool doNotAddFrame){
+	SymbolTable st2=st;
 	bool r=1;
 	if (!doNotAddFrame && this->symbol_table && (r=st.checkIntersection(*this->symbol_table)))
 		st2.addFrame(*this->symbol_table);
@@ -938,21 +933,21 @@ bool block::checkSymbols(const symbolTable &st,bool doNotAddFrame){
 	return r;
 }
 
-macro::macro(block *c,symbolTable *b){
+Macro::Macro(Block *c,SymbolTable *b){
 	this->statements=c;
 	this->parameters=b;
 	if (!this->parameters)
-		this->parameters=new symbolTable;
+		this->parameters=new SymbolTable;
 	this->parameters->declare(L"^calls",(long)0,0,0);
 }
 
-macro::~macro(){
+Macro::~Macro(){
 	delete this->parameters;
 	delete this->statements;
 }
 
-std::wstring macro::perform(const std::vector<std::wstring> &parameters,symbolTable *st,ulong *error){
-	symbol *calls=this->parameters->get(L"^calls");
+std::wstring Macro::perform(const std::vector<std::wstring> &parameters,SymbolTable *st,ulong *error){
+	Symbol *calls=this->parameters->get(L"^calls");
 	calls->int_val++;
 	ulong first=st->symbols.size();
 	if (this->parameters)
@@ -962,21 +957,21 @@ std::wstring macro::perform(const std::vector<std::wstring> &parameters,symbolTa
 	return this->statements->perform(st,error);
 }
 
-std::wstring macro::perform(const std::vector<std::wstring> &parameters,symbolTable st,ulong *error){
+std::wstring Macro::perform(const std::vector<std::wstring> &parameters,SymbolTable st,ulong *error){
 	return this->perform(parameters,&st,error);
 }
 
-bool macro::checkSymbols(const symbolTable &st){
-	symbolTable st2=st;
+bool Macro::checkSymbols(const SymbolTable &st){
+	SymbolTable st2=st;
 	bool r=1;
 	if (this->parameters && (r=st.checkIntersection(*this->parameters)))
 		st2.addFrame(*this->parameters);
 	return r & this->statements->checkSymbols(st2);
 }
 
-std::wstring macroFile::call(const std::wstring &name,const std::vector<std::wstring> &parameters,ulong *error){
-	symbol *s=this->symbol_table.get(name);
-	if (!s || s->type!=symbol::MACRO){
+std::wstring MacroFile::call(const std::wstring &name,const std::vector<std::wstring> &parameters,ulong *error){
+	Symbol *s=this->symbol_table.get(name);
+	if (!s || s->type!=Symbol::MACRO){
 		if (!!error)
 			*error=MACRO_NO_SUCH_MACRO;
 		return L"";
@@ -984,7 +979,7 @@ std::wstring macroFile::call(const std::wstring &name,const std::vector<std::wst
 	return s->macro->perform(parameters,this->symbol_table,error);
 }
 
-bool macroFile::checkSymbols(){
+bool MacroFile::checkSymbols(){
 	return this->symbol_table.checkSymbols();
 }
 }

@@ -36,9 +36,10 @@
 #include "../../Functions.h"
 #include "../IOFunctions.h"
 #include "../../Globals.h"
+#include "../../ThreadManager.h"
 #include <cmath>
 
-//#define BENCHMARK_EFFECTS
+#define BENCHMARK_EFFECTS
 
 //(Parallelized surface function)
 struct PSF_parameters{
@@ -769,7 +770,12 @@ struct EHM_parameters{
 	long a;
 };
 
-int effectHardMask_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectHardMask_threaded(void *parameters){
 	EHM_parameters *p=(EHM_parameters *)parameters;
 	uchar *pos0=p->pos0,
 		*pos1=p->pos1,
@@ -799,7 +805,9 @@ int effectHardMask_threaded(void *parameters){
 			pos2+=p->advance2;
 		}
 	}
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
@@ -823,7 +831,9 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 			manualBlit(src1,&srcrect,copyMask,&dstrect);
 	src1=copyMask;
 	//prepare for threading
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	EHM_parameters *parameters=new EHM_parameters[cpu_count];
 	ulong division=float(dst->virtualScreen->h)/float(cpu_count);
 	ulong total=0;
@@ -875,10 +885,18 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 		for (ushort b=0;b<cpu_count;b++)
 			parameters[b].a=a;
 		for (ushort b=1;b<cpu_count;b++)
+#ifndef USE_THREAD_MANAGER
 			threads[b]=SDL_CreateThread(effectHardMask_threaded,parameters+b);
+#else
+			threadManager.call(b-1,effectHardMask_threaded,parameters+b);
+#endif
 		effectHardMask_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 		for (ushort b=1;b<cpu_count;b++)
 			SDL_WaitThread(threads[b],0);
+#else
+		threadManager.waitAll();
+#endif
 
 		SDL_UnlockSurface(dst->virtualScreen);
 		SDL_UnlockSurface(src1);
@@ -892,6 +910,10 @@ void NONS_GFX::effectHardMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 			SDL_Delay(delay-lastT);
 		idealtimepos+=delay;
 	}
+#ifndef USE_THREAD_MANAGER
+	delete[] threads;
+#endif
+	delete[] parameters;
 	SDL_FreeSurface(copyMask);
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
@@ -918,7 +940,12 @@ struct ESM_parameters{
 	long a;
 };
 
-int effectSoftMask_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectSoftMask_threaded(void *parameters){
 	EHM_parameters *p=(EHM_parameters *)parameters;
 	uchar *pos0=p->pos0,
 		*pos1=p->pos1,
@@ -963,7 +990,9 @@ int effectSoftMask_threaded(void *parameters){
 			pos2+=p->advance2;
 		}
 	}
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
@@ -986,7 +1015,9 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 	UNLOCKSCREEN;
 	src1=copyMask;
 	//prepare for threading
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	ESM_parameters *parameters=new ESM_parameters[cpu_count];
 	ulong division=float(dst->virtualScreen->h)/float(cpu_count);
 	ulong total=0;
@@ -1048,10 +1079,18 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 		for (ushort b=0;b<cpu_count;b++)
 			parameters[b].a=a;
 		for (ushort b=1;b<cpu_count;b++)
+#ifndef USE_THREAD_MANAGER
 			threads[b]=SDL_CreateThread(effectSoftMask_threaded,parameters+b);
+#else
+			threadManager.call(b-1,effectSoftMask_threaded,parameters+b);
+#endif
 		effectSoftMask_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 		for (ushort b=1;b<cpu_count;b++)
 			SDL_WaitThread(threads[b],0);
+#else
+		threadManager.waitAll();
+#endif
 
 		SDL_UnlockSurface(dst->virtualScreen);
 		SDL_UnlockSurface(src1);
@@ -1071,6 +1110,10 @@ void NONS_GFX::effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualSc
 #ifdef BENCHMARK_EFFECTS
 	std::cout <<"effectSoftMask(): "<<float(steps)/(float(this->duration)/1000.0f)<<" steps per second."<<std::endl;
 #endif
+#ifndef USE_THREAD_MANAGER
+	delete[] threads;
+#endif
+	delete[] parameters;
 	SDL_FreeSurface(copyMask);
 	SDL_FreeSurface(copyDst);
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
@@ -1203,7 +1246,12 @@ void NONS_GFX::effectMosaicOut(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualS
 }
 
 void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &color);
-int effectMonochrome_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectMonochrome_threaded(void *parameters);
 
 void NONS_GFX::effectMonochrome(SDL_Surface *src0,SDL_Surface *dst){
 	if (!dst || dst->format->BitsPerPixel<24)
@@ -1215,7 +1263,9 @@ void NONS_GFX::effectMonochrome(SDL_Surface *src0,SDL_Surface *dst){
 		SDL_UnlockSurface(dst);
 		return;
 	}
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	SDL_Rect *rects=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
 	ulong division=float(dstRect.h)/float(cpu_count);
@@ -1231,20 +1281,37 @@ void NONS_GFX::effectMonochrome(SDL_Surface *src0,SDL_Surface *dst){
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
 	for (ushort a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(effectMonochrome_threaded,parameters+a);
+#else
+		threadManager.call(a-1,effectMonochrome_threaded,parameters+a);
+#endif
 	effectMonochrome_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	SDL_UnlockSurface(dst);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] rects;
 	delete[] parameters;
 }
 
-int effectMonochrome_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectMonochrome_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	effectMonochrome_threaded(p->dst,p->dstRect,p->color);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 #define RED_MONOCHROME(x) ((x)*3/10)
@@ -1289,7 +1356,12 @@ void effectMonochrome_threaded(SDL_Surface *dst,SDL_Rect *dstRect,SDL_Color &col
 }
 
 void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect);
-int effectNegative_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectNegative_threaded(void *parameters);
 
 void NONS_GFX::effectNegative(SDL_Surface *src0,SDL_Surface *dst){
 	if (!dst || dst->format->BitsPerPixel<24)
@@ -1301,7 +1373,9 @@ void NONS_GFX::effectNegative(SDL_Surface *src0,SDL_Surface *dst){
 		SDL_UnlockSurface(dst);
 		return;
 	}
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	SDL_Rect *rects=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
 	ulong division=float(dstRect.h)/float(cpu_count);
@@ -1316,20 +1390,37 @@ void NONS_GFX::effectNegative(SDL_Surface *src0,SDL_Surface *dst){
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
 	for (ushort a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(effectNegative_threaded,parameters+a);
+#else
+		threadManager.call(a-1,effectNegative_threaded,parameters+a);
+#endif
 	effectNegative_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	SDL_UnlockSurface(dst);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] rects;
 	delete[] parameters;
 }
 
-int effectNegative_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectNegative_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	effectNegative_threaded(p->dst,p->dstRect);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
@@ -1354,7 +1445,12 @@ void effectNegative_threaded(SDL_Surface *dst,SDL_Rect *dstRect){
 }
 
 void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect);
-int effectNegativeMono_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectNegativeMono_threaded(void *parameters);
 
 void NONS_GFX::effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst){
 	if (!dst || dst->format->BitsPerPixel<24)
@@ -1366,7 +1462,9 @@ void NONS_GFX::effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst){
 		SDL_UnlockSurface(dst);
 		return;
 	}
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	SDL_Rect *rects=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
 	ulong division=float(dstRect.h)/float(cpu_count);
@@ -1381,20 +1479,37 @@ void NONS_GFX::effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst){
 	}
 	rects[cpu_count-1].h+=dstRect.h-total;
 	for (ushort a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(effectNegativeMono_threaded,parameters+a);
+#else
+		threadManager.call(a-1,effectNegativeMono_threaded,parameters+a);
+#endif
 	effectNegativeMono_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	SDL_UnlockSurface(dst);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] rects;
 	delete[] parameters;
 }
 
-int effectNegativeMono_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+effectNegativeMono_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	effectNegativeMono_threaded(p->dst,p->dstRect);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void effectNegativeMono_threaded(SDL_Surface *dst,SDL_Rect *dstRect){

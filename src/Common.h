@@ -44,6 +44,9 @@ extern bool ctrlIsPressed;
 #if defined(linux) || defined(__linux)
 #define NONS_SYS_LINUX
 #endif
+#if defined(__unix__) || defined(__unix)
+#define NONS_SYS_UNIX
+#endif
 
 #ifdef _MSC_VER
 //#pragma warning(disable:4018) //no comparison signed/unsigned mismatch

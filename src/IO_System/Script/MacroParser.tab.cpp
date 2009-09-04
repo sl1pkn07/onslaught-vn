@@ -119,23 +119,23 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 #undef ERROR
 
 namespace NONS_Macro{
-struct identifier;
-struct stringOperation;
-struct argument;
-struct expression;
-struct string;
-struct constantExpression;
-struct variableExpression;
-struct fullExpression;
-struct constantString;
-struct variableString;
-struct stringConcatenation;
-struct statement;
-struct macro;
-struct macroFile;
-struct symbol;
-struct symbolTable;
-struct block;
+struct Identifier;
+struct StringOperation;
+struct Argument;
+struct Expression;
+struct String;
+struct ConstantExpression;
+struct VariableExpression;
+struct FullExpression;
+struct ConstantString;
+struct VariableString;
+struct StringConcatenation;
+struct Statement;
+struct Macro;
+struct MacroFile;
+struct Symbol;
+struct SymbolTable;
+struct Block;
 }
 
 
@@ -186,19 +186,19 @@ typedef union YYSTYPE
 {
 
 
-	NONS_Macro::identifier *id;
+	NONS_Macro::Identifier *id;
 	std::wstring *str;
 	std::vector<std::wstring> *stringVector;
-	NONS_Macro::argument *argument;
-	NONS_Macro::string *string;
-	NONS_Macro::expression *expression;
-	std::vector<NONS_Macro::argument *> *argumentVector;
-	NONS_Macro::statement *stmt;
-	NONS_Macro::macroFile *macro_file;
-	NONS_Macro::symbol *symbol;
-	NONS_Macro::symbolTable *symbol_table;
-	NONS_Macro::block *block;
-	std::vector<NONS_Macro::statement *> *stmt_list;
+	NONS_Macro::Argument *argument;
+	NONS_Macro::String *string;
+	NONS_Macro::Expression *expression;
+	std::vector<NONS_Macro::Argument *> *argumentVector;
+	NONS_Macro::Statement *stmt;
+	NONS_Macro::MacroFile *macro_file;
+	NONS_Macro::Symbol *symbol;
+	NONS_Macro::SymbolTable *symbol_table;
+	NONS_Macro::Block *block;
+	std::vector<NONS_Macro::Statement *> *stmt_list;
 
 
 
@@ -227,7 +227,7 @@ typedef struct YYLTYPE
 	#include <sstream>
 	int macroParser_yyparse(
 		std::wstringstream &stream,
-		NONS_Macro::macroFile *&result
+		NONS_Macro::MacroFile *&result
 	);
 	int macroParser_yylex(
 		YYSTYPE *yylval,
@@ -237,8 +237,8 @@ typedef struct YYLTYPE
 	void macroParser_yyerror(
 		YYLTYPE *yylloc,
 		std::wstringstream &,
-		NONS_Macro::macroFile *&result,
-		//NONS_Macro::symbolTable &symbolTable,
+		NONS_Macro::MacroFile *&result,
+		//NONS_Macro::SymbolTable &SymbolTable,
 		char const *
 	);
 	extern int macroParser_yydebug;
@@ -472,7 +472,7 @@ union yyalloc
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  14
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  57
+#define YYNRULES  58
 /* YYNRULES -- Number of states.  */
 #define YYNSTATES  125
 
@@ -525,9 +525,9 @@ static const yytype_uint8 yyprhs[] =
        0,     0,     3,     5,     7,     8,    11,    15,    22,    24,
       28,    30,    34,    41,    42,    45,    47,    51,    53,    57,
       61,    63,    66,    71,    76,    82,    90,    96,   108,   111,
-     117,   119,   123,   125,   127,   129,   133,   137,   141,   143,
-     145,   151,   155,   159,   162,   166,   170,   174,   178,   182,
-     186,   190,   194,   198,   202,   206,   209,   212
+     117,   119,   123,   125,   127,   129,   133,   137,   141,   145,
+     147,   149,   155,   159,   163,   166,   170,   174,   178,   182,
+     186,   190,   194,   198,   202,   206,   210,   213,   216
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
@@ -545,16 +545,16 @@ static const yytype_int8 yyrhs[] =
        9,    31,    56,    32,    48,    -1,     8,    31,    10,    40,
       56,    40,    56,    40,    56,    32,    48,    -1,    10,    40,
       -1,    10,    31,    53,    32,    40,    -1,    54,    -1,    53,
-      34,    54,    -1,    55,    -1,    56,    -1,    11,    -1,    55,
-      33,    10,    -1,    10,    33,    55,    -1,    55,    33,    55,
-      -1,    13,    -1,    10,    -1,    56,    41,    56,    42,    56,
-      -1,    56,    15,    56,    -1,    56,    16,    56,    -1,    17,
-      56,    -1,    56,    19,    56,    -1,    56,    18,    56,    -1,
-      56,    23,    56,    -1,    56,    22,    56,    -1,    56,    21,
-      56,    -1,    56,    20,    56,    -1,    56,    25,    56,    -1,
-      56,    24,    56,    -1,    56,    28,    56,    -1,    56,    27,
-      56,    -1,    56,    26,    56,    -1,    25,    56,    -1,    24,
-      56,    -1,    31,    56,    32,    -1
+      34,    54,    -1,    55,    -1,    56,    -1,    11,    -1,    10,
+      33,    10,    -1,    10,    33,    55,    -1,    55,    33,    10,
+      -1,    55,    33,    55,    -1,    13,    -1,    10,    -1,    56,
+      41,    56,    42,    56,    -1,    56,    15,    56,    -1,    56,
+      16,    56,    -1,    17,    56,    -1,    56,    19,    56,    -1,
+      56,    18,    56,    -1,    56,    23,    56,    -1,    56,    22,
+      56,    -1,    56,    21,    56,    -1,    56,    20,    56,    -1,
+      56,    25,    56,    -1,    56,    24,    56,    -1,    56,    28,
+      56,    -1,    56,    27,    56,    -1,    56,    26,    56,    -1,
+      25,    56,    -1,    24,    56,    -1,    31,    56,    32,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
@@ -563,9 +563,9 @@ static const yytype_uint16 yyrline[] =
        0,   155,   155,   158,   164,   167,   173,   177,   183,   188,
      195,   199,   202,   207,   210,   216,   220,   226,   229,   234,
      241,   244,   248,   252,   256,   260,   264,   268,   275,   279,
-     285,   289,   295,   299,   305,   309,   313,   317,   322,   325,
-     329,   332,   335,   338,   341,   344,   347,   350,   353,   356,
-     359,   362,   365,   368,   371,   374,   377,   380
+     285,   289,   295,   299,   305,   309,   314,   318,   322,   327,
+     330,   334,   337,   340,   343,   346,   349,   352,   355,   358,
+     361,   364,   367,   370,   373,   376,   379,   382,   385
 };
 #endif
 
@@ -605,9 +605,9 @@ static const yytype_uint8 yyr1[] =
        0,    43,    44,    44,    45,    45,    46,    46,    47,    47,
       48,    48,    48,    49,    49,    50,    50,    51,    51,    51,
       52,    52,    52,    52,    52,    52,    52,    52,    52,    52,
-      53,    53,    54,    54,    55,    55,    55,    55,    56,    56,
+      53,    53,    54,    54,    55,    55,    55,    55,    55,    56,
       56,    56,    56,    56,    56,    56,    56,    56,    56,    56,
-      56,    56,    56,    56,    56,    56,    56,    56
+      56,    56,    56,    56,    56,    56,    56,    56,    56
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
@@ -616,9 +616,9 @@ static const yytype_uint8 yyr2[] =
        0,     2,     1,     1,     0,     2,     3,     6,     1,     3,
        1,     3,     6,     0,     2,     1,     3,     1,     3,     3,
        1,     2,     4,     4,     5,     7,     5,    11,     2,     5,
-       1,     3,     1,     1,     1,     3,     3,     3,     1,     1,
-       5,     3,     3,     2,     3,     3,     3,     3,     3,     3,
-       3,     3,     3,     3,     3,     2,     2,     3
+       1,     3,     1,     1,     1,     3,     3,     3,     3,     1,
+       1,     5,     3,     3,     2,     3,     3,     3,     3,     3,
+       3,     3,     3,     3,     3,     3,     2,     2,     3
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -629,15 +629,15 @@ static const yytype_uint8 yydefact[] =
        4,     3,     0,     2,     1,     0,     5,     0,     0,     0,
        0,     0,     0,     0,    13,     0,    20,     6,    10,     0,
        0,     0,     0,     0,    28,    21,     8,     0,     0,    17,
-       0,    15,    39,    38,     0,     0,     0,     0,     0,     0,
-       0,    39,    34,     0,    30,    32,    33,     0,     0,     0,
-       0,    11,    14,     0,     0,     0,    43,    56,    55,     0,
+       0,    15,    40,    39,     0,     0,     0,     0,     0,     0,
+       0,    40,    34,     0,    30,    32,    33,     0,     0,     0,
+       0,    11,    14,     0,     0,     0,    44,    57,    56,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,    23,    22,     7,     9,    19,    18,    16,    13,    57,
-      41,    42,    45,    44,    49,    48,    47,    46,    51,    50,
-      54,    53,    52,    24,     0,     0,    26,     0,    36,    29,
-      31,    35,    37,     0,     0,     0,     0,    12,    25,    40,
+       0,    23,    22,     7,     9,    19,    18,    16,    13,    58,
+      42,    43,    46,    45,    50,    49,    48,    47,    52,    51,
+      55,    54,    53,    24,     0,     0,    26,    35,    36,    29,
+      31,    37,    38,     0,     0,     0,     0,    12,    25,    41,
        0,     0,     0,     0,    27
 };
 
@@ -915,7 +915,7 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, std::wstringstream &stream, NONS_Macro::macroFile *&result)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, std::wstringstream &stream, NONS_Macro::MacroFile *&result)
 #else
 static void
 yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, stream, result)
@@ -924,7 +924,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, stream, result)
     YYSTYPE const * const yyvaluep;
     YYLTYPE const * const yylocationp;
     std::wstringstream &stream;
-    NONS_Macro::macroFile *&result;
+    NONS_Macro::MacroFile *&result;
 #endif
 {
   if (!yyvaluep)
@@ -953,7 +953,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, stream, result)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, std::wstringstream &stream, NONS_Macro::macroFile *&result)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, std::wstringstream &stream, NONS_Macro::MacroFile *&result)
 #else
 static void
 yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp, stream, result)
@@ -962,7 +962,7 @@ yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp, stream, result)
     YYSTYPE const * const yyvaluep;
     YYLTYPE const * const yylocationp;
     std::wstringstream &stream;
-    NONS_Macro::macroFile *&result;
+    NONS_Macro::MacroFile *&result;
 #endif
 {
   if (yytype < YYNTOKENS)
@@ -1015,7 +1015,7 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, std::wstringstream &stream, NONS_Macro::macroFile *&result)
+yy_reduce_print (YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, std::wstringstream &stream, NONS_Macro::MacroFile *&result)
 #else
 static void
 yy_reduce_print (yyvsp, yylsp, yyrule, stream, result)
@@ -1023,7 +1023,7 @@ yy_reduce_print (yyvsp, yylsp, yyrule, stream, result)
     YYLTYPE *yylsp;
     int yyrule;
     std::wstringstream &stream;
-    NONS_Macro::macroFile *&result;
+    NONS_Macro::MacroFile *&result;
 #endif
 {
   int yynrhs = yyr2[yyrule];
@@ -1296,7 +1296,7 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, std::wstringstream &stream, NONS_Macro::macroFile *&result)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, std::wstringstream &stream, NONS_Macro::MacroFile *&result)
 #else
 static void
 yydestruct (yymsg, yytype, yyvaluep, yylocationp, stream, result)
@@ -1305,7 +1305,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, stream, result)
     YYSTYPE *yyvaluep;
     YYLTYPE *yylocationp;
     std::wstringstream &stream;
-    NONS_Macro::macroFile *&result;
+    NONS_Macro::MacroFile *&result;
 #endif
 {
   YYUSE (yyvaluep);
@@ -1443,7 +1443,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (std::wstringstream &stream, NONS_Macro::macroFile *&result);
+int yyparse (std::wstringstream &stream, NONS_Macro::MacroFile *&result);
 #else
 int yyparse ();
 #endif
@@ -1471,12 +1471,12 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (std::wstringstream &stream, NONS_Macro::macroFile *&result)
+yyparse (std::wstringstream &stream, NONS_Macro::MacroFile *&result)
 #else
 int
 yyparse (stream, result)
     std::wstringstream &stream;
-    NONS_Macro::macroFile *&result;
+    NONS_Macro::MacroFile *&result;
 #endif
 #endif
 {
@@ -1773,7 +1773,7 @@ yyreduce:
   case 4:
 
     {
-		(yyval.macro_file)=new NONS_Macro::macroFile;
+		(yyval.macro_file)=new NONS_Macro::MacroFile;
 	}
     break;
 
@@ -1788,7 +1788,7 @@ yyreduce:
   case 6:
 
     {
-		(yyval.symbol)=new NONS_Macro::symbol((yyvsp[(2) - (3)].id)->id,new NONS_Macro::macro((yyvsp[(3) - (3)].block)),(yylsp[(2) - (3)]).first_line);
+		(yyval.symbol)=new NONS_Macro::Symbol((yyvsp[(2) - (3)].id)->id,new NONS_Macro::Macro((yyvsp[(3) - (3)].block)),(yylsp[(2) - (3)]).first_line);
 		delete (yyvsp[(2) - (3)].id);
 	}
     break;
@@ -1796,7 +1796,7 @@ yyreduce:
   case 7:
 
     {
-		(yyval.symbol)=new NONS_Macro::symbol((yyvsp[(2) - (6)].id)->id,new NONS_Macro::macro((yyvsp[(6) - (6)].block),(yyvsp[(4) - (6)].symbol_table)),(yylsp[(2) - (6)]).first_line);
+		(yyval.symbol)=new NONS_Macro::Symbol((yyvsp[(2) - (6)].id)->id,new NONS_Macro::Macro((yyvsp[(6) - (6)].block),(yyvsp[(4) - (6)].symbol_table)),(yylsp[(2) - (6)]).first_line);
 		delete (yyvsp[(2) - (6)].id);
 	}
     break;
@@ -1804,7 +1804,7 @@ yyreduce:
   case 8:
 
     {
-		(yyval.symbol_table)=new NONS_Macro::symbolTable;
+		(yyval.symbol_table)=new NONS_Macro::SymbolTable;
 		(yyval.symbol_table)->declare((yyvsp[(1) - (1)].id)->id,L"",(yylsp[(1) - (1)]).first_line,0);
 		delete (yyvsp[(1) - (1)].id);
 	}
@@ -1822,7 +1822,7 @@ yyreduce:
   case 10:
 
     {
-		(yyval.block)=new NONS_Macro::block;
+		(yyval.block)=new NONS_Macro::Block;
 		(yyval.block)->addStatement((yyvsp[(1) - (1)].stmt));
 	}
     break;
@@ -1830,21 +1830,21 @@ yyreduce:
   case 11:
 
     {
-		(yyval.block)=new NONS_Macro::block((yyvsp[(2) - (3)].stmt_list));
+		(yyval.block)=new NONS_Macro::Block((yyvsp[(2) - (3)].stmt_list));
 	}
     break;
 
   case 12:
 
     {
-		(yyval.block)=new NONS_Macro::block((yyvsp[(5) - (6)].stmt_list),(yyvsp[(2) - (6)].symbol_table));
+		(yyval.block)=new NONS_Macro::Block((yyvsp[(5) - (6)].stmt_list),(yyvsp[(2) - (6)].symbol_table));
 	}
     break;
 
   case 13:
 
     {
-		(yyval.stmt_list)=new std::vector<NONS_Macro::statement *>;
+		(yyval.stmt_list)=new std::vector<NONS_Macro::Statement *>;
 	}
     break;
 
@@ -1859,7 +1859,7 @@ yyreduce:
   case 15:
 
     {
-		(yyval.symbol_table)=new NONS_Macro::symbolTable;
+		(yyval.symbol_table)=new NONS_Macro::SymbolTable;
 		(yyval.symbol_table)->declare((yyvsp[(1) - (1)].symbol));
 	}
     break;
@@ -1875,14 +1875,14 @@ yyreduce:
   case 17:
 
     {
-		(yyval.symbol)=new NONS_Macro::symbol((yyvsp[(1) - (1)].id)->id,(long)0,(yylsp[(1) - (1)]).first_line);
+		(yyval.symbol)=new NONS_Macro::Symbol((yyvsp[(1) - (1)].id)->id,(long)0,(yylsp[(1) - (1)]).first_line);
 	}
     break;
 
   case 18:
 
     {
-		(yyval.symbol)=new NONS_Macro::symbol((yyvsp[(1) - (3)].id)->id,(long)0,(yylsp[(1) - (3)]).first_line);
+		(yyval.symbol)=new NONS_Macro::Symbol((yyvsp[(1) - (3)].id)->id,(long)0,(yylsp[(1) - (3)]).first_line);
 		(yyvsp[(3) - (3)].expression)->simplify();
 		(yyval.symbol)->initializeTo((yyvsp[(3) - (3)].expression));
 	}
@@ -1891,7 +1891,7 @@ yyreduce:
   case 19:
 
     {
-		(yyval.symbol)=new NONS_Macro::symbol((yyvsp[(1) - (3)].id)->id,L"",(yylsp[(1) - (3)]).first_line);
+		(yyval.symbol)=new NONS_Macro::Symbol((yyvsp[(1) - (3)].id)->id,L"",(yylsp[(1) - (3)]).first_line);
 		(yyvsp[(3) - (3)].string)->simplify();
 		(yyval.symbol)->initializeTo((yyvsp[(3) - (3)].string));
 	}
@@ -1900,14 +1900,14 @@ yyreduce:
   case 20:
 
     {
-		(yyval.stmt)=new NONS_Macro::emptyStatement;
+		(yyval.stmt)=new NONS_Macro::EmptyStatement;
 	}
     break;
 
   case 21:
 
     {
-		(yyval.stmt)=new NONS_Macro::dataBlock(*(yyvsp[(1) - (2)].str));
+		(yyval.stmt)=new NONS_Macro::DataBlock(*(yyvsp[(1) - (2)].str));
 		delete (yyvsp[(1) - (2)].str);
 	}
     break;
@@ -1916,7 +1916,7 @@ yyreduce:
 
     {
 		(yyvsp[(3) - (4)].expression)->simplify();
-		(yyval.stmt)=new NONS_Macro::assignmentStatement(*(yyvsp[(1) - (4)].id),(yyvsp[(3) - (4)].expression));
+		(yyval.stmt)=new NONS_Macro::AssignmentStatement(*(yyvsp[(1) - (4)].id),(yyvsp[(3) - (4)].expression));
 	}
     break;
 
@@ -1924,7 +1924,7 @@ yyreduce:
 
     {
 		(yyvsp[(3) - (4)].string)->simplify();
-		(yyval.stmt)=new NONS_Macro::stringAssignmentStatement(*(yyvsp[(1) - (4)].id),(yyvsp[(3) - (4)].string));
+		(yyval.stmt)=new NONS_Macro::StringAssignmentStatement(*(yyvsp[(1) - (4)].id),(yyvsp[(3) - (4)].string));
 	}
     break;
 
@@ -1932,7 +1932,7 @@ yyreduce:
 
     {
 		(yyvsp[(3) - (5)].expression)->simplify();
-		(yyval.stmt)=new NONS_Macro::ifStructure((yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].block));
+		(yyval.stmt)=new NONS_Macro::IfStructure((yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].block));
 	}
     break;
 
@@ -1940,7 +1940,7 @@ yyreduce:
 
     {
 		(yyvsp[(3) - (7)].expression)->simplify();
-		(yyval.stmt)=new NONS_Macro::ifStructure((yyvsp[(3) - (7)].expression),(yyvsp[(5) - (7)].block),(yyvsp[(7) - (7)].block));
+		(yyval.stmt)=new NONS_Macro::IfStructure((yyvsp[(3) - (7)].expression),(yyvsp[(5) - (7)].block),(yyvsp[(7) - (7)].block));
 	}
     break;
 
@@ -1948,7 +1948,7 @@ yyreduce:
 
     {
 		(yyvsp[(3) - (5)].expression)->simplify();
-		(yyval.stmt)=new NONS_Macro::whileStructure((yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].block));
+		(yyval.stmt)=new NONS_Macro::WhileStructure((yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].block));
 	}
     break;
 
@@ -1958,7 +1958,7 @@ yyreduce:
 		(yyvsp[(5) - (11)].expression)->simplify();
 		(yyvsp[(7) - (11)].expression)->simplify();
 		(yyvsp[(9) - (11)].expression)->simplify();
-		(yyval.stmt)=new NONS_Macro::forStructure(*(yyvsp[(3) - (11)].id),(yyvsp[(5) - (11)].expression),(yyvsp[(7) - (11)].expression),(yyvsp[(9) - (11)].expression),(yyvsp[(11) - (11)].block));
+		(yyval.stmt)=new NONS_Macro::ForStructure(*(yyvsp[(3) - (11)].id),(yyvsp[(5) - (11)].expression),(yyvsp[(7) - (11)].expression),(yyvsp[(9) - (11)].expression),(yyvsp[(11) - (11)].block));
 		delete (yyvsp[(3) - (11)].id);
 	}
     break;
@@ -1966,7 +1966,7 @@ yyreduce:
   case 28:
 
     {
-		(yyval.stmt)=new NONS_Macro::macroCall(*(yyvsp[(1) - (2)].id));
+		(yyval.stmt)=new NONS_Macro::MacroCall(*(yyvsp[(1) - (2)].id));
 		delete (yyvsp[(1) - (2)].id);
 	}
     break;
@@ -1974,7 +1974,7 @@ yyreduce:
   case 29:
 
     {
-		(yyval.stmt)=new NONS_Macro::macroCall(*(yyvsp[(1) - (5)].id),(yyvsp[(3) - (5)].argumentVector));
+		(yyval.stmt)=new NONS_Macro::MacroCall(*(yyvsp[(1) - (5)].id),(yyvsp[(3) - (5)].argumentVector));
 		delete (yyvsp[(1) - (5)].id);
 	}
     break;
@@ -1982,7 +1982,7 @@ yyreduce:
   case 30:
 
     {
-		(yyval.argumentVector)=new std::vector<NONS_Macro::argument *>;
+		(yyval.argumentVector)=new std::vector<NONS_Macro::Argument *>;
 		(yyval.argumentVector)->push_back((yyvsp[(1) - (1)].argument));
 	}
     break;
@@ -2014,7 +2014,7 @@ yyreduce:
   case 34:
 
     {
-		(yyval.string)=new NONS_Macro::constantString(*(yyvsp[(1) - (1)].str));
+		(yyval.string)=new NONS_Macro::ConstantString(*(yyvsp[(1) - (1)].str));
 		delete (yyvsp[(1) - (1)].str);
 	}
     break;
@@ -2022,7 +2022,8 @@ yyreduce:
   case 35:
 
     {
-		(yyval.string)=new NONS_Macro::stringConcatenation((yyvsp[(1) - (3)].string),new NONS_Macro::variableString(*(yyvsp[(3) - (3)].id)));
+		(yyval.string)=new NONS_Macro::StringConcatenation(new NONS_Macro::VariableString(*(yyvsp[(1) - (3)].id)),new NONS_Macro::VariableString(*(yyvsp[(3) - (3)].id)));
+		delete (yyvsp[(1) - (3)].id);
 		delete (yyvsp[(3) - (3)].id);
 	}
     break;
@@ -2030,7 +2031,7 @@ yyreduce:
   case 36:
 
     {
-		(yyval.string)=new NONS_Macro::stringConcatenation(new NONS_Macro::variableString(*(yyvsp[(1) - (3)].id)),(yyvsp[(3) - (3)].string));
+		(yyval.string)=new NONS_Macro::StringConcatenation(new NONS_Macro::VariableString(*(yyvsp[(1) - (3)].id)),(yyvsp[(3) - (3)].string));
 		delete (yyvsp[(1) - (3)].id);
 	}
     break;
@@ -2038,145 +2039,153 @@ yyreduce:
   case 37:
 
     {
-		(yyval.string)=new NONS_Macro::stringConcatenation((yyvsp[(1) - (3)].string),(yyvsp[(3) - (3)].string));
+		(yyval.string)=new NONS_Macro::StringConcatenation((yyvsp[(1) - (3)].string),new NONS_Macro::VariableString(*(yyvsp[(3) - (3)].id)));
+		delete (yyvsp[(3) - (3)].id);
 	}
     break;
 
   case 38:
 
     {
-		(yyval.expression)=(yyvsp[(1) - (1)].expression);
+		(yyval.string)=new NONS_Macro::StringConcatenation((yyvsp[(1) - (3)].string),(yyvsp[(3) - (3)].string));
 	}
     break;
 
   case 39:
 
     {
-		(yyval.expression)=new NONS_Macro::variableExpression(*(yyvsp[(1) - (1)].id));
-		delete (yyvsp[(1) - (1)].id);
+		(yyval.expression)=(yyvsp[(1) - (1)].expression);
 	}
     break;
 
   case 40:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(TRINARY,(yyvsp[(1) - (5)].expression),(yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].expression));
+		(yyval.expression)=new NONS_Macro::VariableExpression(*(yyvsp[(1) - (1)].id));
+		delete (yyvsp[(1) - (1)].id);
 	}
     break;
 
   case 41:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(BOR,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(TRINARY,(yyvsp[(1) - (5)].expression),(yyvsp[(3) - (5)].expression),(yyvsp[(5) - (5)].expression));
 	}
     break;
 
   case 42:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(BOR,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(BOR,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 43:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(BNOT,(yyvsp[(2) - (2)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(BOR,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 44:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(BNOT,(yyvsp[(2) - (2)].expression));
 	}
     break;
 
   case 45:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(NOT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 46:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(GREATER_THAN,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(NOT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 47:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(LOWER_THAN,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(GREATER_THAN,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 48:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(GT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(LOWER_THAN,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 49:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(LT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(GT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 50:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(PLUS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(LT_EQUALS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 51:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(MINUS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(PLUS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 52:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(MUL,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(MINUS,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 53:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(DIV,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(MUL,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 54:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(MOD,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(DIV,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 55:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(MOD ,(yyvsp[(2) - (2)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(MOD,(yyvsp[(1) - (3)].expression),(yyvsp[(3) - (3)].expression));
 	}
     break;
 
   case 56:
 
     {
-		(yyval.expression)=new NONS_Macro::fullExpression(MINUS,(yyvsp[(2) - (2)].expression));
+		(yyval.expression)=new NONS_Macro::FullExpression(MOD ,(yyvsp[(2) - (2)].expression));
 	}
     break;
 
   case 57:
+
+    {
+		(yyval.expression)=new NONS_Macro::FullExpression(MINUS,(yyvsp[(2) - (2)].expression));
+	}
+    break;
+
+  case 58:
 
     {
 		(yyval.expression)=(yyvsp[(2) - (3)].expression);
@@ -2425,7 +2434,7 @@ macroParser_yylex_begin:
 		std::wstring temp;
 		while (NONS_isdigit(c=stream.peek()))
 			temp.push_back(stream.get());
-		yylval->expression=new NONS_Macro::constantExpression(atoi(temp));
+		yylval->expression=new NONS_Macro::ConstantExpression(atoi(temp));
 		return INTEGER;
 	}
 	if (c=='\"'){
@@ -2479,11 +2488,11 @@ macroParser_yylex_begin:
 		if (temp==L"block" && stream.peek()=='{'){
 			stream.get();
 			std::wstring data,
-				string=L"}block";
+				String=L"}block";
 			while (!stream.eof()){
 				c=stream.get();
 				data.push_back(c);
-				if (data.size()>=6 && partialCompare(data,data.size()-6,string))
+				if (data.size()>=6 && partialCompare(data,data.size()-6,String))
 					break;
 			}
 			data.resize(data.size()-6);
@@ -2500,7 +2509,7 @@ macroParser_yylex_begin:
 			return FOR;
 		if (temp==L"while")
 			return WHILE;
-		yylval->id=new NONS_Macro::identifier(temp,yylloc->first_line);
+		yylval->id=new NONS_Macro::Identifier(temp,yylloc->first_line);
 		return IDENTIFIER;
 	}
 	stream.get();
@@ -2585,7 +2594,7 @@ macroParser_yylex_begin:
 	}
 }
 
-void macroParser_yyerror(YYLTYPE *yylloc,std::wstringstream &,NONS_Macro::macroFile *&/*,NONS_Macro::symbolTable &*/,char const *s){
+void macroParser_yyerror(YYLTYPE *yylloc,std::wstringstream &,NONS_Macro::MacroFile *&/*,NONS_Macro::SymbolTable &*/,char const *s){
 	/*if (!retrievedVar)
 		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,UniFromISO88591(s));*/
 }

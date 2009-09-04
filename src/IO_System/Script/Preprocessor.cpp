@@ -37,7 +37,7 @@
 #include <deque>
 
 //0: no changes; !0: something changed
-bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros,bool output);
+bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::MacroFile &macros,bool output);
 
 bool preprocess(std::wstring &dst,const std::wstring &script){
 	ulong l;
@@ -45,8 +45,9 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 	if (temp=(char *)readfile(L"macros.txt",l)){
 		std::wstringstream stream(UniFromUTF8(std::string(temp,l)));
 		delete[] temp;
-		NONS_Macro::macroFile *macroFile;
-		if (!macroParser_yyparse(stream,macroFile) && macroFile->checkSymbols() && preprocess(dst,script,*macroFile,1)){
+		NONS_Macro::MacroFile *MacroFile;
+		bool pointerIsValid=!macroParser_yyparse(stream,MacroFile);
+		if (pointerIsValid && MacroFile->checkSymbols() && preprocess(dst,script,*MacroFile,1)){
 			if (CLOptions.outputPreprocessedFile){
 				std::string str2=UniToUTF8(dst);
 				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
@@ -56,8 +57,12 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 				std::string str2=UniToUTF8(script);
 				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
+			if (pointerIsValid)
+				delete MacroFile;
 			return 0;
 		}
+		if (pointerIsValid)
+			delete MacroFile;
 	}else{
 		if (CLOptions.outputPreprocessedFile){
 			std::string str2=UniToUTF8(script);
@@ -104,7 +109,7 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 	return 1;
 }
 
-bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::macroFile &macros,bool output){
+bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::MacroFile &macros,bool output){
 	ulong first=script.find(L";#call");
 	if (first==script.npos)
 		return 0;

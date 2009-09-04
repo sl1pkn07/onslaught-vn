@@ -47,7 +47,7 @@ uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
 	CloseHandle(file);
 	return ret;
 #else
-	std::ifstream file(wstrToIOstr(filename).c_str(),std::ios::binary);
+	std::ifstream file(UniToUTF8(filename).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
 	return readfile(file,len,offset);
@@ -107,7 +107,7 @@ uchar *readfile(const std::wstring &name,ulong &len){
 	len=filesize;
 	return buffer;
 #else
-	std::ifstream file(wstrToIOstr(name).c_str(),std::ios::binary);
+	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary);
 	if (!file)
 		return 0;
 	file.seekg(0,std::ios::end);
@@ -132,7 +132,7 @@ char writefile(const std::wstring &name,char *buffer,ulong size){
 	CloseHandle(file);
 	return 0;
 #else
-	std::ofstream file(wstrToIOstr(name).c_str(),std::ios::binary);
+	std::ofstream file(UniToUTF8(name).c_str(),std::ios::binary);
 	if (!file)
 		return 1;
 	file.write(buffer,size);
@@ -148,7 +148,7 @@ bool fileExists(const std::wstring &name){
 	ret=(file!=INVALID_HANDLE_VALUE);
 	CloseHandle(file);
 #else
-	std::ifstream file(wstrToIOstr(name).c_str());
+	std::ifstream file(UniToUTF8(name).c_str());
 	ret=!!file;
 	file.close();
 #endif

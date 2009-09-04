@@ -28,6 +28,7 @@ add_executable(ONSlaught
 	src/ONSlaught.cpp
 	src/SJIS.table.cpp
 	src/UTF.cpp
+	src/ThreadManager.cpp
 	src/IO_System/ConfigFile.cpp
 	src/IO_System/FileIO.cpp
 	src/IO_System/INIfile.cpp

@@ -73,4 +73,7 @@ extern std::ofstream textDumpFile;
 #ifdef LOOKUP_BLEND_CONSTANT
 extern uchar blendData[65536];
 #endif
+
+class NONS_ThreadManager;
+extern NONS_ThreadManager threadManager;
 #endif

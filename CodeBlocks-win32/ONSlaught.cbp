@@ -153,6 +153,8 @@
 		<Unit filename="..\src\Processing\VariableStore.cpp" />
 		<Unit filename="..\src\Processing\VariableStore.h" />
 		<Unit filename="..\src\SJIS.table.cpp" />
+		<Unit filename="..\src\ThreadManager.cpp" />
+		<Unit filename="..\src\ThreadManager.h" />
 		<Unit filename="..\src\UTF.cpp" />
 		<Unit filename="..\src\UTF.h" />
 		<Unit filename="..\src\enums.h" />

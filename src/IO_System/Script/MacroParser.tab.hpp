@@ -41,23 +41,23 @@
 #undef ERROR
 
 namespace NONS_Macro{
-struct identifier;
-struct stringOperation;
-struct argument;
-struct expression;
-struct string;
-struct constantExpression;
-struct variableExpression;
-struct fullExpression;
-struct constantString;
-struct variableString;
-struct stringConcatenation;
-struct statement;
-struct macro;
-struct macroFile;
-struct symbol;
-struct symbolTable;
-struct block;
+struct Identifier;
+struct StringOperation;
+struct Argument;
+struct Expression;
+struct String;
+struct ConstantExpression;
+struct VariableExpression;
+struct FullExpression;
+struct ConstantString;
+struct VariableString;
+struct StringConcatenation;
+struct Statement;
+struct Macro;
+struct MacroFile;
+struct Symbol;
+struct SymbolTable;
+struct Block;
 }
 
 
@@ -108,19 +108,19 @@ typedef union YYSTYPE
 {
 
 
-	NONS_Macro::identifier *id;
+	NONS_Macro::Identifier *id;
 	std::wstring *str;
 	std::vector<std::wstring> *stringVector;
-	NONS_Macro::argument *argument;
-	NONS_Macro::string *string;
-	NONS_Macro::expression *expression;
-	std::vector<NONS_Macro::argument *> *argumentVector;
-	NONS_Macro::statement *stmt;
-	NONS_Macro::macroFile *macro_file;
-	NONS_Macro::symbol *symbol;
-	NONS_Macro::symbolTable *symbol_table;
-	NONS_Macro::block *block;
-	std::vector<NONS_Macro::statement *> *stmt_list;
+	NONS_Macro::Argument *argument;
+	NONS_Macro::String *string;
+	NONS_Macro::Expression *expression;
+	std::vector<NONS_Macro::Argument *> *argumentVector;
+	NONS_Macro::Statement *stmt;
+	NONS_Macro::MacroFile *macro_file;
+	NONS_Macro::Symbol *symbol;
+	NONS_Macro::SymbolTable *symbol_table;
+	NONS_Macro::Block *block;
+	std::vector<NONS_Macro::Statement *> *stmt_list;
 
 
 
@@ -153,7 +153,7 @@ typedef struct YYLTYPE
 	#include <sstream>
 	int macroParser_yyparse(
 		std::wstringstream &stream,
-		NONS_Macro::macroFile *&result
+		NONS_Macro::MacroFile *&result
 	);
 	int macroParser_yylex(
 		YYSTYPE *yylval,
@@ -163,8 +163,8 @@ typedef struct YYLTYPE
 	void macroParser_yyerror(
 		YYLTYPE *yylloc,
 		std::wstringstream &,
-		NONS_Macro::macroFile *&result,
-		//NONS_Macro::symbolTable &symbolTable,
+		NONS_Macro::MacroFile *&result,
+		//NONS_Macro::SymbolTable &SymbolTable,
 		char const *
 	);
 	extern int macroParser_yydebug;

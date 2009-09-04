@@ -179,7 +179,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 #ifdef NONS_SYS_WINDOWS
 	this->file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #else
-	this->file.open(wstrToIOstr(filename).c_str(),std::ios::binary);
+	this->file.open(UniToUTF8(filename).c_str(),std::ios::binary);
 #endif
 	this->path=filename;
 	pos=this->path.rfind('.');

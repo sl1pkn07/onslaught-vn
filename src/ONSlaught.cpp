@@ -41,8 +41,7 @@
 #include "IO_System/IOFunctions.h"
 #include "IO_System/FileIO.h"
 #include "version.h"
-
-#define NONS_PARALLELIZE
+#include "ThreadManager.h"
 
 #if defined(NONS_SYS_WINDOWS)
 #include <windows.h>
@@ -249,52 +248,10 @@ int main(int argc,char **argv){
 		o_stderr.redirect();
 		std::cout <<"Redirecting."<<std::endl;
 	}
-	if (!CLOptions.noThreads){
-#ifdef NONS_PARALLELIZE
-		//get CPU count
-#if defined(NONS_SYS_WINDOWS)
-		SYSTEM_INFO si;
-		GetSystemInfo(&si);
-		cpu_count=si.dwNumberOfProcessors;
-#elif defined(NONS_SYS_LINUX)
-		{
-			/*
-			std::ifstream cpuinfo("/proc/cpuinfo");
-			std::string line;
-			std::set<unsigned> IDs;
-			while (!cpuinfo.eof()){
-				std::getline(cpuinfo,line);
-				if (!line.size())
-					continue;
-				if (line.find("processor")!=0)
-					continue;
-				size_t start=line.find(':'),
-					end;
-				for (;line[start]<'0' || line[start]>'9';start++);
-				for (end=start;line[end]>='0' && line[end]<='9';end++);
-				line=line.substr(start,end-start);
-				IDs.insert(atoi(line.c_str()));
-			}
-			cpu_count=IDs.size();
-			cpuinfo.close();
-			*/
-			FILE * fp;
-			char res[128];
-			fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
-			fread(res, 1, sizeof(res)-1, fp);
-			fclose(fp);
-			cpu_count=atoi(res);
-		}
+	threadManager.setCPUcount();
+#ifdef USE_THREAD_MANAGER
+	threadManager.init(cpu_count);
 #endif
-		o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
-#else
-		o_stdout <<"Parallelization disabled.\n";
-		cpu_count=1;
-#endif
-	}else{
-		o_stdout <<"Parallelization disabled.\n";
-		cpu_count=1;
-	}
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	//exitMutex=SDL_CreateMutex();

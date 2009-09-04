@@ -234,11 +234,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\Parallelization.h"
+				RelativePath="..\..\src\SJIS.table.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\SJIS.table.cpp"
+				RelativePath="..\..\src\ThreadManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ThreadManager.h"
 				>
 			</File>
 			<File

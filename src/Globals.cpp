@@ -32,6 +32,7 @@
 #include "Globals.h"
 #include <SDL/SDL.h>
 #include "Processing/ScriptInterpreter.h"
+#include "ThreadManager.h"
 
 NONS_CommandLineOptions CLOptions;
 NONS_InputObserver InputObserver;
@@ -259,4 +260,6 @@ HWND mainWindow=0;
 #ifdef LOOKUP_BLEND_CONSTANT
 uchar blendData[65536];
 #endif
+
+NONS_ThreadManager threadManager;
 #endif
