@@ -61,6 +61,7 @@ O/NScripter).
      different physical resolution than its logical resolution. For example, a
      script that was designed to be ran at 640x480 can be scaled up to 1280x1024
      without changing the script or the data.
+   * Macros.
 
 Q: Why should I use ONSlaught instead of O/NScripter?
 A: Unlike O/NScripter, ONSlaught was designed from the start to support European

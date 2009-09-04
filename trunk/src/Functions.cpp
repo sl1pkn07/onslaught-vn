@@ -39,6 +39,7 @@
 #else
 #include "enums.h"
 #endif
+#include "ThreadManager.h"
 
 #include "UTF.h"
 #include <cmath>
@@ -80,7 +81,12 @@ Uint32 secondsSince1970(){
 
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
-int manualBlit_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+manualBlit_threaded(void *parameters);
 
 void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
@@ -149,7 +155,9 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 		SDL_UnlockSurface(src);
 		return;
 	}
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
@@ -171,24 +179,41 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	rects0[cpu_count-1].h+=srcRect0.h-total;
 	//ulong t0=SDL_GetTicks();
 	for (ushort a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(manualBlit_threaded,parameters+a);
+#else
+		threadManager.call(a-1,manualBlit_threaded,parameters+a);
+#endif
 	manualBlit_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	//ulong t1=SDL_GetTicks();
 	//o_stderr <<"Done in "<<t1-t0<<" ms."<<std::endl;
 	SDL_UnlockSurface(dst);
 	SDL_UnlockSurface(src);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] rects0;
 	delete[] rects1;
 	delete[] parameters;
 }
 
-int manualBlit_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+manualBlit_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	manualBlit_threaded(p->src,p->srcRect,p->dst,p->dstRect,p->alpha);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
@@ -365,7 +390,12 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 }
 
 void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
-int multiplyBlend_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+multiplyBlend_threaded(void *parameters);
 
 void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24)
@@ -432,7 +462,9 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 		SDL_UnlockSurface(src);
 		return;
 	}
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
@@ -452,22 +484,39 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 	}
 	rects0[cpu_count-1].h+=srcRect0.h-total;
 	for (ushort a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(multiplyBlend_threaded,parameters+a);
+#else
+		threadManager.call(a-1,multiplyBlend_threaded,parameters+a);
+#endif
 	multiplyBlend_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	SDL_UnlockSurface(dst);
 	SDL_UnlockSurface(src);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] rects0;
 	delete[] rects1;
 	delete[] parameters;
 }
 
-int multiplyBlend_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+multiplyBlend_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	multiplyBlend_threaded(p->src,p->srcRect,p->dst,p->dstRect);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect){
@@ -590,7 +639,12 @@ struct applyTransformationMatrix_parameters{
 };
 
 void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param);
-int applyTransformationMatrix_threaded(void *parameters);
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void 
+#endif
+applyTransformationMatrix_threaded(void *parameters);
 
 SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	if (!src || src->format->BitsPerPixel<24 || !(matrix[0]*matrix[3]-matrix[1]*matrix[2]))
@@ -616,7 +670,9 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	SDL_UnlockSurface(res);
 
 	ulong division=float(h)/float(cpu_count);
+#ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+#endif
 	applyTransformationMatrix_parameters *parameters=new applyTransformationMatrix_parameters[cpu_count];
 	ulong total=0;
 	for (ulong a=0;a<cpu_count;a++){
@@ -643,20 +699,37 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	}
 	parameters[cpu_count-1].h1+=h-total;
 	for (ulong a=1;a<cpu_count;a++)
+#ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(applyTransformationMatrix_threaded,parameters+a);
+#else
+		threadManager.call(a-1,applyTransformationMatrix_threaded,parameters+a);
+#endif
 	applyTransformationMatrix_threaded(parameters);
+#ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
 		SDL_WaitThread(threads[a],0);
+#else
+	threadManager.waitAll();
+#endif
 	SDL_UnlockSurface(src);
 	SDL_UnlockSurface(res);
+#ifndef USE_THREAD_MANAGER
 	delete[] threads;
+#endif
 	delete[] parameters;
 	return res;
 }
 
-int applyTransformationMatrix_threaded(void *parameters){
+#ifndef USE_THREAD_MANAGER
+int 
+#else
+void
+#endif
+applyTransformationMatrix_threaded(void *parameters){
 	applyTransformationMatrix_threaded(*(applyTransformationMatrix_parameters *)parameters);
+#ifndef USE_THREAD_MANAGER
 	return 0;
+#endif
 }
 
 void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param){

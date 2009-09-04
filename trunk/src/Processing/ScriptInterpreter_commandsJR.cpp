@@ -43,7 +43,7 @@ ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring temp;
 	_GETWCSVALUE(temp,0,)
-	this->nsadir=UniToISO88591(temp);
+	this->nsadir=UniToUTF8(temp);
 	tolower(this->nsadir);
 	toforwardslash(this->nsadir);
 	if (this->nsadir[this->nsadir.size()-1]!='/')
