@@ -1,4 +1,4 @@
-????????
+20090904
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
         drawclear, drawfill, drawsp, drawsp2, drawsp3, drawtext, allsphide,
         allspresume, mov3, mov4, ..., mov10, selnum, humanorder, loadgosub,
@@ -9,6 +9,7 @@
     * Added screenshot function.
     * Improved error reporting system.
     * Added macro capabilities for code generation.
+        TODO: Improve the syntax error reporting system.
     * Fixed savescreenshot and savescreenshot2.
     * Memory leak the size of the script fixed.
     * Bug in jumpb and jumpf fixed.

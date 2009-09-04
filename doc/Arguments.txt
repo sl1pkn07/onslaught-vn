@@ -161,3 +161,11 @@ Stops executing the script when the first error occurs. "Unimplemented command"
 -pp-output <filename>
 Writes the preprocessor output to <filename>. The details of each macro call are
 sent to stderr.
+
+
+-pp-then-quit
+Preprocesses the script and quits. Only makes sense when used with -pp-output.
+
+
+-disable-threading
+Disables threading for blit operations.
