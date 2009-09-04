@@ -42,6 +42,7 @@ bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::MacroFi
 bool preprocess(std::wstring &dst,const std::wstring &script){
 	ulong l;
 	char *temp;
+	bool ret;
 	if (temp=(char *)readfile(L"macros.txt",l)){
 		std::wstringstream stream(UniFromUTF8(std::string(temp,l)));
 		delete[] temp;
@@ -52,14 +53,13 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 				std::string str2=UniToUTF8(dst);
 				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
+			ret=1;
 		}else{
 			if (CLOptions.outputPreprocessedFile){
 				std::string str2=UniToUTF8(script);
 				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
-			if (pointerIsValid)
-				delete MacroFile;
-			return 0;
+			ret=0;
 		}
 		if (pointerIsValid)
 			delete MacroFile;
@@ -68,9 +68,14 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 			std::string str2=UniToUTF8(script);
 			writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
 		}
-		return 0;
+		ret=0;
 	}
-	return 1;
+	if (CLOptions.preprocessAndQuit){
+		if (!ret)
+			o_stderr <<"Preprocessing failed in some way.\n";
+		exit(0);
+	}
+	return ret;
 }
 
 bool readIdentifier(std::wstring &dst,const std::wstring &src,ulong offset){

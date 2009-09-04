@@ -27,42 +27,73 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_COMMANDLINEOPTIONS_H
-#define NONS_COMMANDLINEOPTIONS_H
+#ifndef NONS_THREADMANAGER_H
+#define NONS_THREADMANAGER_H
 
-#include "enums.h"
-#include "CommonTypes.h"
-#include <string>
+#include "Common.h"
 #include <vector>
+typedef void (*NONS_ThreadedFunctionPointer)(void *);
 
-struct NONS_CommandLineOptions{
-	ENCODINGS scriptencoding;
-	std::wstring musicFormat;
-	std::wstring musicDirectory;
-	std::wstring archiveDirectory;
-	long cacheSize;
-	std::wstring scriptPath;
-	ENCRYPTION scriptEncryption;
-	bool override_stdout;
-	bool reset_redirection_files;
-	bool debugMode;
-	bool noconsole;
-	ushort virtualWidth,virtualHeight,
-		realWidth,realHeight;
-	bool startFullscreen;
-	uchar verbosity;
-	bool no_sound;
-	std::wstring savedir;
-	bool stopOnFirstError;
-	bool listImplementation;
-	bool outputPreprocessedFile;
-	std::wstring preprocessedFile;
-	bool noThreads;
-	bool preprocessAndQuit;
-	NONS_CommandLineOptions();
-	~NONS_CommandLineOptions(){}
-	void parse(const std::vector<std::wstring> &arguments);
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+#elif defined(NONS_SYS_UNIX)
+#include <pthread.h>
+#include <semaphore.h>
+#endif
+
+#define USE_THREAD_MANAGER
+
+class NONS_Event{
+	bool initialized;
+#ifdef NONS_SYS_WINDOWS
+	HANDLE event;
+#elif defined(NONS_SYS_UNIX)
+	sem_t sem;
+#endif
+public:
+	NONS_Event():initialized(0){}
+	void init();
+	~NONS_Event();
+	void set();
+	void reset();
+	void wait();
 };
 
-void usage();
+class NONS_Thread{
+	bool initialized;
+#ifdef NONS_SYS_WINDOWS
+	HANDLE thread;
+#elif defined(NONS_SYS_UNIX)
+	pthread_t thread;
+#endif
+	ulong index;
+	volatile bool destroy;
+	void *parameter;
+public:
+	NONS_Event startCallEvent,
+		callEndedEvent;
+	volatile NONS_ThreadedFunctionPointer function;
+	NONS_Thread():initialized(0){}
+	~NONS_Thread();
+	void init(ulong index);
+	void call(NONS_ThreadedFunctionPointer f,void *p);
+	void wait();
+#ifdef NONS_SYS_WINDOWS
+	static DWORD WINAPI runningThread(void *);
+#elif defined(NONS_SYS_UNIX)
+	static void *runningThread(void *);
+#endif
+};
+
+class NONS_ThreadManager{
+	std::vector<NONS_Thread> threads;
+public:
+	NONS_ThreadManager(){}
+	NONS_ThreadManager(ulong CPUs);
+	void init(ulong CPUs);
+	ulong call(ulong onThread,NONS_ThreadedFunctionPointer f,void *p);
+	void wait(ulong index);
+	void waitAll();
+	static void setCPUcount();
+};
 #endif

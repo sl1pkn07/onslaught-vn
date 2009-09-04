@@ -69,6 +69,7 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->listImplementation=0;
 	this->outputPreprocessedFile=0;
 	this->noThreads=0;
+	this->preprocessAndQuit=0;
 }
 
 void usage(){
@@ -146,6 +147,9 @@ void usage(){
 		"  -pp-output\n"
 		"      Writes the preprocessor output to <filename>. The details of each macro\n"
         "      call are sent to stderr.\n"
+		"  -pp-then-quit\n"
+		"      Preprocesses the script and quits. Only makes sense when used with\n"
+		"      -pp-output.\n"
 		"  -disable-threading\n"
 		"      Disables threading for blit operations.\n";
 	exit(0);
@@ -181,6 +185,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-archive-directory",            //25
 		L"-pp-output",                    //26
 		L"-disable-threading",            //27
+		L"-pp-then-quit",                 //28
 		0
 	};
 
@@ -385,6 +390,8 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 			case 27:
 				this->noThreads=1;
 				break;
+			case 28:
+				this->preprocessAndQuit=1;
 			case 17://-sdebug
 			default:
 				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;
