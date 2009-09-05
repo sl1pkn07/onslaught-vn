@@ -55,9 +55,9 @@ typedef unsigned char uchar;
 #define BOM16L 0xFFFE
 #define BOM16LA BOM16BB
 #define BOM16LB BOM16BA
-#define BOM8A 0xEF
-#define BOM8B 0xBB
-#define BOM8C 0xBF
+#define BOM8A ((uchar)0xEF)
+#define BOM8B ((uchar)0xBB)
+#define BOM8C ((uchar)0xBF)
 #define NONS_BIG_ENDIAN 0
 #define NONS_LITTLE_ENDIAN 1
 #define UNDEFINED_ENDIANNESS 2

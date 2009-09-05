@@ -76,7 +76,7 @@ ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset){
 }
 
 Uint32 secondsSince1970(){
-	return time(0);
+	return (Uint32)time(0);
 }
 
 #if !defined(TOOLS_BARE_FILE) && !defined(TOOLS_NSAIO)
@@ -161,7 +161,7 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
-	ulong division=float(srcRect0.h)/float(cpu_count);
+	ulong division=ulong(float(srcRect0.h)/float(cpu_count));
 	ulong total=0;
 	for (ushort a=0;a<cpu_count;a++){
 		rects0[a]=srcRect0;
@@ -176,7 +176,7 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 		parameters[a].dstRect=rects1+a;
 		parameters[a].alpha=alpha;
 	}
-	rects0[cpu_count-1].h+=srcRect0.h-total;
+	rects0[cpu_count-1].h+=Uint16(srcRect0.h-total);
 	//ulong t0=SDL_GetTicks();
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
@@ -299,29 +299,29 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 
 			if (alpha==255){
 				if (!alpha0){
-					*r1=r0;
-					*g1=g0;
-					*b1=b0;
+					*r1=(uchar)r0;
+					*g1=(uchar)g0;
+					*b1=(uchar)b0;
 					if (alpha1)
 						*a1=0xFF;
 				}else{
 					a0=pos0[Aoffset0];
 					if (!alpha1){
-						*r1=APPLY_ALPHA(r0,*r1,a0);
-						*g1=APPLY_ALPHA(g0,*g1,a0);
-						*b1=APPLY_ALPHA(b0,*b1,a0);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,a0);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,a0);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,a0);
 					}else{
 						ulong el;
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(a0<<8)];
 #else
 						ulong previous=*a1;
-						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+						*a1=(uchar)INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 						el=(!a0 && !previous)?0:(a0*255)/(*a1);
 #endif
-						*r1=APPLY_ALPHA(r0,*r1,el);
-						*g1=APPLY_ALPHA(g0,*g1,el);
-						*b1=APPLY_ALPHA(b0,*b1,el);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
 #ifdef LOOKUP_BLEND_CONSTANT
 						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 #endif
@@ -330,21 +330,21 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 			}else{
 				if (!alpha0){
 					if (!alpha1){
-						*r1=APPLY_ALPHA(r0,*r1,alpha);
-						*g1=APPLY_ALPHA(g0,*g1,alpha);
-						*b1=APPLY_ALPHA(b0,*b1,alpha);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,alpha);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,alpha);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,alpha);
 					}else{
 						ulong el;
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(alpha<<8)];
 #else
 						ulong previous=*a1;
-						*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
+						*a1=(uchar)INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
 						el=(!alpha && !previous)?0:(alpha*255)/(*a1);
 #endif
-						*r1=APPLY_ALPHA(r0,*r1,el);
-						*g1=APPLY_ALPHA(g0,*g1,el);
-						*b1=APPLY_ALPHA(b0,*b1,el);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
 #ifdef LOOKUP_BLEND_CONSTANT
 						*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
 #endif
@@ -352,21 +352,21 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 				}else{
 					a0=INTEGER_MULTIPLICATION(pos0[Aoffset0],alpha);
 					if (!alpha1){
-						*r1=APPLY_ALPHA(r0,*r1,a0);
-						*g1=APPLY_ALPHA(g0,*g1,a0);
-						*b1=APPLY_ALPHA(b0,*b1,a0);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,a0);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,a0);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,a0);
 					}else{
 						ulong el;
 #ifdef LOOKUP_BLEND_CONSTANT
 						el=blendData[*a1+(a0<<8)];
 #else
 						ulong previous=*a1;
-						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
+						*a1=(uchar)INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 						el=(!a0 && !previous)?0:(a0*255)/(*a1);
 #endif
-						*r1=APPLY_ALPHA(r0,*r1,el);
-						*g1=APPLY_ALPHA(g0,*g1,el);
-						*b1=APPLY_ALPHA(b0,*b1,el);
+						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
+						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
+						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
 #ifdef LOOKUP_BLEND_CONSTANT
 						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 #endif
@@ -468,7 +468,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	PSF_parameters *parameters=new PSF_parameters[cpu_count];
-	ulong division=float(srcRect0.h)/float(cpu_count);
+	ulong division=ulong(float(srcRect0.h)/float(cpu_count));
 	ulong total=0;
 	for (ushort a=0;a<cpu_count;a++){
 		rects0[a]=srcRect0;
@@ -482,7 +482,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 		parameters[a].dst=dst;
 		parameters[a].dstRect=rects1+a;
 	}
-	rects0[cpu_count-1].h+=srcRect0.h-total;
+	rects0[cpu_count-1].h+=Uint16(srcRect0.h-total);
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
 		threads[a]=SDL_CreateThread(multiplyBlend_threaded,parameters+a);
@@ -570,9 +570,9 @@ void getFinalSize(SDL_Surface *src,float matrix[4],ulong &w,ulong &h){
 		h0=src->h;
 	float coords[][2]={
 		{0,0},
-		{0,h0},
-		{w0,0},
-		{w0,h0}
+		{0,(float)h0},
+		{(float)w0,0},
+		{(float)w0,(float)h0}
 	};
 	float minx,miny,maxx,maxy;
 	maxx=minx=coords[0][0]*matrix[0]+coords[0][1]*matrix[1];
@@ -589,8 +589,8 @@ void getFinalSize(SDL_Surface *src,float matrix[4],ulong &w,ulong &h){
 		if (y>maxy)
 			maxy=y;
 	}
-	w=maxx-minx;
-	h=maxy-miny;
+	w=ulong(maxx-minx);
+	h=ulong(maxy-miny);
 }
 
 void invert_matrix(float m[4]){
@@ -607,9 +607,9 @@ void invert_matrix(float m[4]){
 void getCorrected(ulong &x0,ulong &y0,float matrix[4]){
 	float coords[][2]={
 		{0,0},
-		{0,y0},
-		{x0,0},
-		{x0,y0}
+		{0,(float)y0},
+		{(float)x0,0},
+		{(float)x0,(float)y0}
 	};
 	float minx,miny;
 	minx=coords[0][0]*matrix[0]+coords[0][1]*matrix[1];
@@ -622,8 +622,8 @@ void getCorrected(ulong &x0,ulong &y0,float matrix[4]){
 		if (y<miny)
 			miny=y;
 	}
-	x0=-minx;
-	y0=-miny;
+	x0=(ulong)-minx;
+	y0=(ulong)-miny;
 }
 
 struct applyTransformationMatrix_parameters{
@@ -669,7 +669,7 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	SDL_UnlockSurface(src);
 	SDL_UnlockSurface(res);
 
-	ulong division=float(h)/float(cpu_count);
+	ulong division=ulong(float(h)/float(cpu_count));
 #ifndef USE_THREAD_MANAGER
 	SDL_Thread **threads=new SDL_Thread *[cpu_count];
 #endif
@@ -693,7 +693,7 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 		parameters[a].dst+=parameters[a].y*parameters[a].pitch1;
 
 		for (int b=0;b<4;b++)
-			parameters[a].matrix[b]=inv_matrix[b]*0x10000;
+			parameters[a].matrix[b]=long(inv_matrix[b]*0x10000);
 		parameters[a].correct_x=correct_x;
 		parameters[a].correct_y=correct_y;
 	}
@@ -1071,7 +1071,7 @@ SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
 
 	//ulong resWidth=float(src->w)*(1.0f+ABS(amount));
 	//ulong resWidth=float(src->w)*(1.0f+ABS(amount)*(float(src->h)/float(src->w)));
-	ulong resWidth=src->w+ABS(amount)*float(src->h);
+	ulong resWidth=ulong(src->w+ABS(amount)*float(src->h));
 	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,resWidth,src->h,
 		src->format->BitsPerPixel,
 		src->format->Rmask,
@@ -1091,7 +1091,7 @@ SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
 	ulong pitch0=src->pitch;
 	ulong pitch1=res->pitch;
 
-	ulong delta=ABS(amount)*0x10000;
+	ulong delta=ulong(ABS(amount)*0x10000);
 	ulong X=0;
 	ulong x=0;
 
@@ -1154,7 +1154,7 @@ SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 		h=src->h;
 
 	//ulong resHeight=float(src->h)*(1.0f+ABS(amount)*(float(src->w)/float(src->h)));
-	ulong resHeight=src->h+ABS(amount)*float(src->w);
+	ulong resHeight=ulong(src->h+ABS(amount)*float(src->w));
 	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,resHeight,
 		src->format->BitsPerPixel,
 		src->format->Rmask,
@@ -1174,7 +1174,7 @@ SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 	ulong pitch0=src->pitch;
 	ulong pitch1=res->pitch;
 
-	ulong delta=ABS(amount)*0x10000;
+	ulong delta=ulong(ABS(amount)*0x10000);
 	ulong X=0;
 	ulong y=0;
 
@@ -1421,10 +1421,10 @@ ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 			return NONS_NO_ERROR;
 		case VARIABLE_XOR_ENCRYPTION:
 			{
-				char magic_numbers[5]={0x79,0x57,0x0d,0x80,0x04};
+				uchar magic_numbers[5]={0x79,0x57,0x0d,0x80,0x04};
 				ulong index=0;
 				for (ulong a=0;a<length;a++){
-					buffer[a]^=magic_numbers[index];
+					((uchar *)buffer)[a]^=magic_numbers[index];
 					index=(index+1)%5;
 				}
 				return NONS_NO_ERROR;

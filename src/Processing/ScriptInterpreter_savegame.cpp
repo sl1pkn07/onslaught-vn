@@ -204,8 +204,8 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 			*characters[a]=new NONS_Layer(&save.characters[a].string);
 		else
 			(*characters[a])->load(&save.characters[a].string);
-		(*characters[a])->position.x=save.characters[a].x;
-		(*characters[a])->position.y=save.characters[a].y;
+		(*characters[a])->position.x=(Sint16)save.characters[a].x;
+		(*characters[a])->position.y=(Sint16)save.characters[a].y;
 		(*characters[a])->visible=save.characters[a].visibility;
 		(*characters[a])->alpha=save.characters[a].alpha;
 		if ((*characters[a])->animated())

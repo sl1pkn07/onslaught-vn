@@ -170,7 +170,7 @@ bool NONS_Layer::advanceAnimation(ulong msec){
 	long frame=this->animation.advanceAnimation(msec);
 	if (frame<0)
 		return 0;
-	this->clip_rect.x=frame*this->clip_rect.w;
+	this->clip_rect.x=Sint16(frame*this->clip_rect.w);
 	return 1;
 }
 

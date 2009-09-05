@@ -247,8 +247,8 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
 		this->everything->audio->stopMusic();
 		return NONS_NO_ERROR;
 	}
-	float original_vol=this->everything->audio->musicVolume(-1);
-	float advance=original_vol/(float(ms)/25.0);
+	float original_vol=(float)this->everything->audio->musicVolume(-1);
+	float advance=original_vol/(float(ms)/25.0f);
 	float current_vol=original_vol;
 	while (current_vol>0){
 		SDL_Delay(25);
@@ -258,7 +258,7 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
 		this->everything->audio->musicVolume((int)current_vol);
 	}
 	_HANDLE_POSSIBLE_ERRORS(this->everything->audio->stopMusic(),)
-	this->everything->audio->musicVolume(original_vol);
+	this->everything->audio->musicVolume((int)original_vol);
 	return NONS_NO_ERROR;
 }
 
@@ -331,7 +331,7 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,str,x,y,alpha,!stdStrCmpCI(stmt.commandName,L"lsp")),);
+	_HANDLE_POSSIBLE_ERRORS(this->everything->screen->loadSprite(spriten,str,x,y,(uchar)alpha,!stdStrCmpCI(stmt.commandName,L"lsp")),);
 	return NONS_NO_ERROR;
 }
 
@@ -390,7 +390,7 @@ ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_Statement &stmt){
 		return NONS_NO_ERROR;
 	}
 	_GETINTVALUE(color,0,)
-	uchar r=(color&0xFF0000)>>16,
+	uchar r=uchar((color&0xFF0000)>>16),
 		g=(color&0xFF00)>>8,
 		b=color&0xFF;
 	/*if (!this->everything->screen)
@@ -496,7 +496,12 @@ ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
 	_GETINTVALUE(spacingY,3,)
 	_GETINTVALUE(shadow,5,)
 	_GETINTVALUE(hexcolor,6,)
-	SDL_Color color={(hexcolor&0xFF0000)>>16,(hexcolor&0xFF00)>>8,hexcolor&0xFF,0};
+	SDL_Color color={
+		Uint8((hexcolor&0xFF0000)>>16),
+		(hexcolor&0xFF00)>>8,
+		hexcolor&0xFF,
+		0
+	};
 	this->menu->fontsize=fontX;
 	this->menu->lineskip=fontY+spacingY;
 	this->menu->spacing=spacingX;
@@ -517,9 +522,9 @@ ErrorCode NONS_ScriptInterpreter::command_menuselectcolor(NONS_Statement &stmt){
 	_GETINTVALUE(on,0,)
 	_GETINTVALUE(off,1,)
 	_GETINTVALUE(nofile,2,)
-	SDL_Color coloron={(on&0xFF0000)>>16,(on&0xFF00)>>8,on&0xFF,0},
-		coloroff={(off&0xFF0000)>>16,(off&0xFF00)>>8,off&0xFF,0},
-		colornofile={(nofile&0xFF0000)>>16,(nofile&0xFF00)>>8,nofile&0xFF,0};
+	SDL_Color coloron={Uint8((on&0xFF0000)>>16),(on&0xFF00)>>8,on&0xFF,0},
+		coloroff={Uint8((off&0xFF0000)>>16),(off&0xFF00)>>8,off&0xFF,0},
+		colornofile={Uint8((nofile&0xFF0000)>>16),(nofile&0xFF00)>>8,nofile&0xFF,0};
 	this->menu->on=coloron;
 	this->menu->off=coloroff;
 	this->menu->nofile=colornofile;
@@ -591,22 +596,22 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 	if (!l)
 		return NONS_NO_SPRITE_LOADED_THERE;
 	if (stdStrCmpCI(stmt.commandName,L"amsp")){
-		l->position.x+=x;
-		l->position.y+=y;
+		l->position.x+=(Sint16)x;
+		l->position.y+=(Sint16)y;
 		if (long(l->alpha)+alpha>255)
 			l->alpha=255;
 		else if (long(l->alpha)+alpha<0)
 			l->alpha=0;
 		else
-			l->alpha+=alpha;
+			l->alpha+=(uchar)alpha;
 	}else{
-		l->position.x=x;
-		l->position.y=y;
+		l->position.x=(Sint16)x;
+		l->position.y=(Sint16)y;
 		if (alpha>255)
 			alpha=255;
 		else if (alpha<0)
 			alpha=0;
-		l->alpha=alpha;
+		l->alpha=(uchar)alpha;
 	}
 	return NONS_NO_ERROR;
 }
@@ -621,8 +626,8 @@ void shake(SDL_Surface *dst,long amplitude,ulong duration){
 	while (SDL_GetTicks()-start<duration){
 		SDL_FillRect(dst,&srcrect,0);
 		do{
-			dstrect.x=(rand()%2)?amplitude:-amplitude;
-			dstrect.y=(rand()%2)?amplitude:-amplitude;
+			dstrect.x=Sint16((rand()%2)?amplitude:-amplitude);
+			dstrect.y=Sint16((rand()%2)?amplitude:-amplitude);
 		}while (dstrect.x==last.x && dstrect.y==last.y);
 		last=dstrect;
 		manualBlit(copyDst,&srcrect,dst,&dstrect);
@@ -674,7 +679,7 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackcolor(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long a;
 	_GETINTVALUE(a,0,)
-	SDL_Color col={(a&0xFF0000)>>16,(a&0xFF00)>>8,a&0xFF,0};
+	SDL_Color col={Sint8((a&0xFF0000)>>16),(a&0xFF00)>>8,a&0xFF,0};
 	this->everything->screen->lookback->foreground=col;
 	return NONS_NO_ERROR;
 }

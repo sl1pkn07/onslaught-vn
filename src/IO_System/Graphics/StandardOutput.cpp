@@ -398,9 +398,9 @@ int NONS_StandardOutput::setLineStart(std::wstring *arr,ulong start,SDL_Rect *fr
 		start++;
 	int width=this->predictLineLength(arr,start,frame->w);
 	float factor=(center<=0.5f)?center:1.0f-center;
-	int pixelcenter=float(frame->w)*factor;
+	int pixelcenter=int(float(frame->w)*factor);
 	//Magic formula. Don't mess with it.
-	return (width/2>pixelcenter)?frame->x+(frame->w-width)*(center>0.5f):frame->x+frame->w*center-width/2;
+	return int((width/2.0f>pixelcenter)?frame->x+(frame->w-width)*(center>0.5f):frame->x+frame->w*center-width/2.0f);
 }
 
 int NONS_StandardOutput::predictLineLength(std::wstring *arr,long start,int width){
@@ -428,9 +428,9 @@ int NONS_StandardOutput::predictTextHeight(std::wstring *arr){
 
 int NONS_StandardOutput::setTextStart(std::wstring *arr,SDL_Rect *frame,float center){
 	int height=this->predictTextHeight(arr);
-	float factor=(center<=.5)?center:1.0-center;
-	int pixelcenter=float(frame->h)*factor;
-	return (height/2>pixelcenter)?frame->y+(frame->h-height)*(center>.5):frame->y+frame->h*center-height/2;
+	float factor=(center<=0.5f)?center:1.0f-center;
+	int pixelcenter=int(float(frame->h)*factor);
+	return int((height/2.0f>pixelcenter)?frame->y+(frame->h-height)*(center>0.5f):frame->y+frame->h*center-height/2.0f);
 }
 
 void NONS_StandardOutput::Clear(bool eraseBuffer){
@@ -486,7 +486,7 @@ void NONS_StandardOutput::setCenterPolicy(char which,float val){
 	if (val<0)
 		val=-val;
 	if (val>1){
-		ulong val2=val;
+		ulong val2=(ulong)val;
 		val-=val2;
 	}
 	if (which=='v')

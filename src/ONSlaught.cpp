@@ -182,8 +182,8 @@ void handleInputEvent(SDL_Event &event){
 			if (everything->screen){
 				x=everything->screen->screen->unconvertX(x);
 				y=everything->screen->screen->unconvertY(y);
-				event.motion.x=x;
-				event.motion.y=y;
+				event.motion.x=(Uint16)x;
+				event.motion.y=(Uint16)y;
 			}
 			if (x>0 && y>0)
 				InputObserver.notify(&event);
@@ -194,8 +194,8 @@ void handleInputEvent(SDL_Event &event){
 			if (everything->screen){
 				x=everything->screen->screen->unconvertX(x);
 				y=everything->screen->screen->unconvertY(y);
-				event.button.x=x;
-				event.button.y=y;
+				event.button.x=(Uint16)x;
+				event.button.y=(Uint16)y;
 			}
 			if (x>0 && y>0)
 				InputObserver.notify(&event);

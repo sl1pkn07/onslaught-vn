@@ -174,7 +174,7 @@ void WC_UTF8(uchar *dst,const wchar_t *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++){
 		wchar_t character=*src++;
 		if (character<0x80)
-			*dst++=character;
+			*dst++=(uchar)character;
 		else if (character<0x800){
 			*dst++=(character>>6)|192;
 			*dst++=character&63|128;
@@ -222,7 +222,7 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 #endif
 		}
 		if (character<0x100)
-			dst[ret++]=character;
+			dst[ret++]=(uchar)character;
 		else{
 			dst[ret++]=character>>8;
 			dst[ret++]=character&0xFF;

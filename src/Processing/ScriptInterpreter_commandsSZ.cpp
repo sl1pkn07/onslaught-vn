@@ -184,8 +184,18 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 			fontsize<1){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	SDL_Rect windowRect={windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1};
-	SDL_Rect frameRect={frameXstart,frameYstart,frameXend-frameXstart,frameYend-frameYstart};
+	SDL_Rect windowRect={
+		(Sint16)windowXstart,
+		(Sint16)windowYstart,
+		Uint16(windowXend-windowXstart+1),
+		Uint16(windowYend-windowYstart+1)
+	};
+	SDL_Rect frameRect={
+		(Sint16)frameXstart,
+		(Sint16)frameYstart,
+		Uint16(frameXend-frameXstart),
+		Uint16(frameYend-frameYstart)
+	};
 	{
 		SDL_Surface *scr=this->everything->screen->screen->virtualScreen;
 		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
@@ -208,7 +218,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		SDL_Surface *pic;
 		if (!syntax){
 			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
-			this->everything->screen->output->shadeLayer->setShade((color&0xFF0000)>>16,(color&0xFF00)>>8,color&0xFF);
+			this->everything->screen->output->shadeLayer->setShade(uchar((color&0xFF0000)>>16),(color&0xFF00)>>8,color&0xFF);
 			this->everything->screen->output->shadeLayer->Clear();
 		}else{
 			pic=ImageLoader->fetchSprite(filename);
@@ -279,24 +289,24 @@ ErrorCode NONS_ScriptInterpreter::command_tal(NONS_Statement &stmt){
 		case 'l':
 			if (this->hideTextDuringEffect)
 				this->everything->screen->hideText();
-			this->everything->screen->leftChar->alpha=newalpha;
+			this->everything->screen->leftChar->alpha=(uchar)newalpha;
 			break;
 		case 'r':
 			if (this->hideTextDuringEffect)
 				this->everything->screen->hideText();
-			this->everything->screen->rightChar->alpha=newalpha;
+			this->everything->screen->rightChar->alpha=(uchar)newalpha;
 			break;
 		case 'c':
 			if (this->hideTextDuringEffect)
 				this->everything->screen->hideText();
-			this->everything->screen->centerChar->alpha=newalpha;
+			this->everything->screen->centerChar->alpha=(uchar)newalpha;
 			break;
 		case 'a':
 			if (this->hideTextDuringEffect)
 				this->everything->screen->hideText();
-			this->everything->screen->leftChar->alpha=newalpha;
-			this->everything->screen->rightChar->alpha=newalpha;
-			this->everything->screen->centerChar->alpha=newalpha;
+			this->everything->screen->leftChar->alpha=(uchar)newalpha;
+			this->everything->screen->rightChar->alpha=(uchar)newalpha;
+			this->everything->screen->centerChar->alpha=(uchar)newalpha;
 			break;
 		default:
 			return NONS_INVALID_PARAMETER;
@@ -441,10 +451,10 @@ ErrorCode NONS_ScriptInterpreter::command_selectcolor(NONS_Statement &stmt){
 	long on,off;
 	_GETINTVALUE(on,0,)
 	_GETINTVALUE(off,1,)
-	this->selectOn.r=(on&0xFF0000)>>16;
+	this->selectOn.r=Uint8((on&0xFF0000)>>16);
 	this->selectOn.g=(on&0xFF00)>>8;
 	this->selectOn.b=on&0xFF;
-	this->selectOff.r=(off&0xFF0000)>>16;
+	this->selectOff.r=Uint8((off&0xFF0000)>>16);
 	this->selectOff.g=(off&0xFF00)>>8;
 	this->selectOff.b=off&0xFF;
 	return NONS_NO_ERROR;
@@ -512,7 +522,7 @@ ErrorCode NONS_ScriptInterpreter::command_trap(NONS_Statement &stmt){
 	if (!this->script->blockFromLabel(label))
 		return NONS_NO_SUCH_BLOCK;
 	this->trapLabel=label;
-	trapFlag=kind;
+	trapFlag=(uchar)kind;
 	return NONS_NO_ERROR;
 }
 
@@ -564,7 +574,7 @@ ErrorCode NONS_ScriptInterpreter::command_savenumber(NONS_Statement &stmt){
 	_GETINTVALUE(n,0,)
 	if (n<1 || n>20)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	this->menu->slots=n;
+	this->menu->slots=(ushort)n;
 	return NONS_NO_ERROR;
 }
 
@@ -583,23 +593,23 @@ ErrorCode NONS_ScriptInterpreter::command_use_new_if(NONS_Statement &stmt){
 }
 
 void quake(SDL_Surface *dst,char axis,ulong amplitude,ulong duration){
-	float length=duration,
-		amp=amplitude;
+	float length=(float)duration,
+		amp=(float)amplitude;
 	SDL_Rect srcrect=dst->clip_rect,
 		dstrect=srcrect;
 	SDL_Surface *copyDst=makeSurface(dst->w,dst->h,32);
 	manualBlit(dst,0,copyDst,0);
 	ulong start=SDL_GetTicks();
 	while (1){
-		float x=SDL_GetTicks()-start;
+		float x=float(SDL_GetTicks()-start);
 		if (x>duration)
 			break;
-		float y=sin(x*(20/length)*M_PI)*((amp/-length)*x+amplitude);
+		float y=(float)sin(x*(20/length)*M_PI)*((amp/-length)*x+amplitude);
 		SDL_FillRect(dst,&srcrect,0);
 		if (axis=='x')
-			dstrect.x=y;
+			dstrect.x=(Sint16)y;
 		else
-			dstrect.y=y;
+			dstrect.y=(Sint16)y;
 		manualBlit(copyDst,&srcrect,dst,&dstrect);
 		SDL_UpdateRect(dst,0,0,0,0);
 	}
@@ -618,7 +628,7 @@ ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt)
 		amplitude=this->everything->screen->screen->convertW(amplitude);
 	else
 		amplitude=this->everything->screen->screen->convertH(amplitude);
-	quake(this->everything->screen->screen->realScreen,stmt.commandName[5],amplitude,duration);
+	quake(this->everything->screen->screen->realScreen,(char)stmt.commandName[5],amplitude,duration);
 	return NONS_NO_ERROR;
 }
 
