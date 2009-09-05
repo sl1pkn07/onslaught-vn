@@ -335,17 +335,17 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 					break;
 				}
-				this->virtualWidth=atoi(arguments[++a]);
-				this->virtualHeight=atoi(arguments[++a]);
-				this->realWidth=atoi(arguments[++a]);
-				this->realHeight=atoi(arguments[++a]);
+				this->virtualWidth=(ushort)atoi(arguments[++a]);
+				this->virtualHeight=(ushort)atoi(arguments[++a]);
+				this->realWidth=(ushort)atoi(arguments[++a]);
+				this->realHeight=(ushort)atoi(arguments[++a]);
 				break;
 			case 16: //-verbosity
 				if (a+1>=size){
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 					break;
 				}
-				this->verbosity=atoi(arguments[++a]);
+				this->verbosity=(uchar)atoi(arguments[++a]);
 				break;
 			case 18: //-s
 				this->no_sound=1;
@@ -392,6 +392,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				break;
 			case 28:
 				this->preprocessAndQuit=1;
+				break;
 			case 17://-sdebug
 			default:
 				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;

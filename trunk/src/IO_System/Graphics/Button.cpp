@@ -271,9 +271,9 @@ int NONS_Button::setLineStart(std::vector<NONS_Glyph *> *arr,long start,SDL_Rect
 	while (!(*arr)[start])
 		start++;
 	int width=this->predictLineLength(arr,start,frame->w);
-	float factor=(center<=.5)?center:1.0-center;
-	int pixelcenter=float(frame->w)*factor;
-	return (width/2>pixelcenter)?(frame->w-width)*(center>.5):frame->w*center-width/2;
+	float factor=(center<=0.5f)?center:1.0f-center;
+	int pixelcenter=int(float(frame->w)*factor);
+	return int((width/2.0f>pixelcenter)?(frame->w-width)*(center>0.5f):frame->w*center-width/2.0f);
 }
 
 int NONS_Button::predictLineLength(std::vector<NONS_Glyph *> *arr,long start,int width){

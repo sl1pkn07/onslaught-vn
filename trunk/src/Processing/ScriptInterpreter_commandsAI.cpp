@@ -181,15 +181,15 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_Statement &stmt){
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"sin")){
-			var->set(sin(M_PI*val/180.0)*1000.0);
+			var->set(long(sin(M_PI*double(val)/180.0)*1000.0));
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"cos")){
-			var->set(cos(M_PI*val/180.0)*1000.0);
+			var->set(long(cos(M_PI*double(val)/180.0)*1000.0));
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"tan")){
-			var->set(tan(M_PI*val/180.0)*1000.0);
+			var->set(long(tan(M_PI*double(val)/180.0)*1000.0));
 			break;
 		}
 		if (!stdStrCmpCI(stmt.commandName,L"mod")){
@@ -430,7 +430,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 		scr->Background->setShade(0,0,0);
 		scr->Background->Clear();
 	}else if (this->store->getIntValue(stmt.parameters[0],color)==NONS_NO_ERROR){
-		char r=(color&0xFF0000)>>16,
+		char r=char((color&0xFF0000)>>16),
 			g=(color&0xFF00)>>8,
 			b=(color&0xFF);
 		scr->Background->setShade(r,g,b);
@@ -765,8 +765,17 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_Statement &stmt){
 	_GETINTVALUE(imgY,5,)
 	_GETINTVALUE(imgW,6,)
 	_GETINTVALUE(imgH,7,)
-	SDL_Rect dstRect={screenX,screenY,screenW,screenH},
-		srcRect={imgX,imgY,imgW,imgH};
+	SDL_Rect dstRect={
+			(Sint16)screenX,
+			(Sint16)screenY,
+			(Uint16)screenW,
+			(Uint16)screenH
+		},srcRect={
+			(Sint16)imgX,
+			(Sint16)imgY,
+			(Uint16)imgW,
+			(Uint16)imgH
+	};
 	void (*interpolationFunction)(SDL_Surface *,SDL_Rect *,SDL_Surface *,SDL_Rect *,ulong,ulong)=&nearestNeighborInterpolation;
 	ulong x_multiplier=1,y_multiplier=1;
 	if (imgW==screenW && imgH==screenH){
@@ -929,8 +938,8 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			SDL_FreeSurface(src);
 			src=dst;
 			SDL_Rect dstR={
-				-long(src->clip_rect.w/2)+x,
-				-long(src->clip_rect.h/2)+y,
+				Sint16(-long(src->clip_rect.w/2)+x),
+				Sint16(-long(src->clip_rect.h/2)+y),
 				0,0
 			};
 			manualBlit(src,0,this->everything->screen->screenBuffer,&dstR);
@@ -1022,12 +1031,12 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 
 
 	SDL_Rect srcRect={
-		src->w/sprite->animation.animation_length*cell,
+		Sint16(src->w/sprite->animation.animation_length*cell),
 		0,
 		sprite->clip_rect.w,
 		sprite->clip_rect.h
 	};
-	SDL_Rect dstRect={x,y,0,0};
+	SDL_Rect dstRect={(Sint16)x,(Sint16)y,0,0};
 
 
 	bool freeSrc=0;

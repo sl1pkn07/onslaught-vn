@@ -129,12 +129,12 @@ void NONS_ScriptInterpreter::init(){
 		std::wstring settings_filename=config_directory+L"settings.cfg";
 		ConfigFile settings(settings_filename);
 		if (settings.exists(L"textSpeedMode"))
-			this->current_speed_setting=settings.getInt(L"textSpeedMode");
+			this->current_speed_setting=(char)settings.getInt(L"textSpeedMode");
 		else
 			this->current_speed_setting=1;
 	}
 
-	srand(time(0));
+	srand((unsigned int)time(0));
 	this->defaultx=640;
 	this->defaulty=480;
 	this->defaultfs=18;
@@ -619,20 +619,20 @@ ulong NONS_ScriptInterpreter::implementedCommands(){
 #define INTERPRETNEXTLINE_HANDLEKEYS switch (event.type){\
 	case SDL_KEYDOWN:\
 		{\
-			float def=this->default_speed,\
-				cur=this->everything->screen->output->display_speed;\
+			float def=(float)this->default_speed,\
+				cur=(float)this->everything->screen->output->display_speed;\
 			if (event.key.keysym.sym==SDLK_F5){\
 				this->default_speed=this->default_speed_slow;\
 				this->current_speed_setting=0;\
-				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
+				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
 			}else if (event.key.keysym.sym==SDLK_F6){\
 				this->default_speed=this->default_speed_med;\
 				this->current_speed_setting=1;\
-				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
+				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
 			}else if (event.key.keysym.sym==SDLK_F7){\
 				this->default_speed=this->default_speed_fast;\
 				this->current_speed_setting=2;\
-				this->everything->screen->output->display_speed=cur/def*float(this->default_speed);\
+				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
 			}\
 			break;\
 		}\

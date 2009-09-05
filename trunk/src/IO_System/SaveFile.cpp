@@ -718,7 +718,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 		writeByte(this->fontShadow,buffer);
 		writeDWord(this->shadowPosX,buffer);
 		writeDWord(this->shadowPosY,buffer);
-		writeWord(this->spacing,buffer);
+		writeWord((Uint16)this->spacing,buffer);
 		writeWord(this->lineSkip,buffer);
 		writeDWord(this->logPages.size(),buffer);
 		for (ulong a=0;a<this->logPages.size();a++)
@@ -729,12 +729,12 @@ bool NONS_SaveFile::save(std::wstring filename){
 		writeWord(this->textY,buffer);
 		writeString(this->arrow.string,buffer);
 		writeByte(this->arrow.absolute,buffer);
-		writeWord(this->arrow.x,buffer);
-		writeWord(this->arrow.y,buffer);
+		writeWord((Uint16)this->arrow.x,buffer);
+		writeWord((Uint16)this->arrow.y,buffer);
 		writeString(this->page.string,buffer);
 		writeByte(this->page.absolute,buffer);
-		writeWord(this->page.x,buffer);
-		writeWord(this->page.y,buffer);
+		writeWord((Uint16)this->page.x,buffer);
+		writeWord((Uint16)this->page.y,buffer);
 		//graphics
 		writeDWord(buffer.size(),buffer,screenHeader[1]);
 		writeString(this->background,buffer);
@@ -814,7 +814,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 	//audio
 	writeDWord(buffer.size(),buffer,header[3]);
 	{
-		writeByte(this->musicTrack,buffer);
+		writeByte((Uint8)this->musicTrack,buffer);
 		if (this->musicTrack<0)
 			writeString(this->music,buffer);
 		if (this->musicVolume>127)

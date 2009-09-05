@@ -326,13 +326,13 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 				uchar bitoffset=0;
 				while (len<original_length){
 					if (getbit(compressedbuffer,&byteoffset,&bitoffset)){
-						uchar a=getbits(compressedbuffer,8,&byteoffset,&bitoffset);
+						uchar a=(uchar)getbits(compressedbuffer,8,&byteoffset,&bitoffset);
 						res[len++]=a;
 						decompression_buffer[decompresssion_buffer_offset++]=a;
 						decompresssion_buffer_offset&=255;
 					}else{
-						uchar a=getbits(compressedbuffer,8,&byteoffset,&bitoffset);
-						uchar b=getbits(compressedbuffer,4,&byteoffset,&bitoffset);
+						uchar a=(uchar)getbits(compressedbuffer,8,&byteoffset,&bitoffset);
+						uchar b=(uchar)getbits(compressedbuffer,4,&byteoffset,&bitoffset);
 						for (long c=0;c<=b+1 && len<original_length;c++){
 							uchar d=decompression_buffer[(a+c)&0xFF];
 							res[len++]=d;
@@ -380,10 +380,10 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 				ulong surface=width*height;
 				for (uchar a=0;a<3;a++){
 					ulong count=0;
-					uchar x=getbits(compressedbuffer,8,&pos,&bitoffset);
+					uchar x=(uchar)getbits(compressedbuffer,8,&pos,&bitoffset);
 					decompressionbuffer[count++]=x;
 					while (count<surface){
-						uchar n=getbits(compressedbuffer,3,&pos,&bitoffset);
+						uchar n=(uchar)getbits(compressedbuffer,3,&pos,&bitoffset);
 						if (!n){
 							decompressionbuffer[count++]=x;
 							decompressionbuffer[count++]=x;
@@ -398,9 +398,9 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 							m=n+2;
 						for (uchar b=0;b<4;b++){
 							if (m==8)
-								x=getbits(compressedbuffer,8,&pos,&bitoffset);
+								x=(uchar)getbits(compressedbuffer,8,&pos,&bitoffset);
 							else{
-								ushort k=getbits(compressedbuffer,m,&pos,&bitoffset);
+								ushort k=(ushort)getbits(compressedbuffer,m,&pos,&bitoffset);
 								if (k&1)
 									x+=(k>>1)+1;
 								else

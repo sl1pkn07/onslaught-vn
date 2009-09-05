@@ -156,7 +156,12 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 		if (y1>maxy)
 			maxy=y1;
 	}
-	SDL_Rect refresh_area={minx,miny,maxx-minx,maxy-miny};
+	SDL_Rect refresh_area={
+		(Sint16)minx,
+		(Sint16)miny,
+		Sint16(maxx-minx),
+		Sint16(maxy-miny)
+	};
 	if (!(refresh_area.w*refresh_area.h))
 		return;
 	SDL_FillRect(this->screenBuffer,&refresh_area,amask);
@@ -345,8 +350,8 @@ ErrorCode NONS_ScreenSpace::loadSprite(ulong n,const std::wstring &string,long x
 		this->layerStack[n]->load(&string);
 	if (!this->layerStack[n]->data)
 		return NONS_UNDEFINED_ERROR;
-	this->layerStack[n]->position.x=x;
-	this->layerStack[n]->position.y=y;
+	this->layerStack[n]->position.x=(Sint16)x;
+	this->layerStack[n]->position.y=(Sint16)y;
 	this->layerStack[n]->visible=visibility;
 	this->layerStack[n]->alpha=alpha;
 	return NONS_NO_ERROR;

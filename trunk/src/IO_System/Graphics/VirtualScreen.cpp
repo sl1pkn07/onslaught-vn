@@ -76,24 +76,24 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
 		}else if (ratio0>ratio1){
 			float h=float(ow)/float(ratio0);
 			this->outRect.x=0;
-			this->outRect.y=(oh-h)/2;
-			this->outRect.w=ow;
-			this->outRect.h=h;
+			this->outRect.y=Sint16((oh-h)/2.0f);
+			this->outRect.w=Sint16(ow);
+			this->outRect.h=(Uint16)h;
 			this->x_multiplier=(ow<<8)/iw;
-			this->y_multiplier=ulong(h*256)/ih;
+			this->y_multiplier=ulong(h*256.0f/float(ih));
 			this->x_divisor=(iw<<8)/ow;
-			this->y_divisor=ulong(ih*256)/h;
+			this->y_divisor=ulong((ih<<8)/h);
 			if (x_multiplier<0x100 || h/float(ih)<1)
 				this->normalInterpolation=&bilinearInterpolation2;
 		}else{
 			float w=float(oh)*float(ratio0);
-			this->outRect.x=(ow-w)/2;
+			this->outRect.x=Sint16((ow-w)/2.0f);
 			this->outRect.y=0;
-			this->outRect.w=w;
-			this->outRect.h=oh;
-			this->x_multiplier=ulong(w*256)/iw;
+			this->outRect.w=(Uint16)w;
+			this->outRect.h=(Uint16)oh;
+			this->x_multiplier=ulong(w*256.0f/float(iw));
 			this->y_multiplier=(oh<<8)/ih;
-			this->x_divisor=ulong(iw*256)/w;
+			this->x_divisor=ulong((iw<<8)/w);
 			this->y_divisor=(ih<<8)/oh;
 			if (w/float(iw)<1 || y_multiplier<=0x100)
 				this->normalInterpolation=&bilinearInterpolation2;
@@ -122,15 +122,19 @@ void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast)
 	if (this->virtualScreen==this->realScreen)
 		SDL_UpdateRect(this->realScreen,x,y,w,h);
 	else{
-		SDL_Rect s={x,y,w,h},
-			d={
-				this->convertX(x),
-				this->convertY(y),
-				this->convertW(w),
-				this->convertH(h)
-			};
+		SDL_Rect s={
+				(Sint16)x,
+				(Sint16)y,
+				(Uint16)w,
+				(Uint16)h
+			},d={
+				(Sint16)this->convertX(x),
+				(Sint16)this->convertY(y),
+				(Uint16)this->convertW(w),
+				(Uint16)this->convertH(h)
+		};
 		/*
-		The folling plus ones and minus ones are a patch to correct some weird
+		The following plus ones and minus ones are a patch to correct some weird
 		errors. I'd really like to have the patience to track down the real
 		source of the bug, but I don't.
 		Basically, they move the upper-left corner one pixel up and to the left
@@ -340,8 +344,8 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	IF_parameters *parameters=new IF_parameters[cpu_count];
-	ulong division0=float(srcRect0.h)/float(cpu_count);
-	ulong division1=float(division0)*(float(y_factor)/256);
+	ulong division0=ulong(float(srcRect0.h)/float(cpu_count));
+	ulong division1=ulong(float(division0)*(float(y_factor)/256));
 	ulong total0=0,
 		total1=0;
 	for (ushort a=0;a<cpu_count;a++){
@@ -362,7 +366,7 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 		parameters[a].y_factor=y_factor;
 	}
 	//rects0[cpu_count-1].h+=srcRect0.h-total0;
-	rects1[cpu_count-1].h+=dstRect0.h-total1;
+	rects1[cpu_count-1].h+=Uint16(dstRect0.h-total1);
 
 	SDL_LockSurface(src);
 	SDL_LockSurface(dst);
@@ -515,9 +519,9 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	IF_parameters *parameters=new IF_parameters[cpu_count];
-	ulong division0=float(srcRect0.h)/float(cpu_count);
+	ulong division0=ulong(float(srcRect0.h)/float(cpu_count));
 	//ulong division1=float(division0)*(float(y_factor)/256);
-	ulong division1=float(dstRect0.h)/float(cpu_count);
+	ulong division1=ulong(float(dstRect0.h)/float(cpu_count));
 	ulong total0=0,
 		total1=0;
 	for (ushort a=0;a<cpu_count;a++){
@@ -537,8 +541,8 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 		parameters[a].x_factor=x_factor;
 		parameters[a].y_factor=y_factor;
 	}
-	rects0[cpu_count-1].h+=srcRect0.h-total0;
-	rects1[cpu_count-1].h+=dstRect0.h-total1;
+	rects0[cpu_count-1].h+=Uint16(srcRect0.h-total0);
+	rects1[cpu_count-1].h+=Uint16(dstRect0.h-total1);
 
 	SDL_LockSurface(src);
 	SDL_LockSurface(dst);
@@ -679,9 +683,9 @@ void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 					b0+=pixel0[Boffset0]*weight3;
 				}
 			}
-			*r1=r0/0xFFFF;
-			*g1=g0/0xFFFF;
-			*b1=b0/0xFFFF;
+			*r1=uchar(r0/0xFFFF);
+			*g1=uchar(g0/0xFFFF);
+			*b1=uchar(b0/0xFFFF);
 		}
 	}
 }
@@ -745,8 +749,8 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
 	IF_parameters *parameters=new IF_parameters[cpu_count];
-	ulong division0=float(srcRect0.h)/float(cpu_count);
-	ulong division1=float(dstRect0.h)/float(cpu_count);
+	ulong division0=ulong(float(srcRect0.h)/float(cpu_count));
+	ulong division1=ulong(float(dstRect0.h)/float(cpu_count));
 	ulong total1=0;
 	for (ushort a=0;a<cpu_count;a++){
 		rects0[a]=srcRect0;
@@ -763,7 +767,7 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 		parameters[a].x_factor=x_factor;
 		parameters[a].y_factor=y_factor;
 	}
-	rects1[cpu_count-1].h+=dstRect0.h-total1;
+	rects1[cpu_count-1].h+=Uint16(dstRect0.h-total1);
 
 	SDL_LockSurface(src);
 	SDL_LockSurface(dst);

@@ -370,7 +370,7 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 			}
 			break;
 	}
-	this->image->clip_rect.w/=this->animation.animation_length;
+	this->image->clip_rect.w/=(Uint16)this->animation.animation_length;
 	for (ulong a=0;a<this->animation.animation_length-1;a++){
 		for (ulong b=a+1;a<this->animation.animation_length;a++){
 			std::pair<ulong,ulong> p(a,b);
@@ -454,7 +454,12 @@ SDL_Rect NONS_Image::getUpdateRect(ulong from,ulong to){
 		second=second0+pitch;
 	}
 	SDL_UnlockSurface(this->image);
-	SDL_Rect ret={minx,miny,maxx-minx+1,maxy-miny+1};
+	SDL_Rect ret={
+		(Sint16)minx,
+		(Sint16)miny,
+		Uint16(maxx-minx+1),
+		Uint16(maxy-miny+1)
+	};
 	return ret;
 }
 #endif
