@@ -34,8 +34,10 @@
 #include "../IO_System/IOFunctions.h"
 #include "../version.h"
 #include <cctype>
+#ifdef ABS
 #undef ABS
-#include "../IO_System/Graphics/SDL_bilinear.h"
+#endif
+#include "../IO_System/Graphics/SDL_Bilinear.h"
 
 #ifdef NONS_SYS_WINDOWS
 #include <windows.h>

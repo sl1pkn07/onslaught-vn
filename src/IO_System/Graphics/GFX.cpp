@@ -39,7 +39,9 @@
 #include "../../ThreadManager.h"
 #include <cmath>
 
+#ifdef _DEBUG
 #define BENCHMARK_EFFECTS
+#endif
 
 //(Parallelized surface function)
 struct PSF_parameters{

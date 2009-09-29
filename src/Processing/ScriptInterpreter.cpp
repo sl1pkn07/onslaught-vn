@@ -39,7 +39,7 @@
 #include <sstream>
 
 #undef ABS
-#include "../IO_System/Graphics/SDL_bilinear.h"
+#include "../IO_System/Graphics/SDL_Bilinear.h"
 
 #if 0
 SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
@@ -157,7 +157,6 @@ void NONS_ScriptInterpreter::init(){
 	this->selectOff.r=0xA9;
 	this->selectOff.g=0xA9;
 	this->selectOff.b=0xA9;
-	this->inputQueue=InputObserver.attach();
 	this->autoclick=0;
 	this->timer=SDL_GetTicks();
 	//this->setDefaultWindow();
@@ -209,7 +208,6 @@ void NONS_ScriptInterpreter::uninit(){
 NONS_ScriptInterpreter::NONS_ScriptInterpreter(NONS_Everything *everything){
 	this->arrowCursor=0;
 	this->pageCursor=0;
-	this->inputQueue=0;
 	this->menu=0;
 	this->imageButtons=0;
 	this->saveGame=0;
@@ -599,7 +597,6 @@ void NONS_ScriptInterpreter::listImplementation(){
 }
 
 NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
-	InputObserver.detach(this->inputQueue);
 	this->uninit();
 	//delete this->main_font;
 }
@@ -642,8 +639,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	if (trapFlag){
 		if (!CURRENTLYSKIPPING || (CURRENTLYSKIPPING && !(trapFlag>2))){
 			bool end=0;
-			while (!this->inputQueue->data.empty() && !end){
-				SDL_Event event=this->inputQueue->pop();
+			while (!this->inputQueue.empty() && !end){
+				SDL_Event event=this->inputQueue.pop();
 				if (event.type==SDL_MOUSEBUTTONDOWN && (event.button.which=SDL_BUTTON_LEFT || !(trapFlag%2)))
 					end=1;
 				else{
@@ -658,8 +655,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			}
 		}
 	}else{
-		while (!this->inputQueue->data.empty()){
-			SDL_Event event=this->inputQueue->pop();
+		while (!this->inputQueue.empty()){
+			SDL_Event event=this->inputQueue.pop();
 			INTERPRETNEXTLINE_HANDLEKEYS
 		}
 	}

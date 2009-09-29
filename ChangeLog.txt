@@ -1,3 +1,8 @@
+????????
+    * Fixed major bug in file reading function.
+    * Fixed bug in UTF-8 decoding function.
+    * Fixed crashing bug in input events.
+
 20090904
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
         drawclear, drawfill, drawsp, drawsp2, drawsp3, drawtext, allsphide,

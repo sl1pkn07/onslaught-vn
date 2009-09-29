@@ -171,7 +171,7 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ulong *printedChars){
 	if (start>=this->cachedText.size())
 		return 0;
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	bool enterPressed=0;
 	int x0,
 		y0=this->y;
@@ -211,7 +211,6 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				this->resumePrintingWhere=a+1;
 				this->currentBuffer.append(this->prebufferedText);
 				this->prebufferedText.clear();
-				InputObserver.detach(queue);
 				this->indent_next=(character=='\r');
 				return 1;
 			}
@@ -241,7 +240,6 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				this->resumePrintingWhere=isbreakspace(glyph->codePoint)?a+1:a;
 				this->currentBuffer.append(this->prebufferedText);
 				this->prebufferedText.clear();
-				InputObserver.detach(queue);
 				this->indent_next=1;
 				return 1;
 			}else{
@@ -305,8 +303,8 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		if (printedChars)
 			(*printedChars)++;
 		x0+=advance;
-		while (!CURRENTLYSKIPPING && !enterPressed && !queue->data.empty()){
-			SDL_Event event=queue->pop();
+		while (!CURRENTLYSKIPPING && !enterPressed && !queue.empty()){
+			SDL_Event event=queue.pop();
 			if (event.type==SDL_KEYDOWN && (event.key.keysym.sym==SDLK_RETURN || event.key.keysym.sym==SDLK_SPACE))
 				enterPressed=1;
 		}
@@ -316,7 +314,6 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 	}
 	this->x=x0;
 	this->y=y0;
-	InputObserver.detach(queue);
 	this->resumePrinting=0;
 	this->resumePrintingWhere=0;
 	return 0;

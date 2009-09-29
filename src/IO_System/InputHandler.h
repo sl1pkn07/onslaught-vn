@@ -34,15 +34,16 @@
 #include <queue>
 #include "../Common.h"
 
-struct NONS_EventQueue{
-	//I'm making this public just so I don't have to write stupid wrapper methods.
-	//Don't even dare pushing or popping this.
+class NONS_EventQueue{
 	std::queue<SDL_Event> data;
 	SDL_mutex *mutex;
+public:
 	NONS_EventQueue();
 	~NONS_EventQueue();
 	void push(SDL_Event a);
 	SDL_Event pop();
+	void emptify();
+	bool empty();
 	void WaitForEvent(int delay=100);
 };
 
@@ -51,7 +52,7 @@ struct NONS_InputObserver{
 	SDL_mutex *mutex;
 	NONS_InputObserver();
 	~NONS_InputObserver();
-	NONS_EventQueue *attach();
+	void attach(NONS_EventQueue *what);
 	void detach(NONS_EventQueue *what);
 	void notify(SDL_Event *event);
 };

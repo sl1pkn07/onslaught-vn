@@ -144,7 +144,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 			this->audio->loadAsyncBuffer(this->voiceMouseOver,buffer,l,7);
 		}
 	}
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	SDL_Surface *screenCopy=makeSurface(this->screen->screen->inRect.w,this->screen->screen->inRect.h,32);
 	LOCKSCREEN;
 	manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
@@ -163,8 +163,8 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 	}
 	this->screen->screen->updateWholeScreen();
 	while (1){
-		queue->WaitForEvent(10);
-		SDL_Event event=queue->pop();
+		queue.WaitForEvent(10);
+		SDL_Event event=queue.pop();
 		//Handle entering to lookback.
 		if (event.type==SDL_KEYDOWN && (event.key.keysym.sym==SDLK_UP || event.key.keysym.sym==SDLK_PAGEUP) ||
 				event.type==SDL_MOUSEBUTTONDOWN && (event.button.button==SDL_BUTTON_WHEELUP || event.button.button==SDL_BUTTON_WHEELDOWN)){
@@ -177,8 +177,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				this->screen->screen->virtualScreen,
 				0);
 			this->screen->lookback->display(this->screen->screen);
-			while (!queue->data.empty())
-				queue->pop();
+			queue.emptify();
 			manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
 			UNLOCKSCREEN;
 			getCorrectedMousePosition(this->screen->screen,&x,&y);
@@ -200,7 +199,6 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				switch (event.key.keysym.sym){
 					case SDLK_ESCAPE:
 						if (this->exitable){
-							InputObserver.detach(queue);
 							this->screen->screen->blitToScreen(screenCopy,0,0);
 							this->screen->screen->updateWholeScreen();
 							SDL_FreeSurface(screenCopy);
@@ -210,11 +208,9 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 							int ret=this->menu->callMenu();
 							if (ret<0){
 								SDL_FreeSurface(screenCopy);
-								InputObserver.detach(queue);
 								return -3;
 							}
-							while (!queue->data.empty())
-								queue->pop();
+							queue.emptify();
 							this->screen->screen->blitToScreen(screenCopy,0,0);
 							getCorrectedMousePosition(this->screen->screen,&x,&y);
 							for (ulong a=0;a<this->buttons.size();a++){
@@ -287,7 +283,6 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 									delete[] buffer;
 							}
 						}
-						InputObserver.detach(queue);
 						LOCKSCREEN;
 						manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
 						UNLOCKSCREEN;
@@ -322,7 +317,7 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 		this->addImageButton(0,0,0,this->loadedGraphic->w,this->loadedGraphic->h,0,0);
 		//return LONG_MIN;
 	}
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	LOCKSCREEN;
 	SDL_Surface *screenCopy=makeSurface(this->screen->screen->virtualScreen->w,this->screen->screen->virtualScreen->h,32);
 	UNLOCKSCREEN;
@@ -376,8 +371,8 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 
 	//Is this the same as while (1)? I have no idea, but don't touch it, just in case.
 	while (expiration && expire>0 || !expiration){
-		while (!queue->data.empty()){
-			SDL_Event event=queue->pop();
+		while (!queue.empty()){
+			SDL_Event event=queue.pop();
 			switch (event.type){
 				case SDL_MOUSEMOTION:
 					{
@@ -421,7 +416,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 						}
 						if (button<0)
 							break;
-						InputObserver.detach(queue);
 						SDL_FreeSurface(screenCopy);
 						this->screen->screen->updateWholeScreen();
 						if (button==1){
@@ -444,7 +438,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 								ret=-2;
 						}
 						if (ret){
-							InputObserver.detach(queue);
 							SDL_FreeSurface(screenCopy);
 							this->screen->screen->updateWholeScreen();
 							return ret;
@@ -455,7 +448,6 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 		SDL_Delay(10);
 		expire-=10;
 	}
-	InputObserver.detach(queue);
 	SDL_FreeSurface(screenCopy);
 	return (this->inputOptions.Wheel)?-5:-2;
 }

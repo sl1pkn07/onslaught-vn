@@ -350,16 +350,13 @@ int NONS_Menu::load(){
 
 int NONS_Menu::windowerase(){
 	((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->BlendNoText(1);
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	while (1){
-		queue->WaitForEvent();
-		while (!queue->data.empty()){
-			SDL_Event event=queue->data.front();
-			queue->pop();
-			if (event.type==SDL_KEYDOWN || event.type==SDL_MOUSEBUTTONDOWN){
-				InputObserver.detach(queue);
+		queue.WaitForEvent();
+		while (!queue.empty()){
+			SDL_Event event=queue.pop();
+			if (event.type==SDL_KEYDOWN || event.type==SDL_MOUSEBUTTONDOWN)
 				return 0;
-			}
 		}
 	}
 }
