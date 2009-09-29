@@ -17,4 +17,4 @@ ESCAPE: Enter menu if in click wait state. Exit menu if in menu (it also exits t
 ENTER: Continue execution if in click wait state.
 SPACE BAR: Same as ENTER.
 
-F12: Reserved for engine debugging. Makes the sound cache report what it currently is holding, only if log verbosity>=255.
+F12: Take a screenshot.

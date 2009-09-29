@@ -97,31 +97,31 @@ void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++){
 		uchar byte=*src++;
 		wchar_t c=0;
-		if (!(byte&128))
+		if (!(byte&0x80))
 			c=byte;
-		else if ((byte&192)==128)
+		else if ((byte&0xC0)==0x80)
 			continue;
-		else if ((byte&224)==192){
-			c=byte&31;
+		else if ((byte&0xE0)==0xC0){
+			c=byte&0x1F;
 			c<<=6;
-			c|=*src&63;
-		}else if ((byte&240)==224){
-			c=byte&15;
+			c|=*src&0x3F;
+		}else if ((byte&0xF0)==0xE0){
+			c=byte&0x0F;
 			c<<=6;
-			c|=*src&63;
+			c|=*src&0x3F;
 			c<<=6;
-			c|=src[1]&63;
-		}else if ((byte&248)==240){
+			c|=src[1]&0x3F;
+		}else if ((byte&0xF8)==0xF0){
 #if WCHAR_MAX==0xFFFF
 			c='?';
 #else
-			c=byte&7;
+			c=byte&0x07;
 			c<<=6;
-			c|=src[1]&63;
+			c|=src[1]&0x3F;
 			c<<=6;
-			c|=src[2]&63;
+			c|=src[2]&0x3F;
 			c<<=6;
-			c|=src[3]&63;
+			c|=src[3]&0x3F;
 #endif
 		}
 		*dst++=c;
@@ -164,8 +164,16 @@ ulong getUTF8size(const wchar_t *buffer,ulong size){
 			res++;
 		else if (buffer[a]<0x800)
 			res+=2;
+#if WCHAR_MAX==0xFFFF
 		else
+#else
+		else if (buffer[a]<0x10000)
+#endif
 			res+=3;
+#if WCHAR_MAX!=0xFFFF
+		else
+			res+=4;
+#endif
 	}
 	return res;
 }
@@ -176,13 +184,27 @@ void WC_UTF8(uchar *dst,const wchar_t *src,ulong srcl){
 		if (character<0x80)
 			*dst++=(uchar)character;
 		else if (character<0x800){
-			*dst++=(character>>6)|192;
-			*dst++=character&63|128;
+			*dst++=(character>>6)|0xC0;
+			*dst++=character&0x3F|0x80;
+#if WCHAR_MAX==0xFFFF
 		}else{
-			*dst++=(character>>12)|224;
-			*dst++=((character&4095)>>6)|128;
-			*dst++=character&63|128;
+#else
+		}else if (character<0x800){
+#endif
+			*dst++=(character>>12)|0xE0;
+			*dst++=((character>>6)&0x3F)|0x80;
+			*dst++=character&0x3F|0x80;
+#if WCHAR_MAX==0xFFFF
 		}
+#else
+		}else{
+			*dst++=(character>>18)|0xF0;
+			*dst++=((character>>12)&0x3F)|0x80;
+			*dst++=((character>>6)&0x3F)|0x80;
+			*dst++=character&0x3F|0x80;
+		}
+#endif
+		//TODO: fix me
 	}
 }
 
@@ -297,7 +319,7 @@ std::string UniToUTF8(const std::wstring &str,bool addBOM){
 		res.push_back(BOM8B);
 		res.push_back(BOM8C);
 	}
-	WC_UTF8((uchar *)&res[0],&str[addBOM*3],str.size());
+	WC_UTF8((uchar *)&res[addBOM*3],&str[0],str.size());
 	return res;
 }
 

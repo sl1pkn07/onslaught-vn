@@ -141,14 +141,14 @@ ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bo
 void waitUntilClick(NONS_EventQueue *queue){
 	bool detach=!queue;
 	if (detach)
-		queue=InputObserver.attach();
+		queue=new NONS_EventQueue;
 	while (!CURRENTLYSKIPPING){
 		SDL_Delay(25);
-		while (!queue->data.empty()){
+		while (!queue->empty()){
 			SDL_Event event=queue->pop();
 			if (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_KEYDOWN){
 				if (detach)
-					InputObserver.detach(queue);
+					delete queue;
 				return;
 			}
 		}
@@ -158,11 +158,11 @@ void waitUntilClick(NONS_EventQueue *queue){
 void waitCancellable(long delay,NONS_EventQueue *queue){
 	bool detach=queue==0;
 	if (detach)
-		queue=InputObserver.attach();
+		queue=new NONS_EventQueue;
 	while (delay>0 && !CURRENTLYSKIPPING){
 		SDL_Delay(25);
 		delay-=25;
-		while (!queue->data.empty()){
+		while (!queue->empty()){
 			SDL_Event event=queue->pop();
 			if (event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_KEYDOWN /*&& (event.key.keysym.sym==SDLK_LCTRL || event.key.keysym.sym==SDLK_RCTRL)*/){
 				delay=0;
@@ -171,7 +171,7 @@ void waitCancellable(long delay,NONS_EventQueue *queue){
 		}
 	}
 	if (detach)
-		InputObserver.detach(queue);
+		delete queue;
 }
 
 void waitNonCancellable(long delay){

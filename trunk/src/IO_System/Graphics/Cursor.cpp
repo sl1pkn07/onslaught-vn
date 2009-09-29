@@ -67,7 +67,7 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 	this->data->position.x=this->xpos+(!this->absolute)?this->screen->output->x:0;
 	this->data->position.y=this->ypos+(!this->absolute)?this->screen->output->y:0;
 	bool done=0;
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	const long delayadvance=25;
 	ulong expire=expiration?expiration:ULONG_MAX;
 	int ret=0;
@@ -76,8 +76,8 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 		this->screen->BlendAll(1);
 	while (!done && !CURRENTLYSKIPPING && expire>0){
 		for (ulong a=0;!done && !CURRENTLYSKIPPING && expire>0;a+=delayadvance){
-			while (!queue->data.empty()){
-				SDL_Event event=queue->pop();
+			while (!queue.empty()){
+				SDL_Event event=queue.pop();
 				switch (event.type){
 					case SDL_QUIT:
 						break;
@@ -86,7 +86,7 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 							break;
 						switch (event.key.keysym.sym){
 							case SDLK_ESCAPE:
-								if (!this->callMenu(menu,queue)){
+								if (!this->callMenu(menu,&queue)){
 									ret=-1;
 									goto animate_000;
 								}
@@ -94,7 +94,7 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 							case SDLK_UP:
 							case SDLK_PAGEUP:
 								{
-									this->callLookback(queue);
+									this->callLookback(&queue);
 									break;
 								}
 							case SDLK_MENU:
@@ -105,12 +105,12 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 						break;
 					case SDL_MOUSEBUTTONDOWN:
 						if (event.button.button==SDL_BUTTON_RIGHT){
-							if (!this->callMenu(menu,queue)){
+							if (!this->callMenu(menu,&queue)){
 								ret=-1;
 								goto animate_000;
 							}
 						}else if (event.button.button==SDL_BUTTON_WHEELUP)
-							this->callLookback(queue);
+							this->callLookback(&queue);
 						else
 							done=1;
 						break;
@@ -133,7 +133,6 @@ animate_000:
 		this->screen->BlendNoCursor(1);
 		this->screen->cursor=0;
 	}
-	InputObserver.detach(queue);
 	return ret;
 }
 
@@ -142,7 +141,7 @@ bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
 		//this->screen->BlendNoText(1);
 		if (menu->callMenu()==-1)
 			return 0;
-		while (!queue->data.empty())
+		while (!queue->empty())
 			queue->pop();
 		if (this->data->animated())
 			this->screen->BlendAll(1);
@@ -159,7 +158,7 @@ void NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
 	UNLOCKSCREEN;
 	screen->lookback->display(screen->screen);
-	while (!queue->data.empty())
+	while (!queue->empty())
 		queue->pop();
 	if (this->data->animated())
 		screen->BlendAll(1);

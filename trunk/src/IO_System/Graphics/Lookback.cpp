@@ -156,7 +156,7 @@ void NONS_Lookback::reset(NONS_StandardOutput *output){
 void NONS_Lookback::display(NONS_VirtualScreen *dst){
 	if (!this->output->log.size())
 		return;
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	SDL_Surface *preBlit=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	manualBlit(dst->virtualScreen,0,copyDst,0);
@@ -180,9 +180,9 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 		mouseOver=-1;
 	dst->updateWholeScreen();
 	while (1){
-		queue->WaitForEvent(10);
-		while (!queue->data.empty()){
-			SDL_Event event=queue->pop();
+		queue.WaitForEvent(10);
+		while (!queue.empty()){
+			SDL_Event event=queue.pop();
 			switch (event.type){
 				case SDL_MOUSEMOTION:
 					{
@@ -257,7 +257,6 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 		SDL_Delay(10);
 	}
 callLookback_000:
-	InputObserver.detach(queue);
 	SDL_FreeSurface(copyDst);
 	SDL_FreeSurface(preBlit);
 }

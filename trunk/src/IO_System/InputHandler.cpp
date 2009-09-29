@@ -35,10 +35,12 @@
 
 NONS_EventQueue::NONS_EventQueue(){
 	this->mutex=SDL_CreateMutex();
+	InputObserver.attach(this);
 }
 
 NONS_EventQueue::~NONS_EventQueue(){
 	SDL_DestroyMutex(this->mutex);
+	InputObserver.detach(this);
 }
 
 void NONS_EventQueue::push(SDL_Event a){
@@ -55,6 +57,20 @@ SDL_Event NONS_EventQueue::pop(){
 	return ret;
 }
 
+void NONS_EventQueue::emptify(){
+	SDL_LockMutex(this->mutex);
+	while (!this->data.empty())
+		this->data.pop();
+	SDL_UnlockMutex(this->mutex);
+}
+
+bool NONS_EventQueue::empty(){
+	SDL_LockMutex(this->mutex);
+	bool ret=this->data.empty();
+	SDL_UnlockMutex(this->mutex);
+	return ret;
+}
+
 void NONS_EventQueue::WaitForEvent(int delay){
 	while (this->data.empty())
 		SDL_Delay(delay);
@@ -67,30 +83,24 @@ NONS_InputObserver::NONS_InputObserver(){
 
 NONS_InputObserver::~NONS_InputObserver(){
 	SDL_DestroyMutex(this->mutex);
-	for (ulong a=0;a<this->data.size();a++)
-		if (this->data[a])
-			delete this->data[a];
 }
 
-NONS_EventQueue *NONS_InputObserver::attach(){
+void NONS_InputObserver::attach(NONS_EventQueue *what){
 	SDL_LockMutex(this->mutex);
-	NONS_EventQueue *res=new NONS_EventQueue();
 	ulong pos=this->data.size();
 	for (ulong a=0;a<pos;a++)
 		if (!this->data[a])
 			pos=a;
 	if (pos==this->data.size())
-		this->data.push_back(res);
+		this->data.push_back(what);
 	else
-		this->data[pos]=res;
+		this->data[pos]=what;
 	SDL_UnlockMutex(this->mutex);
-	return res;
 }
 void NONS_InputObserver::detach(NONS_EventQueue *what){
 	SDL_LockMutex(this->mutex);
 	for (ulong a=0;a<this->data.size();a++){
 		if (this->data[a]==what){
-			delete this->data[a];
 			this->data[a]=0;
 			break;
 		}

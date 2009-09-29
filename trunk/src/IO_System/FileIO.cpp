@@ -70,7 +70,6 @@ uchar *readfile(HANDLE file,ulong &len,ulong offset){
 
 	uchar *buffer=new uchar[filesize];
 	ReadFile(file,buffer,filesize,&filesize,0);
-	CloseHandle(file);
 
 	len=filesize;
 	return buffer;
@@ -107,11 +106,10 @@ uchar *readfile(const std::wstring &name,ulong &len){
 	len=filesize;
 	return buffer;
 #else
-	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary);
+	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary|std::ios::ate);
 	if (!file)
 		return 0;
-	file.seekg(0,std::ios::end);
-	long pos=file.tellg();
+	ulong pos=file.tellg();
 	len=pos;
 	file.seekg(0,std::ios::beg);
 	uchar *buffer=new uchar[pos];

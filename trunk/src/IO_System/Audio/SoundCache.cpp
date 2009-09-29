@@ -58,7 +58,7 @@ NONS_SoundCache::~NONS_SoundCache(){
 #define SE_EXPIRATION_TIME 60
 
 int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
-	NONS_EventQueue *queue=InputObserver.attach();
+	NONS_EventQueue queue;
 	while (!_this->kill_thread){
 		SDL_LockMutex(_this->mutex);
 		if (!_this->cache.empty()){
@@ -97,9 +97,9 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 			}
 		}
 		bool justreported=0;
-		while (!queue->data.empty()){
-			SDL_Event event=queue->pop();
-			if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F12){
+		while (!queue.empty()){
+			SDL_Event event=queue.pop();
+			if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F11){
 				if (CLOptions.verbosity>=255)
 					std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
 				justreported=1;
@@ -108,7 +108,6 @@ int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 		SDL_UnlockMutex(_this->mutex);
 		SDL_Delay(100);
 	}
-	InputObserver.detach(queue);
 	return 0;
 }
 

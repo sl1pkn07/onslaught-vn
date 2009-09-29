@@ -32,7 +32,6 @@
 
 #include "../Common.h"
 #include "../ErrorCodes.h"
-#include "ParsedLine.h"
 #include "VariableStore.h"
 #include "../Everything.h"
 #include "../IO_System/Script/Script.h"
@@ -186,7 +185,7 @@ class NONS_ScriptInterpreter{
 	std::wstring selectVoiceEntry;
 	std::wstring selectVoiceMouseOver;
 	std::wstring selectVoiceClick;
-	NONS_EventQueue *inputQueue;
+	NONS_EventQueue inputQueue;
 	std::wstring trapLabel;
 	std::wstring clickStr;
 	ulong autoclick;
