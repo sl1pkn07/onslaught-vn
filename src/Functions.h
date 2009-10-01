@@ -297,6 +297,16 @@ void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst);
 SDL_Surface *horizontalShear(SDL_Surface *src,float amount);
 SDL_Surface *verticalShear(SDL_Surface *src,float amount);
 SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]);
+
+inline SDL_Surface *copySurface(SDL_Surface *src,bool fast=1){
+	SDL_Surface *res=makeSurface(src->w,src->h,src->format->BitsPerPixel,src->format->Rmask,src->format->Gmask,src->format->Bmask,src->format->Amask);
+	if (fast)
+		manualBlit(src,0,res,0);
+	else
+		SDL_BlitSurface(src,0,res,0);
+	res->clip_rect=src->clip_rect;
+	return res;
+}
 #endif
 
 //other functions

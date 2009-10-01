@@ -607,21 +607,28 @@ void NONS_GFX::effectRscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 		dst->updateWholeScreen();
 		return;
 	}
+	LOCKSCREEN;
+	SDL_Surface *srcCopy=copySurface(dst->virtualScreen);
+	UNLOCKSCREEN;
 	float delay=float(this->duration)/float(src0->w);
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
-	SDL_Rect srcrect={0,0,src0->w,src0->h},
-		dstrect=srcrect;
+	SDL_Rect srcrectA={0,0,src0->w,src0->h},
+		srcrectB=srcrectA,
+		dstrectA=srcrectA,
+		dstrectB=srcrectA;
 	for (long a=src0->w-1;a>=0;a--){
 		long t0=SDL_GetTicks();
 		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a>0){
 			idealtimepos+=(long)delay;
 			continue;
 		}
-		srcrect.x=(Sint16)a;
+		srcrectA.x=(Sint16)a;
+		dstrectB.x=srcrectA.w-srcrectA.x;
 		LOCKSCREEN;
-		manualBlit(src0,&srcrect,dst->virtualScreen,&dstrect);
+		manualBlit(src0,&srcrectA,dst->virtualScreen,&dstrectA);
+		manualBlit(srcCopy,&srcrectB,dst->virtualScreen,&dstrectB);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
 		long t1=SDL_GetTicks();
@@ -632,6 +639,7 @@ void NONS_GFX::effectRscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 	}
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
+	SDL_FreeSurface(srcCopy);
 }
 
 void NONS_GFX::effectLscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
@@ -646,21 +654,28 @@ void NONS_GFX::effectLscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 		dst->updateWholeScreen();
 		return;
 	}
+	LOCKSCREEN;
+	SDL_Surface *srcCopy=copySurface(dst->virtualScreen);
+	UNLOCKSCREEN;
 	float delay=float(this->duration)/float(src0->w);
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
-	SDL_Rect srcrect={0,0,src0->w,src0->h},
-		dstrect=srcrect;
-	for (long a=src0->w-1;a>=0;a--){
+	SDL_Rect srcrectA={0,0,src0->w,src0->h},
+		srcrectB=srcrectA,
+		dstrectA=srcrectA,
+		dstrectB=srcrectA;
+	for (ulong a=0;a<(ulong)src0->w;a++){
 		long t0=SDL_GetTicks();
-		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a>0){
+		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<(ulong)src0->w-1){
 			idealtimepos+=(long)delay;
 			continue;
 		}
-		dstrect.x=(Sint16)a;
+		srcrectA.x=(Sint16)a;
+		dstrectB.x=srcrectA.w-srcrectA.x;
 		LOCKSCREEN;
-		manualBlit(src0,&srcrect,dst->virtualScreen,&dstrect);
+		manualBlit(srcCopy,&srcrectA,dst->virtualScreen,&dstrectA);
+		manualBlit(src0,&srcrectB,dst->virtualScreen,&dstrectB);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
 		long t1=SDL_GetTicks();
@@ -671,6 +686,7 @@ void NONS_GFX::effectLscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 	}
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
+	SDL_FreeSurface(srcCopy);
 }
 
 void NONS_GFX::effectDscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
@@ -685,21 +701,28 @@ void NONS_GFX::effectDscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 		dst->updateWholeScreen();
 		return;
 	}
+	LOCKSCREEN;
+	SDL_Surface *srcCopy=copySurface(dst->virtualScreen);
+	UNLOCKSCREEN;
 	float delay=float(this->duration)/float(src0->h);
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
-	SDL_Rect srcrect={0,0,src0->w,src0->h},
-		dstrect=srcrect;
+	SDL_Rect srcrectA={0,0,src0->w,src0->h},
+		srcrectB=srcrectA,
+		dstrectA=srcrectA,
+		dstrectB=srcrectA;
 	for (long a=src0->h-1;a>=0;a--){
 		long t0=SDL_GetTicks();
 		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a>0){
 			idealtimepos+=(long)delay;
 			continue;
 		}
-		srcrect.y=(Sint16)a;
+		srcrectA.y=(Sint16)a;
+		dstrectB.y=srcrectA.h-srcrectA.y;
 		LOCKSCREEN;
-		manualBlit(src0,&srcrect,dst->virtualScreen,&dstrect);
+		manualBlit(src0,&srcrectA,dst->virtualScreen,&dstrectA);
+		manualBlit(srcCopy,&srcrectB,dst->virtualScreen,&dstrectB);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
 		long t1=SDL_GetTicks();
@@ -710,6 +733,7 @@ void NONS_GFX::effectDscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 	}
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
+	SDL_FreeSurface(srcCopy);
 }
 
 void NONS_GFX::effectUscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst){
@@ -724,21 +748,28 @@ void NONS_GFX::effectUscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 		dst->updateWholeScreen();
 		return;
 	}
+	LOCKSCREEN;
+	SDL_Surface *srcCopy=copySurface(dst->virtualScreen);
+	UNLOCKSCREEN;
 	float delay=float(this->duration)/float(src0->h);
 	long idealtimepos=0,
 		lastT=9999,
 		start=SDL_GetTicks();
-	SDL_Rect srcrect={0,0,src0->w,src0->h},
-		dstrect=srcrect;
-	for (long a=src0->h-1;a>=0;a--){
+	SDL_Rect srcrectA={0,0,src0->w,src0->h},
+		srcrectB=srcrectA,
+		dstrectA=srcrectA,
+		dstrectB=srcrectA;
+	for (ulong a=0;a<(ulong)src0->h;a++){
 		long t0=SDL_GetTicks();
-		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a>0){
+		if ((t0-start-idealtimepos>lastT || CURRENTLYSKIPPING) && a<(ulong)src0->h-1){
 			idealtimepos+=(long)delay;
 			continue;
 		}
-		dstrect.y=(Sint16)a;
+		srcrectA.y=(Sint16)a;
+		dstrectB.y=srcrectA.h-srcrectA.y;
 		LOCKSCREEN;
-		manualBlit(src0,&srcrect,dst->virtualScreen,&dstrect);
+		manualBlit(srcCopy,&srcrectA,dst->virtualScreen,&dstrectA);
+		manualBlit(src0,&srcrectB,dst->virtualScreen,&dstrectB);
 		dst->updateWithoutLock();
 		UNLOCKSCREEN;
 		long t1=SDL_GetTicks();
@@ -749,6 +780,7 @@ void NONS_GFX::effectUscroll(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScr
 	}
 	if (!CURRENTLYSKIPPING && NONS_GFX::effectblank)
 		waitNonCancellable(NONS_GFX::effectblank);
+	SDL_FreeSurface(srcCopy);
 }
 
 struct EHM_parameters{

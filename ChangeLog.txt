@@ -1,4 +1,5 @@
 ????????
+    * Fixed compliance error in effects 11, 12, 13, and 14.
     * Fixed major bug in file reading function.
     * Fixed bug in UTF-8 decoding function.
     * Fixed crashing bug in input events.
