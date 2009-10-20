@@ -35,6 +35,7 @@
 #include <SDL/SDL_image.h>
 #include <vector>
 #include <map>
+#include <string>
 
 #undef LoadImage
 

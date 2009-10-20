@@ -30,13 +30,9 @@
 #ifndef NONS_ERROR_CODES
 #define NONS_ERROR_CODES
 
-#ifndef TOOLS_BARE_FILE
 #include "CommonTypes.h"
 
 typedef Uint32 ErrorCode;
-#else
-typedef unsigned long ErrorCode;
-#endif
 
 #define NONS_FATAL_ERROR							0x40000000
 #define NONS_BREAK_WORTHY_ERROR						0x20000000

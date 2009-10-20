@@ -27,38 +27,29 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_SCRIPT_CPP
-#define NONS_SCRIPT_CPP
-
 #include "Script.h"
 #include "../FileIO.h"
 #include "../IOFunctions.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include "../SaveFile.h"
 #include "sha1.h"
 #include "commandPreParser.tab.hpp"
 #include <cstring>
 #include <stack>
+#include <algorithm>
 
 //Returns then position of the ending quote, of npos if couldn't be found before
 //the end of the string or if there isn't a string beginning at 'start'.
 size_t findEndOfString(const std::wstring &str,size_t offset){
 	if (offset+1>=str.size())
 		return str.npos;
-	bool account_for_escapes;
-	wchar_t terminator;
 	if (str[offset]=='\"' || str[offset]=='`'){
-		terminator=str[offset];
-		offset++;
-		account_for_escapes=0;
-	}else if (offset+1<str.size() && NONS_tolower(str[offset])=='e' && str[offset+1]=='\"'){
-		offset+=2;
-		account_for_escapes=1;
-	}else
-		return str.npos;
-	if (!account_for_escapes)
+		wchar_t terminator=str[offset++];
 		return str.find(terminator,offset);
+	}else if (offset+1<str.size() && NONS_tolower(str[offset])=='e' && str[offset+1]=='\"')
+		offset+=2;
+	else
+		return str.npos;
 	ulong size=str.size();
 	while (offset<size && str[offset]!='\"'){
 		if (str[offset]=='\\'){
@@ -217,6 +208,7 @@ void NONS_Statement::preparseFor(NONS_Script *script){
 
 NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off,bool ignoreEmptyStatements){
 	this->lineNumber=line;
+	this->linesSpanned=1+std::count(string.begin(),string.end(),10);
 	ulong start=string.find_first_not_of(L"\x09\x20");
 	if (start==string.npos)
 		start=0;
@@ -244,12 +236,12 @@ NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off
 			if (b>=size)
 				b=size;
 			ulong c=b-1;
-			for (;C_temp[c]==9 || C_temp[c]==32;c--);
+			for (;C_temp[c]<128 && iswhitespace((char)C_temp[c]);c--);
 			c++;
 			temp2=std::wstring(temp,a,c-a);
 			a=b;
 			if (C_temp[a]==':')
-				for (a++;a<size && (C_temp[a]==9 || C_temp[a]==32);a--);
+				for (a++;a<size && C_temp[c]<128 && iswhitespace((char)C_temp[c]);a--);
 		}
 		NONS_Statement *stmt=new NONS_Statement(temp2,this,this->statements.size(),off+original_a,terminal);
 		if (ignoreEmptyStatements && (
@@ -263,6 +255,7 @@ NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off
 }
 
 NONS_ScriptLine::NONS_ScriptLine(const NONS_ScriptLine &copy,ulong startAt){
+	this->linesSpanned=copy.linesSpanned;
 	if (!startAt)
 		*this=copy;
 	else{
@@ -282,6 +275,7 @@ NONS_ScriptLine &NONS_ScriptLine::operator=(const NONS_ScriptLine &copy){
 	this->statements.resize(copy.statements.size());
 	for (ulong a=0;a<this->statements.size();a++)
 		this->statements[a]=new NONS_Statement(*copy.statements[a],a,this);
+	this->linesSpanned=copy.linesSpanned;
 	return *this;
 }
 
@@ -606,7 +600,8 @@ bool NONS_ScriptThread::advanceToNextStatement(){
 		NONS_ScriptBlock *block=this->script->blockFromLine(this->nextLine);
 		if (!block)
 			return 0;
-		ulong offset=this->script->offsetFromLine(this->nextLine),line=this->nextLine-block->first_line;
+		ulong offset=this->script->offsetFromLine(this->nextLine),
+			line=this->nextLine-block->first_line;
 		if (offset==this->script->scriptSize)
 			return 0;
 		if (block->first_offset>offset)
@@ -657,7 +652,7 @@ bool NONS_ScriptThread::skip(long offset){
 std::pair<ulong,ulong> NONS_ScriptThread::getNextStatementPair(){
 	std::pair<ulong,ulong> pair;
 	if (this->lines[this->currentLine]->statements.size()<=this->currentStatement+1){
-		pair.first=this->lines[this->currentLine]->lineNumber+1;
+		pair.first=this->lines[this->currentLine]->lineNumber+this->lines[this->currentLine]->linesSpanned;
 		pair.second=0;
 	}else{
 		pair.first=this->lines[this->currentLine]->lineNumber;
@@ -738,6 +733,7 @@ readBlock_000:
 					delete line;
 
 					while (1){
+						lineCopy.push_back(10);
 						a=end_of_line;
 						if (txt[a]==10)
 							a++;
@@ -775,4 +771,3 @@ readBlock_000:
 	this->last_offset=a-1;
 	return !!this->lines.size();
 }
-#endif

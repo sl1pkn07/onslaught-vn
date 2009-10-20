@@ -27,18 +27,21 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_VIRTUALSCREEN_CPP
-#define NONS_VIRTUALSCREEN_CPP
-
 #include "VirtualScreen.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
 #include "../../ThreadManager.h"
+#include <iostream>
 
 //#define ONLY_NEAREST_NEIGHBOR
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 	this->realScreen=SDL_SetVideoMode(w,h,32,SDL_HWSURFACE|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
+	if (!this->realScreen){
+		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
+			<<"Terminating."<<std::endl;
+		exit(0);
+	}
 	this->virtualScreen=this->realScreen;
 	this->x_multiplier=0x100;
 	this->y_multiplier=0x100;
@@ -52,6 +55,11 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
 	this->realScreen=SDL_SetVideoMode(ow,oh,24,SDL_HWSURFACE|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
+	if (!this->realScreen){
+		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
+			<<"Terminating."<<std::endl;
+		exit(0);
+	}
 	if (iw==ow && ih==oh){
 		this->virtualScreen=this->realScreen;
 		this->x_multiplier=0x100;
@@ -426,8 +434,8 @@ void nearestNeighborInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SD
 	long errorX=0,errorY=0;
 	ulong derrorX=!x_factor?(ulong(dstRect0.w)<<8)/srcRect0.w:x_factor;
 	ulong derrorY=!y_factor?(ulong(dstRect0.h)<<8)/srcRect0.h:y_factor;
-	SDL_Rect s=srcRect0,
-		d=dstRect0;
+	/*SDL_Rect s=srcRect0,
+		d=dstRect0;*/
 	srcRect0.w+=srcRect0.x;
 	dstRect0.w+=dstRect0.x;
 	srcRect0.h+=srcRect0.y;
@@ -882,4 +890,3 @@ void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surf
 		Y1+=sizeY;
 	}
 }
-#endif

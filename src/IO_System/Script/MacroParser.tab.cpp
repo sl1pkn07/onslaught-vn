@@ -116,6 +116,7 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 #include "../../Common.h"
 #include <set>
 #include <vector>
+#include <string>
 #undef ERROR
 
 namespace NONS_Macro{
@@ -560,12 +561,12 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   155,   155,   158,   164,   167,   173,   177,   183,   188,
-     195,   199,   202,   207,   210,   216,   220,   226,   229,   234,
-     241,   244,   248,   252,   256,   260,   264,   268,   275,   279,
-     285,   289,   295,   299,   305,   309,   314,   318,   322,   327,
-     330,   334,   337,   340,   343,   346,   349,   352,   355,   358,
-     361,   364,   367,   370,   373,   376,   379,   382,   385
+       0,   156,   156,   159,   165,   168,   174,   178,   184,   189,
+     196,   200,   203,   208,   211,   217,   221,   227,   230,   235,
+     242,   245,   249,   253,   257,   261,   265,   269,   276,   280,
+     286,   290,   296,   300,   306,   310,   315,   319,   323,   328,
+     331,   335,   338,   341,   344,   347,   350,   353,   356,   359,
+     362,   365,   368,   371,   374,   377,   380,   383,   386
 };
 #endif
 

@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_SCRIPTINTERPRETER_SAVEGAME_CPP
-#define NONS_SCRIPTINTERPRETER_SAVEGAME_CPP
-
 #include "ScriptInterpreter.h"
 #include "../Functions.h"
 #include "../Globals.h"
@@ -506,4 +503,3 @@ bool NONS_ScriptInterpreter::save(int file){
 	ImageLoader->filelog.writeOut();
 	return ret;
 }
-#endif

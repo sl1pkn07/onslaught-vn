@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_SAVEFILE_CPP
-#define NONS_SAVEFILE_CPP
-
 #include "SaveFile.h"
 #include "FileIO.h"
 #include "../Functions.h"
@@ -835,4 +832,3 @@ bool NONS_SaveFile::save(std::wstring filename){
 	return ret;
 	//return !writefile(filename,(char *)buffer.c_str(),buffer.size());
 }
-#endif

@@ -1,4 +1,5 @@
-#include "SDL_Bilinear.h"
+#include "SDL_bilinear.h"
+#include <stdlib.h>
 
 SDL_Surface *SDL_Rotate(SDL_Surface *Surface, double angle) {
     double dcos = cos(angle);

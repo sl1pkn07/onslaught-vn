@@ -27,15 +27,11 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_VARIABLESTORE_CPP
-#define NONS_VARIABLESTORE_CPP
-
 #include "VariableStore.h"
 #include "../Functions.h"
 #include "../Globals.h"
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
-#include "../UTF.h"
 #include <cctype>
 
 NONS_LabelLog labellog;
@@ -267,4 +263,3 @@ Sint32 NONS_VariableStore::getVariableIndex(NONS_VariableMember *var){
 	}
 	return 0;
 }
-#endif

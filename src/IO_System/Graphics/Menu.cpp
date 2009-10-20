@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_MENU_CPP
-#define NONS_MENU_CPP
-
 #include "Menu.h"
 #include "../../Functions.h"
 #include "../IOFunctions.h"
@@ -403,4 +400,3 @@ int NONS_Menu::call(const std::wstring &string){
 	}
 	return ret;
 }
-#endif

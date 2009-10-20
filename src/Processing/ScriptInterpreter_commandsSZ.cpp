@@ -36,8 +36,6 @@
 #include <cmath>
 #include <sstream>
 
-#ifndef NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
-#define NONS_SCRIPTINTERPRETER_COMMANDSSZ_CPP
 ErrorCode NONS_ScriptInterpreter::command_skip(NONS_Statement &stmt){
 	long count=2;
 	if (stmt.parameters.size()){
@@ -225,9 +223,8 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 			windowRect.w=pic->w;
 			windowRect.h=pic->h;
 			this->everything->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
-		}
-		if (!!syntax)
 			this->everything->screen->output->shadeLayer->usePicAsDefaultShade(pic);
+		}
 	}
 	this->everything->screen->output->extraAdvance=spacingX;
 	//this->everything->screen->output->extraLineSkip=0;
@@ -873,4 +870,3 @@ ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }*/
-#endif

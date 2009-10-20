@@ -27,12 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_IMAGELOADER_CPP
-#define NONS_IMAGELOADER_CPP
-
 #include "ImageLoader.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 
 #define LOG_FILENAME_OLD L"NScrflog.dat"
@@ -213,4 +209,3 @@ NONS_Image *NONS_ImageLoader::elementFromSurface(SDL_Surface *srf){
 			return this->imageCache[a];
 	return 0;
 }
-#endif

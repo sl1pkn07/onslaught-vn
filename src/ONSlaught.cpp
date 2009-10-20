@@ -30,10 +30,10 @@
 #include <fstream>
 #include <cstdlib>
 #include <csignal>
+#include <iostream>
 
 #include "Common.h"
 #include "Functions.h"
-#include "UTF.h"
 #include "Everything.h"
 #include "Globals.h"
 #include "ErrorCodes.h"
@@ -225,12 +225,11 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 #undef main
 #endif
 
-#include "IO_System/Script/MacroParser.h"
-
 int main(int argc,char **argv){
 	std::cout <<"ONSlaught: An ONScripter clone with Unicode support."<<std::endl;
-	if (ONSLAUGHT_BUILD_VERSION<99999999)
+#if ONSLAUGHT_BUILD_VERSION<99999999
 		std::cout <<"Build "<<ONSLAUGHT_BUILD_VERSION<<", ";
+#endif
 	std::cout <<ONSLAUGHT_BUILD_VERSION_STR"\n\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"<<std::endl;
@@ -343,8 +342,6 @@ int mainThread(void *nothing){
 	}
 #endif
 	exit(0);
-	exitLocked=0;
-	return 0;
 }
 
 int debugThread(void *nothing){

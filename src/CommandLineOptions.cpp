@@ -27,13 +27,11 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_COMMANDLINEOPTIONS_CPP
-#define NONS_COMMANDLINEOPTIONS_CPP
-
 #include "CommandLineOptions.h"
 #include "Globals.h"
 #include "Processing/ScriptInterpreter.h"
 #include "IO_System/IOFunctions.h"
+#include <iostream>
 
 #define DEFAULT_INPUT_WIDTH 640
 #define DEFAULT_INPUT_HEIGHT 480
@@ -399,4 +397,3 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		}
 	}
 }
-#endif

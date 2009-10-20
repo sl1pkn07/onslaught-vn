@@ -38,6 +38,7 @@
 #include "../../Common.h"
 #include <set>
 #include <vector>
+#include <string>
 #undef ERROR
 
 namespace NONS_Macro{

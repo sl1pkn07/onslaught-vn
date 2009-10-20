@@ -32,8 +32,10 @@
 
 #include "../../Common.h"
 #include <SDL/SDL.h>
+#include <string>
 
-/*#define LOCKSCREEN {\
+#if 0
+#define LOCKSCREEN {\
 	SDL_LockMutex(screenMutex);\
 	char LOCKSCREEN_buf[1000];\
 	sprintf(LOCKSCREEN_buf,"%u - %s (%d) from 0x%08X LOCK.\n",SDL_GetTicks(),__FILE__,__LINE__,SDL_ThreadID());\
@@ -45,10 +47,11 @@
 	sprintf(UNLOCKSCREEN_buf,"%u - %s (%d) from 0x%08X UNLOCK.\n",SDL_GetTicks(),__FILE__,__LINE__,SDL_ThreadID());\
 	o_stderr <<UNLOCKSCREEN_buf;\
 	SDL_UnlockMutex(screenMutex);\
-}*/
-
+}
+#else
 #define LOCKSCREEN SDL_LockMutex(screenMutex)
 #define UNLOCKSCREEN SDL_UnlockMutex(screenMutex)
+#endif
 
 struct NONS_VirtualScreen{
 	SDL_Surface *realScreen;

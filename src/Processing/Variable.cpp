@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_VARIABLE_CPP
-#define NONS_VARIABLE_CPP
-
 #include "Variable.h"
 #include "../Functions.h"
 #include "../Globals.h"
@@ -56,4 +53,3 @@ NONS_Variable::~NONS_Variable(){
 	delete this->intValue;
 	delete this->wcsValue;
 }
-#endif

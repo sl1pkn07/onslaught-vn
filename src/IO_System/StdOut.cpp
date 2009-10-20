@@ -27,12 +27,9 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_STDOUT_CPP
-#define NONS_STDOUT_CPP
-
 #include "StdOut.h"
-#include "../UTF.h"
 #include "../Functions.h"
+#include <iostream>
 #include <sstream>
 #include <ctime>
 
@@ -155,4 +152,3 @@ void NONS_RedirectedOutput::indent(long a){
 	}else
 		this->indentation+=a;
 }
-#endif

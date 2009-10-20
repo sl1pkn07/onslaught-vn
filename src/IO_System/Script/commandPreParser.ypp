@@ -28,7 +28,6 @@
 */
 %{
 #include "Script.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include "../../Functions.h"
 %}

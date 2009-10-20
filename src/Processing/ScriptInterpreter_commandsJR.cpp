@@ -33,8 +33,6 @@
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 
-#ifndef NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
-#define NONS_SCRIPTINTERPRETER_COMMANDSJR_CPP
 ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
@@ -776,4 +774,3 @@ ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }*/
-#endif

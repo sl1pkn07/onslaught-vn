@@ -31,8 +31,8 @@
 #define NONS_SCRIPT_H
 
 #include "../../Common.h"
-#include "../../UTF.h"
 #include "../../ErrorCodes.h"
+#include "../../Functions.h"
 #include "../../enums.h"
 #include "../SAR/Archive.h"
 #include <vector>
@@ -70,9 +70,10 @@ private:
 };
 
 struct NONS_ScriptLine{
-	ulong lineNumber;
+	ulong lineNumber,
+		linesSpanned;
 	std::vector<NONS_Statement *> statements;
-	NONS_ScriptLine(){}
+	NONS_ScriptLine():linesSpanned(1){}
 	NONS_ScriptLine(ulong line,const std::wstring &string,ulong off,bool ignoreEmptyStatements);
 	NONS_ScriptLine(const NONS_ScriptLine &copy,ulong startAt=0);
 	NONS_ScriptLine &operator=(const NONS_ScriptLine &copy);

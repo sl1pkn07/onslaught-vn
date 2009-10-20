@@ -56,7 +56,8 @@ ported to. In particular, MacOS X and above, PSP, and iPod are known to be
 possible options.
 The engine was primarily written in Visual C++ 9.0 (2008), but it can also be
 compiled with MinGW and GCC. GCC compilation has only been tested on versions 3
-and above. Visual C++ 6.0 is not able to compile it.
+and above. Visual C++ 6.0 is not able to compile it. MinGW versions below 4.x
+are not able to compile it.
 Theoretically, any compiler older than 2005 should be able to build ONSlaught.
 
 At the moment, I'm looking for programmers with knowledge of PSP, and/or iPod

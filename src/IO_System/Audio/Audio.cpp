@@ -27,14 +27,236 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_AUDIO_CPP
-#define NONS_AUDIO_CPP
-
 #include "Audio.h"
 #include "../FileIO.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
+#include "../InputHandler.h"
+#include <iostream>
 #include <sstream>
+
+int GC(void *nil){
+	return NONS_SoundCache::GarbageCollector((NONS_SoundCache *)nil);
+}
+
+NONS_SoundCache::NONS_SoundCache(){
+	this->kill_thread=0;
+	this->mutex=SDL_CreateMutex();
+	this->thread=SDL_CreateThread(GC,this);
+}
+
+NONS_SoundCache::~NONS_SoundCache(){
+	this->kill_thread=1;
+	//SDL_UnlockMutex(this->mutex);
+	SDL_DestroyMutex(this->mutex);
+	SDL_WaitThread(this->thread,0);
+	for (cache_map_t::iterator i=this->cache.begin();i!=this->cache.end();i++)
+		delete i->second;
+}
+
+//Sound effects stay in the cache for this amount of seconds
+#define SE_EXPIRATION_TIME 60
+
+int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
+	NONS_EventQueue queue;
+	while (!_this->kill_thread){
+		SDL_LockMutex(_this->mutex);
+		if (!_this->cache.empty()){
+			ulong now=secondsSince1970();
+			for (cache_map_t::iterator i=_this->cache.begin();i!=_this->cache.end();){
+				if (!i->second->references){
+					i->second->references=-1;
+					i->second->lastused=now;
+					i++;
+				}else if (i->second->references<0 && now-i->second->lastused>SE_EXPIRATION_TIME){
+					if (CLOptions.verbosity>=255)
+						std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<UniToUTF8(i->first)<<")"<<std::endl;
+					delete i->second;
+					_this->cache.erase(i);
+					if (CLOptions.verbosity>=255)
+						std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
+					i=_this->cache.begin();
+				}else
+					i++;
+			}
+			for (ulong a=0;_this->channelWatch.size()>0 && a<10;a++){
+				std::list<NONS_SoundEffect *>::iterator i2=_this->channelWatch.begin();
+				for (;i2!=_this->channelWatch.end();){
+					if (!Mix_Playing((*i2)->channel) && (*i2)->playingHasStarted){
+						if (CLOptions.verbosity>=255)
+							std::cout <<"At "<<now<<" stopped "<<*i2<<"\n"
+								"    cache item "<<(*i2)->sound->chunk<<"\n"
+								"    on channel "<<(*i2)->channel<<std::endl;
+						(*i2)->unload();
+						_this->channelWatch.erase(i2);
+						i2=_this->channelWatch.begin();
+					}else
+						i2++;
+				}
+				SDL_Delay(100);
+			}
+		}
+		bool justreported=0;
+		while (!queue.empty()){
+			SDL_Event event=queue.pop();
+			if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F11){
+				if (CLOptions.verbosity>=255)
+					std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
+				justreported=1;
+			}
+		}
+		SDL_UnlockMutex(_this->mutex);
+		SDL_Delay(100);
+	}
+	return 0;
+}
+
+NONS_CachedSound *NONS_SoundCache::checkSound(const std::wstring &filename){
+	if (this->cache.empty())
+		return 0;
+	cache_map_t::iterator i=this->cache.find(filename);
+	if (i==this->cache.end())
+		return 0;
+	return i->second;
+}
+
+NONS_CachedSound *NONS_SoundCache::getSound(const std::wstring &filename){
+	NONS_CachedSound *res=this->checkSound(filename);
+	if (!res)
+		return 0;
+	if (res->references>=0)
+		res->references++;
+	else
+		res->references=1;
+	return res;
+}
+
+NONS_CachedSound *NONS_SoundCache::newSound(const std::wstring &filename,char *databuffer,long size){
+	if (NONS_CachedSound *ret=this->getSound(filename))
+		return ret;
+	NONS_CachedSound *a=new NONS_CachedSound(databuffer,size);
+	std::wstring temp=filename;
+	toforwardslash(temp);
+	a->name=temp;
+	this->cache[temp]=a;
+	return a;
+}
+
+NONS_CachedSound::NONS_CachedSound(char *databuffer,long size){
+	this->chunk=Mix_LoadWAV_RW(SDL_RWFromMem((void *)databuffer,size),1);
+	delete[] databuffer;
+	this->references=1;
+	this->lastused=secondsSince1970();
+}
+
+NONS_CachedSound::~NONS_CachedSound(){
+	Mix_FreeChunk(this->chunk);
+}
+
+NONS_SoundEffect::NONS_SoundEffect(int chan){
+	this->channel=chan;
+	this->sound=0;
+	this->playingHasStarted=0;
+	this->isplaying=0;
+	this->loops=0;
+}
+
+NONS_SoundEffect::~NONS_SoundEffect(){
+	if (this->sound)
+		this->sound->references--;
+}
+
+void NONS_SoundEffect::play(bool synchronous,long times){
+	this->stop();
+	Mix_PlayChannel(this->channel,this->sound->chunk,times);
+	this->playingHasStarted=1;
+	this->isplaying=1;
+	this->loops=times;
+}
+
+void NONS_SoundEffect::stop(){
+	if (Mix_Playing(this->channel))
+		Mix_HaltChannel(this->channel);
+	this->isplaying=0;
+}
+
+bool NONS_SoundEffect::loaded(){
+	return !!this->sound;
+}
+
+void NONS_SoundEffect::load(NONS_CachedSound *sound){
+	this->unload();
+	this->sound=sound;
+	this->playingHasStarted=0;
+}
+
+void NONS_SoundEffect::unload(){
+	if (this->loaded()){
+		this->stop();
+		this->sound->references--;
+		this->sound=0;
+		this->playingHasStarted=0;
+	}
+}
+
+int NONS_SoundEffect::volume(int vol){
+	Mix_Volume(this->channel,vol);
+	return Mix_Volume(this->channel,-1);
+}
+
+NONS_Music::NONS_Music(const std::wstring &filename){
+	this->data=Mix_LoadMUS(UniToUTF8(filename).c_str());
+	this->buffer=0;
+	this->buffersize=0;
+	this->filename=filename;
+	this->RWop=0;
+}
+
+NONS_Music::NONS_Music(const std::wstring &filename,char *databuffer,long size){
+	this->buffer=databuffer;
+	this->buffersize=size;
+	this->RWop=SDL_RWFromMem((void *)databuffer,size);
+	this->data=Mix_LoadMUS_RW(this->RWop);
+	this->filename=filename;
+}
+
+NONS_Music::~NONS_Music(){
+	this->stop();
+	if (this->data){
+		Mix_FreeMusic(this->data);
+	}
+}
+
+void NONS_Music::play(long times){
+	if (Mix_PlayingMusic())
+		return;
+	Mix_PlayMusic(this->data,times);
+	int x=Mix_VolumeMusic(-1);
+	Mix_VolumeMusic(0);
+	SDL_Delay(50);
+	Mix_VolumeMusic(x);
+}
+
+void NONS_Music::stop(){
+	if (Mix_PlayingMusic() || Mix_PausedMusic())
+		Mix_HaltMusic();
+}
+
+void NONS_Music::pause(){
+	if (Mix_PlayingMusic() && !Mix_PausedMusic())
+		Mix_PauseMusic();
+	else
+		Mix_ResumeMusic();
+}
+
+bool NONS_Music::loaded(){
+	return this->data!=0;
+}
+
+int NONS_Music::volume(int vol){
+	Mix_VolumeMusic(vol);
+	return Mix_VolumeMusic(-1);
+}
 
 NONS_Audio::NONS_Audio(const std::wstring &musicDir){
 	this->music=0;
@@ -289,4 +511,3 @@ bool NONS_Audio::toggleMute(){
 	return this->notmute;
 
 }
-#endif

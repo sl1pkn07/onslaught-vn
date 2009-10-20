@@ -27,12 +27,11 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_GLOBALS_CPP
-#define NONS_GLOBALS_CPP
 #include "Globals.h"
 #include <SDL/SDL.h>
 #include "Processing/ScriptInterpreter.h"
 #include "ThreadManager.h"
+#include <iostream>
 
 NONS_CommandLineOptions CLOptions;
 NONS_InputObserver InputObserver;
@@ -262,4 +261,3 @@ uchar blendData[65536];
 #endif
 
 NONS_ThreadManager threadManager;
-#endif

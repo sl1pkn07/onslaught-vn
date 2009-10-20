@@ -28,7 +28,6 @@
 */
 
 #include "MacroParser.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include "../FileIO.h"
 #include <string>

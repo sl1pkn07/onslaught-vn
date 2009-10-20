@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_INIsection_CPP
-#define NONS_INIsection_CPP
-
 #include "INIfile.h"
 #include "INIParser.tab.hpp"
 #include "../Functions.h"
@@ -130,4 +127,3 @@ INIsection *INIfile::getSection(const std::wstring &index){
 		return 0;
 	return &i->second;
 }
-#endif

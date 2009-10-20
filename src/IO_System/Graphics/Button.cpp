@@ -27,12 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_BUTTON_CPP
-#define NONS_BUTTON_CPP
-
 #include "Button.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include <climits>
 
@@ -343,4 +339,3 @@ bool NONS_Button::MouseOver(int x,int y){
 	int startx=this->posx+this->box.x,starty=this->posy+this->box.y;
 	return (x>=startx && x<=startx+this->box.w && y>=starty && y<=starty+this->box.h);
 }
-#endif

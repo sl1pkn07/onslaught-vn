@@ -27,13 +27,9 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_IMAGE_CPP
-#define NONS_IMAGE_CPP
-
 #include "Image.h"
 #include "../../Globals.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
 #include <sstream>
 
 void NONS_AnimationInfo::parse(const std::wstring &image_string){
@@ -462,4 +458,3 @@ SDL_Rect NONS_Image::getUpdateRect(ulong from,ulong to){
 	};
 	return ret;
 }
-#endif

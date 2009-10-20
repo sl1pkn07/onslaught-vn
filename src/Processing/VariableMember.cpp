@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_VARIABLEMEMBER_CPP
-#define NONS_VARIABLEMEMBER_CPP
-
 #include "VariableMember.h"
 #include "ScriptInterpreter.h"
 #include "../Functions.h"
@@ -267,4 +264,3 @@ void NONS_VariableMember::negate(bool a){
 		this->intValue=!this->intValue;
 	}
 }
-#endif
