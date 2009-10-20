@@ -27,16 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_FILEIO_CPP
-#define NONS_FILEIO_CPP
-
 #include "FileIO.h"
-#ifndef TOOLS_BARE_FILE
-#ifndef TOOLS_NSAIO
 #include "../Globals.h"
-#endif
-#include "../UTF.h"
-#endif
 
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
 #ifdef NONS_SYS_WINDOWS
@@ -58,8 +50,8 @@ uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
 uchar *readfile(HANDLE file,ulong &len,ulong offset){
 	if (file==INVALID_HANDLE_VALUE)
 		return 0;
-	DWORD filesize=GetFileSize(file,0),
-		originalPosition=SetFilePointer(file,0,0,FILE_CURRENT);
+	DWORD filesize=GetFileSize(file,0)/*,
+		originalPosition=SetFilePointer(file,0,0,FILE_CURRENT)*/;
 
 	if (offset>=filesize)
 		offset=filesize-1;
@@ -152,4 +144,3 @@ bool fileExists(const std::wstring &name){
 #endif
 	return ret;
 }
-#endif

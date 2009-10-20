@@ -32,8 +32,8 @@
 
 #include <map>
 #include <cstring>
-#include "../UTF.h"
 #include "../enums.h"
+#include "../Functions.h"
 #include "FileIO.h"
 #include <string>
 

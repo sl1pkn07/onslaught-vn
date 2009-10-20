@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_GFX_CPP
-#define NONS_GFX_CPP
-
 #define USE_ACCURATE_MULTIPLICATION
 
 #include "GFX.h"
@@ -38,6 +35,7 @@
 #include "../../Globals.h"
 #include "../../ThreadManager.h"
 #include <cmath>
+#include <iostream>
 
 #ifdef _DEBUG
 #define BENCHMARK_EFFECTS
@@ -1624,4 +1622,3 @@ NONS_GFX *NONS_GFXstore::add(ulong code,ulong effect,ulong duration,const std::w
 	this->effects[code]=res;
 	return res;
 }
-#endif

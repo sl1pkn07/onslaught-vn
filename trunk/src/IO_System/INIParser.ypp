@@ -27,7 +27,7 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 %{
-#include "../UTF.h"
+#include "../Functions.h"
 %}
 %code requires {
 	#include <sstream>

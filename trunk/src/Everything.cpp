@@ -27,11 +27,9 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_EVERYTHING_CPP
-#define NONS_EVERYTHING_CPP
-
 #include "Everything.h"
 #include "Globals.h"
+#include <iostream>
 
 NONS_Everything::NONS_Everything(){
 	this->screen=0;
@@ -112,4 +110,3 @@ ErrorCode NONS_Everything::init_script(ulong encoding){
 		return NONS_NOT_IMPLEMENTED;
 	return NONS_SCRIPT_NOT_FOUND;
 }
-#endif

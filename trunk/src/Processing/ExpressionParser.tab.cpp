@@ -78,7 +78,6 @@
 
 #include "VariableStore.h"
 #include "ScriptInterpreter.h"
-#include "../UTF.h"
 #include "../Globals.h"
 #include "../Functions.h"
 #include "../IO_System/IOFunctions.h"
@@ -505,11 +504,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   116,   116,   127,   138,   149,   154,   157,   173,   178,
-     181,   192,   203,   215,   227,   234,   237,   240,   249,   254,
-     261,   279,   291,   303,   311,   317,   323,   329,   341,   350,
-     366,   382,   387,   392,   397,   406,   417,   426,   437,   444,
-     451,   458,   465,   472,   479,   485,   491,   497,   504
+       0,   115,   115,   126,   137,   148,   153,   156,   172,   177,
+     180,   191,   202,   214,   226,   233,   236,   239,   248,   253,
+     260,   278,   290,   302,   310,   316,   322,   328,   340,   349,
+     365,   381,   386,   391,   396,   405,   416,   425,   436,   443,
+     450,   457,   464,   471,   478,   484,   490,   496,   503
 };
 #endif
 

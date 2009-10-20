@@ -30,13 +30,7 @@
 #ifndef NONS_FILEIO_H
 #define NONS_FILEIO_H
 
-#ifndef TOOLS_BARE_FILE
 #include "../Common.h"
-#else
-typedef unsigned long ulong;
-typedef unsigned short ushort;
-typedef unsigned char uchar;
-#endif
 #include <string>
 #include <fstream>
 

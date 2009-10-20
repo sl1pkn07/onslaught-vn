@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_IOFUNCTIONS_CPP
-#define NONS_IOFUNCTIONS_CPP
-
 #include "IOFunctions.h"
 #include "../Globals.h"
 #include "../Functions.h"
@@ -190,4 +187,3 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y){
 	*y=y0;
 	return r;
 }
-#endif

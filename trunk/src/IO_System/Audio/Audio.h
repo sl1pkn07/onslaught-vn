@@ -30,13 +30,76 @@
 #ifndef NONS_AUDIO_H
 #define NONS_AUDIO_H
 
-#include "SoundEffect.h"
-#include "Music.h"
-#include "SoundCache.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
+#include <SDL/SDL_thread.h>
 #include "../../Common.h"
 #include "../../ErrorCodes.h"
 #include <map>
+#include <list>
 #include <string>
+
+struct NONS_CachedSound{
+	SDL_RWops *RWop;
+	Mix_Chunk *chunk;
+	long references;
+	Uint32 lastused;
+	std::wstring name;
+	NONS_CachedSound(char *databuffer,long size);
+	~NONS_CachedSound();
+};
+
+struct NONS_SoundEffect{
+	NONS_CachedSound *sound;
+	//void freeCacheElement(int chan);
+	int channel;
+	bool playingHasStarted;
+	bool isplaying;
+	long loops;
+	NONS_SoundEffect(int chan=0);
+	~NONS_SoundEffect();
+	bool loaded();
+	void load(NONS_CachedSound *sound);
+	void unload();
+	void play(bool synchronous,long times=-1);
+	void stop();
+	int volume(int vol);
+};
+
+typedef std::map<std::wstring,NONS_CachedSound *> cache_map_t;
+
+struct NONS_SoundCache{
+	cache_map_t cache;
+	std::list<NONS_SoundEffect *> channelWatch;
+	NONS_SoundCache();
+	~NONS_SoundCache();
+	NONS_CachedSound *getSound(const std::wstring &filename);
+	NONS_CachedSound *checkSound(const std::wstring &filename);
+	NONS_CachedSound *newSound(const std::wstring &filename,char *databuffer,long size);
+	static int GarbageCollector(NONS_SoundCache *dis);
+	SDL_mutex *mutex;
+private:
+	SDL_Thread *thread;
+	bool kill_thread;
+};
+
+class NONS_Music{
+	Mix_Music *data;
+	SDL_RWops *RWop;
+	char *buffer;
+	long buffersize;
+	long playingTimes;
+public:
+	std::wstring filename;
+	NONS_Music(const std::wstring &filename);
+	NONS_Music(const std::wstring &filename,char *databuffer,long size);
+	~NONS_Music();
+	void play(long times=-1);
+	void stop();
+	void pause();
+	int volume(int vol);
+	bool loaded();
+};
 
 typedef std::map<int,NONS_SoundEffect *> channels_map_t;
 

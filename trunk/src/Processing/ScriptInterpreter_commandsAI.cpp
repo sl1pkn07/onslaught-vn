@@ -37,15 +37,13 @@
 #ifdef ABS
 #undef ABS
 #endif
-#include "../IO_System/Graphics/SDL_Bilinear.h"
+#include "../IO_System/Graphics/SDL_bilinear.h"
 
 #ifdef NONS_SYS_WINDOWS
 #include <windows.h>
 extern HWND mainWindow;
 #endif
 
-#ifndef NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
-#define NONS_SCRIPTINTERPRETER_COMMANDSAI_CPP
 ErrorCode NONS_ScriptInterpreter::command_caption(NONS_Statement &stmt){
 	if (!stmt.parameters.size())
 		SDL_WM_SetCaption("",0);
@@ -911,7 +909,6 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 		else{
 			SDL_Surface *src=this->everything->screen->Background->data;
 			bool freeSrc=0;
-			ulong t0=SDL_GetTicks();
 
 			if (xscale<0 || yscale<0){
 				SDL_Surface *dst=makeSurface(src->w,src->h,32);
@@ -946,8 +943,6 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			};
 			manualBlit(src,0,this->everything->screen->screenBuffer,&dstR);
 			SDL_FreeSurface(src);
-			ulong t1=SDL_GetTicks();
-			std::cout <<t1-t0<<std::endl;
 		}
 	}
 	return NONS_NO_ERROR;
@@ -1427,4 +1422,3 @@ ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
 }*/
-#endif

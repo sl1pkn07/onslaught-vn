@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_SCREENSPACE_CPP
-#define NONS_SCREENSPACE_CPP
-
 #include "ScreenSpace.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
@@ -401,4 +398,3 @@ bool NONS_ScreenSpace::advanceAnimations(ulong msecs,std::vector<SDL_Rect> &rect
 	}
 	return requireRefresh;
 }
-#endif

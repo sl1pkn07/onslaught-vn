@@ -31,7 +31,7 @@
 #define NONS_FILELOG_H
 
 #include "../../Common.h"
-#include "../../UTF.h"
+#include "../../Functions.h"
 #include <set>
 
 typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > logSet_t;

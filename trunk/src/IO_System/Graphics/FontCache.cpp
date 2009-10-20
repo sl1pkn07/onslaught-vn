@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_FONTCACHE_CPP
-#define NONS_FONTCACHE_CPP
-
 #include "FontCache.h"
 #include "../../Common.h"
 #include "../../Globals.h"
@@ -185,4 +182,3 @@ NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 	this->glyphCache.push_back(glyph);
 	return this->glyphCache.back();
 }
-#endif

@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_LOOKBACK_CPP
-#define NONS_LOOKBACK_CPP
-
 #include "Lookback.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
@@ -296,4 +293,3 @@ bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NO
 	dst->updateWholeScreen();
 	return 1;
 }
-#endif

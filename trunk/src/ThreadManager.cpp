@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_THREADMANAGER_CPP
-#define NONS_THREADMANAGER_CPP
-
 #include "ThreadManager.h"
 #include "Globals.h"
 
@@ -213,4 +210,3 @@ void NONS_ThreadManager::setCPUcount(){
 		cpu_count=1;
 	}
 }
-#endif

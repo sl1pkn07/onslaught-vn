@@ -27,19 +27,16 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_SCRIPTINTERPRETER_CPP
-#define NONS_SCRIPTINTERPRETER_CPP
-
 #include "ScriptInterpreter.h"
 #include "../Functions.h"
 #include "../Globals.h"
 #include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
-//#include "../UTF.h"
+#include <iostream>
 #include <sstream>
 
 #undef ABS
-#include "../IO_System/Graphics/SDL_Bilinear.h"
+#include "../IO_System/Graphics/SDL_bilinear.h"
 
 #if 0
 SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_RotateSmooth;
@@ -641,7 +638,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			bool end=0;
 			while (!this->inputQueue.empty() && !end){
 				SDL_Event event=this->inputQueue.pop();
-				if (event.type==SDL_MOUSEBUTTONDOWN && (event.button.which=SDL_BUTTON_LEFT || !(trapFlag%2)))
+				if (event.type==SDL_MOUSEBUTTONDOWN && (event.button.which==SDL_BUTTON_LEFT || !(trapFlag%2)))
 					end=1;
 				else{
 					INTERPRETNEXTLINE_HANDLEKEYS
@@ -706,7 +703,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		case NONS_Statement::STATEMENT_COMMAND:
 			{
 				commandListType::iterator i=this->commandList.find(stmt->commandName);
-				bool is_user_command=0;
+				//bool is_user_command=0;
 				if (i==this->commandList.end()){
 					if (this->userCommandList.find(stmt->commandName)!=this->userCommandList.end())
 						i=this->commandList.find(L"");
@@ -1264,4 +1261,3 @@ bool NONS_ScriptInterpreter::gosub_label(const std::wstring &label){
 	this->callStack.push_back(el);
 	return 1;
 }
-#endif

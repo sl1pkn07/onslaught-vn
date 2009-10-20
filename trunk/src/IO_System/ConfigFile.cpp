@@ -27,12 +27,10 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef CONFIGFILE_CPP
-#define CONFIGFILE_CPP
-
 #include "ConfigFile.h"
 #include "../Functions.h"
 #include "FileIO.h"
+#include <sstream>
 
 template <typename T>
 T DEC2HEX(T x){
@@ -222,4 +220,3 @@ std::string ConfigFile::writeOut(ENCODINGS encoding){
 bool ConfigFile::exists(const std::wstring &var){
 	return this->entries.find(var)!=this->entries.end();
 }
-#endif

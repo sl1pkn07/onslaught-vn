@@ -32,7 +32,7 @@
 
 #include "../Common.h"
 #include "../ErrorCodes.h"
-#include "../UTF.h"
+#include "../Functions.h"
 #include "InputHandler.h"
 #include "Graphics/VirtualScreen.h"
 #include <string>

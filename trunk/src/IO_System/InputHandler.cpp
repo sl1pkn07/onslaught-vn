@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_INPUTHANDLER_CPP
-#define NONS_INPUTHANDLER_CPP
-
 #include "InputHandler.h"
 #include "../Globals.h"
 
@@ -114,4 +111,3 @@ void NONS_InputObserver::notify(SDL_Event *event){
 			this->data[a]->push(*event);
 	SDL_UnlockMutex(this->mutex);
 }
-#endif

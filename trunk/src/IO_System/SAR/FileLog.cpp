@@ -27,15 +27,11 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_FILELOG_CPP
-#define NONS_FILELOG_CPP
-
 #include "FileLog.h"
 #include "../FileIO.h"
 #include "../SaveFile.h"
 #include "../../Functions.h"
 #include "../../Globals.h"
-#include "../../UTF.h"
 #include <cstring>
 
 NONS_LogStrings::NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName){
@@ -173,4 +169,3 @@ bool NONS_LabelLog::check(const std::wstring &string){
 	bool ret=(this->log.find(copy)!=this->log.end());
 	return ret;
 }
-#endif

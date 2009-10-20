@@ -27,12 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_CURSOR_CPP
-#define NONS_CURSOR_CPP
-
 #include "Cursor.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include "ScreenSpace.h"
 #include <climits>
@@ -165,4 +161,3 @@ void NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	else
 		this->screen->BlendNoCursor(1);
 }
-#endif

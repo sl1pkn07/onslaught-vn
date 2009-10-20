@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_BUTTONLAYER_CPP
-#define NONS_BUTTONLAYER_CPP
-
 #include "ButtonLayer.h"
 #include "../../Globals.h"
 #include "Menu.h"
@@ -451,4 +448,3 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 	SDL_FreeSurface(screenCopy);
 	return (this->inputOptions.Wheel)?-5:-2;
 }
-#endif

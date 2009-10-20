@@ -27,15 +27,9 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_ARCHIVE_CPP
-#define NONS_ARCHIVE_CPP
-
 #include "Archive.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
-#ifndef TOOLS_NSAIO
 #include "../../Globals.h"
-#endif
 #include "../FileIO.h"
 #include <bzlib.h>
 
@@ -555,5 +549,4 @@ bool NONS_GeneralArchive::exists(const std::wstring &filepath){
 		return 1;
 	return fileExists(filepath);
 }
-#endif
 #endif

@@ -27,12 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_STANDARDOUTPUT_CPP
-#define NONS_STANDARDOUTPUT_CPP
-
 #include "StandardOutput.h"
 #include "../../Functions.h"
-#include "../../UTF.h"
 #include "../../Globals.h"
 #include <cstdlib>
 
@@ -527,4 +523,3 @@ std::wstring removeTags(const std::wstring &str){
 	}
 	return res;
 }
-#endif

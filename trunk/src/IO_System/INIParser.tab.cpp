@@ -1,5 +1,5 @@
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
+/* A Bison parser, made by GNU Bison 2.4.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
    
@@ -46,7 +46,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.4.1"
+#define YYBISON_VERSION "2.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -76,7 +76,7 @@
 /* Copy the first part of user declarations.  */
 
 
-#include "../UTF.h"
+#include "../Functions.h"
 
 
 
@@ -1421,7 +1421,7 @@ yyreduce:
 
     {
 		(yyval.ini_file)=0;
-	;}
+	}
     break;
 
   case 3:
@@ -1433,7 +1433,7 @@ yyreduce:
 			(yyval.ini_file)=(yyvsp[(1) - (2)].ini_file);
 		(*(yyval.ini_file))[(yyvsp[(2) - (2)].ini_section)->first]=(yyvsp[(2) - (2)].ini_section)->second;
 		delete (yyvsp[(2) - (2)].ini_section);
-	;}
+	}
     break;
 
   case 4:
@@ -1442,7 +1442,7 @@ yyreduce:
 		(yyval.ini_file)=0;
 		result=(yyvsp[(1) - (2)].ini_file);
 		YYACCEPT;
-	;}
+	}
     break;
 
   case 5:
@@ -1454,7 +1454,7 @@ yyreduce:
 			(yyval.ini_section)=new std::pair <std::wstring,std::map<std::wstring,std::wstring> >(L"",*(yyvsp[(2) - (2)].section_body));
 			delete (yyvsp[(2) - (2)].section_body);
 		}
-	;}
+	}
     break;
 
   case 6:
@@ -1468,7 +1468,7 @@ yyreduce:
 			delete (yyvsp[(2) - (2)].section_body);
 		}
 		delete (yyvsp[(1) - (2)].string);
-	;}
+	}
     break;
 
   case 7:
@@ -1479,21 +1479,21 @@ yyreduce:
 			YYABORT;
 		}
 		(yyval.string)=(yyvsp[(2) - (4)].string);
-	;}
+	}
     break;
 
   case 8:
 
     {
 		(yyval.section_body)=0;
-	;}
+	}
     break;
 
   case 9:
 
     {
 		(yyval.section_body)=(yyvsp[(1) - (2)].section_body);
-	;}
+	}
     break;
 
   case 10:
@@ -1501,7 +1501,7 @@ yyreduce:
     {
 		delete (yyvsp[(2) - (3)].string);
 		(yyval.section_body)=(yyvsp[(1) - (3)].section_body);
-	;}
+	}
     break;
 
   case 11:
@@ -1513,7 +1513,7 @@ yyreduce:
 			(yyval.section_body)=(yyvsp[(1) - (2)].section_body);
 		(*(yyval.section_body))[(yyvsp[(2) - (2)].line)->first]=(yyvsp[(2) - (2)].line)->second;
 		delete (yyvsp[(2) - (2)].line);
-	;}
+	}
     break;
 
   case 12:
@@ -1525,7 +1525,7 @@ yyreduce:
 		}
 		(yyval.line)=new std::pair<std::wstring,std::wstring>(*(yyvsp[(1) - (3)].string),L"");
 		delete (yyvsp[(1) - (3)].string);		
-	;}
+	}
     break;
 
   case 13:
@@ -1539,7 +1539,7 @@ yyreduce:
 		(yyval.line)=new std::pair<std::wstring,std::wstring>(*(yyvsp[(1) - (4)].string),*(yyvsp[(3) - (4)].string));
 		delete (yyvsp[(1) - (4)].string);
 		delete (yyvsp[(3) - (4)].string);
-	;}
+	}
     break;
 
 

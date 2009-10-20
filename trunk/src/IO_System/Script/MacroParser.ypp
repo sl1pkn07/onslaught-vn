@@ -54,6 +54,7 @@ bool partialCompare(const std::basic_string<T> &A,size_t offset,const std::basic
 #include "../../Common.h"
 #include <set>
 #include <vector>
+#include <string>
 #undef ERROR
 
 namespace NONS_Macro{

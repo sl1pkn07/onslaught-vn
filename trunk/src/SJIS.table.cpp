@@ -27,8 +27,55 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SJIS_TABLE_CPP
-#define SJIS_TABLE_CPP
+/*
+	History:
+		2008-05-08:
+			* SJIS+815B->U changed from U+003F to U+30FC
+			* U+30FC->SJIS changed from SJIS+003F to SJIS+815B
+		2008-05-10:
+			* SJIS+835B->U changed from U+003F to U+30BC
+			* SJIS+905B->U changed from U+003F to U+6DF1
+			* SJIS+925B->U changed from U+003F to U+7AEF
+			* SJIS+945B->U changed from U+003F to U+7D0D
+			* SJIS+975B->U changed from U+003F to U+5915
+			* U+30BC->SJIS changed from SJIS+003F to SJIS+835B
+			* U+5915->SJIS changed from SJIS+003F to SJIS+975B
+			* U+6DF1->SJIS changed from SJIS+003F to SJIS+905B
+			* U+7AEF->SJIS changed from SJIS+003F to SJIS+925B
+			* U+7D0D->SJIS changed from SJIS+003F to SJIS+945B
+		2008-05-11:
+			* SJIS+8754->U changed from U+003F to U+2160
+			* SJIS+8755->U changed from U+003F to U+2161
+			* SJIS+8756->U changed from U+003F to U+2162
+			* SJIS+8757->U changed from U+003F to U+2163
+			* SJIS+8758->U changed from U+003F to U+2164
+			* SJIS+8759->U changed from U+003F to U+2165
+			* SJIS+875A->U changed from U+003F to U+2166
+			* SJIS+875B->U changed from U+003F to U+2167
+			* SJIS+875C->U changed from U+003F to U+2168
+			* SJIS+875D->U changed from U+003F to U+2169
+			* SJIS+8A5B->U changed from U+003F to U+9AB8
+			* SJIS+8B5B->U changed from U+003F to U+64EC
+			* SJIS+8C5B->U changed from U+003F to U+5553
+			* SJIS+8F5B->U changed from U+003F to U+5145
+			* SJIS+965B->U changed from U+003F to U+623F
+			* U+2160->SJIS changed from SJIS+003F to SJIS+8754
+			* U+2161->SJIS changed from SJIS+003F to SJIS+8755
+			* U+2162->SJIS changed from SJIS+003F to SJIS+8756
+			* U+2163->SJIS changed from SJIS+003F to SJIS+8757
+			* U+2164->SJIS changed from SJIS+003F to SJIS+8758
+			* U+2165->SJIS changed from SJIS+003F to SJIS+8759
+			* U+2166->SJIS changed from SJIS+003F to SJIS+875A
+			* U+2167->SJIS changed from SJIS+003F to SJIS+875B
+			* U+2168->SJIS changed from SJIS+003F to SJIS+875C
+			* U+2169->SJIS changed from SJIS+003F to SJIS+875D
+			* U+5145->SJIS changed from SJIS+003F to SJIS+8F5B
+			* U+5553->SJIS changed from SJIS+003F to SJIS+8C5B
+			* U+623F->SJIS changed from SJIS+003F to SJIS+965B
+			* U+64EC->SJIS changed from SJIS+003F to SJIS+8B5B
+			* U+9AB8->SJIS changed from SJIS+003F to SJIS+8A5B
+*/
+
 wchar_t SJIS2Unicode[]={
 	0x0000, //SJIS+0000->U+0000
 	0x0001, //SJIS+0001->U+0001
@@ -131106,4 +131153,3 @@ wchar_t Unicode2SJIS[]={
 	0x003F, //U+FFFE->SJIS+003F
 	0x003F  //U+FFFF->SJIS+003F
 };
-#endif

@@ -27,8 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_MACROPARSER_CPP
-#define NONS_MACROPARSER_CPP
 #include "../../Globals.h"
 #include "../../Functions.h"
 #include "MacroParser.h"
@@ -983,4 +981,3 @@ bool MacroFile::checkSymbols(){
 	return this->symbol_table.checkSymbols();
 }
 }
-#endif

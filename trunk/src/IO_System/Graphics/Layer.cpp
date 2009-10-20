@@ -27,9 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_LAYER_CPP
-#define NONS_LAYER_CPP
-
 #include "Layer.h"
 #include "../../Globals.h"
 
@@ -181,4 +178,3 @@ void NONS_Layer::centerAround(int x){
 void NONS_Layer::useBaseline(int y){
 	this->position.y=y-this->clip_rect.h+1;
 }
-#endif
