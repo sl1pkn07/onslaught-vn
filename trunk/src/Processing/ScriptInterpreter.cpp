@@ -28,12 +28,13 @@
 */
 
 #include "ScriptInterpreter.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
+#include "../CommandLineOptions.h"
 #include <iostream>
-#include <sstream>
+
+bool ctrlIsPressed;
+//bool softwareCtrlIsPressed;
+NONS_ScriptInterpreter *gScriptInterpreter=0;
 
 #undef ABS
 #include "../IO_System/Graphics/SDL_bilinear.h"
@@ -109,6 +110,8 @@ NONS_StackElement::NONS_StackElement(NONS_StackElement *copy,const std::vector<s
 	this->type=USERCMD_CALL;
 	this->parameters=vector;
 }
+
+extern std::wstring config_directory;
 
 void NONS_ScriptInterpreter::init(){
 	this->script=everything->script;
@@ -610,27 +613,27 @@ ulong NONS_ScriptInterpreter::implementedCommands(){
 	return res;
 }
 
-#define INTERPRETNEXTLINE_HANDLEKEYS switch (event.type){\
-	case SDL_KEYDOWN:\
-		{\
-			float def=(float)this->default_speed,\
-				cur=(float)this->everything->screen->output->display_speed;\
-			if (event.key.keysym.sym==SDLK_F5){\
-				this->default_speed=this->default_speed_slow;\
-				this->current_speed_setting=0;\
-				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
-			}else if (event.key.keysym.sym==SDLK_F6){\
-				this->default_speed=this->default_speed_med;\
-				this->current_speed_setting=1;\
-				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
-			}else if (event.key.keysym.sym==SDLK_F7){\
-				this->default_speed=this->default_speed_fast;\
-				this->current_speed_setting=2;\
-				this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));\
-			}\
-			break;\
-		}\
+void NONS_ScriptInterpreter::handleKeys(SDL_Event &event){
+	if (event.type==SDL_KEYDOWN){
+		float def=(float)this->default_speed,
+			cur=(float)this->everything->screen->output->display_speed;
+		if (event.key.keysym.sym==SDLK_F5){
+			this->default_speed=this->default_speed_slow;
+			this->current_speed_setting=0;
+			this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));
+		}else if (event.key.keysym.sym==SDLK_F6){
+			this->default_speed=this->default_speed_med;
+			this->current_speed_setting=1;
+			this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));
+		}else if (event.key.keysym.sym==SDLK_F7){
+			this->default_speed=this->default_speed_fast;
+			this->current_speed_setting=2;
+			this->everything->screen->output->display_speed=ulong(cur/def*float(this->default_speed));
+		}
+	}
 }
+
+extern uchar trapFlag;
 
 bool NONS_ScriptInterpreter::interpretNextLine(){
 	if (trapFlag){
@@ -640,9 +643,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 				SDL_Event event=this->inputQueue.pop();
 				if (event.type==SDL_MOUSEBUTTONDOWN && (event.button.which==SDL_BUTTON_LEFT || !(trapFlag%2)))
 					end=1;
-				else{
-					INTERPRETNEXTLINE_HANDLEKEYS
-				}
+				else
+					this->handleKeys(event);
 			}
 			if (end){
 				this->thread->gotoLabel(this->trapLabel);
@@ -654,7 +656,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	}else{
 		while (!this->inputQueue.empty()){
 			SDL_Event event=this->inputQueue.pop();
-			INTERPRETNEXTLINE_HANDLEKEYS
+			this->handleKeys(event);
 		}
 	}
 

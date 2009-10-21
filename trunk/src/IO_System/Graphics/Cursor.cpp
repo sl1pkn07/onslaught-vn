@@ -28,8 +28,6 @@
 */
 
 #include "Cursor.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
 #include "ScreenSpace.h"
 #include <climits>
 #include <vector>

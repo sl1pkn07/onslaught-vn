@@ -28,9 +28,6 @@
 */
 
 #include "ScriptInterpreter.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 
 ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_Statement &stmt){

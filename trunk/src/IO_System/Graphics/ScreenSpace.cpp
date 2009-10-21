@@ -29,9 +29,29 @@
 
 #include "ScreenSpace.h"
 #include "../../Functions.h"
-#include "../../Globals.h"
+#include "../../CommandLineOptions.h"
 
 #define SCREENBUFFER_BITS 32
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+const int rmask=0xFF000000;
+const int gmask=0x00FF0000;
+const int bmask=0x0000FF00;
+const int amask=0x000000FF;
+const int rshift=24;
+const int gshift=16;
+const int bshift=8;
+const int ashift=0;
+#else
+const int rmask=0x000000FF;
+const int gmask=0x0000FF00;
+const int bmask=0x00FF0000;
+const int amask=0xFF000000;
+const int rshift=0;
+const int gshift=8;
+const int bshift=16;
+const int ashift=24;
+#endif
 
 NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->screen=new NONS_VirtualScreen(CLOptions.virtualWidth,CLOptions.virtualHeight,CLOptions.realWidth,CLOptions.realHeight);

@@ -29,7 +29,7 @@
 
 #include "FontCache.h"
 #include "../../Common.h"
-#include "../../Globals.h"
+#include "../IOFunctions.h"
 
 //#define BLEND_WITH_SDLBLIT
 
@@ -181,4 +181,24 @@ NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 	NONS_Glyph *glyph=new NONS_Glyph(this->font,codePoint,this->font->getascent(),&(this->foreground),this->shadow);
 	this->glyphCache.push_back(glyph);
 	return this->glyphCache.back();
+}
+
+NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive){
+	NONS_Font *font=new NONS_Font("default.ttf",(size),TTF_STYLE_NORMAL);
+	if (!font->valid()){
+		delete font;
+		ulong l;
+		uchar *buffer=archive->getFileBuffer(L"default.ttf",l);
+		if (!buffer){
+			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"
+				"case-sensitive, make sure the file name is capitalized correctly.\n";
+			exit(0);
+			return 0;
+		}
+		SDL_RWops *rw=SDL_RWFromMem(buffer,l);
+		font=new NONS_Font(rw,size,TTF_STYLE_NORMAL);
+		SDL_FreeRW(rw);
+		delete[] buffer;
+	}
+	return font;
 }

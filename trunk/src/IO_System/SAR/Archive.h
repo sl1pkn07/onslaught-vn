@@ -36,17 +36,9 @@
 #include <vector>
 #include <fstream>
 
-#ifdef NONS_SYS_WINDOWS
-#include <windows.h>
-#endif
-
 struct NONS_TreeNode{
 	struct NONS_ArchivedFile{
 		std::wstring name;
-#ifdef TOOLS_NSAIO
-		std::wstring archivepath,
-			filepath;
-#endif
 		ulong compression_type;
 		enum{
 			NO_COMPRESSION=0,
@@ -94,9 +86,6 @@ struct NONS_Archive{
 	};
 	bool loaded;
 	NONS_Archive(const std::wstring &filename,bool failSilently);
-#ifdef TOOLS_NSAIO
-	NONS_Archive(ulong archive_type);
-#endif
 	~NONS_Archive();
 	/*
 	1 if the archive has been loaded or if it had already been loaded.

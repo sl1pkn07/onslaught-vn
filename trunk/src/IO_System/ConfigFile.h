@@ -34,7 +34,6 @@
 #include <cstring>
 #include "../enums.h"
 #include "../Functions.h"
-#include "FileIO.h"
 #include <string>
 
 typedef std::map<std::wstring,std::vector<std::wstring>,stdStringCmpCI<wchar_t> > config_map_t;

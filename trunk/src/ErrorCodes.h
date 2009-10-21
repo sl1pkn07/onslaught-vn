@@ -30,9 +30,11 @@
 #ifndef NONS_ERROR_CODES
 #define NONS_ERROR_CODES
 
-#include "CommonTypes.h"
+//#include <SDL/SDL_stdinc.h>
 
-typedef Uint32 ErrorCode;
+//typedef Uint32 ErrorCode;
+typedef unsigned long ErrorCode;
+//#error "I'm being included."
 
 #define NONS_FATAL_ERROR							0x40000000
 #define NONS_BREAK_WORTHY_ERROR						0x20000000

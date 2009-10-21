@@ -30,10 +30,9 @@
 #define USE_ACCURATE_MULTIPLICATION
 
 #include "GFX.h"
-#include "../../Functions.h"
 #include "../IOFunctions.h"
-#include "../../Globals.h"
 #include "../../ThreadManager.h"
+#include "../SAR/ImageLoader.h"
 #include <cmath>
 #include <iostream>
 

@@ -28,9 +28,7 @@
 */
 
 #include "ConfigFile.h"
-#include "../Functions.h"
-#include "FileIO.h"
-#include <sstream>
+#include "IOFunctions.h"
 
 template <typename T>
 T DEC2HEX(T x){

@@ -29,9 +29,7 @@
 
 #include "INIfile.h"
 #include "INIParser.tab.hpp"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "FileIO.h"
+#include "IOFunctions.h"
 
 /*void INIvalue::setIntValue(long a){
 	this->value=itoa<wchar_t>(a);

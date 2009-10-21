@@ -78,8 +78,6 @@
 
 #include "VariableStore.h"
 #include "ScriptInterpreter.h"
-#include "../Globals.h"
-#include "../Functions.h"
 #include "../IO_System/IOFunctions.h"
 
 void freeVM(NONS_VariableMember *p);
@@ -504,11 +502,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   115,   115,   126,   137,   148,   153,   156,   172,   177,
-     180,   191,   202,   214,   226,   233,   236,   239,   248,   253,
-     260,   278,   290,   302,   310,   316,   322,   328,   340,   349,
-     365,   381,   386,   391,   396,   405,   416,   425,   436,   443,
-     450,   457,   464,   471,   478,   484,   490,   496,   503
+       0,   113,   113,   124,   135,   146,   151,   154,   170,   175,
+     178,   189,   200,   212,   224,   231,   234,   237,   246,   251,
+     258,   276,   288,   300,   308,   314,   320,   326,   338,   347,
+     363,   379,   384,   389,   394,   403,   414,   423,   434,   441,
+     448,   455,   462,   469,   476,   482,   488,   494,   501
 };
 #endif
 

@@ -1,8 +1,10 @@
 ????????
+    * The engine is confirmed to compile with MinGW versions 4.x and above.
     * Fixed compliance error in effects 11, 12, 13, and 14.
     * Fixed major bug in file reading function.
     * Fixed bug in UTF-8 decoding function.
     * Fixed crashing bug in input events.
+    * Fixed bug in the macro parser.
 
 20090904
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,

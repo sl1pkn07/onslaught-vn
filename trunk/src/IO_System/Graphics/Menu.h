@@ -35,6 +35,8 @@
 #include <SDL/SDL.h>
 #include <vector>
 
+class NONS_ScriptInterpreter;
+
 struct NONS_Menu{
 	std::vector<std::wstring> strings;
 	std::vector<std::wstring> commands;
@@ -45,7 +47,7 @@ struct NONS_Menu{
 	NONS_ButtonLayer *buttons;
 	NONS_ButtonLayer *files;
 	ushort slots;
-	void *interpreter;
+	NONS_ScriptInterpreter *interpreter;
 	int x,y;
 	NONS_Layer *shade;
 	NONS_Font *font;
@@ -65,8 +67,8 @@ struct NONS_Menu{
 	NONS_GeneralArchive *archive;
 	uchar rightClickMode;
 
-	NONS_Menu(void *interpreter);
-	NONS_Menu(std::vector<std::wstring> *options,void *interpreter);
+	NONS_Menu(NONS_ScriptInterpreter *interpreter);
+	NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *interpreter);
 	~NONS_Menu();
 	int callMenu();
 	void reset();

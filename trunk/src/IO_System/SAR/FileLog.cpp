@@ -28,15 +28,16 @@
 */
 
 #include "FileLog.h"
-#include "../FileIO.h"
 #include "../SaveFile.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
+#include "../IOFunctions.h"
 #include <cstring>
+#include <SDL/SDL_mutex.h>
 
 NONS_LogStrings::NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName){
 	this->init(oldName,newName);
 }
+
+extern std::wstring save_directory;
 
 void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newName){
 	this->commit=0;
@@ -113,6 +114,8 @@ void NONS_LogStrings::writeOut(){
 	writefile(this->saveAs,writebuffer,l);
 	delete[] writebuffer;
 }
+
+extern SDL_mutex *exitMutex;
 
 bool NONS_LogStrings::addString(const std::wstring &string){
 	if (this->log.find(string)!=this->log.end())

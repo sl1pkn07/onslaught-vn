@@ -29,8 +29,6 @@
 %{
 #include "VariableStore.h"
 #include "ScriptInterpreter.h"
-#include "../Globals.h"
-#include "../Functions.h"
 #include "../IO_System/IOFunctions.h"
 
 void freeVM(NONS_VariableMember *p);

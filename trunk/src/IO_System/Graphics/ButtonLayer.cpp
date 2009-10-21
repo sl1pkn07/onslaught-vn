@@ -28,9 +28,7 @@
 */
 
 #include "ButtonLayer.h"
-#include "../../Globals.h"
 #include "Menu.h"
-#include "../../Functions.h"
 #include "../IOFunctions.h"
 #include <utility>
 

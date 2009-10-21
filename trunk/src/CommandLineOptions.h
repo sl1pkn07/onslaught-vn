@@ -31,7 +31,7 @@
 #define NONS_COMMANDLINEOPTIONS_H
 
 #include "enums.h"
-#include "CommonTypes.h"
+#include "Common.h"
 #include <string>
 #include <vector>
 
@@ -63,6 +63,8 @@ struct NONS_CommandLineOptions{
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);
 };
+
+extern NONS_CommandLineOptions CLOptions;
 
 void usage();
 #endif

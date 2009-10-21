@@ -28,12 +28,9 @@
 */
 
 #include "Audio.h"
-#include "../FileIO.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
-#include "../InputHandler.h"
+#include "../IOFunctions.h"
+#include "../../CommandLineOptions.h"
 #include <iostream>
-#include <sstream>
 
 int GC(void *nil){
 	return NONS_SoundCache::GarbageCollector((NONS_SoundCache *)nil);

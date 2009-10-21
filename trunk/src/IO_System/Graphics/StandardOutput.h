@@ -30,7 +30,6 @@
 #ifndef NONS_STANDARDOUTPUT_H
 #define NONS_STANDARDOUTPUT_H
 
-#include "../InputHandler.h"
 #include "Layer.h"
 #include "../../Common.h"
 #include "GFX.h"

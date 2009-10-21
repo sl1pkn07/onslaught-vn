@@ -28,10 +28,12 @@
 */
 
 #include "CommandLineOptions.h"
-#include "Globals.h"
 #include "Processing/ScriptInterpreter.h"
 #include "IO_System/IOFunctions.h"
 #include <iostream>
+
+NONS_CommandLineOptions CLOptions;
+extern std::ofstream textDumpFile;
 
 #define DEFAULT_INPUT_WIDTH 640
 #define DEFAULT_INPUT_HEIGHT 480
