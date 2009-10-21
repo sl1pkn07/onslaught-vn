@@ -30,7 +30,7 @@
 #define USE_ACCURATE_MULTIPLICATION
 #include "Functions.h"
 #include "ThreadManager.h"
-#include "IO_System/IOFunctions.h"
+#include "IOFunctions.h"
 #include "enums.h"
 #include <bzlib.h>
 

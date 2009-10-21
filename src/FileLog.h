@@ -27,27 +27,41 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_EVERYTHING_H
-#define NONS_EVERYTHING_H
+#ifndef NONS_FILELOG_H
+#define NONS_FILELOG_H
 
 #include "Common.h"
-#include "ErrorCodes.h"
-#include "ScreenSpace.h"
-#include "Audio.h"
-#include "Archive.h"
-#include "Script.h"
+#include "Functions.h"
+#include <set>
 
-struct NONS_Everything{
-	NONS_ScreenSpace *screen;
-	NONS_Audio *audio;
-	NONS_Script *script;
-	NONS_GeneralArchive *archive;
-	NONS_Everything();
-	~NONS_Everything();
-	ErrorCode init_screen();
-	//0: init archive, 1: init NSA.
-	ErrorCode init_audio(const std::wstring &musicDir=L"./CD");
-	ErrorCode init_script(const std::wstring &filename,ulong encoding,ulong encryption);
-	ErrorCode init_script(ulong encoding);
+typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > logSet_t;
+
+struct NONS_LogStrings{
+	std::wstring saveAs;
+	logSet_t log;
+	bool commit;
+	NONS_LogStrings():commit(0){}
+	NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName);
+	~NONS_LogStrings();
+	void init(const std::wstring &oldName,const std::wstring &newName);
+	void writeOut();
+	virtual bool addString(const std::wstring &string);
+	virtual bool check(const std::wstring &string);
+};
+
+struct NONS_FileLog:NONS_LogStrings{
+	NONS_FileLog(const std::wstring &oldName,const std::wstring &newName)
+		:NONS_LogStrings(oldName,newName){}
+	bool addString(const std::wstring &string);
+	bool check(std::wstring string);
+};
+
+struct NONS_LabelLog:NONS_LogStrings{
+	NONS_LabelLog()
+		:NONS_LogStrings(){}
+	NONS_LabelLog(const std::wstring &oldName,const std::wstring &newName)
+		:NONS_LogStrings(oldName,newName){}
+	bool addString(const std::wstring &string);
+	bool check(const std::wstring &string);
 };
 #endif

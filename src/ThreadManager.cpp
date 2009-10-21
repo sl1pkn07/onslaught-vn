@@ -28,7 +28,7 @@
 */
 
 #include "ThreadManager.h"
-#include "IO_System/IOFunctions.h"
+#include "IOFunctions.h"
 #include "CommandLineOptions.h"
 
 #ifdef NONS_SYS_WINDOWS

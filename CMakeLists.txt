@@ -17,48 +17,37 @@ set(LIBS
 )
 
 add_executable(ONSlaught
+	src/Archive.cpp
+	src/Audio.cpp
 	src/CommandLineOptions.cpp
+	src/ConfigFile.cpp
 	src/ErrorCodes.cpp
 	src/Everything.cpp
+	src/ExpressionParser.tab.cpp
+	src/FileLog.cpp
 	src/Functions.cpp
+	src/GFX.cpp
+	src/GUI.cpp
+	src/INIParser.tab.cpp
+	src/INIfile.cpp
+	src/IOFunctions.cpp
+	src/Image.cpp
+	src/ImageLoader.cpp
+	src/MacroParser.cpp
+	src/MacroParser.tab.cpp
 	src/ONSlaught.cpp
+	src/SDL_bilinear.c
+	src/SDL_ttf.c
 	src/SJIS.table.cpp
+	src/SaveFile.cpp
+	src/ScreenSpace.cpp
+	src/Script.cpp
+	src/ScriptInterpreter.cpp
 	src/ThreadManager.cpp
-	src/IO_System/ConfigFile.cpp
-	src/IO_System/INIParser.tab.cpp
-	src/IO_System/INIfile.cpp
-	src/IO_System/IOFunctions.cpp
-	src/IO_System/SaveFile.cpp
-	src/IO_System/Audio/Audio.cpp
-	src/IO_System/Graphics/Button.cpp
-	src/IO_System/Graphics/ButtonLayer.cpp
-	src/IO_System/Graphics/Cursor.cpp
-	src/IO_System/Graphics/FontCache.cpp
-	src/IO_System/Graphics/GFX.cpp
-	src/IO_System/Graphics/Layer.cpp
-	src/IO_System/Graphics/Lookback.cpp
-	src/IO_System/Graphics/Menu.cpp
-	src/IO_System/Graphics/SDL_bilinear.c
-	src/IO_System/Graphics/SDL_ttf.c
-	src/IO_System/Graphics/ScreenSpace.cpp
-	src/IO_System/Graphics/StandardOutput.cpp
-	src/IO_System/Graphics/VirtualScreen.cpp
-	src/IO_System/SAR/Archive.cpp
-	src/IO_System/SAR/FileLog.cpp
-	src/IO_System/SAR/Image.cpp
-	src/IO_System/SAR/ImageLoader.cpp
-	src/IO_System/Script/MacroParser.cpp
-	src/IO_System/Script/MacroParser.tab.cpp
-	src/IO_System/Script/Script.cpp
-	src/IO_System/Script/commandPreParser.tab.cpp
-	src/IO_System/Script/sha1.cpp
-	src/Processing/ExpressionParser.tab.cpp
-	src/Processing/ScriptInterpreter.cpp
-	src/Processing/ScriptInterpreter_commandsAI.cpp
-	src/Processing/ScriptInterpreter_commandsJR.cpp
-	src/Processing/ScriptInterpreter_commandsSZ.cpp
-	src/Processing/ScriptInterpreter_savegame.cpp
-	src/Processing/VariableStore.cpp
+	src/VariableStore.cpp
+	src/VirtualScreen.cpp
+	src/commandPreParser.tab.cpp
+	src/sha1.cpp
 )
 
 target_link_libraries(ONSlaught ${LIBS})
