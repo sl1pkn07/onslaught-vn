@@ -27,27 +27,58 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_EVERYTHING_H
-#define NONS_EVERYTHING_H
+#ifndef NONS_INIsection_H
+#define NONS_INIsection_H
 
 #include "Common.h"
+#include "Functions.h"
 #include "ErrorCodes.h"
-#include "ScreenSpace.h"
-#include "Audio.h"
-#include "Archive.h"
-#include "Script.h"
+#include "enums.h"
+#include <map>
 
-struct NONS_Everything{
-	NONS_ScreenSpace *screen;
-	NONS_Audio *audio;
-	NONS_Script *script;
-	NONS_GeneralArchive *archive;
-	NONS_Everything();
-	~NONS_Everything();
-	ErrorCode init_screen();
-	//0: init archive, 1: init NSA.
-	ErrorCode init_audio(const std::wstring &musicDir=L"./CD");
-	ErrorCode init_script(const std::wstring &filename,ulong encoding,ulong encryption);
-	ErrorCode init_script(ulong encoding);
+class INIvalue{
+	std::wstring value;
+public:
+	INIvalue(){}
+	INIvalue(long a){
+		this->setIntValue(a);
+	}
+	INIvalue(const std::wstring &a){
+		this->setStrValue(a);
+	}
+	void setIntValue(long a){
+		this->value=itoa<wchar_t>(a);
+	}
+	void setStrValue(const std::wstring &a){
+		this->value=a;
+	}
+	long getIntValue(){
+		return atoi(this->value);
+	}
+	const std::wstring &getStrValue(){
+		return this->value;
+	}
+};
+
+class INIsection{
+	std::map<std::wstring,INIvalue> variables;
+public:
+	INIsection(){}
+	INIsection(const std::map<std::wstring,std::wstring> &vars);
+	void setIntValue(const std::wstring &index,long a);
+	void setStrValue(const std::wstring &index,const std::wstring &a);
+	long getIntValue(const std::wstring &index);
+	const std::wstring &getStrValue(const std::wstring &index);
+	INIvalue *getValue(const std::wstring &index);
+};
+
+class INIfile{
+	std::map<std::wstring,INIsection> sections;
+	void readFile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
+public:
+	INIfile();
+	INIfile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	INIfile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	INIsection *getSection(const std::wstring &index);
 };
 #endif

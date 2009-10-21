@@ -28,8 +28,8 @@
 */
 
 #include "CommandLineOptions.h"
-#include "Processing/ScriptInterpreter.h"
-#include "IO_System/IOFunctions.h"
+#include "ScriptInterpreter.h"
+#include "IOFunctions.h"
 #include <iostream>
 
 NONS_CommandLineOptions CLOptions;

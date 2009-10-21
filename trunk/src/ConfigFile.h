@@ -27,27 +27,30 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_EVERYTHING_H
-#define NONS_EVERYTHING_H
+#ifndef CONFIGFILE_H
+#define CONFIGFILE_H
 
-#include "Common.h"
-#include "ErrorCodes.h"
-#include "ScreenSpace.h"
-#include "Audio.h"
-#include "Archive.h"
-#include "Script.h"
+#include <map>
+#include <cstring>
+#include "enums.h"
+#include "Functions.h"
+#include <string>
 
-struct NONS_Everything{
-	NONS_ScreenSpace *screen;
-	NONS_Audio *audio;
-	NONS_Script *script;
-	NONS_GeneralArchive *archive;
-	NONS_Everything();
-	~NONS_Everything();
-	ErrorCode init_screen();
-	//0: init archive, 1: init NSA.
-	ErrorCode init_audio(const std::wstring &musicDir=L"./CD");
-	ErrorCode init_script(const std::wstring &filename,ulong encoding,ulong encryption);
-	ErrorCode init_script(ulong encoding);
+typedef std::map<std::wstring,std::vector<std::wstring>,stdStringCmpCI<wchar_t> > config_map_t;
+
+struct ConfigFile{
+	ConfigFile();
+	ConfigFile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	~ConfigFile();
+	std::wstring getWString(const std::wstring &index,ulong subindex=0);
+	long getInt(const std::wstring &index,ulong subindex=0);
+	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=0);
+	void assignInt(const std::wstring &var,long val,ulong subindex=0);
+	void writeOut(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	std::string writeOut(ENCODINGS encoding=ISO_8859_1_ENCODING);
+	bool exists(const std::wstring &var);
+private:
+	config_map_t entries;
+	void init(const std::wstring &filename,ENCODINGS encoding);
 };
 #endif
