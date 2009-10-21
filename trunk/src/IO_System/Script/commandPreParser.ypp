@@ -27,7 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 %{
-#include "Script.h"
 #include "../../Functions.h"
 %}
 %parse-param {std::wstringstream *stream}
@@ -44,6 +43,7 @@
 #include <sstream>
 #include <string>
 #include <climits>
+#include "Script.h"
 #undef ERROR
 }
 %code provides {
