@@ -28,11 +28,10 @@
 */
 
 #include "StandardOutput.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
+#include "../IOFunctions.h"
 #include <cstdlib>
 
-extern std::ofstream textDumpFile;
+std::ofstream textDumpFile;
 
 NONS_StandardOutput::NONS_StandardOutput(NONS_Layer *fgLayer,NONS_Layer *shadowLayer,NONS_Layer *shadeLayer){
 	this->foregroundLayer=fgLayer;

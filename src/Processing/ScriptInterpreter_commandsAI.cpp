@@ -28,11 +28,9 @@
 */
 
 #include "ScriptInterpreter.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 #include "../version.h"
+#include "../CommandLineOptions.h"
 #include <cctype>
 #ifdef ABS
 #undef ABS
@@ -41,7 +39,7 @@
 
 #ifdef NONS_SYS_WINDOWS
 #include <windows.h>
-extern HWND mainWindow;
+HWND mainWindow=0;
 #endif
 
 ErrorCode NONS_ScriptInterpreter::command_caption(NONS_Statement &stmt){

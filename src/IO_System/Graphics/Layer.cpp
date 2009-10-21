@@ -28,7 +28,6 @@
 */
 
 #include "Layer.h"
-#include "../../Globals.h"
 
 NONS_Layer::NONS_Layer(SDL_Rect *size,unsigned rgba){
 	this->data=makeSurface(size->w,size->h,32);

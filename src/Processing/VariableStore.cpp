@@ -28,16 +28,272 @@
 */
 
 #include "VariableStore.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
-#include <cctype>
+#include "../CommandLineOptions.h"
+#include "../IO_System/SAR/ImageLoader.h"
+
+const std::wstring NONS_VariableMember::null;
+
+NONS_VariableMember::NONS_VariableMember(yytokentype type){
+	this->intValue=0;
+	this->type=type;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	this->dimension=0;
+	this->dimensionSize=0;
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(long value){
+	this->intValue=value;
+	this->type=INTEGER;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	this->dimension=0;
+	this->dimensionSize=0;
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(const std::wstring &a){
+	this->intValue=0;
+	this->type=STRING;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	this->dimension=0;
+	this->dimensionSize=0;
+	this->set(a);
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(std::vector<long> &sizes,size_t startAt){
+	this->intValue=0;
+	this->_long_upper_limit=LONG_MAX;
+	this->_long_lower_limit=LONG_MIN;
+	this->constant=0;
+	if (startAt<sizes.size()){
+		this->type=INTEGER_ARRAY;
+		this->dimensionSize=sizes[startAt]+1;
+		this->dimension=new NONS_VariableMember*[this->dimensionSize];
+		for (ulong a=0;a<ulong(this->dimensionSize);a++)
+			this->dimension[a]=new NONS_VariableMember(sizes,startAt+1);
+	}else{
+		this->type=INTEGER;
+		this->dimension=0;
+		this->dimensionSize=0;
+	}
+	this->negated=1;
+	this->temporary=0;
+}
+
+NONS_VariableMember::NONS_VariableMember(const NONS_VariableMember &b){
+	this->constant=b.constant;
+	this->intValue=b.intValue;
+	this->_long_upper_limit=b._long_upper_limit;
+	this->_long_lower_limit=b._long_lower_limit;
+	this->wcsValue=b.wcsValue;
+	this->type=b.type;
+	this->dimensionSize=b.dimensionSize;
+	if (this->type!=INTEGER_ARRAY)
+		this->dimension=0;
+	else{
+		this->dimension=new NONS_VariableMember*[this->dimensionSize];
+		for (ulong a=0;a<this->dimensionSize;a++)
+			this->dimension[a]=new NONS_VariableMember(*b.dimension[a]);
+	}
+	this->negated=b.negated;
+	this->temporary=0;
+}
+
+NONS_VariableMember::~NONS_VariableMember(){
+	if (!!this->dimension){
+		for (ulong a=0;a<this->dimensionSize;a++)
+			delete this->dimension[a];
+		delete[] this->dimension;
+	}
+}
+
+void NONS_VariableMember::makeConstant(){
+	this->constant=1;
+}
+
+bool NONS_VariableMember::isConstant(){
+	return this->constant;
+}
+
+yytokentype NONS_VariableMember::getType(){
+	return this->type;
+}
+
+void NONS_VariableMember::fixint(){
+	if (this->intValue>this->_long_upper_limit)
+		this->intValue=_long_upper_limit;
+	else if (this->intValue<this->_long_lower_limit)
+		this->intValue=_long_lower_limit;
+}
+
+long NONS_VariableMember::getInt(){
+	if (this->type==INTEGER || this->type==INTEGER_ARRAY)
+		return this->intValue;
+	return 0;
+}
+
+const std::wstring &NONS_VariableMember::getWcs(){
+	return this->type==STRING?this->wcsValue:this->null;
+}
+
+NONS_VariableMember *NONS_VariableMember::getIndex(ulong i){
+	if (this->type==INTEGER_ARRAY && i<this->dimensionSize)
+		return this->dimension[i];
+	return 0;
+}
+
+extern SDL_mutex *exitMutex;
+
+void NONS_VariableMember::set(long a){
+	if (this->constant)
+		return;
+	SDL_LockMutex(exitMutex);
+	if (this->type==INTEGER){
+		this->intValue=a;
+		this->fixint();
+	}
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::atoi(const std::wstring &a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	std::wstringstream stream;
+	stream <<a;
+	stream >>this->intValue;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::set(const std::wstring &a){
+	if (this->constant || this->type==INTEGER || this->type==INTEGER_ARRAY)
+		return;
+	SDL_LockMutex(exitMutex);
+	if (this->type==STRING)
+		this->wcsValue=a;
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::inc(){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue++;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::dec(){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue--;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::add(long a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue+=a;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::sub(long a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue-=a;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::mul(long a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue*=a;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::div(long a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	if (a)
+		this->intValue/=a;
+	else
+		this->intValue=0;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::mod(long a){
+	if (this->constant || this->type!=INTEGER)
+		return;
+	SDL_LockMutex(exitMutex);
+	this->intValue%=a;
+	this->fixint();
+	SDL_UnlockMutex(exitMutex);
+}
+
+void NONS_VariableMember::setlimits(long lower,long upper){
+	this->_long_lower_limit=lower;
+	this->_long_upper_limit=upper;
+	this->fixint();
+}
+
+void NONS_VariableMember::negate(bool a){
+	if (this->type==INTEGER && !this->negated && a){
+		this->negated=1;
+		this->intValue=!this->intValue;
+	}
+}
+
+NONS_Variable::NONS_Variable(){
+	this->intValue=new NONS_VariableMember(INTEGER);
+	this->wcsValue=new NONS_VariableMember(STRING);
+}
+
+NONS_Variable::NONS_Variable(const NONS_Variable &b){
+	this->intValue=new NONS_VariableMember(*b.intValue);
+	this->wcsValue=new NONS_VariableMember(*b.wcsValue);
+}
+
+NONS_Variable &NONS_Variable::operator=(const NONS_Variable &b){
+	delete this->intValue;
+	delete this->wcsValue;
+	this->intValue=new NONS_VariableMember(*b.intValue);
+	this->wcsValue=new NONS_VariableMember(*b.wcsValue);
+	return *this;
+}
+
+NONS_Variable::~NONS_Variable(){
+	delete this->intValue;
+	delete this->wcsValue;
+}
 
 NONS_LabelLog labellog;
 
 const Sint32 NONS_VariableStore::indexLowerLimit=-1073741824;
 const Sint32 NONS_VariableStore::indexUpperLimit=1073741823;
+
+extern std::wstring save_directory;
 
 NONS_VariableStore::NONS_VariableStore(){
 	ulong l;

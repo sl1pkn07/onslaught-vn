@@ -27,15 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "Globals.h"
-#include <SDL/SDL.h>
-#include "Processing/ScriptInterpreter.h"
-#include "ThreadManager.h"
-#include <iostream>
-
-NONS_CommandLineOptions CLOptions;
-NONS_InputObserver InputObserver;
-bool exitLocked=0;
 const char *errorMessages[]={
 	//NONS_NO_ERROR
 	"",
@@ -212,52 +203,3 @@ const char *errorMessages[]={
 	"Not enough pages in the log.",
 	0
 };
-NONS_RedirectedOutput o_stdout(std::cout);
-NONS_RedirectedOutput o_stderr(std::cerr);
-//NONS_RedirectedOutput o_stdlog(std::clog);
-NONS_ImageLoader *ImageLoader=0;
-bool ctrlIsPressed;
-bool softwareCtrlIsPressed;
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-const int rmask=0xFF000000;
-const int gmask=0x00FF0000;
-const int bmask=0x0000FF00;
-const int amask=0x000000FF;
-const int rshift=24;
-const int gshift=16;
-const int bshift=8;
-const int ashift=0;
-#else
-const int rmask=0x000000FF;
-const int gmask=0x0000FF00;
-const int bmask=0x00FF0000;
-const int amask=0xFF000000;
-const int rshift=0;
-const int gshift=8;
-const int bshift=16;
-const int ashift=24;
-#endif
-uchar trapFlag=0;
-int lastClickX=0;
-int lastClickY=0;
-NONS_ScriptInterpreter *gScriptInterpreter=0;
-SDL_mutex *exitMutex=0;
-SDL_mutex *screenMutex=0;
-
-ulong cpu_count=1;
-
-std::wstring save_directory;
-std::wstring config_directory;
-
-std::ofstream textDumpFile;
-
-#ifdef NONS_SYS_WINDOWS
-#include <windows.h>
-HWND mainWindow=0;
-#endif
-
-#ifdef LOOKUP_BLEND_CONSTANT
-uchar blendData[65536];
-#endif
-
-NONS_ThreadManager threadManager;

@@ -182,43 +182,33 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 <File RelativePath="..\..\src\CommandLineOptions.cpp"></File>
+<File RelativePath="..\..\src\ErrorCodes.cpp"></File>
 <File RelativePath="..\..\src\Everything.cpp"></File>
 <File RelativePath="..\..\src\Functions.cpp"></File>
-<File RelativePath="..\..\src\Globals.cpp"></File>
 <File RelativePath="..\..\src\ONSlaught.cpp"></File>
 <File RelativePath="..\..\src\SJIS.table.cpp"></File>
 <File RelativePath="..\..\src\ThreadManager.cpp"></File>
-<File RelativePath="..\..\src\UTF.cpp"></File>
 <File RelativePath="..\..\src\CommandLineOptions.h"></File>
 <File RelativePath="..\..\src\Common.h"></File>
-<File RelativePath="..\..\src\CommonTypes.h"></File>
 <File RelativePath="..\..\src\ErrorCodes.h"></File>
 <File RelativePath="..\..\src\Everything.h"></File>
 <File RelativePath="..\..\src\Functions.h"></File>
-<File RelativePath="..\..\src\Globals.h"></File>
 <File RelativePath="..\..\src\ThreadManager.h"></File>
-<File RelativePath="..\..\src\UTF.h"></File>
 <File RelativePath="..\..\src\enums.h"></File>
 <File RelativePath="..\..\src\version.h"></File>
 			<Filter
 				Name="IO_System"
 				>
 <File RelativePath="..\..\src\IO_System\ConfigFile.cpp"></File>
-<File RelativePath="..\..\src\IO_System\FileIO.cpp"></File>
 <File RelativePath="..\..\src\IO_System\INIParser.tab.cpp"></File>
 <File RelativePath="..\..\src\IO_System\INIfile.cpp"></File>
 <File RelativePath="..\..\src\IO_System\IOFunctions.cpp"></File>
-<File RelativePath="..\..\src\IO_System\InputHandler.cpp"></File>
 <File RelativePath="..\..\src\IO_System\SaveFile.cpp"></File>
-<File RelativePath="..\..\src\IO_System\StdOut.cpp"></File>
 <File RelativePath="..\..\src\IO_System\ConfigFile.h"></File>
-<File RelativePath="..\..\src\IO_System\FileIO.h"></File>
 <File RelativePath="..\..\src\IO_System\INIParser.tab.hpp"></File>
 <File RelativePath="..\..\src\IO_System\INIfile.h"></File>
 <File RelativePath="..\..\src\IO_System\IOFunctions.h"></File>
-<File RelativePath="..\..\src\IO_System\InputHandler.h"></File>
 <File RelativePath="..\..\src\IO_System\SaveFile.h"></File>
-<File RelativePath="..\..\src\IO_System\StdOut.h"></File>
 				<Filter
 					Name="Audio"
 					>
@@ -272,7 +262,6 @@
 					>
 <File RelativePath="..\..\src\IO_System\Script\MacroParser.cpp"></File>
 <File RelativePath="..\..\src\IO_System\Script\MacroParser.tab.cpp"></File>
-<File RelativePath="..\..\src\IO_System\Script\Preprocessor.cpp"></File>
 <File RelativePath="..\..\src\IO_System\Script\Script.cpp"></File>
 <File RelativePath="..\..\src\IO_System\Script\commandPreParser.tab.cpp"></File>
 <File RelativePath="..\..\src\IO_System\Script\sha1.cpp"></File>
@@ -292,13 +281,9 @@
 <File RelativePath="..\..\src\Processing\ScriptInterpreter_commandsJR.cpp"></File>
 <File RelativePath="..\..\src\Processing\ScriptInterpreter_commandsSZ.cpp"></File>
 <File RelativePath="..\..\src\Processing\ScriptInterpreter_savegame.cpp"></File>
-<File RelativePath="..\..\src\Processing\Variable.cpp"></File>
-<File RelativePath="..\..\src\Processing\VariableMember.cpp"></File>
 <File RelativePath="..\..\src\Processing\VariableStore.cpp"></File>
 <File RelativePath="..\..\src\Processing\ExpressionParser.tab.hpp"></File>
 <File RelativePath="..\..\src\Processing\ScriptInterpreter.h"></File>
-<File RelativePath="..\..\src\Processing\Variable.h"></File>
-<File RelativePath="..\..\src\Processing\VariableMember.h"></File>
 <File RelativePath="..\..\src\Processing\VariableStore.h"></File>
 			</Filter>
 		</Filter>

@@ -28,13 +28,8 @@
 */
 
 #include "ScriptInterpreter.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
-//#include "../IO_System/SaveFile.h"
 #include <cmath>
-#include <sstream>
 
 ErrorCode NONS_ScriptInterpreter::command_skip(NONS_Statement &stmt){
 	long count=2;
@@ -204,8 +199,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		}
 		if (fontsize!=this->main_font->getsize()){
 			delete this->main_font;
-			//this->main_font=new NONS_Font("default.ttf",fontsize,/*bold!=0?TTF_STYLE_BOLD:*/TTF_STYLE_NORMAL);
-			INIT_NONS_FONT(this->main_font,fontsize,this->everything->archive)
+			this->main_font=init_font(fontsize,this->everything->archive);
 			this->main_font->spacing=spacingX;
 			this->everything->screen->output->foregroundLayer->fontCache->font=this->main_font;
 			this->everything->screen->output->foregroundLayer->fontCache->refreshCache();
@@ -496,6 +490,8 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+uchar trapFlag=0;
+
 ErrorCode NONS_ScriptInterpreter::command_trap(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	if (!stdStrCmpCI(stmt.parameters[0],L"off")){
@@ -637,6 +633,8 @@ ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_Statement &stmt){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	return this->save(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
+
+extern std::wstring save_directory;
 
 ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);

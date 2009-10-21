@@ -34,24 +34,7 @@
 #include <SDL/SDL.h>
 #include "SDL_ttf.h"
 #include "../../Common.h"
-
-#define INIT_NONS_FONT(font,size,archive) {\
-	(font)=new NONS_Font("default.ttf",(size),TTF_STYLE_NORMAL);\
-	if (!(font)->valid()){\
-		delete (font);\
-		ulong INIT_NONS_FONT_l;\
-		uchar *INIT_NONS_FONT_buffer=(archive)->getFileBuffer(L"default.ttf",INIT_NONS_FONT_l);\
-		if (!INIT_NONS_FONT_buffer){\
-			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"\
-				"case-sensitive, make sure the file name is capitalized correctly.\n";\
-			exit(0);\
-		}\
-		SDL_RWops *INIT_NONS_FONT_rw=SDL_RWFromMem(INIT_NONS_FONT_buffer,INIT_NONS_FONT_l);\
-		(font)=new NONS_Font(INIT_NONS_FONT_rw,(size),TTF_STYLE_NORMAL);\
-		SDL_FreeRW(INIT_NONS_FONT_rw);\
-		delete[] INIT_NONS_FONT_buffer;\
-	}\
-}
+#include "../SAR/Archive.h"
 
 class NONS_Font{
 	TTF_Font *font;
@@ -130,4 +113,26 @@ public:
 	NONS_Glyph *getGlyph(wchar_t codePoint);
 	void refreshCache();
 };
+
+#if 0
+#define INIT_NONS_FONT(font,size,archive) {\
+	(font)=new NONS_Font("default.ttf",(size),TTF_STYLE_NORMAL);\
+	if (!(font)->valid()){\
+		delete (font);\
+		ulong INIT_NONS_FONT_l;\
+		uchar *INIT_NONS_FONT_buffer=(archive)->getFileBuffer(L"default.ttf",INIT_NONS_FONT_l);\
+		if (!INIT_NONS_FONT_buffer){\
+			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"\
+				"case-sensitive, make sure the file name is capitalized correctly.\n";\
+			exit(0);\
+		}\
+		SDL_RWops *INIT_NONS_FONT_rw=SDL_RWFromMem(INIT_NONS_FONT_buffer,INIT_NONS_FONT_l);\
+		(font)=new NONS_Font(INIT_NONS_FONT_rw,(size),TTF_STYLE_NORMAL);\
+		SDL_FreeRW(INIT_NONS_FONT_rw);\
+		delete[] INIT_NONS_FONT_buffer;\
+	}\
+}
+#else
+NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive);
+#endif
 #endif

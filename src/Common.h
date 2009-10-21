@@ -29,7 +29,9 @@
 
 #ifndef NONS_COMMON_H
 #define NONS_COMMON_H
-#include "CommonTypes.h"
+typedef unsigned long ulong;
+typedef unsigned short ushort;
+typedef unsigned char uchar;
 
 extern bool ctrlIsPressed;
 //extern bool softwareCtrlIsPressed;
@@ -38,7 +40,12 @@ extern bool ctrlIsPressed;
 
 #if defined(_WIN32) || defined(_WIN64)
 #define NONS_SYS_WINDOWS
-#define WIN32_LEAN_AND_MEAN
+typedef void *HANDLE;
+#ifndef _WIN64
+typedef ulong DWORD;
+#else
+typedef ushort DWORD;
+#endif
 #endif
 #if defined(linux) || defined(__linux)
 #define NONS_SYS_LINUX
@@ -64,5 +71,22 @@ extern bool ctrlIsPressed;
 #include <climits>
 #if ULONG_MAX<0xFFFFFFFF
 #error "longs on this implementation are too small."
+#endif
+
+extern const int rmask;
+extern const int gmask;
+extern const int bmask;
+extern const int amask;
+extern const int rshift;
+extern const int gshift;
+extern const int bshift;
+extern const int ashift;
+extern int lastClickX;
+extern int lastClickY;
+extern ulong cpu_count;
+
+//#define LOOKUP_BLEND_CONSTANT
+#ifdef LOOKUP_BLEND_CONSTANT
+extern uchar blendData[65536];
 #endif
 #endif

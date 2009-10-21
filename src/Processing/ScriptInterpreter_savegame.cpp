@@ -28,11 +28,10 @@
 */
 
 #include "ScriptInterpreter.h"
-#include "../Functions.h"
-#include "../Globals.h"
-#include "../IO_System/FileIO.h"
 #include "../IO_System/IOFunctions.h"
 #include <iomanip>
+
+extern std::wstring save_directory;
 
 ErrorCode NONS_ScriptInterpreter::load(int file){
 	NONS_SaveFile save;
@@ -116,8 +115,7 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	//screen
 	//window
 	NONS_ScreenSpace *scr=this->everything->screen;
-	//this->main_font=new NONS_Font("default.ttf",save.fontSize,TTF_STYLE_NORMAL);
-	INIT_NONS_FONT(this->main_font,save.fontSize,this->everything->archive)
+	this->main_font=init_font(save.fontSize,this->everything->archive);
 	scr->resetParameters(&save.textWindow,&save.windowFrame,this->main_font,save.fontShadow);
 	NONS_StandardOutput *out=scr->output;
 	/*out->shadeLayer->clip_rect=save.textWindow;

@@ -31,11 +31,36 @@
 #define NONS_IOFUNCTIONS_H
 
 #include "../Common.h"
-#include "../ErrorCodes.h"
 #include "../Functions.h"
-#include "InputHandler.h"
+#include "../ErrorCodes.h"
 #include "Graphics/VirtualScreen.h"
+#include <SDL/SDL.h>
 #include <string>
+#include <fstream>
+#include <queue>
+
+class NONS_EventQueue{
+	std::queue<SDL_Event> data;
+	SDL_mutex *mutex;
+public:
+	NONS_EventQueue();
+	~NONS_EventQueue();
+	void push(SDL_Event a);
+	SDL_Event pop();
+	void emptify();
+	bool empty();
+	void WaitForEvent(int delay=100);
+};
+
+struct NONS_InputObserver{
+	std::vector<NONS_EventQueue *> data;
+	SDL_mutex *mutex;
+	NONS_InputObserver();
+	~NONS_InputObserver();
+	void attach(NONS_EventQueue *what);
+	void detach(NONS_EventQueue *what);
+	void notify(SDL_Event *event);
+};
 
 ErrorCode handleErrors(ErrorCode error,ulong original_line,const char *caller,bool queue,std::wstring extraInfo=L"");
 void waitUntilClick(NONS_EventQueue *queue=0);
@@ -45,4 +70,42 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y);
 inline std::ostream &operator<<(std::ostream &stream,const std::wstring &str){
 	return stream<<UniToUTF8(str);
 }
+uchar *readfile(const std::wstring &filename,ulong &len,ulong offset);
+#ifdef NONS_SYS_WINDOWS
+uchar *readfile(HANDLE file,ulong &len,ulong offset);
+#else
+uchar *readfile(std::ifstream &file,ulong &len,ulong offset);
+#endif
+uchar *readfile(const std::wstring &name,ulong &len);
+char writefile(const std::wstring &name,char *buffer,ulong size);
+bool fileExists(const std::wstring &name);
+
+struct NONS_CommandLineOptions;
+extern NONS_CommandLineOptions CLOptions;
+
+#define INDENTATION_STRING "    "
+
+struct NONS_RedirectedOutput{
+	std::ofstream *file;
+	std::ostream &cout;
+	ulong indentation;
+	bool addIndentationNext;
+	NONS_RedirectedOutput(std::ostream &a);
+	~NONS_RedirectedOutput();
+	NONS_RedirectedOutput &operator<<(ulong);
+	NONS_RedirectedOutput &outputHex(ulong,ulong=0);
+	NONS_RedirectedOutput &operator<<(long);
+	NONS_RedirectedOutput &operator<<(wchar_t);
+	NONS_RedirectedOutput &operator<<(const char *);
+	NONS_RedirectedOutput &operator<<(const std::string &);
+	NONS_RedirectedOutput &operator<<(const std::wstring &);
+	void redirect();
+	//std::ostream &getstream();
+	void indent(long);
+};
+
+extern NONS_InputObserver InputObserver;
+extern NONS_RedirectedOutput o_stdout;
+extern NONS_RedirectedOutput o_stderr;
+//extern NONS_RedirectedOutput o_stdlog;
 #endif

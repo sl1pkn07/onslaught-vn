@@ -153,6 +153,7 @@ class NONS_ScriptInterpreter{
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
+	void handleKeys(SDL_Event &event);
 	void uninit();
 	void init();
 
@@ -447,4 +448,6 @@ public:
 	bool goto_label(const std::wstring &label);
 	bool gosub_label(const std::wstring &label);
 };
+
+extern NONS_ScriptInterpreter *gScriptInterpreter;
 #endif

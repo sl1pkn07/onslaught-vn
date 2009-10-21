@@ -18,21 +18,17 @@ set(LIBS
 
 add_executable(ONSlaught
 	src/CommandLineOptions.cpp
+	src/ErrorCodes.cpp
 	src/Everything.cpp
 	src/Functions.cpp
-	src/Globals.cpp
 	src/ONSlaught.cpp
 	src/SJIS.table.cpp
 	src/ThreadManager.cpp
-	src/UTF.cpp
 	src/IO_System/ConfigFile.cpp
-	src/IO_System/FileIO.cpp
 	src/IO_System/INIParser.tab.cpp
 	src/IO_System/INIfile.cpp
 	src/IO_System/IOFunctions.cpp
-	src/IO_System/InputHandler.cpp
 	src/IO_System/SaveFile.cpp
-	src/IO_System/StdOut.cpp
 	src/IO_System/Audio/Audio.cpp
 	src/IO_System/Graphics/Button.cpp
 	src/IO_System/Graphics/ButtonLayer.cpp
@@ -53,7 +49,6 @@ add_executable(ONSlaught
 	src/IO_System/SAR/ImageLoader.cpp
 	src/IO_System/Script/MacroParser.cpp
 	src/IO_System/Script/MacroParser.tab.cpp
-	src/IO_System/Script/Preprocessor.cpp
 	src/IO_System/Script/Script.cpp
 	src/IO_System/Script/commandPreParser.tab.cpp
 	src/IO_System/Script/sha1.cpp
@@ -63,8 +58,6 @@ add_executable(ONSlaught
 	src/Processing/ScriptInterpreter_commandsJR.cpp
 	src/Processing/ScriptInterpreter_commandsSZ.cpp
 	src/Processing/ScriptInterpreter_savegame.cpp
-	src/Processing/Variable.cpp
-	src/Processing/VariableMember.cpp
 	src/Processing/VariableStore.cpp
 )
 

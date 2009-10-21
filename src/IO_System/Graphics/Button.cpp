@@ -29,7 +29,6 @@
 
 #include "Button.h"
 #include "../../Functions.h"
-#include "../../Globals.h"
 #include <climits>
 
 NONS_Button::NONS_Button(){

@@ -27,7 +27,6 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 %{
-#include "../../Globals.h"
 #include "../../Functions.h"
 #include "MacroParser.h"
 
@@ -339,7 +338,7 @@ expr:
 		$$=new NONS_Macro::FullExpression(BOR,$1,$3);
 	}|
 	expr BAND expr {
-		$$=new NONS_Macro::FullExpression(BOR,$1,$3);
+		$$=new NONS_Macro::FullExpression(BAND,$1,$3);
 	}|
 	BNOT expr {
 		$$=new NONS_Macro::FullExpression(BNOT,$2);

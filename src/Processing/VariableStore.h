@@ -33,10 +33,61 @@
 #include "../Common.h"
 #include "../ErrorCodes.h"
 #include "../IO_System/SAR/FileLog.h"
-#include "Variable.h"
+#include "ExpressionParser.tab.hpp"
 #include <vector>
 #include <map>
 #include <set>
+
+class NONS_VariableMember{
+	long intValue;
+	std::wstring wcsValue;
+	bool constant;
+	yytokentype type;
+	long _long_upper_limit;
+	long _long_lower_limit;
+	const static std::wstring null;
+public:
+	NONS_VariableMember **dimension;
+	ulong dimensionSize;
+	bool temporary;
+	bool negated;
+	NONS_VariableMember(yytokentype type);
+	NONS_VariableMember(long value);
+	NONS_VariableMember(const std::wstring &a);
+	//Assumes: All dimensions have a non-negative size.
+	NONS_VariableMember(std::vector<long> &sizes,size_t startAt);
+	NONS_VariableMember(const NONS_VariableMember &b);
+	~NONS_VariableMember();
+	void makeConstant();
+	bool isConstant();
+	yytokentype getType();
+	long getInt();
+	const std::wstring &getWcs();
+	NONS_VariableMember *getIndex(ulong i);
+	void set(long a);
+	void atoi(const std::wstring &a);
+	void set(const std::wstring &a);
+	void inc();
+	void dec();
+	void add(long a);
+	void sub(long a);
+	void mul(long a);
+	void div(long a);
+	void mod(long a);
+	void setlimits(long lower,long upper);
+	void negate(bool a);
+private:
+	void fixint();
+};
+
+struct NONS_Variable{
+	NONS_VariableMember *intValue;
+	NONS_VariableMember *wcsValue;
+	NONS_Variable();
+	NONS_Variable(const NONS_Variable &b);
+	NONS_Variable &operator=(const NONS_Variable &b);
+	~NONS_Variable();
+};
 
 #define VARIABLE_HAS_NO_DATA(x) (!(x) || !(x)->intValue->getInt() && !(x)->wcsValue->getWcs().size())
 

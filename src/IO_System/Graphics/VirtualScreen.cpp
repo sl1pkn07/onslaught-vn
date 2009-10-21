@@ -29,9 +29,11 @@
 
 #include "VirtualScreen.h"
 #include "../../Functions.h"
-#include "../../Globals.h"
 #include "../../ThreadManager.h"
+#include "../../CommandLineOptions.h"
 #include <iostream>
+
+SDL_mutex *screenMutex=0;
 
 //#define ONLY_NEAREST_NEIGHBOR
 

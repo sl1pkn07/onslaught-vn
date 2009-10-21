@@ -34,6 +34,8 @@
 #include <SDL/SDL.h>
 #include <string>
 
+extern SDL_mutex *screenMutex;
+
 #if 0
 #define LOCKSCREEN {\
 	SDL_LockMutex(screenMutex);\

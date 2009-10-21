@@ -34,9 +34,7 @@
 #include <vector>
 typedef void (*NONS_ThreadedFunctionPointer)(void *);
 
-#ifdef NONS_SYS_WINDOWS
-#include <windows.h>
-#elif defined(NONS_SYS_UNIX)
+#ifdef NONS_SYS_UNIX
 #include <pthread.h>
 #include <semaphore.h>
 #endif
@@ -79,7 +77,7 @@ public:
 	void call(NONS_ThreadedFunctionPointer f,void *p);
 	void wait();
 #ifdef NONS_SYS_WINDOWS
-	static DWORD WINAPI runningThread(void *);
+	static DWORD __stdcall runningThread(void *);
 #elif defined(NONS_SYS_UNIX)
 	static void *runningThread(void *);
 #endif
@@ -96,4 +94,6 @@ public:
 	void waitAll();
 	static void setCPUcount();
 };
+
+extern NONS_ThreadManager threadManager;
 #endif

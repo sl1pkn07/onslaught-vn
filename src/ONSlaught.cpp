@@ -33,15 +33,13 @@
 #include <iostream>
 
 #include "Common.h"
-#include "Functions.h"
 #include "Everything.h"
-#include "Globals.h"
 #include "ErrorCodes.h"
 #include "Processing/ScriptInterpreter.h"
 #include "IO_System/IOFunctions.h"
-#include "IO_System/FileIO.h"
-#include "version.h"
 #include "ThreadManager.h"
+#include "CommandLineOptions.h"
+#include "version.h"
 
 #if defined(NONS_SYS_WINDOWS)
 #include <windows.h>
@@ -64,8 +62,8 @@ bool useArgumentsFile(const char *filename,const std::vector<std::wstring> &argc
 
 SDL_Thread *dbgThread=0;
 SDL_Thread *thread=0;
-
 NONS_Everything *everything=0;
+SDL_mutex *exitMutex=0;
 
 void enditall(){
 	SDL_LockMutex(exitMutex);
@@ -112,12 +110,13 @@ void handle_SIGINT(int){
 
 bool stopEventHandling=0;
 
+int lastClickX=0;
+int lastClickY=0;
+
 void handleInputEvent(SDL_Event &event){
 	long x,y;
 	switch(event.type){
 		case SDL_QUIT:
-			while (exitLocked)
-				SDL_Delay(50);
 			enditall();
 			break;
 		case SDL_KEYDOWN:
@@ -224,6 +223,9 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 #ifdef main
 #undef main
 #endif
+
+extern std::wstring config_directory;
+extern std::wstring save_directory;
 
 int main(int argc,char **argv){
 	std::cout <<"ONSlaught: An ONScripter clone with Unicode support."<<std::endl;

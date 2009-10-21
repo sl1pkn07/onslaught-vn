@@ -28,9 +28,17 @@
 */
 
 #include "ThreadManager.h"
-#include "Globals.h"
+#include "IO_System/IOFunctions.h"
+#include "CommandLineOptions.h"
+
+#ifdef NONS_SYS_WINDOWS
+#include <windows.h>
+#endif
 
 #define NONS_PARALLELIZE
+
+ulong cpu_count=1;
+NONS_ThreadManager threadManager;
 
 void NONS_Event::init(){
 #ifdef NONS_SYS_WINDOWS

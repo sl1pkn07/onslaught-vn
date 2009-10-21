@@ -28,7 +28,6 @@
 */
 
 #include "Everything.h"
-#include "Globals.h"
 #include <iostream>
 
 NONS_Everything::NONS_Everything(){
@@ -51,23 +50,7 @@ NONS_Everything::~NONS_Everything(){
 
 ErrorCode NONS_Everything::init_screen(){
 	TTF_Init();
-	NONS_Font *font;/*=new NONS_Font("default.ttf",18,TTF_STYLE_NORMAL);
-	if (!font->font){
-		delete font;
-		ulong l;
-		this->archive->getFileBuffer("default.ttf",&l)
-		uchar *buffer=readfile;
-		if (!buffer){
-			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"
-				"case-sensitive, make sure the file name is capitalized correctly."<<std::endl;
-			exit(0);
-		}
-		SDL_RWops *rw=SDL_RWFromMem(buffer,l);
-		font=new NONS_Font(rw,buffer,18,TTF_STYLE_NORMAL);
-		delete[] buffer;
-	}*/
-	INIT_NONS_FONT(font,18,this->archive)
-	//NONS_GFXstore *gfx=new NONS_GFXstore();
+	NONS_Font *font=init_font(18,this->archive);
 	this->screen=new NONS_ScreenSpace(20,font/*,gfx*/);
 	this->screen->output->shadeLayer->Clear();
 	this->screen->Background->Clear();

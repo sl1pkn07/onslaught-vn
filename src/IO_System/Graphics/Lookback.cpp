@@ -28,8 +28,6 @@
 */
 
 #include "Lookback.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
 #include "Button.h"
 #include "../IOFunctions.h"
 

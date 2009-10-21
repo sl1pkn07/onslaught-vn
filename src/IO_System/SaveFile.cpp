@@ -28,9 +28,8 @@
 */
 
 #include "SaveFile.h"
-#include "FileIO.h"
-#include "../Functions.h"
-#include "../Globals.h"
+#include "IOFunctions.h"
+#include "../CommandLineOptions.h"
 
 #ifdef NONS_SYS_WINDOWS
 #include <windows.h>
@@ -39,6 +38,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
+
+std::wstring save_directory;
+std::wstring config_directory;
 
 tm *getDate(const std::wstring &filename){
 	tm *res=new tm();

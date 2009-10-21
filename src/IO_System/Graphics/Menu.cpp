@@ -28,13 +28,11 @@
 */
 
 #include "Menu.h"
-#include "../../Functions.h"
 #include "../IOFunctions.h"
-#include "../../Globals.h"
 #include "../../Processing/ScriptInterpreter.h"
 #include "../SaveFile.h"
 
-NONS_Menu::NONS_Menu(void *interpreter){
+NONS_Menu::NONS_Menu(NONS_ScriptInterpreter *interpreter){
 	this->interpreter=interpreter;
 	this->on.r=0xFF;
 	this->on.g=0xFF;
@@ -56,7 +54,7 @@ NONS_Menu::NONS_Menu(void *interpreter){
 	this->rightClickMode=1;
 }
 
-NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,void *interpreter){
+NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *interpreter){
 	this->interpreter=interpreter;
 	for (ulong a=0;a<options->size();a++){
 		this->strings.push_back((*options)[a++]);
@@ -131,8 +129,7 @@ void NONS_Menu::reset(){
 		delete this->buttons;
 	if (this->font)
 		delete this->font;
-	//this->font=new NONS_Font("default.ttf",this->fontsize,TTF_STYLE_NORMAL);
-	INIT_NONS_FONT(this->font,this->fontsize,this->archive)
+	this->font=init_font(this->fontsize,this->archive);
 	this->font->spacing=this->spacing;
 	this->font->lineSkip=this->lineskip;
 	this->shade->setShade(this->shadeColor.r,this->shadeColor.g,this->shadeColor.b);
@@ -208,6 +205,8 @@ int NONS_Menu::write(const std::wstring &txt,int y){
 	delete tempCacheShadow;
 	return (this->font?this->font:this->defaultFont)->lineSkip;
 }
+
+extern std::wstring save_directory;
 
 int NONS_Menu::save(){
 	int y0;

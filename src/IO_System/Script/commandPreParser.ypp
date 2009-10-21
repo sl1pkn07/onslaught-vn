@@ -28,7 +28,6 @@
 */
 %{
 #include "Script.h"
-#include "../../Globals.h"
 #include "../../Functions.h"
 %}
 %parse-param {std::wstringstream *stream}

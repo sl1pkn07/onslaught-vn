@@ -28,15 +28,10 @@
 */
 
 #include "Script.h"
-#include "../FileIO.h"
 #include "../IOFunctions.h"
-#include "../../Globals.h"
 #include "../SaveFile.h"
 #include "sha1.h"
 #include "commandPreParser.tab.hpp"
-#include <cstring>
-#include <stack>
-#include <algorithm>
 
 //Returns then position of the ending quote, of npos if couldn't be found before
 //the end of the string or if there isn't a string beginning at 'start'.
@@ -309,6 +304,8 @@ NONS_Script::NONS_Script(){
 }
 
 bool preprocess(std::wstring &dst,const std::wstring &script);
+
+extern std::wstring save_directory;
 
 ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *archive,ulong encoding,ulong encryption){
 	ulong l;

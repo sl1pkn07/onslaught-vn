@@ -29,11 +29,12 @@
 
 #define USE_ACCURATE_MULTIPLICATION
 #include "Functions.h"
-#include <bzlib.h>
-#include "Globals.h"
 #include "ThreadManager.h"
+#include "IO_System/IOFunctions.h"
+#include "enums.h"
+#include <bzlib.h>
 
-#include <cmath>
+#include <cassert>
 
 //(Parallelized surface function)
 struct PSF_parameters{

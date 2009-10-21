@@ -28,9 +28,8 @@
 */
 
 #include "Archive.h"
-#include "../../Functions.h"
-#include "../../Globals.h"
-#include "../FileIO.h"
+#include "../IOFunctions.h"
+#include "../../CommandLineOptions.h"
 #include <bzlib.h>
 
 NONS_TreeNode::NONS_TreeNode(const std::wstring &name){
@@ -134,15 +133,6 @@ void NONS_TreeNode::vectorizeFiles(std::vector<NONS_TreeNode *> &vector){
 		this->branches[a]->vectorizeFiles(vector);
 }
 
-#ifdef TOOLS_NSAIO
-NONS_Archive::NONS_Archive(ulong archive_type){
-	this->root=new NONS_TreeNode(L".");
-	this->file=0;
-	this->archive_type=archive_type;
-	this->loaded=0;
-}
-#endif
-
 NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
 	this->loaded=0;
@@ -152,11 +142,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 #endif
 	if (!fileExists(filename)){
 		if (!failSilently)
-#ifndef TOOLS_NSAIO
 			o_stderr <<"Error. Could not open \""<<filename<<"\".\n";
-#else
-			std::cerr <<"Error. Could not open \""<<UniToUTF8(filename)<<"\".\n";
-#endif
 		this->loaded=0;
 		this->root=0;
 		return;
@@ -454,7 +440,6 @@ bool NONS_Archive::exists(const std::wstring &filepath){
 	return this->loaded && this->root->getBranch(filepath,0)!=0;
 }
 
-#ifndef TOOLS_NSAIO
 NONS_GeneralArchive::NONS_GeneralArchive(){
 	std::wstring path;
 	if (CLOptions.archiveDirectory.size())
@@ -549,4 +534,3 @@ bool NONS_GeneralArchive::exists(const std::wstring &filepath){
 		return 1;
 	return fileExists(filepath);
 }
-#endif

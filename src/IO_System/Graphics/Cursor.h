@@ -34,6 +34,7 @@
 #include "../../enums.h"
 #include "StandardOutput.h"
 #include "Menu.h"
+#include "../IOFunctions.h"
 #include <SDL/SDL.h>
 
 struct NONS_Cursor{
