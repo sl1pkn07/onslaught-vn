@@ -34,14 +34,13 @@
 #include "../ErrorCodes.h"
 #include "VariableStore.h"
 #include "../Everything.h"
+#include "../IO_System/Graphics/ScreenSpace.h"
 #include "../IO_System/Script/Script.h"
-#include "../IO_System/Graphics/GFX.h"
 #include "../IO_System/INIfile.h"
 #include "../IO_System/SAR/ImageLoader.h"
-#include "../IO_System/Graphics/Cursor.h"
-#include "../IO_System/Graphics/Menu.h"
 #include "../IO_System/SaveFile.h"
 #include "../IO_System/ConfigFile.h"
+#include "../IO_System/IOFunctions.h"
 #include "../enums.h"
 #include <set>
 #include <stack>

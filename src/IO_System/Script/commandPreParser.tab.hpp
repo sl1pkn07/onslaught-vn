@@ -39,6 +39,7 @@
 #include <sstream>
 #include <string>
 #include <climits>
+#include "Script.h"
 #undef ERROR
 
 

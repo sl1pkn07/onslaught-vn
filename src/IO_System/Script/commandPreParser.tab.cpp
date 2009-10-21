@@ -76,7 +76,6 @@
 /* Copy the first part of user declarations.  */
 
 
-#include "Script.h"
 #include "../../Functions.h"
 
 
@@ -106,6 +105,7 @@
 #include <sstream>
 #include <string>
 #include <climits>
+#include "Script.h"
 #undef ERROR
 
 
