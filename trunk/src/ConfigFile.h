@@ -39,9 +39,10 @@
 typedef std::map<std::wstring,std::vector<std::wstring>,stdStringCmpCI<wchar_t> > config_map_t;
 
 struct ConfigFile{
-	ConfigFile();
+	ConfigFile(){}
 	ConfigFile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	~ConfigFile();
+	~ConfigFile(){}
+	void init(const std::wstring &filename,ENCODINGS encoding);
 	std::wstring getWString(const std::wstring &index,ulong subindex=0);
 	long getInt(const std::wstring &index,ulong subindex=0);
 	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=0);
@@ -51,6 +52,5 @@ struct ConfigFile{
 	bool exists(const std::wstring &var);
 private:
 	config_map_t entries;
-	void init(const std::wstring &filename,ENCODINGS encoding);
 };
 #endif

@@ -82,7 +82,7 @@ void usage(){
 		"  --version\n"
 		"      Display version number.\n"
 		"  -implementation\n"
-		"      Lists all implemented and unimplemented commands."
+		"      Lists all implemented and unimplemented commands.\n"
 		"  -verbosity <number>\n"
 		"      Set log verbosity level. 0 by default.\n"
 		"  -save-directory <directory name>\n"
@@ -123,7 +123,6 @@ void usage(){
 		"      Default to 0.\n"
 		"  -debug\n"
 		"      Enable debug mode.\n"
-		"      If -output-to-file has been used, it is disabled.\n"
 		"      See the documentation for details.\n"
 #ifdef NONS_SYS_WINDOWS
 		"  -no-console\n"
@@ -297,7 +296,6 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				break;
 			case 8: //-debug
 				this->debugMode=1;
-				this->override_stdout=0;
 				this->noconsole=0;
 				break;
 			case 9: //-redirect

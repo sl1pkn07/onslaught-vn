@@ -32,21 +32,18 @@
 #include "CommandLineOptions.h"
 #include <iostream>
 
-int GC(void *nil){
-	return NONS_SoundCache::GarbageCollector((NONS_SoundCache *)nil);
+void GC(void *param){
+	NONS_SoundCache::GarbageCollector((NONS_SoundCache *)param);
 }
 
 NONS_SoundCache::NONS_SoundCache(){
 	this->kill_thread=0;
-	this->mutex=SDL_CreateMutex();
-	this->thread=SDL_CreateThread(GC,this);
+	this->thread.call(GC,this);
 }
 
 NONS_SoundCache::~NONS_SoundCache(){
 	this->kill_thread=1;
-	//SDL_UnlockMutex(this->mutex);
-	SDL_DestroyMutex(this->mutex);
-	SDL_WaitThread(this->thread,0);
+	this->thread.join();
 	for (cache_map_t::iterator i=this->cache.begin();i!=this->cache.end();i++)
 		delete i->second;
 }
@@ -54,58 +51,58 @@ NONS_SoundCache::~NONS_SoundCache(){
 //Sound effects stay in the cache for this amount of seconds
 #define SE_EXPIRATION_TIME 60
 
-int NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
+void NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 	NONS_EventQueue queue;
 	while (!_this->kill_thread){
-		SDL_LockMutex(_this->mutex);
-		if (!_this->cache.empty()){
-			ulong now=secondsSince1970();
-			for (cache_map_t::iterator i=_this->cache.begin();i!=_this->cache.end();){
-				if (!i->second->references){
-					i->second->references=-1;
-					i->second->lastused=now;
-					i++;
-				}else if (i->second->references<0 && now-i->second->lastused>SE_EXPIRATION_TIME){
-					if (CLOptions.verbosity>=255)
-						std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<UniToUTF8(i->first)<<")"<<std::endl;
-					delete i->second;
-					_this->cache.erase(i);
+		{
+			NONS_MutexLocker ml(_this->mutex);
+			if (!_this->cache.empty()){
+				ulong now=secondsSince1970();
+				for (cache_map_t::iterator i=_this->cache.begin();i!=_this->cache.end();){
+					if (!i->second->references){
+						i->second->references=-1;
+						i->second->lastused=now;
+						i++;
+					}else if (i->second->references<0 && now-i->second->lastused>SE_EXPIRATION_TIME){
+						if (CLOptions.verbosity>=255)
+							std::cout <<"At "<<now<<" removed "<<i->second->chunk<<" ("<<UniToUTF8(i->first)<<")"<<std::endl;
+						delete i->second;
+						_this->cache.erase(i);
+						if (CLOptions.verbosity>=255)
+							std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
+						i=_this->cache.begin();
+					}else
+						i++;
+				}
+				for (ulong a=0;_this->channelWatch.size()>0 && a<10;a++){
+					std::list<NONS_SoundEffect *>::iterator i2=_this->channelWatch.begin();
+					for (;i2!=_this->channelWatch.end();){
+						if (!Mix_Playing((*i2)->channel) && (*i2)->playingHasStarted){
+							if (CLOptions.verbosity>=255)
+								std::cout <<"At "<<now<<" stopped "<<*i2<<"\n"
+									"    cache item "<<(*i2)->sound->chunk<<"\n"
+									"    on channel "<<(*i2)->channel<<std::endl;
+							(*i2)->unload();
+							_this->channelWatch.erase(i2);
+							i2=_this->channelWatch.begin();
+						}else
+							i2++;
+					}
+					SDL_Delay(100);
+				}
+			}
+			bool justreported=0;
+			while (!queue.empty()){
+				SDL_Event event=queue.pop();
+				if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F11){
 					if (CLOptions.verbosity>=255)
 						std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
-					i=_this->cache.begin();
-				}else
-					i++;
-			}
-			for (ulong a=0;_this->channelWatch.size()>0 && a<10;a++){
-				std::list<NONS_SoundEffect *>::iterator i2=_this->channelWatch.begin();
-				for (;i2!=_this->channelWatch.end();){
-					if (!Mix_Playing((*i2)->channel) && (*i2)->playingHasStarted){
-						if (CLOptions.verbosity>=255)
-							std::cout <<"At "<<now<<" stopped "<<*i2<<"\n"
-								"    cache item "<<(*i2)->sound->chunk<<"\n"
-								"    on channel "<<(*i2)->channel<<std::endl;
-						(*i2)->unload();
-						_this->channelWatch.erase(i2);
-						i2=_this->channelWatch.begin();
-					}else
-						i2++;
+					justreported=1;
 				}
-				SDL_Delay(100);
 			}
 		}
-		bool justreported=0;
-		while (!queue.empty()){
-			SDL_Event event=queue.pop();
-			if (!justreported && event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_F11){
-				if (CLOptions.verbosity>=255)
-					std::cout <<"Currently in cache: "<<_this->cache.size()<<" items."<<std::endl;
-				justreported=1;
-			}
-		}
-		SDL_UnlockMutex(_this->mutex);
 		SDL_Delay(100);
 	}
-	return 0;
 }
 
 NONS_CachedSound *NONS_SoundCache::checkSound(const std::wstring &filename){
@@ -261,7 +258,6 @@ NONS_Audio::NONS_Audio(const std::wstring &musicDir){
 		this->uninitialized=1;
 		this->soundcache=0;
 		this->soundcache=0;
-		this->mutex=0;
 		this->notmute=0;
 		this->mvol=0;
 		this->svol=0;
@@ -277,7 +273,6 @@ NONS_Audio::NONS_Audio(const std::wstring &musicDir){
 	this->mvol=100;
 	this->svol=100;
 	this->notmute=1;
-	this->mutex=SDL_CreateMutex();
 	this->uninitialized=0;
 }
 
@@ -290,7 +285,6 @@ NONS_Audio::~NONS_Audio(){
 	delete this->soundcache;
 	for (channels_map_t::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
 		delete i->second;
-	SDL_DestroyMutex(this->mutex);
 	Mix_CloseAudio();
 }
 
@@ -394,16 +388,17 @@ ErrorCode NONS_Audio::playSoundAsync(const std::wstring *filename,char *buffer,l
 		else
 			se->volume(0);
 		se->play(0,times);
-		SDL_LockMutex(this->soundcache->mutex);
-		this->soundcache->channelWatch.push_back(se);
-		SDL_UnlockMutex(this->soundcache->mutex);
+		{
+			NONS_MutexLocker(this->soundcache->mutex);
+			this->soundcache->channelWatch.push_back(se);
+		}
 		if (CLOptions.verbosity>=255)
 			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
 				"    cache item "<<se->sound->chunk<<"\n"
 				"    on channel "<<se->channel<<std::endl;
 		return NONS_NO_ERROR;
 	}else{
-		_HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel),)
+		_HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel));
 		return this->playSoundAsync(0,0,0,channel,times);
 	}
 }
@@ -458,24 +453,22 @@ bool NONS_Audio::bufferIsLoaded(const std::wstring &filename){
 int NONS_Audio::musicVolume(int vol){
 	if (this->uninitialized)
 		return 0;
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	if (!music){
 		int ret=this->mvol;
-		SDL_UnlockMutex(this->mutex);
 		return ret;
 	}
 	if (this->notmute)
 		this->mvol=this->music->volume(vol);
 	else if (vol>=0)
 		this->mvol=(vol<100)?vol:100;
-	SDL_UnlockMutex(this->mutex);
 	return this->mvol;
 }
 
 int NONS_Audio::soundVolume(int vol){
 	if (this->uninitialized)
 		return 0;
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	if (this->notmute){
 		this->svol=0;
 		for (std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
@@ -486,14 +479,13 @@ int NONS_Audio::soundVolume(int vol){
 			this->svol=100;
 	}else if (vol>=0)
 		this->svol=(vol<100)?vol:100;
-	SDL_UnlockMutex(this->mutex);
 	return this->svol;
 }
 
 bool NONS_Audio::toggleMute(){
 	if (this->uninitialized)
 		return 0;
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	this->notmute=!this->notmute;
 	if (this->notmute){
 		this->music->volume(this->mvol);
@@ -504,7 +496,6 @@ bool NONS_Audio::toggleMute(){
 		for (std::map<int,NONS_SoundEffect *>::iterator i=this->asynchronous_seffect.begin();i!=this->asynchronous_seffect.end();i++)
 			i->second->volume(0);
 	}
-	SDL_UnlockMutex(this->mutex);
 	return this->notmute;
 
 }

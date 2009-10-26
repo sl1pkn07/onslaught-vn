@@ -27,14 +27,15 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef NONS_LOOKBACK_H
-#define NONS_LOOKBACK_H
+#ifndef NONS_GUI_H
+#define NONS_GUI_H
 
 #include "Common.h"
 #include "VirtualScreen.h"
 #include "SDL_ttf.h"
 #include "Audio.h"
 #include "Archive.h"
+#include "ConfigFile.h"
 #include <SDL/SDL.h>
 #include <string>
 
@@ -116,7 +117,7 @@ public:
 	void refreshCache();
 };
 
-NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive);
+NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive,const char *filename);
 
 struct NONS_StandardOutput;
 struct NONS_ScreenSpace;
@@ -191,7 +192,22 @@ struct NONS_ButtonLayer{
 		int width,
 		int height);
 	void addImageButton(ulong index,int posx,int posy,int width,int height,int originX,int originY);
+	/*
+	returns:
+		if >=0, the index of the button pressed
+		-1 if escape was pressed and the layer was exitable (i.e. the layer was being used for the menu)
+		-2 if the layer doesn't fit in the screen with the given coordinates
+		-3 if escape was pressed and the layer wasn't exitable (i.e. the user tried to access the menu)
+		INT_MIN if SDL_QUIT was received
+	*/
 	int getUserInput(int x,int y);
+	/*
+	returns:
+		if >=0, the index of the button pressed
+		-1 if the user left-clicked, but not on a button
+		<-1 for different key presses under certain circumstances
+		INT_MIN if SDL_QUIT was received
+	*/
 	int getUserInput(ulong expiration=0);
 	ulong countActualButtons();
 };
@@ -234,6 +250,7 @@ struct NONS_Menu{
 	void resetStrings(std::vector<std::wstring> *options);
 	int save();
 	int load();
+	//0 if the user chose to quit, INT_MIN if SDL_QUIT was received
 	int windowerase();
 	int skip();
 	int call(const std::wstring &string);
@@ -253,7 +270,7 @@ struct NONS_Lookback{
 	NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b);
 	~NONS_Lookback();
 	bool setUpButtons(const std::wstring &upon,const std::wstring &upoff,const std::wstring &downon,const std::wstring &downoff);
-	void display(NONS_VirtualScreen *dst);
+	int display(NONS_VirtualScreen *dst);
 	void reset(NONS_StandardOutput *output);
 private:
 	bool changePage(int dir,long &currentPage,SDL_Surface *copyDst,NONS_VirtualScreen *dst,SDL_Surface *preBlit,uchar &visibility,int &mouseOver);
@@ -269,12 +286,51 @@ struct NONS_Cursor{
 	~NONS_Cursor();
 	int animate(NONS_Menu *menu,ulong expiration);
 private:
+	//0 if the caller should return, 1 if it should continue
 	bool callMenu(NONS_Menu *menu,NONS_EventQueue *queue);
-	void callLookback(NONS_EventQueue *queue);
+	//0 if the caller should return, 1 if it should continue
+	bool callLookback(NONS_EventQueue *queue);
 };
 
 struct NONS_CursorPair{
 	NONS_Cursor *on;
 	NONS_Cursor *off;
 };
+
+struct NONS_GeneralArchive;
+
+#define CONLOCATE(x,y) ((x)+(y)*this->screenW)
+
+class NONS_DebuggingConsole{
+	NONS_Font *font;
+	NONS_FontCache *cache;
+	ulong characterWidth,
+		characterHeight,
+		screenW,
+		screenH,
+		cursorX,
+		cursorY;
+	std::vector<wchar_t> screen;
+	std::vector<std::wstring> pastInputs;
+	std::wstring partial;
+	bool print_prompt;
+	void redraw(NONS_ScreenSpace *dst,long startFromLine,ulong cursor,const std::wstring &line);
+	//Note: It does NOT lock the screen.
+	void redraw(NONS_ScreenSpace *dst,long startFromLine,ulong lineHeight);
+	std::vector<std::wstring> autocompleteVector;
+	wchar_t &locate(size_t x,size_t y){
+		return this->screen[CONLOCATE(x,y)];
+	}
+	bool input(std::wstring &input,NONS_ScreenSpace *dst);
+	void autocomplete(std::vector<std::wstring> &dst,const std::wstring &line,std::wstring &suggestion,ulong cursor,ulong &space);
+	void outputMatches(const std::vector<std::wstring> &matches,NONS_ScreenSpace *dst/*,long startFromLine,ulong cursor,const std::wstring &line*/);
+public:
+	NONS_DebuggingConsole();
+	~NONS_DebuggingConsole();
+	void init(NONS_GeneralArchive *archive);
+	void enter(NONS_ScreenSpace *dst);
+	void output(const std::wstring &str,NONS_ScreenSpace *dst);
+};
+
+extern NONS_DebuggingConsole console;
 #endif

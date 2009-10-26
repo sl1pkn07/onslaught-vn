@@ -31,7 +31,6 @@
 #include "SaveFile.h"
 #include "IOFunctions.h"
 #include <cstring>
-#include <SDL/SDL_mutex.h>
 
 NONS_LogStrings::NONS_LogStrings(const std::wstring &oldName,const std::wstring &newName){
 	this->init(oldName,newName);
@@ -81,8 +80,8 @@ void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newNa
 		for (ulong a=0;offset<l && a<entries;a++){
 			offset++;
 			ulong filel;
-			for (filel=0;filel+offset<l && buffer[filel+offset]!='"';filel++);
-			if (buffer[filel+offset]!='"')
+			for (filel=0;filel+offset<l && buffer[filel+offset]!=UNICODE_QUOTE;filel++);
+			if (buffer[filel+offset]!=UNICODE_QUOTE)
 				break;
 			inPlaceDecryption(buffer+offset,filel,XOR84_ENCRYPTION);
 			std::wstring newElement=UniFromSJIS(std::string(buffer+offset,filel));
@@ -115,14 +114,10 @@ void NONS_LogStrings::writeOut(){
 	delete[] writebuffer;
 }
 
-extern SDL_mutex *exitMutex;
-
 bool NONS_LogStrings::addString(const std::wstring &string){
 	if (this->log.find(string)!=this->log.end())
 		return 0;
-	SDL_LockMutex(exitMutex);
 	this->log.insert(string);
-	SDL_UnlockMutex(exitMutex);
 	return 1;
 }
 
@@ -138,9 +133,7 @@ bool NONS_FileLog::addString(const std::wstring &string){
 	std::wstring a=string;
 	tolower(a);
 	toforwardslash(a);
-	SDL_LockMutex(exitMutex);
 	this->log.insert(a);
-	SDL_UnlockMutex(exitMutex);
 	return 1;
 }
 
@@ -156,18 +149,16 @@ bool NONS_LabelLog::addString(const std::wstring &string){
 	if (this->check(string))
 		return 0;
 	size_t a=0;
-	for (;string[a]=='*';a++);
+	for (;string[a]==UNICODE_ASTERISK;a++);
 	std::wstring copy(string,a);
 	tolower(copy);
-	SDL_LockMutex(exitMutex);
 	this->log.insert(copy);
-	SDL_UnlockMutex(exitMutex);
 	return 1;
 }
 
 bool NONS_LabelLog::check(const std::wstring &string){
 	size_t a=0;
-	for (;string[a]=='*';a++);
+	for (;string[a]==UNICODE_ASTERISK;a++);
 	std::wstring copy(string,a);
 	bool ret=(this->log.find(copy)!=this->log.end());
 	return ret;

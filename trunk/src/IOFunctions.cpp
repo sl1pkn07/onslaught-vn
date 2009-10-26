@@ -42,40 +42,39 @@ NONS_RedirectedOutput o_stderr(std::cerr);
 //NONS_RedirectedOutput o_stdlog(std::clog);
 
 NONS_EventQueue::NONS_EventQueue(){
-	this->mutex=SDL_CreateMutex();
 	InputObserver.attach(this);
 }
 
 NONS_EventQueue::~NONS_EventQueue(){
-	SDL_DestroyMutex(this->mutex);
 	InputObserver.detach(this);
 }
 
 void NONS_EventQueue::push(SDL_Event a){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	this->data.push(a);
-	SDL_UnlockMutex(this->mutex);
 }
 
 SDL_Event NONS_EventQueue::pop(){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	SDL_Event ret=this->data.front();
 	this->data.pop();
-	SDL_UnlockMutex(this->mutex);
 	return ret;
 }
 
-void NONS_EventQueue::emptify(){
-	SDL_LockMutex(this->mutex);
-	while (!this->data.empty())
+bool NONS_EventQueue::emptify(){
+	NONS_MutexLocker ml(this->mutex);
+	bool ret=0;
+	while (!this->data.empty()){
+		if (this->data.front().type==SDL_QUIT)
+			ret=1;
 		this->data.pop();
-	SDL_UnlockMutex(this->mutex);
+	}
+	return ret;
 }
 
 bool NONS_EventQueue::empty(){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	bool ret=this->data.empty();
-	SDL_UnlockMutex(this->mutex);
 	return ret;
 }
 
@@ -86,15 +85,12 @@ void NONS_EventQueue::WaitForEvent(int delay){
 
 NONS_InputObserver::NONS_InputObserver(){
 	this->data.reserve(50);
-	this->mutex=SDL_CreateMutex();
 }
 
-NONS_InputObserver::~NONS_InputObserver(){
-	SDL_DestroyMutex(this->mutex);
-}
+NONS_InputObserver::~NONS_InputObserver(){}
 
 void NONS_InputObserver::attach(NONS_EventQueue *what){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	ulong pos=this->data.size();
 	for (ulong a=0;a<pos;a++)
 		if (!this->data[a])
@@ -103,24 +99,21 @@ void NONS_InputObserver::attach(NONS_EventQueue *what){
 		this->data.push_back(what);
 	else
 		this->data[pos]=what;
-	SDL_UnlockMutex(this->mutex);
 }
 void NONS_InputObserver::detach(NONS_EventQueue *what){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	for (ulong a=0;a<this->data.size();a++){
 		if (this->data[a]==what){
 			this->data[a]=0;
 			break;
 		}
 	}
-	SDL_UnlockMutex(this->mutex);
 }
 void NONS_InputObserver::notify(SDL_Event *event){
-	SDL_LockMutex(this->mutex);
+	NONS_MutexLocker ml(this->mutex);
 	for (ulong a=0;a<this->data.size();a++)
 		if (!!this->data[a])
 			this->data[a]->push(*event);
-	SDL_UnlockMutex(this->mutex);
 }
 
 struct reportedError{
@@ -226,7 +219,7 @@ void waitUntilClick(NONS_EventQueue *queue){
 }
 
 void waitCancellable(long delay,NONS_EventQueue *queue){
-	bool detach=queue==0;
+	bool detach=!queue;
 	if (detach)
 		queue=new NONS_EventQueue;
 	while (delay>0 && !CURRENTLYSKIPPING){
@@ -317,7 +310,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
 		if (this->addIndentationNext)
 			for (ulong d=0;d<this->indentation;d++)
 				stream <<INDENTATION_STRING;
-		if (c=='\n')
+		if (c==UNICODE_LINE_FEED)
 			this->addIndentationNext=1;
 		else
 			this->addIndentationNext=0;

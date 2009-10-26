@@ -72,12 +72,7 @@ Uint32 secondsSince1970(){
 }
 
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-manualBlit_threaded(void *parameters);
+void manualBlit_threaded(void *parameters);
 
 void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
@@ -147,7 +142,7 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 		return;
 	}
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
@@ -171,14 +166,14 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	//ulong t0=SDL_GetTicks();
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(manualBlit_threaded,parameters+a);
+		threads[a].call(manualBlit_threaded,parameters+a);
 #else
 		threadManager.call(a-1,manualBlit_threaded,parameters+a);
 #endif
 	manualBlit_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -194,17 +189,9 @@ void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *ds
 	delete[] parameters;
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-manualBlit_threaded(void *parameters){
+void manualBlit_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	manualBlit_threaded(p->src,p->srcRect,p->dst,p->dstRect,p->alpha);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
@@ -303,19 +290,12 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,a0);
 					}else{
 						ulong el;
-#ifdef LOOKUP_BLEND_CONSTANT
-						el=blendData[*a1+(a0<<8)];
-#else
 						ulong previous=*a1;
 						*a1=(uchar)INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 						el=(!a0 && !previous)?0:(a0*255)/(*a1);
-#endif
 						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
 						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
-#ifdef LOOKUP_BLEND_CONSTANT
-						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
-#endif
 					}
 				}
 			}else{
@@ -326,19 +306,12 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,alpha);
 					}else{
 						ulong el;
-#ifdef LOOKUP_BLEND_CONSTANT
-						el=blendData[*a1+(alpha<<8)];
-#else
 						ulong previous=*a1;
 						*a1=(uchar)INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
 						el=(!alpha && !previous)?0:(alpha*255)/(*a1);
-#endif
 						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
 						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
-#ifdef LOOKUP_BLEND_CONSTANT
-						*a1=INTEGER_MULTIPLICATION(alpha^0xFF,*a1^0xFF)^0xFF;
-#endif
 					}
 				}else{
 					a0=INTEGER_MULTIPLICATION(pos0[Aoffset0],alpha);
@@ -348,19 +321,12 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,a0);
 					}else{
 						ulong el;
-#ifdef LOOKUP_BLEND_CONSTANT
-						el=blendData[*a1+(a0<<8)];
-#else
 						ulong previous=*a1;
 						*a1=(uchar)INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
 						el=(!a0 && !previous)?0:(a0*255)/(*a1);
-#endif
 						*r1=(uchar)APPLY_ALPHA(r0,*r1,el);
 						*g1=(uchar)APPLY_ALPHA(g0,*g1,el);
 						*b1=(uchar)APPLY_ALPHA(b0,*b1,el);
-#ifdef LOOKUP_BLEND_CONSTANT
-						*a1=INTEGER_MULTIPLICATION(a0^0xFF,*a1^0xFF)^0xFF;
-#endif
 					}
 				}
 			}
@@ -381,12 +347,7 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 }
 
 void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-multiplyBlend_threaded(void *parameters);
+void multiplyBlend_threaded(void *parameters);
 
 void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24)
@@ -454,7 +415,7 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 		return;
 	}
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
@@ -476,14 +437,14 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 	rects0[cpu_count-1].h+=Uint16(srcRect0.h-total);
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(multiplyBlend_threaded,parameters+a);
+		threads[a].call(multiplyBlend_threaded,parameters+a);
 #else
 		threadManager.call(a-1,multiplyBlend_threaded,parameters+a);
 #endif
 	multiplyBlend_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -497,17 +458,9 @@ void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect 
 	delete[] parameters;
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-multiplyBlend_threaded(void *parameters){
+void multiplyBlend_threaded(void *parameters){
 	PSF_parameters *p=(PSF_parameters *)parameters;
 	multiplyBlend_threaded(p->src,p->srcRect,p->dst,p->dstRect);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect){
@@ -630,12 +583,7 @@ struct applyTransformationMatrix_parameters{
 };
 
 void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-applyTransformationMatrix_threaded(void *parameters);
+void applyTransformationMatrix_threaded(void *parameters);
 
 SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	if (!src || src->format->BitsPerPixel<24 || !(matrix[0]*matrix[3]-matrix[1]*matrix[2]))
@@ -662,7 +610,7 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 
 	ulong division=ulong(float(h)/float(cpu_count));
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	applyTransformationMatrix_parameters *parameters=new applyTransformationMatrix_parameters[cpu_count];
 	ulong total=0;
@@ -691,14 +639,14 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	parameters[cpu_count-1].h1+=h-total;
 	for (ulong a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(applyTransformationMatrix_threaded,parameters+a);
+		threads[a].call(applyTransformationMatrix_threaded,parameters+a);
 #else
 		threadManager.call(a-1,applyTransformationMatrix_threaded,parameters+a);
 #endif
 	applyTransformationMatrix_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=1;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -711,16 +659,8 @@ SDL_Surface *applyTransformationMatrix(SDL_Surface *src,float matrix[4]){
 	return res;
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void
-#endif
-applyTransformationMatrix_threaded(void *parameters){
+void applyTransformationMatrix_threaded(void *parameters){
 	applyTransformationMatrix_threaded(*(applyTransformationMatrix_parameters *)parameters);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void applyTransformationMatrix_threaded(const applyTransformationMatrix_parameters &param){
@@ -1517,7 +1457,7 @@ void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			c|=src[1]&0x3F;
 		}else if ((byte&0xF8)==0xF0){
 #if WCHAR_MAX==0xFFFF
-			c='?';
+			c=UNICODE_QUESTION_MARK;
 #else
 			c=byte&0x07;
 			c<<=6;
@@ -1544,7 +1484,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			a++;
 		}else
 			c1=c0;
-		if (SJIS2Unicode[c1]=='?' && c1!='?'){
+		if (SJIS2Unicode[c1]==UNICODE_QUESTION_MARK && c1!=UNICODE_QUESTION_MARK){
 			(o_stderr <<"ENCODING ERROR: Character SJIS+").outputHex(c1,4)
 				<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
 		}
@@ -1555,7 +1495,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 
 void WC_88591(uchar *dst,const wchar_t *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++,src++,dst++)
-		*dst=(*src>0xFF)?'?':*src;
+		*dst=(*src>0xFF)?UNICODE_QUESTION_MARK:*src;
 }
 
 ulong getUTF8size(const wchar_t *buffer,ulong size){
@@ -1637,7 +1577,7 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++){
 		wchar_t srcc=*src++,
 			character=Unicode2SJIS[srcc];
-		if (character=='?' && srcc!='?'){
+		if (character==UNICODE_QUESTION_MARK && srcc!=UNICODE_QUESTION_MARK){
 			(o_stderr <<"ENCODING ERROR: Character U+").outputHex(srcc,4)<<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
 		}
 		if (character<0x100)
@@ -1831,12 +1771,10 @@ bool isValidSJIS(const char *buffer,ulong size){
 
 void NONS_tolower(wchar_t *param){
 	for (;*param;param++)
-		if (*param>='A' && *param<='Z')
-			*param=NONS_tolower(*param);
+		*param=NONS_tolower(*param);
 }
 
 void NONS_tolower(char *param){
 	for (;*param;param++)
-		if (*param>='A' && *param<='Z')
-			*param=NONS_tolower(*param);
+		*param=NONS_tolower(*param);
 }
