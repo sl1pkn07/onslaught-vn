@@ -31,11 +31,11 @@
 #include "IOFunctions.h"
 #include "CommandLineOptions.h"
 
+#define NONS_PARALLELIZE
+
 #ifdef NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
-
-#define NONS_PARALLELIZE
 
 ulong cpu_count=1;
 NONS_ThreadManager threadManager;
@@ -81,42 +81,33 @@ void NONS_Event::wait(){
 #endif
 }
 
-void NONS_Thread::init(ulong index){
+void NONS_ManagedThread::init(ulong index){
 	this->initialized=1;
 	this->index=index;
 	this->startCallEvent.init();
 	this->callEndedEvent.init();
-#ifdef NONS_SYS_WINDOWS
-	this->thread=CreateThread(0,0,(LPTHREAD_START_ROUTINE)runningThread,this,0,0);
-#elif defined(NONS_SYS_UNIX)
-	pthread_create(&this->thread,0,runningThread,this);
-#endif
+	this->thread.call(runningThread,this);
 	this->function=0;
 	this->parameter=0;
 	this->destroy=0;
 }
 
-NONS_Thread::~NONS_Thread(){
+NONS_ManagedThread::~NONS_ManagedThread(){
 	if (!this->initialized)
 		return;
 	//this->wait();
 	this->destroy=1;
 	this->startCallEvent.set();
-#ifdef NONS_SYS_WINDOWS
-	WaitForSingleObject(this->thread,INFINITE);
-	CloseHandle(this->thread);
-#elif defined(NONS_SYS_UNIX)
-	pthread_join(this->thread,0);
-#endif
+	this->thread.join();
 }
 
-void NONS_Thread::call(NONS_ThreadedFunctionPointer f,void *p){
+void NONS_ManagedThread::call(NONS_ThreadedFunctionPointer f,void *p){
 	this->function=f;
 	this->parameter=p;
 	this->startCallEvent.set();
 }
 
-void NONS_Thread::wait(){
+void NONS_ManagedThread::wait(){
 	/*if (!this->function)
 		return;*/
 	this->callEndedEvent.wait();
@@ -151,13 +142,8 @@ void NONS_ThreadManager::waitAll(){
 		this->wait(a);
 }
 
-#ifdef NONS_SYS_WINDOWS
-DWORD WINAPI 
-#elif defined(NONS_SYS_UNIX)
-void *
-#endif
-NONS_Thread::runningThread(void *p){
-	NONS_Thread *t=(NONS_Thread *)p;
+void NONS_ManagedThread::runningThread(void *p){
+	NONS_ManagedThread *t=(NONS_ManagedThread *)p;
 	while (1){
 		t->startCallEvent.wait();
 		if (t->destroy)
@@ -167,47 +153,26 @@ NONS_Thread::runningThread(void *p){
 		t->function=0;
 		t->callEndedEvent.set();
 	}
-	return 0;
 }
 
 void NONS_ThreadManager::setCPUcount(){
 	if (!CLOptions.noThreads){
 #ifdef NONS_PARALLELIZE
 		//get CPU count
-#if defined(NONS_SYS_WINDOWS)
-		SYSTEM_INFO si;
-		GetSystemInfo(&si);
-		cpu_count=si.dwNumberOfProcessors;
-#elif defined(NONS_SYS_LINUX)
 		{
-			/*
-			std::ifstream cpuinfo("/proc/cpuinfo");
-			std::string line;
-			std::set<unsigned> IDs;
-			while (!cpuinfo.eof()){
-				std::getline(cpuinfo,line);
-				if (!line.size())
-					continue;
-				if (line.find("processor")!=0)
-					continue;
-				size_t start=line.find(':'),
-					end;
-				for (;line[start]<'0' || line[start]>'9';start++);
-				for (end=start;line[end]>='0' && line[end]<='9';end++);
-				line=line.substr(start,end-start);
-				IDs.insert(atoi(line.c_str()));
-			}
-			cpu_count=IDs.size();
-			cpuinfo.close();
-			*/
+#if defined(NONS_SYS_WINDOWS)
+			SYSTEM_INFO si;
+			GetSystemInfo(&si);
+			cpu_count=si.dwNumberOfProcessors;
+#elif defined(NONS_SYS_LINUX)
 			FILE * fp;
 			char res[128];
 			fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
 			fread(res, 1, sizeof(res)-1, fp);
 			fclose(fp);
 			cpu_count=atoi(res);
-		}
 #endif
+		}
 		o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";
 #else
 		o_stdout <<"Parallelization disabled.\n";
@@ -217,4 +182,97 @@ void NONS_ThreadManager::setCPUcount(){
 		o_stdout <<"Parallelization disabled.\n";
 		cpu_count=1;
 	}
+}
+
+NONS_Thread::NONS_Thread(NONS_ThreadedFunctionPointer function,void *data){
+	this->called=0;
+	this->call(function,data);
+}
+
+NONS_Thread::~NONS_Thread(){
+	if (!this->called)
+		return;
+	this->join();
+	CloseHandle(this->thread);
+}
+
+void NONS_Thread::call(NONS_ThreadedFunctionPointer function,void *data){
+	if (this->called)
+		return;
+	threadStruct *ts=new threadStruct;
+	ts->f=function;
+	ts->d=data;
+#ifdef NONS_SYS_WINDOWS
+	this->thread=CreateThread(0,0,(LPTHREAD_START_ROUTINE)runningThread,ts,0,0);
+#elif defined(NONS_SYS_UNIX)
+	pthread_create(&this->thread,0,runningThread,ts);
+#endif
+	this->called=1;
+}
+
+void NONS_Thread::join(){
+	if (!this->called)
+		return;
+#ifdef NONS_SYS_WINDOWS
+	WaitForSingleObject(this->thread,INFINITE);
+#elif defined(NONS_SYS_UNIX)
+	pthread_join(this->thread,0);
+#endif
+}
+
+void NONS_Thread::kill(){
+	if (!this->called)
+		return;
+#ifdef NONS_SYS_WINDOWS
+	TerminateThread(this->thread,0);
+#elif defined(NONS_SYS_UNIX)
+	pthread_kill(this->thread,0);
+#endif
+}
+
+#ifdef NONS_SYS_WINDOWS
+DWORD WINAPI 
+#elif defined(NONS_SYS_UNIX)
+void *
+#endif
+NONS_Thread::runningThread(void *p){
+	NONS_ThreadedFunctionPointer f=((threadStruct *)p)->f;
+	void *d=((threadStruct *)p)->d;
+	delete (threadStruct *)p;
+	f(d);
+	return 0;
+}
+
+NONS_Mutex::NONS_Mutex(){
+#ifdef NONS_SYS_WINDOWS
+	this->mutex=new CRITICAL_SECTION;
+	InitializeCriticalSection((CRITICAL_SECTION *)this->mutex);
+#elif defined(NONS_SYS_UNIX)
+	this->mutex=PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+#endif
+}
+
+NONS_Mutex::~NONS_Mutex(){
+#ifdef NONS_SYS_WINDOWS
+	DeleteCriticalSection((CRITICAL_SECTION *)this->mutex);
+	delete (CRITICAL_SECTION *)this->mutex;
+#elif defined(NONS_SYS_UNIX)
+	pthread_mutex_destroy(&this->mutex);
+#endif
+}
+
+void NONS_Mutex::lock(){
+#ifdef NONS_SYS_WINDOWS
+	EnterCriticalSection((CRITICAL_SECTION *)this->mutex);
+#elif defined(NONS_SYS_UNIX)
+	pthread_mutex_lock(&this->mutex);
+#endif
+}
+
+void NONS_Mutex::unlock(){
+#ifdef NONS_SYS_WINDOWS
+	LeaveCriticalSection((CRITICAL_SECTION *)this->mutex);
+#elif defined(NONS_SYS_UNIX)
+	pthread_mutex_unlock(&this->mutex);
+#endif
 }

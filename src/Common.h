@@ -33,10 +33,10 @@ typedef unsigned long ulong;
 typedef unsigned short ushort;
 typedef unsigned char uchar;
 
-extern bool ctrlIsPressed;
-//extern bool softwareCtrlIsPressed;
+extern volatile bool ctrlIsPressed;
+extern volatile bool forceSkip;
 
-#define CURRENTLYSKIPPING (ctrlIsPressed /*|| softwareCtrlIsPressed*/)
+#define CURRENTLYSKIPPING (ctrlIsPressed || forceSkip)
 
 #if defined(_WIN32) || defined(_WIN64)
 #define NONS_SYS_WINDOWS
@@ -85,8 +85,4 @@ extern int lastClickX;
 extern int lastClickY;
 extern ulong cpu_count;
 
-//#define LOOKUP_BLEND_CONSTANT
-#ifdef LOOKUP_BLEND_CONSTANT
-extern uchar blendData[65536];
-#endif
 #endif

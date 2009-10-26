@@ -34,6 +34,7 @@
 #include "Functions.h"
 #include "ErrorCodes.h"
 #include "VirtualScreen.h"
+#include "ThreadManager.h"
 #include <SDL/SDL.h>
 #include <string>
 #include <fstream>
@@ -41,20 +42,21 @@
 
 class NONS_EventQueue{
 	std::queue<SDL_Event> data;
-	SDL_mutex *mutex;
+	NONS_Mutex mutex;
 public:
 	NONS_EventQueue();
 	~NONS_EventQueue();
 	void push(SDL_Event a);
 	SDL_Event pop();
-	void emptify();
+	//returns true if SDL_QUIT was found in the queue
+	bool emptify();
 	bool empty();
 	void WaitForEvent(int delay=100);
 };
 
 struct NONS_InputObserver{
 	std::vector<NONS_EventQueue *> data;
-	SDL_mutex *mutex;
+	NONS_Mutex mutex;
 	NONS_InputObserver();
 	~NONS_InputObserver();
 	void attach(NONS_EventQueue *what);

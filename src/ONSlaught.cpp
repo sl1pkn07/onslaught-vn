@@ -33,7 +33,6 @@
 #include <iostream>
 
 #include "Common.h"
-#include "Everything.h"
 #include "ErrorCodes.h"
 #include "ScriptInterpreter.h"
 #include "IOFunctions.h"
@@ -45,7 +44,7 @@
 #include <windows.h>
 #endif
 
-int mainThread(void *nothing);
+void mainThread(void *);
 
 bool useArgumentsFile(const char *filename,const std::vector<std::wstring> &argc){
 	std::ifstream file(filename);
@@ -60,14 +59,12 @@ bool useArgumentsFile(const char *filename,const std::vector<std::wstring> &argc
 	return 1;
 }
 
-SDL_Thread *dbgThread=0;
-SDL_Thread *thread=0;
-NONS_Everything *everything=0;
-SDL_mutex *exitMutex=0;
+NONS_Thread thread;
 
-void enditall(){
-	SDL_LockMutex(exitMutex);
-	SDL_KillThread(thread);
+void enditall(bool stop_thread){
+	if (stop_thread)
+		gScriptInterpreter->stop();
+#if 0
 	if (!!dbgThread)
 		SDL_KillThread(dbgThread);
 	if (gScriptInterpreter)
@@ -83,8 +80,6 @@ void enditall(){
 	*/
 	exit(0);
 #endif
-	if (everything)
-		delete everything;
 	if (ImageLoader)
 		delete ImageLoader;
 #if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
@@ -96,31 +91,68 @@ void enditall(){
 	}
 #endif
 	exit(0);
+#endif
 }
 
 void handle_SIGTERM(int){
-	o_stdout <<"SIGTERM received. Terminating properly.";
-	enditall();
+	enditall(1);
 }
 
 void handle_SIGINT(int){
-	o_stderr <<"SIGINT received. Terminating harshly.";
 	exit(0);
 }
 
-bool stopEventHandling=0;
+volatile bool stopEventHandling=0;
 
 int lastClickX=0;
 int lastClickY=0;
+bool useDebugMode=0;
 
 void handleInputEvent(SDL_Event &event){
 	long x,y;
 	switch(event.type){
 		case SDL_QUIT:
-			enditall();
+			enditall(1);
+			InputObserver.notify(&event);
 			break;
 		case SDL_KEYDOWN:
-			{
+			if (useDebugMode){
+				bool notify=0,
+					full=0;
+				switch (event.key.keysym.sym){
+					case SDLK_RETURN:
+						if (!!(event.key.keysym.mod&KMOD_ALT))
+							full=1;
+						else
+							notify=1;
+						break;
+					case SDLK_F12:
+						o_stdout <<"Screenshot saved to \""<<gScriptInterpreter->screen->screen->takeScreenshot()<<"\".\n";
+						break;
+					case SDLK_LCTRL:
+					case SDLK_RCTRL:
+					case SDLK_NUMLOCK:
+					case SDLK_CAPSLOCK:
+					case SDLK_SCROLLOCK:
+					case SDLK_RSHIFT:
+					case SDLK_LSHIFT:
+					case SDLK_RALT:
+					case SDLK_LALT:
+					case SDLK_RMETA:
+					case SDLK_LMETA:
+					case SDLK_LSUPER:
+					case SDLK_RSUPER:
+					case SDLK_MODE:
+					case SDLK_COMPOSE:
+						break;
+					default:
+						notify=1;
+				}
+				if (full && gScriptInterpreter->screen)
+					gScriptInterpreter->screen->screen->toggleFullscreen();
+				if (notify)
+					InputObserver.notify(&event);
+			}else{
 				bool notify=0,
 					full=0;
 				switch (event.key.keysym.sym){
@@ -135,8 +167,8 @@ void handleInputEvent(SDL_Event &event){
 						full=1;
 						break;
 					case SDLK_s:
-						if (everything->audio)
-							everything->audio->toggleMute();
+						if (gScriptInterpreter->audio)
+							gScriptInterpreter->audio->toggleMute();
 						break;
 					case SDLK_RETURN:
 						if (!!(event.key.keysym.mod&KMOD_ALT))
@@ -145,7 +177,7 @@ void handleInputEvent(SDL_Event &event){
 							notify=1;
 						break;
 					case SDLK_F12:
-						o_stdout <<"Screenshot saved to \""<<everything->screen->screen->takeScreenshot()<<"\".\n";
+						o_stdout <<"Screenshot saved to \""<<gScriptInterpreter->screen->screen->takeScreenshot()<<"\".\n";
 						break;
 					case SDLK_NUMLOCK:
 					case SDLK_CAPSLOCK:
@@ -164,8 +196,8 @@ void handleInputEvent(SDL_Event &event){
 					default:
 						notify=1;
 				}
-				if (full && everything->screen)
-					everything->screen->screen->toggleFullscreen();
+				if (full && gScriptInterpreter->screen)
+					gScriptInterpreter->screen->screen->toggleFullscreen();
 				if (notify)
 					InputObserver.notify(&event);
 			}
@@ -178,9 +210,9 @@ void handleInputEvent(SDL_Event &event){
 		case SDL_MOUSEMOTION:
 			x=event.motion.x;
 			y=event.motion.y;
-			if (everything->screen){
-				x=everything->screen->screen->unconvertX(x);
-				y=everything->screen->screen->unconvertY(y);
+			if (gScriptInterpreter->screen){
+				x=gScriptInterpreter->screen->screen->unconvertX(x);
+				y=gScriptInterpreter->screen->screen->unconvertY(y);
 				event.motion.x=(Uint16)x;
 				event.motion.y=(Uint16)y;
 			}
@@ -190,9 +222,9 @@ void handleInputEvent(SDL_Event &event){
 		case SDL_MOUSEBUTTONDOWN:
 			x=event.button.x;
 			y=event.button.y;
-			if (everything->screen){
-				x=everything->screen->screen->unconvertX(x);
-				y=everything->screen->screen->unconvertY(y);
+			if (gScriptInterpreter->screen){
+				x=gScriptInterpreter->screen->screen->unconvertX(x);
+				y=gScriptInterpreter->screen->screen->unconvertY(y);
 				event.button.x=(Uint16)x;
 				event.button.y=(Uint16)y;
 			}
@@ -224,8 +256,7 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 #undef main
 #endif
 
-extern std::wstring config_directory;
-extern std::wstring save_directory;
+extern ConfigFile settings;
 
 int main(int argc,char **argv){
 	std::cout <<"ONSlaught: An ONScripter clone with Unicode support."<<std::endl;
@@ -246,7 +277,6 @@ int main(int argc,char **argv){
 	if (CLOptions.override_stdout){
 		o_stdout.redirect();
 		o_stderr.redirect();
-		o_stderr.redirect();
 		std::cout <<"Redirecting."<<std::endl;
 	}
 	threadManager.setCPUcount();
@@ -254,117 +284,38 @@ int main(int argc,char **argv){
 	threadManager.init(cpu_count);
 #endif
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	//exitMutex=SDL_CreateMutex();
-	screenMutex=SDL_CreateMutex();
+	SDL_EnableUNICODE(1);
+	SDL_EnableKeyRepeat(250,20);
 	config_directory=getConfigLocation();
+	settings.init(config_directory+settings_filename,UTF8_ENCODING);
 
+	
 #if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
-	if (CLOptions.noconsole){
-		HWND console=GetConsoleWindow();
-		if (!!console){
-			ShowWindow(console,SW_HIDE);
-		}
-	}
+	if (CLOptions.noconsole)
+		FreeConsole();
 #endif
-	everything=new NONS_Everything();
+
+	NONS_ScriptInterpreter *interpreter=gScriptInterpreter=new NONS_ScriptInterpreter;
+	if (CLOptions.debugMode)
+		console.init(interpreter->archive);
 	SDL_WM_SetCaption("ONSlaught ("ONSLAUGHT_BUILD_VERSION_STR")",0);
 #ifdef NONS_SYS_WINDOWS
 	findMainWindow(L"ONSlaught ("ONSLAUGHT_BUILD_VERSION_WSTR L")");
 #endif
-
-#ifdef LOOKUP_BLEND_CONSTANT
-	for (ulong y=0;y<256;y++){
-		for (ulong x=0;x<256;x++){
-			ulong a=INTEGER_MULTIPLICATION(x^0xFF,y^0xFF)^0xFF;
-			a=(y<<8)/a;
-			if (a>255)
-				a=255;
-			blendData[x+(y<<8)]=a;
-		}
-	}
-#endif
-
-	ErrorCode error=NONS_NO_ERROR;
-	if (CLOptions.scriptPath.size())
-		error=everything->init_script(CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
-	else
-		error=everything->init_script(CLOptions.scriptencoding);
-	if (error!=NONS_NO_ERROR){
-		handleErrors(error,-1,"mainThread",0);
-		exit(error);
-	}
-	labellog.init(L"NScrllog.dat",L"nonsllog.dat");
-	ImageLoader=new NONS_ImageLoader(everything->archive,CLOptions.cacheSize);
-	o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
-	o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
-	if (CLOptions.musicDirectory.size())
-		error=everything->init_audio(CLOptions.musicDirectory);
-	else
-		error=everything->init_audio();
-	if (error!=NONS_NO_ERROR){
-		handleErrors(error,-1,"mainThread",0);
-		exit(error);
-	}
-	if (CLOptions.musicFormat.size())
-		everything->audio->musicFormat=CLOptions.musicFormat;
-	everything->init_screen();
-	NONS_ScriptInterpreter *interpreter=new NONS_ScriptInterpreter(everything);
-	gScriptInterpreter=interpreter;
-	thread=SDL_CreateThread(mainThread,0);
+	thread.call(mainThread,0);
 
 	SDL_Event event;
 	while (!stopEventHandling){
-		while (SDL_WaitEvent(&event)>=0 && !stopEventHandling)
+		while (SDL_PollEvent(&event) && !stopEventHandling)
 			handleInputEvent(event);
-		SDL_Delay(100);
+		SDL_Delay(10);
 	}
+	delete gScriptInterpreter;
+	delete ImageLoader;
 	return 0;
 }
 
-int debugThread(void *nothing);
-
-int mainThread(void *nothing){
-	if (CLOptions.debugMode)
-		dbgThread=SDL_CreateThread(debugThread,0);
+void mainThread(void *){
 	while (gScriptInterpreter->interpretNextLine());
-	if (CLOptions.debugMode)
-		SDL_KillThread(dbgThread);
 	stopEventHandling=1;
-
-	delete gScriptInterpreter;
-	delete everything;
-	delete ImageLoader;
-#if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
-	if (CLOptions.noconsole){
-		HWND console=GetConsoleWindow();
-		if (!!console){
-			ShowWindow(console,SW_SHOW);
-		}
-	}
-#endif
-	exit(0);
-}
-
-int debugThread(void *nothing){
-	while (1){
-		std::string input;
-		std::getline(std::cin,input);
-		if (!stdStrCmpCI(input,"exit") || !stdStrCmpCI(input,"quit"))
-			return 0;
-		std::wstring winput=UniFromUTF8(input);
-		ErrorCode error;
-		NONS_VariableMember *var=gScriptInterpreter->store->retrieve(winput,&error);
-		if (var){
-			if (var->getType()==INTEGER)
-				std::cout <<"intValue: "<<var->getInt()<<std::endl;
-			else if (var->getType()==STRING)
-				std::cout <<"UTF-8 Value: \""<<UniToUTF8(var->getWcs())<<"\""<<std::endl;
-			else
-				std::cout <<"Scalar value."<<std::endl;
-		}else if (error!=NONS_NO_ERROR)
-			handleErrors(error,-1,"debugThread",0);
-		else
-			handleErrors(gScriptInterpreter->interpretString(winput,0,0),-1,"debugThread",0);
-	}
 }

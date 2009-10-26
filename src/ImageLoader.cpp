@@ -40,17 +40,17 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 	this->frame_ends.clear();
 	size_t p=0;
 	static const std::wstring slash_semi=UniFromISO88591("/;");
-	if (image_string[p]==':'){
+	if (image_string[p]==UNICODE_COLON){
 		p++;
-		size_t semicolon=image_string.find(';',p);
+		size_t semicolon=image_string.find(UNICODE_SEMICOLON,p);
 		if (semicolon==image_string.npos)
 			return;
 		switch (wchar_t c=NONS_tolower(image_string[p++])){
-			case 'l':
-			case 'r':
-			case 'c':
-			case 'a':
-			case 'm':
+			case UNICODE_l:
+			case UNICODE_r:
+			case UNICODE_c:
+			case UNICODE_a:
+			case UNICODE_m:
 				this->method=(TRANSPARENCY_METHODS)c;
 				break;
 			default:
@@ -65,15 +65,15 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			toforwardslash(this->mask_filename);
 		}
 		p=p2;
-		if (image_string[p]=='/'){
+		if (image_string[p]==UNICODE_SLASH){
 			std::wstringstream stream;
-			while (image_string[++p]!=',' && image_string[p]!=';')
+			while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
 				stream <<image_string[p];
-			if (!(stream >>this->animation_length) || image_string[p]!=',')
+			if (!(stream >>this->animation_length) || image_string[p]!=UNICODE_COMMA)
 				return;
 			stream.clear();
-			if (image_string[p+1]!='<'){
-				while (image_string[++p]!=',' && image_string[p]!=';')
+			if (image_string[p+1]!=UNICODE_LT_SIGN){
+				while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
 					stream <<image_string[p];
 				ulong delay;
 				if (!(stream >>delay))
@@ -84,11 +84,11 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 				this->frame_ends.push_back(delay);
 			}else{
 				p++;
-				size_t gt=image_string.find('>',p);
+				size_t gt=image_string.find(UNICODE_GT_SIGN,p);
 				if (gt==image_string.npos || gt>semicolon)
 					return;
-				while (image_string[p]!='>' && image_string[++p]!='>'){
-					while (image_string[p]!=',' && image_string[p]!='>')
+				while (image_string[p]!=UNICODE_GT_SIGN && image_string[++p]!=UNICODE_GT_SIGN){
+					while (image_string[p]!=UNICODE_COMMA && image_string[p]!=UNICODE_GT_SIGN)
 						stream <<image_string[p++];
 					ulong delay;
 					if (!(stream >>delay))
@@ -100,9 +100,9 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			}
 			if (!this->frame_ends.size() || this->frame_ends.size()>1 && this->animation_length!=this->frame_ends.size())
 				return;
-			if (image_string[p]!=',')
+			if (image_string[p]!=UNICODE_COMMA)
 				return;
-			while (image_string[++p]!=',' && image_string[p]!=';')
+			while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
 				stream <<image_string[p];
 			ulong type;
 			if (!(stream >>type))
@@ -111,7 +111,7 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			p++;
 		}
 	}
-	if (image_string[p]==';')
+	if (image_string[p]==UNICODE_SEMICOLON)
 		p++;
 	this->filename=image_string.substr(p);
 	tolower(this->filename);

@@ -33,13 +33,11 @@
 #include "Common.h"
 #include "ErrorCodes.h"
 #include "VariableStore.h"
-#include "Everything.h"
 #include "ScreenSpace.h"
 #include "Script.h"
 #include "INIfile.h"
 #include "ImageLoader.h"
 #include "SaveFile.h"
-#include "ConfigFile.h"
 #include "IOFunctions.h"
 #include "enums.h"
 #include <set>
@@ -53,44 +51,45 @@ extern SDL_Surface *(*rotationFunction)(SDL_Surface *,double);
 extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
-#define _GETINTVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)),extra)
-#define _GETWCSVALUE(dst,src,extra) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)),extra)
-#define _GETVARIABLE(varName,src,extra){\
+#define _GETINTVALUE(dst,src) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)))
+#define _GETWCSVALUE(dst,src) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)))
+#if 0
+#define _GETVARIABLE(varName,src){\
 	ErrorCode error;\
 	(varName)=this->store->retrieve(stmt.parameters[(src)],&error);\
 	if (!(varName)){\
-		extra\
 		return error;\
 	}\
 	if ((varName)->isConstant()){\
-		extra\
 		return NONS_EXPECTED_VARIABLE;\
 	}\
 	if ((varName)->getType()==INTEGER_ARRAY){\
-		extra\
 		return NONS_EXPECTED_SCALAR;\
 	}\
 }
-#define _GETINTVARIABLE(varName,src,extra){\
-	_GETVARIABLE(varName,src,extra)\
+#define _GETINTVARIABLE(varName,src){\
+	_GETVARIABLE(varName,src)\
 	if ((varName)->getType()!=INTEGER){\
-		extra\
 		return NONS_EXPECTED_NUMERIC_VARIABLE;\
 	}\
 }
-#define _GETSTRVARIABLE(varName,src,extra){\
-	_GETVARIABLE(varName,src,extra)\
+#define _GETSTRVARIABLE(varName,src){\
+	_GETVARIABLE(varName,src)\
 	if ((varName)->getType()!=STRING){\
-		extra\
 		return NONS_EXPECTED_STRING_VARIABLE;\
 	}\
 }
-#define _GETLABEL(dst,src,extra){\
+#else
+#define _GETVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getVar((varName),stmt.parameters[(src)],this->store))
+#define _GETINTVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getIntVar((varName),stmt.parameters[(src)],this->store))
+#define _GETSTRVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getStrVar((varName),stmt.parameters[(src)],this->store))
+#endif
+#define _GETLABEL(dst,src){\
 	std::wstring &_GETLABEL_temp=stmt.parameters[(src)];\
-	if (_GETLABEL_temp[0]=='*')\
+	if (_GETLABEL_temp[0]==UNICODE_ASTERISK)\
 		(dst)=_GETLABEL_temp;\
 	else{\
-		_GETWCSVALUE((dst),(src),extra)\
+		_GETWCSVALUE((dst),(src))\
 	}\
 }
 
@@ -104,8 +103,8 @@ struct printingPage{
 	//first: position in the string that is actually printed.
 	//second: position in the reduced string
 	std::vector<std::pair<ulong,ulong> > stops;
-	printingPage();
-	printingPage(const printingPage &b);
+	printingPage(){}
+	printingPage(const printingPage &b){*this=b;}
 	printingPage &operator=(const printingPage &b);
 };
 
@@ -149,6 +148,7 @@ class NONS_ScriptInterpreter{
 	typedef ErrorCode(NONS_ScriptInterpreter::*commandFunctionPointer)(NONS_Statement &);
 	typedef std::map<std::wstring,commandFunctionPointer,stdStringCmpCI<wchar_t> > commandListType;
 	typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > userCommandListType;
+	typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > allowedCommandListType;
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
@@ -156,8 +156,10 @@ class NONS_ScriptInterpreter{
 	void uninit();
 	void init();
 
+	bool stop_interpreting;
 	commandListType commandList;
 	userCommandListType userCommandList;
+	allowedCommandListType allowedCommandList;
 	NONS_ScriptThread *thread;
 	std::set<ulong> printed_lines;
 	std::set<std::wstring> implementationErrors;
@@ -203,6 +205,7 @@ class NONS_ScriptInterpreter{
 	bool useWheel,
 		useEscapeSpace;
 	SDL_Surface *screenshot;
+	std::queue<NONS_ScriptLine *> commandQueue;
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);
@@ -426,11 +429,13 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_(NONS_Statement &stmt);
 	*/
 public:
-	NONS_Script *script;
 	NONS_VariableStore *store;
 	NONS_GFXstore *gfx_store;
-	NONS_Everything *everything;
-	NONS_ScriptInterpreter(NONS_Everything *everything);
+	NONS_ScreenSpace *screen;
+	NONS_Audio *audio;
+	NONS_Script *script;
+	NONS_GeneralArchive *archive;
+	NONS_ScriptInterpreter(bool initialize=1);
 	~NONS_ScriptInterpreter();
 	bool interpretNextLine();
 	NONS_Font *main_font;
@@ -446,6 +451,12 @@ public:
 	ulong insideTextgosub();
 	bool goto_label(const std::wstring &label);
 	bool gosub_label(const std::wstring &label);
+	void stop();
+	void getCommandListing(std::vector<std::wstring> &vector);
+	void getSymbolListing(std::vector<std::wstring> &vector);
+	std::wstring getValue(const std::wstring &str);
+	std::wstring interpretFromConsole(const std::wstring &str);
+	void queue(NONS_ScriptLine *line);
 };
 
 extern NONS_ScriptInterpreter *gScriptInterpreter;

@@ -32,9 +32,9 @@
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_mixer.h>
-#include <SDL/SDL_thread.h>
 #include "Common.h"
 #include "ErrorCodes.h"
+#include "ThreadManager.h"
 #include <map>
 #include <list>
 #include <string>
@@ -76,10 +76,10 @@ struct NONS_SoundCache{
 	NONS_CachedSound *getSound(const std::wstring &filename);
 	NONS_CachedSound *checkSound(const std::wstring &filename);
 	NONS_CachedSound *newSound(const std::wstring &filename,char *databuffer,long size);
-	static int GarbageCollector(NONS_SoundCache *dis);
-	SDL_mutex *mutex;
+	static void GarbageCollector(NONS_SoundCache *dis);
+	NONS_Mutex mutex;
 private:
-	SDL_Thread *thread;
+	NONS_Thread thread;
 	bool kill_thread;
 };
 
@@ -130,7 +130,7 @@ struct NONS_Audio{
 	}
 private:
 	channels_map_t asynchronous_seffect;
-	SDL_mutex *mutex;
+	NONS_Mutex mutex;
 	int mvol,
 		svol;
 	bool notmute;

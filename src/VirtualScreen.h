@@ -31,11 +31,12 @@
 #define NONS_VIRTUALSCREEN_H
 
 #include "Common.h"
+#include "ThreadManager.h"
 #include <SDL/SDL.h>
 #include <string>
 
-extern SDL_mutex *screenMutex;
-
+extern NONS_Mutex screenMutex;
+/*
 #if 0
 #define LOCKSCREEN {\
 	SDL_LockMutex(screenMutex);\
@@ -54,7 +55,7 @@ extern SDL_mutex *screenMutex;
 #define LOCKSCREEN SDL_LockMutex(screenMutex)
 #define UNLOCKSCREEN SDL_UnlockMutex(screenMutex)
 #endif
-
+*/
 struct NONS_VirtualScreen{
 	SDL_Surface *realScreen;
 	SDL_Surface *virtualScreen;

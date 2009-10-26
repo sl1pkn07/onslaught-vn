@@ -33,7 +33,7 @@
 #include "CommandLineOptions.h"
 #include <iostream>
 
-SDL_mutex *screenMutex=0;
+NONS_Mutex screenMutex;
 
 //#define ONLY_NEAREST_NEIGHBOR
 
@@ -128,7 +128,7 @@ void NONS_VirtualScreen::blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rec
 }
 
 void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast){
-	LOCKSCREEN;
+	NONS_MutexLocker ml(screenMutex);
 	if (this->virtualScreen==this->realScreen)
 		SDL_UpdateRect(this->realScreen,x,y,w,h);
 	else{
@@ -178,13 +178,11 @@ void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast)
 		SDL_UpdateRect(this->realScreen,d.x,d.y,d.w,d.h);
 		//SDL_UpdateRect(this->realScreen,this->outRect.x,this->outRect.y,this->outRect.w,this->outRect.h);
 	}
-	UNLOCKSCREEN;
 }
 
 void NONS_VirtualScreen::updateWholeScreen(bool fast){
-	LOCKSCREEN;
+	NONS_MutexLocker ml(screenMutex);
 	this->updateWithoutLock(fast);
-	UNLOCKSCREEN;
 }
 
 void NONS_VirtualScreen::updateWithoutLock(bool fast){
@@ -239,7 +237,7 @@ ulong NONS_VirtualScreen::convertH(ulong h){
 }
 
 bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
-	LOCKSCREEN;
+	NONS_MutexLocker ml(screenMutex);
 	bool a=(this->virtualScreen==this->realScreen);
 	if (mode==2)
 		this->fullscreen=!this->fullscreen;
@@ -266,7 +264,6 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	}else
 		this->realScreen->clip_rect=this->outRect;
 	this->updateWithoutLock();
-	UNLOCKSCREEN;
 	return this->fullscreen;
 }
 
@@ -279,14 +276,13 @@ std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
 		t=*localtime(&t2);
 	}
 	std::string filename=(!name.size())?
-			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
-			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
+			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+UNICODE_T+
+			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+UNICODE_UNDERSCORE+
 			itoa<char>(c,10)+".bmp"
 		:name;
-	LOCKSCREEN;
+	NONS_MutexLocker ml(screenMutex);
 	const char *s=filename.c_str();
 	SDL_SaveBMP(this->virtualScreen,s);
-	UNLOCKSCREEN;
 	return filename;
 }
 
@@ -301,12 +297,7 @@ struct IF_parameters{
 };
 
 void nearestNeighborInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void
-#endif
-nearestNeighborInterpolation_threaded(void *parameters);
+void nearestNeighborInterpolation_threaded(void *parameters);
 
 void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
 	if (!src || !dst)
@@ -349,7 +340,7 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 	SDL_FillRect(dst,&dstRect0,dst->format->Amask|dst->format->Gmask);
 
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
@@ -382,14 +373,14 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 	SDL_LockSurface(dst);
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(nearestNeighborInterpolation_threaded,parameters+a);
+		threads[a].call(nearestNeighborInterpolation_threaded,parameters+a);
 #else
 		threadManager.call(a-1,nearestNeighborInterpolation_threaded,parameters+a);
 #endif
 	nearestNeighborInterpolation_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=0;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -403,17 +394,9 @@ void nearestNeighborInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface
 	delete[] parameters;
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-nearestNeighborInterpolation_threaded(void *parameters){
+void nearestNeighborInterpolation_threaded(void *parameters){
 	IF_parameters *p=(IF_parameters *)parameters;
 	nearestNeighborInterpolation_threaded(p->src,p->srcRect,p->dst,p->dstRect,p->x_factor,p->y_factor);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void nearestNeighborInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
@@ -474,12 +457,7 @@ void nearestNeighborInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SD
 }
 
 void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-bilinearInterpolation_threaded(void *parameters);
+void bilinearInterpolation_threaded(void *parameters);
 
 //This algorithm works well for scales [.5;inf.), but has VERY slight precision
 //problems at scales <1.
@@ -524,7 +502,7 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 	SDL_FillRect(dst,&dstRect0,dst->format->Amask|dst->format->Gmask);
 
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
@@ -558,14 +536,14 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 	SDL_LockSurface(dst);
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(bilinearInterpolation_threaded,parameters+a);
+		threads[a].call(bilinearInterpolation_threaded,parameters+a);
 #else
 		threadManager.call(a-1,bilinearInterpolation_threaded,parameters+a);
 #endif
 	bilinearInterpolation_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=0;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -579,17 +557,9 @@ void bilinearInterpolation(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,S
 	SDL_UnlockSurface(dst);
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-bilinearInterpolation_threaded(void *parameters){
+void bilinearInterpolation_threaded(void *parameters){
 	IF_parameters *p=(IF_parameters *)parameters;
 	bilinearInterpolation_threaded(p->src,p->srcRect,p->dst,p->dstRect,p->x_factor,p->y_factor);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
@@ -706,12 +676,7 @@ void bilinearInterpolation_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 //This algorithm works well for scales [0;1). It's ~50% more expensive than
 //bilinearInterpolation().
 void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor);
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-bilinearInterpolation2_threaded(void *parameters);
+void bilinearInterpolation2_threaded(void *parameters);
 
 void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){
 	if (!src || !dst)
@@ -754,7 +719,7 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 	SDL_FillRect(dst,&dstRect0,dst->format->Amask|dst->format->Gmask);
 
 #ifndef USE_THREAD_MANAGER
-	SDL_Thread **threads=new SDL_Thread *[cpu_count];
+	NONS_Thread *threads=new NONS_Thread[cpu_count];
 #endif
 	SDL_Rect *rects0=new SDL_Rect[cpu_count];
 	SDL_Rect *rects1=new SDL_Rect[cpu_count];
@@ -783,14 +748,14 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 	SDL_LockSurface(dst);
 	for (ushort a=1;a<cpu_count;a++)
 #ifndef USE_THREAD_MANAGER
-		threads[a]=SDL_CreateThread(bilinearInterpolation2_threaded,parameters+a);
+		threads[a].call(bilinearInterpolation2_threaded,parameters+a);
 #else
 		threadManager.call(a-1,bilinearInterpolation2_threaded,parameters+a);
 #endif
 	bilinearInterpolation2_threaded(parameters);
 #ifndef USE_THREAD_MANAGER
 	for (ushort a=0;a<cpu_count;a++)
-		SDL_WaitThread(threads[a],0);
+		threads[a].join();
 #else
 	threadManager.waitAll();
 #endif
@@ -804,17 +769,9 @@ void bilinearInterpolation2(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,
 	delete[] parameters;
 }
 
-#ifndef USE_THREAD_MANAGER
-int 
-#else
-void 
-#endif
-bilinearInterpolation2_threaded(void *parameters){
+void bilinearInterpolation2_threaded(void *parameters){
 	IF_parameters *p=(IF_parameters *)parameters;
 	bilinearInterpolation2_threaded(p->src,p->srcRect,p->dst,p->dstRect,p->x_factor,p->y_factor);
-#ifndef USE_THREAD_MANAGER
-	return 0;
-#endif
 }
 
 void bilinearInterpolation2_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,ulong x_factor,ulong y_factor){

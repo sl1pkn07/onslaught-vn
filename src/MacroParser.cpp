@@ -1095,7 +1095,7 @@ bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::MacroFi
 				calls.pop_front();
 			goto preprocess_000;
 		}
-		if (script[first]!='('){
+		if (script[first]!=UNICODE_LPAREN){
 			o_stderr <<"Warning: Line "<<(ulong)lineNo<<": Possible macro call invalid. Expected \'(\' but found \'"<<script[first]<<"\'.\n";
 			goto preprocess_000;
 		}
@@ -1122,27 +1122,27 @@ bool preprocess(std::wstring &dst,const std::wstring &script,NONS_Macro::MacroFi
 						o_stderr <<"Warning: Line "<<lineNo<<": Possible macro call invalid. Expected \',\' or \')\' but found end of file.\n";
 						goto preprocess_000;
 					}
-					if (script[first]!=',' && script[first]!=')'){
+					if (script[first]!=UNICODE_COMMA && script[first]!=UNICODE_RPAREN){
 						o_stderr <<"Warning: Line "<<lineNo<<": Possible macro call invalid. Expected \',\' or \')\' but found \'"<<script[first]<<"\'.\n";
 						goto preprocess_000;
 					}
-					if (script[first++]==')')
+					if (script[first++]==UNICODE_RPAREN)
 						found_lparen=1;
 				}else{
 					ulong second=first;
 					bool found_comma=0;
 					for (;second<script.size() && !found_comma;second++){
 						switch (script[second]){
-							case '\\':
+							case UNICODE_BACKSLASH:
 								if (second+1>=script.size()){
 									o_stderr <<"Warning: Line "<<lineNo<<": Possible macro call invalid. Incomplete escape sequence.\n";
 									goto preprocess_000;
 								}
 								argument.push_back(script[++second]);
 								break;
-							case ')':
+							case UNICODE_RPAREN:
 								found_lparen=1;
-							case ',':
+							case UNICODE_COMMA:
 								found_comma=1;
 								break;
 							default:

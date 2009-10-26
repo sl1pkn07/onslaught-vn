@@ -41,11 +41,11 @@
 
 struct NONS_AnimationInfo{	
 	enum TRANSPARENCY_METHODS{
-		LEFT_UP='l',
-		RIGHT_UP='r',
-		COPY_TRANS='c',
-		PARALLEL_MASK='a',
-		SEPARATE_MASK='m'
+		LEFT_UP=UNICODE_l,
+		RIGHT_UP=UNICODE_r,
+		COPY_TRANS=UNICODE_c,
+		PARALLEL_MASK=UNICODE_a,
+		SEPARATE_MASK=UNICODE_m
 	} method;
 	ulong animation_length;
 	/*

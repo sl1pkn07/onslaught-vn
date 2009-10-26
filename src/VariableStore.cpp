@@ -153,103 +153,81 @@ NONS_VariableMember *NONS_VariableMember::getIndex(ulong i){
 	return 0;
 }
 
-extern SDL_mutex *exitMutex;
-
 void NONS_VariableMember::set(long a){
 	if (this->constant)
 		return;
-	SDL_LockMutex(exitMutex);
 	if (this->type==INTEGER){
 		this->intValue=a;
 		this->fixint();
 	}
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::atoi(const std::wstring &a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	std::wstringstream stream;
 	stream <<a;
 	stream >>this->intValue;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::set(const std::wstring &a){
 	if (this->constant || this->type==INTEGER || this->type==INTEGER_ARRAY)
 		return;
-	SDL_LockMutex(exitMutex);
 	if (this->type==STRING)
 		this->wcsValue=a;
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::inc(){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue++;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::dec(){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue--;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::add(long a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue+=a;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::sub(long a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue-=a;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::mul(long a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue*=a;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::div(long a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	if (a)
 		this->intValue/=a;
 	else
 		this->intValue=0;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::mod(long a){
 	if (this->constant || this->type!=INTEGER)
 		return;
-	SDL_LockMutex(exitMutex);
 	this->intValue%=a;
 	this->fixint();
-	SDL_UnlockMutex(exitMutex);
 }
 
 void NONS_VariableMember::setlimits(long lower,long upper){
@@ -474,10 +452,8 @@ NONS_Variable *NONS_VariableStore::retrieve(Sint32 position,ErrorCode *error){
 		*error=NONS_NO_ERROR;
 	variables_map_T::iterator i=this->variables.find(position);
 	if (i==this->variables.end()){
-		SDL_LockMutex(exitMutex);
 		NONS_Variable *var=new NONS_Variable();
 		this->variables[position]=var;
-		SDL_UnlockMutex(exitMutex);
 		return var;
 	}
 	if (!i->second)

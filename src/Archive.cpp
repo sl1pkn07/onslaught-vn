@@ -42,9 +42,9 @@ NONS_TreeNode::~NONS_TreeNode(){
 }
 
 NONS_TreeNode *NONS_TreeNode::getBranch(const std::wstring &name,bool createIfMissing){
-	size_t pos=name.find('/');
+	size_t pos=name.find(UNICODE_SLASH);
 	if (pos==name.npos)
-		pos=name.find('\\');
+		pos=name.find(UNICODE_BACKSLASH);
 	std::wstring name0;
 	std::wstring name1;
 	if (pos!=name.npos){
@@ -67,9 +67,9 @@ NONS_TreeNode *NONS_TreeNode::getBranch(const std::wstring &name,bool createIfMi
 }
 
 NONS_TreeNode *NONS_TreeNode::newBranch(const std::wstring &name){
-	size_t pos=name.find('/');
+	size_t pos=name.find(UNICODE_SLASH);
 	if (pos==name.npos)
-		pos=name.find('\\');
+		pos=name.find(UNICODE_BACKSLASH);
 	NONS_TreeNode *res;
 	if (pos!=name.npos){
 		std::wstring name0=name.substr(0,pos),
@@ -149,12 +149,12 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	}
 	std::wstring temp0=filename;
 	toforwardslash(temp0);
-	size_t pos=temp0.rfind('/');
+	size_t pos=temp0.rfind(UNICODE_SLASH);
 	if (pos!=temp0.npos)
 		temp0=temp0.substr(pos+1);
 	for (size_t a=0;a<temp0.size();a++)
-		if (temp0[a]=='.')
-			temp0[a]='_';
+		if (temp0[a]==UNICODE_PERIOD)
+			temp0[a]=UNICODE_UNDERSCORE;
 	this->root=new NONS_TreeNode(temp0);
 #ifdef NONS_SYS_WINDOWS
 	this->file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
@@ -162,7 +162,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->file.open(UniToUTF8(filename).c_str(),std::ios::binary);
 #endif
 	this->path=filename;
-	pos=this->path.rfind('.');
+	pos=this->path.rfind(UNICODE_PERIOD);
 	std::wstring ext;
 	if (pos!=this->path.npos)
 		ext=this->path.substr(pos+1);
@@ -338,8 +338,8 @@ uchar *NONS_Archive::getFileBuffer(NONS_TreeNode *node,ulong &buffersize){
 				res=new uchar[original_length];
 				len=original_length;
 				memset(res,0,54);
-				res[0]='B';
-				res[1]='M';
+				res[0]=UNICODE_B;
+				res[1]=UNICODE_M;
 				res[2]=original_length&0xFF;
 				res[3]=(original_length>>8)&0xFF;
 				res[4]=(original_length>>16)&0xFF;

@@ -39,7 +39,7 @@ typedef void (*NONS_ThreadedFunctionPointer)(void *);
 #include <semaphore.h>
 #endif
 
-#define USE_THREAD_MANAGER
+//#define USE_THREAD_MANAGER
 
 class NONS_Event{
 	bool initialized;
@@ -58,12 +58,28 @@ public:
 };
 
 class NONS_Thread{
-	bool initialized;
+	struct threadStruct{ NONS_ThreadedFunctionPointer f; void *d; };
 #ifdef NONS_SYS_WINDOWS
 	HANDLE thread;
+	static DWORD __stdcall runningThread(void *);
 #elif defined(NONS_SYS_UNIX)
 	pthread_t thread;
+	static void *runningThread(void *);
 #endif
+	bool called;
+public:
+	NONS_Thread():called(0){}
+	NONS_Thread(NONS_ThreadedFunctionPointer function,void *data);
+	~NONS_Thread();
+	void call(NONS_ThreadedFunctionPointer function,void *data);
+	void join();
+	void kill();
+};
+
+class NONS_ManagedThread{
+	bool initialized;
+	NONS_Thread thread;
+	static void runningThread(void *);
 	ulong index;
 	volatile bool destroy;
 	void *parameter;
@@ -71,20 +87,15 @@ public:
 	NONS_Event startCallEvent,
 		callEndedEvent;
 	volatile NONS_ThreadedFunctionPointer function;
-	NONS_Thread():initialized(0){}
-	~NONS_Thread();
+	NONS_ManagedThread():initialized(0){}
+	~NONS_ManagedThread();
 	void init(ulong index);
 	void call(NONS_ThreadedFunctionPointer f,void *p);
 	void wait();
-#ifdef NONS_SYS_WINDOWS
-	static DWORD __stdcall runningThread(void *);
-#elif defined(NONS_SYS_UNIX)
-	static void *runningThread(void *);
-#endif
 };
 
 class NONS_ThreadManager{
-	std::vector<NONS_Thread> threads;
+	std::vector<NONS_ManagedThread> threads;
 public:
 	NONS_ThreadManager(){}
 	NONS_ThreadManager(ulong CPUs);
@@ -96,4 +107,62 @@ public:
 };
 
 extern NONS_ThreadManager threadManager;
+
+class NONS_Mutex{
+#ifdef NONS_SYS_WINDOWS
+	//pointer to CRITICAL_SECTION
+	void *mutex;
+#elif defined(NONS_SYS_UNIX)
+	pthread_mutex_t mutex;
+#endif
+public:
+	NONS_Mutex();
+	~NONS_Mutex();
+	void lock();
+	void unlock();
+};
+
+class NONS_MutexLocker{
+	NONS_Mutex &mutex;
+	NONS_MutexLocker(const NONS_MutexLocker &m):mutex(m.mutex){}
+	void operator=(const NONS_MutexLocker &){}
+public:
+	NONS_MutexLocker(NONS_Mutex &m):mutex(m){
+		this->mutex.lock();
+	}
+	~NONS_MutexLocker(){
+		this->mutex.unlock();
+	}
+};
+
+template <typename T>
+class NONS_Atomic{
+	T data;
+	NONS_Mutex mutex;
+public:
+	NONS_Atomic(const T &d):data(d){}
+	NONS_Atomic(const NONS_Atomic &o):data(o.data){}
+	const NONS_Atomic &operator=(const NONS_Atomic &o){
+		NONS_MutexLocker ml(this->mutex);
+		this->data=o.data;
+		return *this;
+	}
+	operator const T &() const{
+		NONS_MutexLocker ml(this->mutex);
+		return this->data;
+	}
+	const T &operator=(const T &o){
+		NONS_MutexLocker ml(this->mutex);
+		this->data=o;
+		return this->data;
+	}
+	const T &operator++(){
+		NONS_MutexLocker ml(this->mutex);
+		return ++this->data;
+	}
+	const T &operator++(int){
+		NONS_MutexLocker ml(this->mutex);
+		return this->data++;
+	}
+};
 #endif

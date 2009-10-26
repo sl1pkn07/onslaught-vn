@@ -159,4 +159,8 @@ struct NONS_SaveFile{
 	void load(std::wstring filename);
 	bool save(std::wstring filename);
 };
+
+extern std::wstring save_directory;
+extern std::wstring config_directory;
+extern const wchar_t *settings_filename;
 #endif

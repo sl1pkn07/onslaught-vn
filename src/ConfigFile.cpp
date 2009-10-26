@@ -32,11 +32,11 @@
 
 template <typename T>
 T DEC2HEX(T x){
-	return x<10?'0'+x:'A'+x-10;
+	return x<10?UNICODE_0+x:UNICODE_A+x-10;
 }
 
 void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
-	size_t equals=src.find('=');
+	size_t equals=src.find(UNICODE_EQ_SIGN);
 	if (equals==src.npos)
 		return;
 	var=src.substr(0,equals);
@@ -51,16 +51,13 @@ void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
 
 //0=str, 1=dec, 2=hex, 3=bin
 char getDataType(const std::wstring &string){
-	if (string[0]=='\"')
+	if (string[0]==UNICODE_QUOTE)
 		return 0;
-	if (string[0]=='0' && string[1]=='x')
+	if (string[0]==UNICODE_0 && string[1]==UNICODE_x)
 		return 2;
-	if (string[string.size()-1]=='b')
+	if (string[string.size()-1]==UNICODE_b)
 		return 3;
 	return 1;
-}
-
-ConfigFile::ConfigFile(){
 }
 
 ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
@@ -68,6 +65,7 @@ ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
 }
 
 void ConfigFile::init(const std::wstring &filename,ENCODINGS encoding){
+	this->entries.clear();
 	ulong l;
 	char *buffer=(char *)readfile(filename,l);
 	if (!buffer)
@@ -107,14 +105,12 @@ void ConfigFile::init(const std::wstring &filename,ENCODINGS encoding){
 	}
 }
 
-ConfigFile::~ConfigFile(){
-}
-
 std::wstring ConfigFile::getWString(const std::wstring &index,ulong subindex){
 	config_map_t::iterator i=this->entries.find(index);
 	if (i==this->entries.end())
 		return L"";
-	return i->second[subindex];
+	std::wstring &str=i->second[subindex];
+	return str.substr(1,str.size()-2);
 }
 
 long ConfigFile::getInt(const std::wstring &index,ulong subindex){
@@ -136,9 +132,9 @@ long ConfigFile::getInt(const std::wstring &index,ulong subindex){
 			}
 			break;
 		case 3:
-			for (std::wstring::iterator i=str.begin()+2;*i!='b';i++){
+			for (std::wstring::iterator i=str.begin()+2;*i!=UNICODE_b;i++){
 				ret<<=1;
-				ret|=*i-'0';
+				ret|=*i-UNICODE_0;
 			}
 			break;
 		default:
@@ -151,7 +147,7 @@ void ConfigFile::assignWString(const std::wstring &var,const std::wstring &val,u
 	config_map_t::iterator i=this->entries.find(var);
 	std::wstring str=UniFromISO88591("\"");
 	str+=val;
-	str.push_back('\"');
+	str.push_back(UNICODE_QUOTE);
 	if (i!=this->entries.end()){
 		if (subindex<0 || subindex>=i->second.size())
 			i->second.push_back(str);
@@ -187,11 +183,11 @@ std::string ConfigFile::writeOut(ENCODINGS encoding){
 	std::wstring buffer;
 	for(config_map_t::iterator i=this->entries.begin(),end=this->entries.end();i!=end;i++){
 		buffer.append(i->first);
-		buffer.push_back('=');
+		buffer.push_back(UNICODE_EQ_SIGN);
 		for (ulong a=0;;){
 			buffer.append(i->second[a++]);
 			if (a<i->second.size())
-				buffer.push_back(' ');
+				buffer.push_back(UNICODE_SPACE);
 			else{
 				buffer.push_back(13);
 				buffer.push_back(10);

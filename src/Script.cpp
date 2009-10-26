@@ -38,22 +38,22 @@
 size_t findEndOfString(const std::wstring &str,size_t offset){
 	if (offset+1>=str.size())
 		return str.npos;
-	if (str[offset]=='\"' || str[offset]=='`'){
+	if (str[offset]==UNICODE_QUOTE || str[offset]==UNICODE_GRAVE_ACCENT){
 		wchar_t terminator=str[offset++];
 		return str.find(terminator,offset);
-	}else if (offset+1<str.size() && NONS_tolower(str[offset])=='e' && str[offset+1]=='\"')
+	}else if (offset+1<str.size() && NONS_tolower(str[offset])==UNICODE_e && str[offset+1]==UNICODE_QUOTE)
 		offset+=2;
 	else
 		return str.npos;
 	ulong size=str.size();
-	while (offset<size && str[offset]!='\"'){
-		if (str[offset]=='\\'){
+	while (offset<size && str[offset]!=UNICODE_QUOTE){
+		if (str[offset]==UNICODE_BACKSLASH){
 			offset++;
 			if (offset>=size)
 				return str.npos;
-			if (str[offset]=='x'){
+			if (str[offset]==UNICODE_x){
 				offset++;
-				for (ulong a=0;offset<size && str[offset]!='\"' && a<4;a++,offset++);
+				for (ulong a=0;offset<size && str[offset]!=UNICODE_QUOTE && a<4;a++,offset++);
 			}else
 				offset++;
 		}else
@@ -63,11 +63,11 @@ size_t findEndOfString(const std::wstring &str,size_t offset){
 }
 
 std::wstring readIdentifierAndAdvance(const std::wstring &str,ulong offset){
-	if (str[offset]!='_' && !NONS_isalpha(str[offset]))
+	if (str[offset]!=UNICODE_UNDERSCORE && !NONS_isalpha(str[offset]))
 		return L"";
 	ulong start=offset,
 		end=start+1;
-	for (;end<str.size() && (str[end]=='_' || NONS_isalnum(str[end]));end++);
+	for (;end<str.size() && (str[end]==UNICODE_UNDERSCORE || NONS_isalnum(str[end]));end++);
 	return std::wstring(str,start,end-start);
 }
 
@@ -82,15 +82,15 @@ NONS_Statement::NONS_Statement(const std::wstring &string,NONS_ScriptLine *line,
 	if (string.size()){
 		if (multicomparison(string[0],";*`\\@!#~%$?") || string[0]>0x7F){
 			switch (string[0]){
-				case ';':
+				case UNICODE_SEMICOLON:
 					this->type=STATEMENT_COMMENT;
 					return;
-				case '*':
+				case UNICODE_ASTERISK:
 					this->type=STATEMENT_BLOCK;
 					this->commandName=string.substr(1);
 					trim_string(this->commandName);
 					break;
-				case '~':
+				case UNICODE_TILDE:
 					this->type=STATEMENT_JUMP;
 					return;
 				default:
@@ -144,8 +144,8 @@ void NONS_Statement::parse(NONS_Script *script){
 				end;
 			while (start<size){
 				end=start;
-				while (end<size && string[end]!=','){
-					if (string[end]=='\"' || string[end]=='`' || end+1<size && NONS_tolower(string[end])=='e' && string[end+1]=='\"'){
+				while (end<size && string[end]!=UNICODE_COMMA){
+					if (string[end]==UNICODE_QUOTE || string[end]==UNICODE_GRAVE_ACCENT || end+1<size && NONS_tolower(string[end])==UNICODE_e && string[end+1]==UNICODE_QUOTE){
 						end=findEndOfString(string,end);
 						if (end==string.npos){
 							this->error=NONS_UNMATCHED_QUOTES;
@@ -221,9 +221,9 @@ NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off
 		}else{
 			ulong b=a;
 			while (b<size){
-				if (C_temp[b]=='\"' || C_temp[b]=='`' || b+1<size && NONS_tolower(C_temp[b])=='e' && C_temp[b+1]=='\"')
+				if (C_temp[b]==UNICODE_QUOTE || C_temp[b]==UNICODE_GRAVE_ACCENT || b+1<size && NONS_tolower(C_temp[b])==UNICODE_e && C_temp[b+1]==UNICODE_QUOTE)
 					b=findEndOfString(temp,b);
-				else if (C_temp[b]==':' || C_temp[b]==';')
+				else if (C_temp[b]==UNICODE_COLON || C_temp[b]==UNICODE_SEMICOLON)
 					break;
 				if (b!=temp.npos)
 					b++;
@@ -235,7 +235,7 @@ NONS_ScriptLine::NONS_ScriptLine(ulong line,const std::wstring &string,ulong off
 			c++;
 			temp2=std::wstring(temp,a,c-a);
 			a=b;
-			if (C_temp[a]==':')
+			if (C_temp[a]==UNICODE_COLON)
 				for (a++;a<size && C_temp[c]<128 && iswhitespace((char)C_temp[c]);a--);
 		}
 		NONS_Statement *stmt=new NONS_Statement(temp2,this,this->statements.size(),off+original_a,terminal);
@@ -284,7 +284,7 @@ std::wstring NONS_ScriptLine::toString(){
 		return L"";
 	std::wstring res=this->statements[0]->stmt;
 	for (ulong a=1;a<this->statements.size();a++){
-		res.push_back(':');
+		res.push_back(UNICODE_COLON);
 		res.append(this->statements[a]->stmt);
 	}
 	return res;
@@ -374,7 +374,7 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 		if (end_of_line==wtemp.npos)
 			end_of_line=wtemp.size();
 		if (start_of_line!=end_of_line){
-			while (buffer[end_of_line-1]=='/' && end_of_line<size-1){
+			while (buffer[end_of_line-1]==UNICODE_SLASH && end_of_line<size-1){
 				a=end_of_line;
 				if (buffer[a]==10)
 					a++;
@@ -388,7 +388,7 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 				if (end_of_line==wtemp.npos)
 					end_of_line=size-1;
 			}
-			if (buffer[start_of_line]=='*'){
+			if (buffer[start_of_line]==UNICODE_ASTERISK){
 				ulong beg=wtemp.find_first_not_of(WCS_WHITESPACE,start_of_line+1);
 				ulong len=wtemp.find_first_of(WCS_WHITESPACE,beg);
 				if (len!=wtemp.npos)
@@ -416,7 +416,7 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 					checkDuplicates->insert(id);
 				}else
 					handleErrors(NONS_INVALID_ID_NAME,currentLineCopy,"NONS_Script::init",0,L"The label will be ignored");
-			}else if (buffer[start_of_line]=='~')
+			}else if (buffer[start_of_line]==UNICODE_TILDE)
 				this->jumps.push_back(std::pair<ulong,ulong>(currentLineCopy,start_of_line));
 		}
 		a=end_of_line;
@@ -461,7 +461,7 @@ NONS_Script::~NONS_Script(){
 }
 
 NONS_ScriptBlock *NONS_Script::blockFromLabel(std::wstring name){
-	if (name[0]=='*')
+	if (name[0]==UNICODE_ASTERISK)
 		name=name.substr(1);
 	else
 		name=name;
@@ -708,7 +708,7 @@ bool NONS_ScriptThread::readBlock(const NONS_ScriptBlock &block,ulong start_at_o
 		if (start_of_line!=end_of_line){
 			std::wstring lineCopy=txt.substr(start_of_line,end_of_line-start_of_line);
 readBlock_000:
-			while (txt[end_of_line-1]=='/' && end_of_line<size-1){
+			while (txt[end_of_line-1]==UNICODE_SLASH && end_of_line<size-1){
 				lineCopy.resize(lineCopy.size()-1);
 				a=end_of_line;
 				if (txt[a]==10)
@@ -726,7 +726,7 @@ readBlock_000:
 			NONS_ScriptLine *line=new NONS_ScriptLine(lineNo0,lineCopy,block.first_offset+a,1);
 			if (line->statements.size()){
 				if (line->statements.back()->type==NONS_Statement::STATEMENT_COMMAND &&
-						lineCopy[lineCopy.find_last_not_of(WCS_WHITESPACE)]==','){
+						lineCopy[lineCopy.find_last_not_of(WCS_WHITESPACE)]==UNICODE_COMMA){
 					delete line;
 
 					while (1){

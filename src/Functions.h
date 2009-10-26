@@ -45,9 +45,144 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+//#define UNICODE_NULL						(char)0x0000
+#define UNICODE_START_OF_HEADING			(char)0x0001
+#define UNICODE_START_OF_TEXT				(char)0x0002
+#define UNICODE_END_OF_TEXT 				(char)0x0003
+#define UNICODE_END_OF_TRANSMISSION 		(char)0x0004
+#define UNICODE_ENQUIRY 					(char)0x0005
+#define UNICODE_ACKNOWLEDGE 				(char)0x0006
+#define UNICODE_BELL						(char)0x0007
+#define UNICODE_BACKSPACE					(char)0x0008
+#define UNICODE_TAB							(char)0x0009
+#define UNICODE_LINE_FEED					(char)0x000A
+#define UNICODE_LINE_TABULATION				(char)0x000B
+#define UNICODE_FORM_FEED					(char)0x000C
+#define UNICODE_CARRIAGE_RETURN				(char)0x000D
+#define UNICODE_SHIFT_OUT					(char)0x000E
+#define UNICODE_SHIFT_IN					(char)0x000F
+#define UNICODE_DATA_LINK_ESCAPE			(char)0x0010
+#define UNICODE_DEVICE_CONTROL_1			(char)0x0011
+#define UNICODE_DEVICE_CONTROL_2			(char)0x0012
+#define UNICODE_DEVICE_CONTROL_3			(char)0x0013
+#define UNICODE_DEVICE_CONTROL_4			(char)0x0014
+#define UNICODE_NEGATIVE_ACKNOWLEDGE		(char)0x0015
+#define UNICODE_SYNCHRONOUS_IDLE			(char)0x0016
+#define UNICODE_END_OF_TRANSMISSION_BLOCK	(char)0x0017
+#define UNICODE_CANCEL						(char)0x0018
+#define UNICODE_END_OF_MEDIUM				(char)0x0019
+#define UNICODE_SUBSTITUTE					(char)0x001A
+#define UNICODE_ESCAPE						(char)0x001B
+#define UNICODE_INFORMATION_SEPARATOR_4		(char)0x001C
+#define UNICODE_INFORMATION_SEPARATOR_3		(char)0x001D
+#define UNICODE_INFORMATION_SEPARATOR_2		(char)0x001E
+#define UNICODE_INFORMATION_SEPARATOR_1		(char)0x001F
+#define UNICODE_SPACE						(char)0x0020
+#define UNICODE_EXCLAMATION_MARK			(char)0x0021
+#define UNICODE_QUOTE						(char)0x0022
+#define UNICODE_NUMBER_SIGN					(char)0x0023
+#define UNICODE_DOLLAR_SIGN					(char)0x0024
+#define UNICODE_PERCENT						(char)0x0025
+#define UNICODE_AMPERSAND					(char)0x0026
+#define UNICODE_APOSTROPHE					(char)0x0027
+#define UNICODE_LPAREN						(char)0x0028
+#define UNICODE_RPAREN						(char)0x0029
+#define UNICODE_ASTERISK					(char)0x002A
+#define UNICODE_PLUS						(char)0x002B
+#define UNICODE_COMMA						(char)0x002C
+#define UNICODE_HYPHEN						(char)0x002D
+#define UNICODE_PERIOD						(char)0x002E
+#define UNICODE_SLASH						(char)0x002F
+#define UNICODE_0 							(char)0x0030
+#define UNICODE_1 							(char)0x0031
+#define UNICODE_2 							(char)0x0032
+#define UNICODE_3 							(char)0x0033
+#define UNICODE_4 							(char)0x0034
+#define UNICODE_5 							(char)0x0035
+#define UNICODE_6 							(char)0x0036
+#define UNICODE_7 							(char)0x0037
+#define UNICODE_8 							(char)0x0038
+#define UNICODE_9 							(char)0x0039
+#define UNICODE_COLON						(char)0x003A
+#define UNICODE_SEMICOLON					(char)0x003B
+#define UNICODE_LT_SIGN 					(char)0x003C
+#define UNICODE_EQ_SIGN 					(char)0x003D
+#define UNICODE_GT_SIGN 					(char)0x003E
+#define UNICODE_QUESTION_MARK				(char)0x003F
+#define UNICODE_AT							(char)0x0040
+#define UNICODE_A 							(char)0x0041
+#define UNICODE_B 							(char)0x0042
+#define UNICODE_C 							(char)0x0043
+#define UNICODE_D 							(char)0x0044
+#define UNICODE_E 							(char)0x0045
+#define UNICODE_F 							(char)0x0046
+#define UNICODE_G 							(char)0x0047
+#define UNICODE_H 							(char)0x0048
+#define UNICODE_I 							(char)0x0049
+#define UNICODE_J 							(char)0x004A
+#define UNICODE_K 							(char)0x004B
+#define UNICODE_L 							(char)0x004C
+#define UNICODE_M 							(char)0x004D
+#define UNICODE_N 							(char)0x004E
+#define UNICODE_O 							(char)0x004F
+#define UNICODE_P 							(char)0x0050
+#define UNICODE_Q 							(char)0x0051
+#define UNICODE_R 							(char)0x0052
+#define UNICODE_S 							(char)0x0053
+#define UNICODE_T 							(char)0x0054
+#define UNICODE_U 							(char)0x0055
+#define UNICODE_V 							(char)0x0056
+#define UNICODE_W 							(char)0x0057
+#define UNICODE_X 							(char)0x0058
+#define UNICODE_Y 							(char)0x0059
+#define UNICODE_Z 							(char)0x005A
+#define UNICODE_LBRACKET					(char)0x005B
+#define UNICODE_BACKSLASH					(char)0x005C
+#define UNICODE_RBRACKET					(char)0x005D
+#define UNICODE_CARET						(char)0x005E
+#define UNICODE_UNDERSCORE					(char)0x005F
+#define UNICODE_GRAVE_ACCENT				(char)0x0060
+#define UNICODE_a							(char)0x0061
+#define UNICODE_b							(char)0x0062
+#define UNICODE_c							(char)0x0063
+#define UNICODE_d							(char)0x0064
+#define UNICODE_e							(char)0x0065
+#define UNICODE_f							(char)0x0066
+#define UNICODE_g							(char)0x0067
+#define UNICODE_h							(char)0x0068
+#define UNICODE_i							(char)0x0069
+#define UNICODE_j							(char)0x006A
+#define UNICODE_k							(char)0x006B
+#define UNICODE_l							(char)0x006C
+#define UNICODE_m							(char)0x006D
+#define UNICODE_n							(char)0x006E
+#define UNICODE_o							(char)0x006F
+#define UNICODE_p							(char)0x0070
+#define UNICODE_q							(char)0x0071
+#define UNICODE_r							(char)0x0072
+#define UNICODE_s							(char)0x0073
+#define UNICODE_t							(char)0x0074
+#define UNICODE_u							(char)0x0075
+#define UNICODE_v							(char)0x0076
+#define UNICODE_w							(char)0x0077
+#define UNICODE_x							(char)0x0078
+#define UNICODE_y							(char)0x0079
+#define UNICODE_z							(char)0x007A
+#define UNICODE_LBRACE						(char)0x007B
+#define UNICODE_PIPE						(char)0x007C
+#define UNICODE_RBRACE						(char)0x007D
+#define UNICODE_TILDE						(char)0x007E
+#define UNICODE_DELETE						(char)0x007F
+#define UNICODE_TOUPPER(x) ((x)&0xDF)
+#define UNICODE_TOLOWER(x) ((x)|0x20)
+
 #define ABS(x) ((x)<0?-(x):(x))
 
-#define _HANDLE_POSSIBLE_ERRORS(x,extra) {ErrorCode possible_error=(x);if (possible_error!=NONS_NO_ERROR){extra return possible_error;}}
+#define _HANDLE_POSSIBLE_ERRORS(x) {\
+	ErrorCode possible_error=(x);\
+	if (possible_error!=NONS_NO_ERROR)\
+		return possible_error;\
+}
 #define CHECK_FLAG(x,y) (((x)&(y))==(y))
 #ifdef USE_ACCURATE_MULTIPLICATION
 //Accurate version:
@@ -74,14 +209,14 @@ void tobackslash(std::basic_string<T> &s){
 }
 
 template <typename T>
-std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &string,bool leave_quotes,char delim=' '){
+std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &string,bool leave_quotes,char delim=UNICODE_SPACE){
 	std::vector<std::basic_string<T> > res;
 	char tempDelim=delim;
 	for (ulong a=0,size=string.size();a<size;){
-		if (string[a]=='\"'){
+		if (string[a]==UNICODE_QUOTE){
 			if (!leave_quotes)
 				a++;
-			delim='\"';
+			delim=UNICODE_QUOTE;
 		}
 		ulong end=a;
 		if (delim!=tempDelim && leave_quotes)
@@ -117,7 +252,7 @@ bool isValidLabel(const std::basic_string<T> &str){
 }
 template <typename T>
 inline T HEX2DEC(T x){
-	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
+	return x<=UNICODE_9?x-UNICODE_0:(x<=UNICODE_F?x-UNICODE_A+10:x-UNICODE_a+10);
 }
 template <typename T>
 long atoi(const std::basic_string<T> &str){
@@ -129,7 +264,7 @@ template <typename T>
 std::basic_string<T> itoa(long n,unsigned w=0){
 	std::basic_stringstream<T> stream;
 	if (w){
-		stream.fill('0');
+		stream.fill(UNICODE_0);
 		stream.width(w);
 	}
 	stream <<n;
@@ -215,10 +350,10 @@ inline std::basic_string<T> string_replace(
 //string parsing
 template <typename T>
 std::basic_string<T> tagName(const std::basic_string<T> &string,size_t off){
-	if (string[off]!='<')
+	if (string[off]!=UNICODE_LT_SIGN)
 		return std::basic_string<T>();
-	ulong a=string.find('>',off+1),
-		b=string.find('=',off+1);
+	ulong a=string.find(UNICODE_GT_SIGN,off+1),
+		b=string.find(UNICODE_EQ_SIGN,off+1);
 	a=std::min(a,b);
 	if (a==string.npos)
 		return std::basic_string<T>();
@@ -228,15 +363,15 @@ std::basic_string<T> tagName(const std::basic_string<T> &string,size_t off){
 }
 template <typename T>
 std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
-	if (string[off]!='<')
+	if (string[off]!=UNICODE_LT_SIGN)
 		return std::basic_string<T>();
-	ulong a=string.find('>',off+1),
-		b=string.find('=',off+1);
+	ulong a=string.find(UNICODE_GT_SIGN,off+1),
+		b=string.find(UNICODE_EQ_SIGN,off+1);
 	a=std::min(a,b);
-	if (a==string.npos || string[a]=='>')
+	if (a==string.npos || string[a]==UNICODE_GT_SIGN)
 		return std::basic_string<T>();
 	a++;
-	ulong c=string.find('>',a);
+	ulong c=string.find(UNICODE_GT_SIGN,a);
 	std::basic_string<T> temp(string,a,a-c);
 	trim_string(temp);
 	return temp;
@@ -374,18 +509,38 @@ void findMainWindow(const wchar_t *caption);
 #define NONS_LITTLE_ENDIAN 1
 #define UNDEFINED_ENDIANNESS 2
 
-inline bool NONS_isdigit(unsigned character){ return character>=0x0030 && character<=0x0039; }
-inline bool NONS_isupper(unsigned character){ return character>=0x0041 && character<=0x005A; }
-inline bool NONS_islower(unsigned character){ return character>=0x0061 && character<=0x007A; }
-inline bool NONS_isalpha(unsigned character){ return character>=0x0041 && character<=0x005A || character>=0x0061 && character<=0x007A; }
-inline bool NONS_isalnum(unsigned character){ return NONS_isalpha(character) || NONS_isdigit(character); }
-inline unsigned NONS_toupper(unsigned character){ return NONS_islower(character)?character&223:character; }
-inline unsigned NONS_tolower(unsigned character){ return NONS_isupper(character)?character|32:character; }
-inline bool NONS_ishexa(unsigned character){ return NONS_isdigit(character) || NONS_toupper(character)>=0x0041 && NONS_toupper(character)<=0x0046; }
+inline bool NONS_isdigit(unsigned character){
+	return character>=UNICODE_0 && character<=UNICODE_9;
+}
+inline bool NONS_isupper(unsigned character){
+	return character>=UNICODE_A && character<=UNICODE_Z;
+}
+inline bool NONS_islower(unsigned character){
+	return character>=UNICODE_a && character<=UNICODE_z;
+}
+inline bool NONS_isalpha(unsigned character){
+	return NONS_isupper(character) || NONS_islower(character);
+}
+inline bool NONS_isalnum(unsigned character){
+	return NONS_isalpha(character) || NONS_isdigit(character);
+}
+inline unsigned NONS_toupper(unsigned character){
+	return NONS_islower(character)?UNICODE_TOUPPER(character):character;
+}
+inline unsigned NONS_tolower(unsigned character){
+	return NONS_isupper(character)?UNICODE_TOLOWER(character):character;
+}
+inline bool NONS_ishexa(unsigned character){
+	return NONS_isdigit(character) || NONS_toupper(character)>=UNICODE_A && NONS_toupper(character)<=UNICODE_F;
+}
 //1 if the character matches the regex [A-Za-z_] (the first character in a C-style identifier)
-inline bool NONS_isid1char(unsigned character){ return NONS_isalpha(character) || character==0x005F; }
+inline bool NONS_isid1char(unsigned character){
+	return NONS_isalpha(character) || character==UNICODE_UNDERSCORE;
+}
 //1 if the character matches the regex [A-Za-z_0-9] (the second and beyond character in a C-style identifier)
-inline bool NONS_isidnchar(unsigned character){ return NONS_isid1char(character) || NONS_isdigit(character); }
+inline bool NONS_isidnchar(unsigned character){
+	return NONS_isid1char(character) || NONS_isdigit(character);
+}
 
 template <typename T1,typename T2>
 int lexcmp(const T1 *a,const T2 *b){
@@ -540,8 +695,9 @@ void trim_string(std::basic_string<T> &str){
 		str.clear();
 		return;
 	}
-	second=first;
-	for (;second<size && !iswhitespace(str[second]);second++);
+	second=size-1;
+	for (;second>first && iswhitespace(str[second]);second--);
+	second++;
 	str=str.substr(first,second-first);
 }
 #endif

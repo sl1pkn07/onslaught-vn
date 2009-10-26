@@ -31,6 +31,9 @@
 #include "ScreenSpace.h"
 #include "ScriptInterpreter.h"
 #include "IOFunctions.h"
+#include <iostream>
+
+NONS_DebuggingConsole console;
 
 NONS_Lookback::NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b){
 	this->output=output;
@@ -149,9 +152,10 @@ void NONS_Lookback::reset(NONS_StandardOutput *output){
 	//((NONS_Button *)this->down)->posy=((NONS_Button *)this->down)->onLayer->clip_rect.y/*+thirdofscreen*2*/;
 }
 
-void NONS_Lookback::display(NONS_VirtualScreen *dst){
+int NONS_Lookback::display(NONS_VirtualScreen *dst){
+	int ret=0;
 	if (!this->output->log.size())
-		return;
+		return ret;
 	NONS_EventQueue queue;
 	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
 	SDL_Surface *preBlit=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
@@ -180,6 +184,9 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 		while (!queue.empty()){
 			SDL_Event event=queue.pop();
 			switch (event.type){
+				case SDL_QUIT:
+					ret=INT_MIN;
+					goto callLookback_000;
 				case SDL_MOUSEMOTION:
 					{
 						if (visibility){
@@ -255,6 +262,7 @@ void NONS_Lookback::display(NONS_VirtualScreen *dst){
 callLookback_000:
 	SDL_FreeSurface(copyDst);
 	SDL_FreeSurface(preBlit);
+	return ret;
 }
 
 bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NONS_VirtualScreen *dst,SDL_Surface *preBlit,uchar &visibility,int &mouseOver){
@@ -335,8 +343,17 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 				SDL_Event event=queue.pop();
 				switch (event.type){
 					case SDL_QUIT:
-						break;
+						ret=-1;
+						goto animate_000;
 					case SDL_KEYDOWN:
+						if (event.key.keysym.sym==SDLK_PAUSE){
+							console.enter(this->screen);
+							if (queue.emptify()){
+								ret=-1;
+								goto animate_000;
+							}
+							break;
+						}
 						if (!menu)
 							break;
 						switch (event.key.keysym.sym){
@@ -348,10 +365,11 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 								break;
 							case SDLK_UP:
 							case SDLK_PAGEUP:
-								{
-									this->callLookback(&queue);
-									break;
+								if (!this->callLookback(&queue)){
+									ret=-1;
+									goto animate_000;
 								}
+								break;
 							case SDLK_MENU:
 								break;
 							default:
@@ -364,9 +382,10 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 								ret=-1;
 								goto animate_000;
 							}
-						}else if (event.button.button==SDL_BUTTON_WHEELUP)
-							this->callLookback(&queue);
-						else
+						}else if (event.button.button==SDL_BUTTON_WHEELUP && !this->callLookback(&queue)){
+							ret=-1;
+							goto animate_000;
+						}else
 							done=1;
 						break;
 					default:
@@ -394,10 +413,9 @@ animate_000:
 bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
 	if (menu && menu->rightClickMode==1 && menu->buttons){
 		//this->screen->BlendNoText(1);
-		if (menu->callMenu()==-1)
+		int ret=menu->callMenu();
+		if (ret==-1 || ret==INT_MIN || queue->emptify())
 			return 0;
-		while (!queue->empty())
-			queue->pop();
 		if (this->data->animated())
 			this->screen->BlendAll(1);
 		else
@@ -406,19 +424,20 @@ bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
 	return 1;
 }
 
-void NONS_Cursor::callLookback(NONS_EventQueue *queue){
+bool NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	screen->BlendNoText(0);
-	LOCKSCREEN;
-	manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
-	multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
-	UNLOCKSCREEN;
-	screen->lookback->display(screen->screen);
-	while (!queue->empty())
-		queue->pop();
+	{
+		NONS_MutexLocker ml(screenMutex);
+		manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
+		multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
+	}
+	if (screen->lookback->display(screen->screen)==INT_MIN || queue->emptify())
+		return 0;
 	if (this->data->animated())
 		screen->BlendAll(1);
 	else
 		this->screen->BlendNoCursor(1);
+	return 1;
 }
 
 NONS_Button::NONS_Button(){
@@ -489,7 +508,7 @@ SDL_Rect NONS_Button::GetBoundingBox(const std::wstring &str,NONS_FontCache *cac
 	SDL_Rect frame={0,0,this->limitX,this->limitY};
 	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
 		NONS_Glyph *glyph=cache->getGlyph(*i);
-		if (*i=='\n'){
+		if (*i==UNICODE_LINE_FEED){
 			outputBuffer.push_back(0);
 			if (x0+wordL>=frame.w && lastSpace>=0){
 				if (isbreakspace(outputBuffer[lastSpace]->getcodePoint()))
@@ -577,7 +596,7 @@ void NONS_Button::write(const std::wstring &str,float center){
 			glyph3=this->shadowLayer->fontCache->getGlyph(*i);
 		else
 			glyph3=0;
-		if (*i=='\n'){
+		if (*i==UNICODE_LINE_FEED){
 			outputBuffer.push_back(0);
 			outputBuffer2.push_back(0);
 			outputBuffer3.push_back(0);
@@ -685,7 +704,8 @@ void NONS_Button::mergeWithoutUpdate(NONS_VirtualScreen *dst,SDL_Surface *origin
 	SDL_Rect rect=this->box;
 	rect.x=this->posx;
 	rect.y=this->posy;
-	LOCKSCREEN;
+
+	NONS_MutexLocker ml(screenMutex);
 	manualBlit(original,&rect,dst->virtualScreen,&rect);
 	if (this->shadowLayer){
 		rect.x++;
@@ -699,7 +719,6 @@ void NONS_Button::mergeWithoutUpdate(NONS_VirtualScreen *dst,SDL_Surface *origin
 		manualBlit(this->onLayer->data,0,dst->virtualScreen,&rect);
 	else if (this->offLayer)
 		manualBlit(this->offLayer->data,0,dst->virtualScreen,&rect);
-	UNLOCKSCREEN;
 }
 
 void NONS_Button::merge(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force){
@@ -838,9 +857,10 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 	}
 	NONS_EventQueue queue;
 	SDL_Surface *screenCopy=makeSurface(this->screen->screen->inRect.w,this->screen->screen->inRect.h,32);
-	LOCKSCREEN;
-	manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
-	UNLOCKSCREEN;
+	{
+		NONS_MutexLocker ml(screenMutex);
+		manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
+	}
 	int mouseOver=-1;
 	getCorrectedMousePosition(this->screen->screen,&x,&y);
 	for (ulong a=0;a<this->buttons.size();a++){
@@ -862,16 +882,19 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				event.type==SDL_MOUSEBUTTONDOWN && (event.button.button==SDL_BUTTON_WHEELUP || event.button.button==SDL_BUTTON_WHEELDOWN)){
 			this->screen->BlendNoText(0);
 			this->screen->screen->blitToScreen(this->screen->screenBuffer,0,0);
-			LOCKSCREEN;
-			multiplyBlend(
-				this->screen->output->shadeLayer->data,
-				&(this->screen->output->shadeLayer->clip_rect),
-				this->screen->screen->virtualScreen,
-				0);
-			this->screen->lookback->display(this->screen->screen);
-			queue.emptify();
-			manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
-			UNLOCKSCREEN;
+			{
+				NONS_MutexLocker ml(screenMutex);
+				multiplyBlend(
+					this->screen->output->shadeLayer->data,
+					&(this->screen->output->shadeLayer->clip_rect),
+					this->screen->screen->virtualScreen,
+					0);
+				if (this->screen->lookback->display(this->screen->screen)==INT_MIN || queue.emptify()){
+					SDL_FreeSurface(screenCopy);
+					return INT_MIN;
+				}
+				manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
+			}
 			getCorrectedMousePosition(this->screen->screen,&x,&y);
 			for (ulong a=0;a<this->buttons.size();a++){
 				NONS_Button *b=this->buttons[a];
@@ -900,9 +923,12 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 							int ret=this->menu->callMenu();
 							if (ret<0){
 								SDL_FreeSurface(screenCopy);
-								return -3;
+								return (ret==INT_MIN)?INT_MIN:-3;
 							}
-							queue.emptify();
+							if (queue.emptify()){
+								SDL_FreeSurface(screenCopy);
+								return INT_MIN;
+							}
 							this->screen->screen->blitToScreen(screenCopy,0,0);
 							getCorrectedMousePosition(this->screen->screen,&x,&y);
 							for (ulong a=0;a<this->buttons.size();a++){
@@ -925,6 +951,13 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 						{
 						}
 					*/
+					case SDLK_PAUSE:
+						console.enter(this->screen);
+						if (!queue.emptify()){
+							SDL_FreeSurface(screenCopy);
+							return INT_MIN;
+						}
+						break;
 					default:
 						break;
 				}
@@ -975,9 +1008,10 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 									delete[] buffer;
 							}
 						}
-						LOCKSCREEN;
-						manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
-						UNLOCKSCREEN;
+						{
+							NONS_MutexLocker ml(screenMutex);
+							manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
+						}
 						this->screen->screen->updateWholeScreen();
 						SDL_FreeSurface(screenCopy);
 						return mouseOver;
@@ -1010,12 +1044,12 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 		//return LONG_MIN;
 	}
 	NONS_EventQueue queue;
-	LOCKSCREEN;
-	SDL_Surface *screenCopy=makeSurface(this->screen->screen->virtualScreen->w,this->screen->screen->virtualScreen->h,32);
-	UNLOCKSCREEN;
-	LOCKSCREEN;
-	manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
-	UNLOCKSCREEN;
+	SDL_Surface *screenCopy;
+	{
+		NONS_MutexLocker ml(screenMutex);
+		screenCopy=makeSurface(this->screen->screen->virtualScreen->w,this->screen->screen->virtualScreen->h,32);
+		manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
+	}
 	int mouseOver=-1;
 	int x,y;
 	getCorrectedMousePosition(this->screen->screen,&x,&y);
@@ -1066,6 +1100,9 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 		while (!queue.empty()){
 			SDL_Event event=queue.pop();
 			switch (event.type){
+				case SDL_QUIT:
+					SDL_FreeSurface(screenCopy);
+					return INT_MIN;
 				case SDL_MOUSEMOTION:
 					{
 						if (mouseOver>=0 && this->buttons[mouseOver]->MouseOver(&event))
@@ -1119,7 +1156,13 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 					}
 					break;
 				case SDL_KEYDOWN:
-					{
+					if (event.key.keysym.sym==SDLK_PAUSE){
+						console.enter(this->screen);
+						if (!queue.emptify()){
+							SDL_FreeSurface(screenCopy);
+							return INT_MIN;
+						}
+					}else{
 						SDLKey key=event.key.keysym.sym;
 						std::map<SDLKey,std::pair<int,bool *> >::iterator i=key_bool_map.find(key);
 						int ret=0;
@@ -1135,6 +1178,7 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 							return ret;
 						}
 					}
+					break;
 			}
 		}
 		SDL_Delay(10);
@@ -1155,14 +1199,14 @@ NONS_Menu::NONS_Menu(NONS_ScriptInterpreter *interpreter){
 	this->nofile=this->off;
 	this->shadow=1;
 	this->font=0;
-	this->defaultFont=((NONS_ScriptInterpreter *)interpreter)->main_font;
+	this->defaultFont=interpreter->main_font;
 	this->buttons=0;
 	this->files=0;
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	this->shade=new NONS_Layer(&(scr->screen->virtualScreen->clip_rect),0xCCCCCCCC|amask);
 	this->slots=10;
-	this->audio=((NONS_ScriptInterpreter *)interpreter)->everything->audio;
-	this->archive=((NONS_ScriptInterpreter *)interpreter)->everything->archive;
+	this->audio=interpreter->audio;
+	this->archive=interpreter->archive;
 	this->rightClickMode=1;
 }
 
@@ -1180,14 +1224,14 @@ NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *
 	this->off.b=0xA9;
 	this->shadow=1;
 	this->font=0;
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
-	this->defaultFont=((NONS_ScriptInterpreter *)interpreter)->main_font;
+	NONS_ScreenSpace *scr=interpreter->screen;
+	this->defaultFont=interpreter->main_font;
 	this->buttons=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
 	this->files=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
 	int w=scr->screen->virtualScreen->w,
 		h=scr->screen->virtualScreen->h;
-	this->audio=((NONS_ScriptInterpreter *)interpreter)->everything->audio;
-	this->archive=((NONS_ScriptInterpreter *)interpreter)->everything->archive;
+	this->audio=interpreter->audio;
+	this->archive=interpreter->archive;
 	this->buttons->makeTextButtons(
 		this->strings,
 		&(this->on),
@@ -1215,13 +1259,13 @@ NONS_Menu::~NONS_Menu(){
 }
 
 int NONS_Menu::callMenu(){
-	((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->BlendNoText(0);
-	multiplyBlend(this->shade->data,0,((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->screenBuffer,0);
-	manualBlit(((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->screenBuffer,0,
-		((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->screen->virtualScreen,0);
+	this->interpreter->screen->BlendNoText(0);
+	multiplyBlend(this->shade->data,0,this->interpreter->screen->screenBuffer,0);
+	manualBlit(this->interpreter->screen->screenBuffer,0,
+		this->interpreter->screen->screen->virtualScreen,0);
 	int choice=this->buttons->getUserInput(this->x,this->y);
 	if (choice<0){
-		if (this->voiceCancel.size()){
+		if (choice!=INT_MIN && this->voiceCancel.size()){
 			if (this->audio->bufferIsLoaded(this->voiceCancel))
 				this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
 			else{
@@ -1236,16 +1280,18 @@ int NONS_Menu::callMenu(){
 	return this->call(this->commands[choice]);
 }
 
+std::string getDefaultFontFilename();
+
 void NONS_Menu::reset(){
 	if (this->buttons)
 		delete this->buttons;
 	if (this->font)
 		delete this->font;
-	this->font=init_font(this->fontsize,this->archive);
+	this->font=init_font(this->fontsize,this->archive,getDefaultFontFilename().c_str());
 	this->font->spacing=this->spacing;
 	this->font->lineSkip=this->lineskip;
 	this->shade->setShade(this->shadeColor.r,this->shadeColor.g,this->shadeColor.b);
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	this->buttons=new NONS_ButtonLayer(this->font,scr,1,0);
 	int w=scr->screen->virtualScreen->w,
 		h=scr->screen->virtualScreen->h;
@@ -1269,7 +1315,7 @@ void NONS_Menu::resetStrings(std::vector<std::wstring> *options){
 		this->strings.push_back((*options)[a++]);
 		this->commands.push_back((*options)[a]);
 	}
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	this->buttons=new NONS_ButtonLayer(!this->font?this->defaultFont:this->font,scr,1,0);
 	int w=scr->screen->virtualScreen->w,
 		h=scr->screen->virtualScreen->h;
@@ -1301,7 +1347,7 @@ int NONS_Menu::write(const std::wstring &txt,int y){
 		if (tempCacheShadow)
 			outputBuffer2.push_back(tempCacheShadow->getGlyph(*i));
 	}
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	int w=scr->screen->virtualScreen->w;
 	//Unused:
 	//	h=scr->screen->virtualScreen->h;
@@ -1326,12 +1372,13 @@ int NONS_Menu::save(){
 		y0=this->write(this->stringSave,20);
 	else
 		y0=this->write(L"~~ Save File ~~",20);
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	if (!this->files){
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
 	}
 	std::vector<tm *> files=existing_files(save_directory);
-	int choice;
+	int choice,
+		ret;
 	while (1){
 		std::vector<std::wstring> strings;
 		std::wstring pusher;
@@ -1366,27 +1413,32 @@ int NONS_Menu::save(){
 			this->audio,
 			this->archive,w,h);
 		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
-		if (choice==-2){
-			this->slots--;
-			continue;
-		}
-		if (choice<0){
-			if (this->voiceCancel.size()){
-				if (this->audio->bufferIsLoaded(this->voiceCancel))
-					this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
-				else{
-					ulong l;
-					char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
-					if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
-						delete[] buffer;
+		if (choice==INT_MIN)
+			ret=INT_MIN;
+		else{
+			if (choice==-2){
+				this->slots--;
+				continue;
+			}
+			if (choice<0){
+				if (this->voiceCancel.size()){
+					if (this->audio->bufferIsLoaded(this->voiceCancel))
+						this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
+					else{
+						ulong l;
+						char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
+						if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
+							delete[] buffer;
+					}
 				}
 			}
+			ret=choice+1;
 		}
 		break;
 	}
 	for (ulong a=0;a<files.size();a++)
 		delete files[a];
-	return choice+1;
+	return ret;
 }
 
 int NONS_Menu::load(){
@@ -1395,11 +1447,12 @@ int NONS_Menu::load(){
 		y0=this->write(this->stringLoad,20);
 	else
 		y0=this->write(L"~~ Load File ~~",20);
-	NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)interpreter)->everything->screen;
+	NONS_ScreenSpace *scr=interpreter->screen;
 	if (!this->files)
 		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
 	std::vector<tm *> files=existing_files(save_directory);
-	int choice;
+	int choice,
+		ret;
 	while (1){
 		std::vector<std::wstring> strings;
 		std::wstring pusher;
@@ -1435,29 +1488,34 @@ int NONS_Menu::load(){
 			this->archive,
 			w,h);
 		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
-		if (choice==-2){
-			this->slots--;
-			continue;
-		}
-		if (choice<0 && this->voiceCancel.size()){
-			if (this->audio->bufferIsLoaded(this->voiceCancel))
-				this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
-			else{
-				ulong l;
-				char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
-				if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
-					delete[] buffer;
+		if (choice==INT_MIN)
+			ret=INT_MIN;
+		else{
+			if (choice==-2){
+				this->slots--;
+				continue;
 			}
+			if (choice<0 && this->voiceCancel.size()){
+				if (this->audio->bufferIsLoaded(this->voiceCancel))
+					this->audio->playSoundAsync(&this->voiceCancel,0,0,7,0);
+				else{
+					ulong l;
+					char *buffer=(char *)this->archive->getFileBuffer(this->voiceCancel,l);
+					if (this->audio->playSoundAsync(&this->voiceCancel,buffer,l,7,0)!=NONS_NO_ERROR)
+						delete[] buffer;
+				}
+			}
+			ret=choice+1;
 		}
 		break;
 	}
 	for (ulong a=0;a<files.size();a++)
 		delete files[a];
-	return choice+1;
+	return ret;
 }
 
 int NONS_Menu::windowerase(){
-	((NONS_ScriptInterpreter *)this->interpreter)->everything->screen->BlendNoText(1);
+	this->interpreter->screen->BlendNoText(1);
 	NONS_EventQueue queue;
 	while (1){
 		queue.WaitForEvent();
@@ -1465,6 +1523,8 @@ int NONS_Menu::windowerase(){
 			SDL_Event event=queue.pop();
 			if (event.type==SDL_KEYDOWN || event.type==SDL_MOUSEBUTTONDOWN)
 				return 0;
+			if (event.type==SDL_QUIT)
+				return INT_MIN;
 		}
 	}
 }
@@ -1481,17 +1541,18 @@ int NONS_Menu::call(const std::wstring &string){
 	if (string==L"save"){
 		int save=this->save();
 		if (save>0){
-			((NONS_ScriptInterpreter *)this->interpreter)->save(save);
+			this->interpreter->save(save);
 			//ret=-1;
-		}
+		}else if (save==INT_MIN)
+			ret=INT_MIN;
 	}else if (string==L"load"){
 		int load=this->load();
-		if (load>0 && ((NONS_ScriptInterpreter *)this->interpreter)->load(load))
+		if (load>0 && this->interpreter->load(load))
 			ret=-1;
 	}else if (string==L"windowerase"){
-		this->windowerase();
+		ret=this->windowerase();
 	}else if (string==L"lookback"){
-		NONS_ScreenSpace *scr=((NONS_ScriptInterpreter *)this->interpreter)->everything->screen;
+		NONS_ScreenSpace *scr=this->interpreter->screen;
 		scr->BlendNoText(0);
 		manualBlit(scr->screenBuffer,0,scr->screen->virtualScreen,0);
 		multiplyBlend(
@@ -1499,14 +1560,14 @@ int NONS_Menu::call(const std::wstring &string){
 			&(scr->output->shadeLayer->clip_rect),
 			scr->screen->virtualScreen,
 			0);
-		scr->lookback->display(scr->screen);
+		ret=scr->lookback->display(scr->screen);
 	}else if (string==L"skip"){
 		this->skip();
 	}else{
-		ErrorCode error=((NONS_ScriptInterpreter *)this->interpreter)->interpretString(string,0,0);
+		ErrorCode error=this->interpreter->interpretString(string,0,0);
 		if (error==NONS_END)
-			return NONS_END;
-		if (error!=NONS_NO_ERROR)
+			ret=INT_MIN;
+		else if (error!=NONS_NO_ERROR)
 			handleErrors(error,-1,"NONS_Menu::call",1);
 	}
 	return ret;
@@ -1649,9 +1710,9 @@ std::vector<NONS_Glyph *> *NONS_FontCache::getglyphCache(){
 NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 	switch (codePoint){
 		case 0:
-		case '\t':
-		case '\n':
-		case '\r':
+		case UNICODE_TAB:
+		case UNICODE_LINE_FEED:
+		case UNICODE_CARRIAGE_RETURN:
 			return 0;
 		default:
 			break;
@@ -1664,22 +1725,410 @@ NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 	return this->glyphCache.back();
 }
 
-NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive){
-	NONS_Font *font=new NONS_Font("default.ttf",(size),TTF_STYLE_NORMAL);
+NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive,const char *filename){
+	const ulong style=TTF_STYLE_NORMAL;
+	NONS_Font *font=new NONS_Font(filename,(size),style);
 	if (!font->valid()){
 		delete font;
 		ulong l;
-		uchar *buffer=archive->getFileBuffer(L"default.ttf",l);
-		if (!buffer){
-			o_stderr <<"FATAL ERROR: Could not find \"default.ttf\" font file. If your system is\n"
-				"case-sensitive, make sure the file name is capitalized correctly.\n";
-			exit(0);
+		uchar *buffer=archive->getFileBuffer(UniFromISO88591(filename),l);
+		if (!buffer)
 			return 0;
-		}
 		SDL_RWops *rw=SDL_RWFromMem(buffer,l);
-		font=new NONS_Font(rw,size,TTF_STYLE_NORMAL);
+		font=new NONS_Font(rw,size,style);
 		SDL_FreeRW(rw);
 		delete[] buffer;
 	}
 	return font;
+}
+
+NONS_DebuggingConsole::NONS_DebuggingConsole():font(0),cache(0),print_prompt(1){}
+
+NONS_DebuggingConsole::~NONS_DebuggingConsole(){
+	if (this->font)
+		delete this->font;
+}
+
+ulong getGlyphWidth(NONS_FontCache *cache){
+	ulong res=0;
+	for (wchar_t a=UNICODE_A;a<=UNICODE_Z;a++){
+		ulong w=cache->getGlyph(a)->advance;
+		if (w>res)
+			res=w;
+	}
+	return res;
+}
+
+extern ConfigFile settings;
+
+std::string getConsoleFontFilename(){
+	if (!settings.exists(L"console font"))
+		settings.assignWString(L"console font",L"cour.ttf");
+	return UniToUTF8(settings.getWString(L"console font"));
+}
+
+void NONS_DebuggingConsole::init(NONS_GeneralArchive *archive){
+	if (!this->font){
+		std::string font=getConsoleFontFilename();
+		this->font=init_font(15,archive,font.c_str());
+		if (!this->font){
+			o_stderr <<"The font \""<<font<<"\" could not be found. The debugging console will not be available.\n";
+		}else{
+			SDL_Color color={0xFF,0xFF,0xFF,0xFF};
+			this->cache=new NONS_FontCache(this->font,&color,0);
+			this->screenW=this->screenH=0;
+		}
+	}
+	this->autocompleteVector.push_back(L"quit");
+	this->autocompleteVector.push_back(L"_get");
+	gScriptInterpreter->getCommandListing(this->autocompleteVector);
+}
+
+extern bool useDebugMode;
+
+void NONS_DebuggingConsole::enter(NONS_ScreenSpace *dst){
+	if (!this->font)
+		return;
+	SDL_Surface *dstCopy;
+	{
+		NONS_MutexLocker ml(screenMutex);
+		if (!this->screenW){
+			this->characterWidth=getGlyphWidth(this->cache);
+			this->characterHeight=this->font->lineSkip;
+			this->screenW=dst->screen->virtualScreen->w/this->characterWidth;
+			this->screenH=dst->screen->virtualScreen->h/this->characterHeight;
+			this->screen.resize(this->screenW*this->screenH);
+			this->cursorX=this->cursorY=0;
+		}
+		dstCopy=copySurface(dst->screen->virtualScreen);
+		SDL_FillRect(dst->screen->virtualScreen,0,amask);
+		gScriptInterpreter->getSymbolListing(this->autocompleteVector);
+		std::sort(this->autocompleteVector.begin(),this->autocompleteVector.end());
+		dst->screen->updateWithoutLock();
+	}
+	bool ret=1;
+	std::wstring inputLine=this->partial;
+	while (this->input(inputLine,dst)){
+		if (!stdStrCmpCI(inputLine,L"quit")){
+			gScriptInterpreter->stop();
+			break;
+		}
+		this->output(inputLine+L"\n",dst);
+		this->pastInputs.push_back(inputLine);
+		if (firstcharsCI(inputLine,0,L"_get"))
+			this->output(gScriptInterpreter->getValue(inputLine.substr(4))+L"\n",dst);
+		else if (!stdStrCmpCI(inputLine,L"cls")){
+			this->screen.clear();
+			this->screen.resize(this->screenH*this->screenW);
+			this->cursorX=0;
+			this->cursorY=0;
+		}else
+			this->output(gScriptInterpreter->interpretFromConsole(inputLine)+L"\n",dst);
+		inputLine.clear();
+		this->print_prompt=1;
+	}
+	this->partial=inputLine;
+	
+	{
+		NONS_MutexLocker ml(screenMutex);
+		dst->screen->blitToScreen(dstCopy,0,0);
+		dst->screen->updateWithoutLock();
+	}
+	SDL_FreeSurface(dstCopy);
+}
+
+void NONS_DebuggingConsole::output(const std::wstring &str,NONS_ScreenSpace *dst){
+	ulong lastY=this->cursorY;
+	for (ulong a=0;a<str.size();a++){
+		switch (str[a]){
+			case UNICODE_LINE_FEED:
+				this->cursorX=0;
+				this->cursorY++;
+				break;
+			case UNICODE_TAB:
+				this->cursorX+=4-this->cursorX%4;
+				if (this->cursorX>=this->screenW){
+					this->cursorX=0;
+					this->cursorY++;
+				}
+				break;
+			default:
+				this->locate(this->cursorX,this->cursorY)=str[a];
+				this->cursorX++;
+				if (this->cursorX>=this->screenW){
+					this->cursorX=0;
+					this->cursorY++;
+				}
+		}
+		while (this->cursorY*this->screenW>=this->screen.size())
+			this->screen.resize(this->screen.size()+this->screenW);
+		if (dst && this->cursorY!=lastY){
+			lastY=this->cursorY;
+			NONS_MutexLocker ml(screenMutex);
+			this->redraw(dst,0,0);
+		}
+	}
+}
+
+void NONS_DebuggingConsole::autocomplete(std::vector<std::wstring> &dst,const std::wstring &line,std::wstring &suggestion,ulong cursor,ulong &space){
+	dst.clear();
+	std::wstring first,
+		second,
+		third=line.substr(cursor);
+	ulong cutoff=line.find_last_of(WCS_WHITESPACE,cursor);
+	if (cutoff==line.npos)
+		cutoff=0;
+	else
+		cutoff++;
+	space=cutoff;
+	first=line.substr(0,cutoff);
+	second=line.substr(cutoff,cursor-cutoff);
+	for (ulong a=0;a<this->autocompleteVector.size();a++)
+		if (firstcharsCI(this->autocompleteVector[a],0,second))
+			dst.push_back(this->autocompleteVector[a]);
+	if (!dst.size())
+		return;
+	ulong max;
+	for (max=0;max<dst.front().size();max++){
+		wchar_t c=dst.front()[max];
+		bool _break=0;
+		for (ulong a=0;a<dst.size() && !_break;a++)
+			if (dst[a][max]!=c)
+				_break=1;
+		if (_break)
+			break;
+	}
+	suggestion=dst.front().substr(0,max);
+}
+
+void NONS_DebuggingConsole::outputMatches(const std::vector<std::wstring> &matches,NONS_ScreenSpace *dst/*,long startFromLine,ulong cursor,const std::wstring &line*/){
+	this->output(L"\n",dst);
+	for (ulong a=0;a<matches.size();a++)
+		this->output(matches[a]+L"\n",dst);
+}
+
+bool NONS_DebuggingConsole::input(std::wstring &input,NONS_ScreenSpace *dst){
+	const std::wstring prompt=L"input:>";
+	if (this->print_prompt){
+		this->output(prompt,dst);
+		print_prompt=0;
+	}
+	ulong cursor=input.size();
+	this->redraw(dst,0,cursor,input);
+	bool ret=1;
+	useDebugMode=1;
+	std::vector<std::wstring> inputs=this->pastInputs;
+	std::wstring inputLine=input;
+	inputs.push_back(inputLine);
+	ulong currentlyEditing=inputs.size()-1;
+	NONS_EventQueue queue;
+	bool _break=0;
+	long screenOffset=0;
+	while (!_break){
+		queue.WaitForEvent(10);
+		while (!queue.empty() && !_break){
+			SDL_Event event=queue.pop();
+			bool refresh=0;
+			switch (event.type){
+				case SDL_QUIT:
+					ret=0;
+					_break=1;
+					break;
+				case SDL_KEYDOWN:
+					{
+						switch (event.key.keysym.sym){
+							case SDLK_UP:
+								if (!(event.key.keysym.mod&KMOD_CTRL)){
+									if (currentlyEditing){
+										inputs[currentlyEditing--]=inputLine;
+										inputLine=inputs[currentlyEditing];
+										cursor=inputLine.size();
+										refresh=1;
+									}
+								}else if (this->screen.size()/this->screenW-this->screenH+screenOffset>0){
+									screenOffset--;
+									refresh=1;
+								}
+								break;
+							case SDLK_DOWN:
+								if (!(event.key.keysym.mod&KMOD_CTRL)){
+									if (currentlyEditing<inputs.size()-1){
+										inputs[currentlyEditing++]=inputLine;
+										inputLine=inputs[currentlyEditing];
+										cursor=inputLine.size();
+										refresh=1;
+									}
+								}else if (screenOffset<0){
+									screenOffset++;
+									refresh=1;
+								}
+								break;
+							case SDLK_LEFT:
+								if (cursor){
+									cursor--;
+									refresh=1;
+								}
+								break;
+							case SDLK_RIGHT:
+								if (cursor<inputLine.size()){
+									cursor++;
+									refresh=1;
+								}
+								break;
+							case SDLK_HOME:
+								if (cursor){
+									cursor=0;
+									refresh=1;
+								}
+								break;
+							case SDLK_END:
+								if (cursor<inputLine.size()){
+									cursor=inputLine.size();
+									refresh=1;
+								}
+								break;
+							case SDLK_RETURN:
+							case SDLK_KP_ENTER:
+								_break=1;
+								break;
+							case SDLK_PAUSE:
+							case SDLK_ESCAPE:
+								ret=0;
+								_break=1;
+								break;
+							case SDLK_BACKSPACE:
+								if (inputLine.size() && cursor){
+									inputLine.erase(cursor-1,1);
+									cursor--;
+									refresh=1;
+								}
+								break;
+							case SDLK_DELETE:
+								if (cursor<inputLine.size()){
+									inputLine.erase(cursor,1);
+									refresh=1;
+								}
+								break;
+							case SDLK_TAB:
+								if (inputLine.size()){
+									std::vector<std::wstring> matches;
+									std::wstring suggestion;
+									ulong space;
+									this->autocomplete(matches,inputLine,suggestion,cursor,space);
+									if (matches.size()==1){
+										inputLine=inputLine.substr(0,space)+matches.front()+L" "+inputLine.substr(cursor);
+										cursor=space+matches.front().size()+1;
+										refresh=1;
+									}else if (matches.size()>1){
+										inputLine=inputLine.substr(0,space)+suggestion+inputLine.substr(cursor);
+										cursor=space+suggestion.size();
+										this->outputMatches(matches,dst);
+										this->output(prompt,dst);
+										refresh=1;
+									}
+								}
+								break;
+							default:
+								{
+									wchar_t c=event.key.keysym.unicode;
+									if (c<32)
+										break;
+									inputLine.insert(inputLine.begin()+cursor++,c);
+									refresh=1;
+								}
+						}
+						break;
+					}
+				default:
+					break;
+			}
+			if (refresh)
+				this->redraw(dst,screenOffset,cursor,inputLine);
+		}
+	}
+	useDebugMode=0;
+	input=inputLine;
+	return ret;
+}
+
+void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulong lineHeight){
+	static SDL_Color white={0xFF,0xFF,0xFF,0xFF};
+	SDL_FillRect(dst->screen->virtualScreen,0,amask);
+	long startAt=this->screen.size()/this->screenW-this->screenH;
+	if (this->cursorY+lineHeight>=this->screenH)
+		startAt+=startFromLine+lineHeight;
+	if (startAt<0)
+		startAt=0;
+	for (ulong y=0;y<this->screenH;y++){
+		for (ulong x=0;x<this->screenW;x++){
+			if (CONLOCATE(x,y+startAt)>=this->screen.size())
+				continue;
+			wchar_t c=this->locate(x,y+startAt);
+			if (!c)
+				continue;
+			this->cache->getGlyph(c)->putGlyph(dst->screen->virtualScreen,x*this->characterWidth,y*this->characterHeight,&white);
+		}
+	}
+}
+
+void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulong cursor,const std::wstring &line){
+	static SDL_Color white={0xFF,0xFF,0xFF,0xFF},
+		black={0,0,0,0xFF};
+	NONS_MutexLocker ml(screenMutex);
+	ulong lineHeight=(line.size()+this->cursorX)/this->screenW;
+	this->redraw(dst,startFromLine,lineHeight);
+	long cursorX=this->cursorX,
+		cursorY=this->cursorY;
+	if (cursorY+lineHeight>=this->screenH)
+		cursorY=this->screenH-1-lineHeight-startFromLine;
+	//cursorY-=startFromLine;
+	if (cursor<line.size()){
+		for (ulong a=0;a<line.size();a++){
+			if (cursorY<(long)this->screenH){
+				if (a==cursor){
+					SDL_Rect rect={
+						Sint16(cursorX*this->characterWidth),
+						Sint16(cursorY*this->characterHeight),
+						(Uint16)this->characterWidth,
+						(Uint16)this->characterHeight
+					};
+					SDL_FillRect(dst->screen->virtualScreen,&rect,rmask|gmask|bmask|amask);
+				}
+				this->cache->getGlyph(line[a])->putGlyph(
+					dst->screen->virtualScreen,
+					cursorX*this->characterWidth,
+					cursorY*this->characterHeight,
+					(a!=cursor)?&white:&black
+				);
+			}
+			cursorX++;
+			if (cursorX>=(long)this->screenW){
+				cursorX=0;
+				cursorY++;
+			}
+		}
+	}else{
+		for (ulong a=0;a<line.size();a++){
+			if (cursorY<(long)this->screenH)
+				this->cache->getGlyph(line[a])->putGlyph(
+					dst->screen->virtualScreen,
+					cursorX*this->characterWidth,
+					cursorY*this->characterHeight,
+					&white
+				);
+			cursorX++;
+			if (cursorX>=(long)this->screenW){
+				cursorX=0;
+				cursorY++;
+			}
+		}
+		SDL_Rect rect={
+			Sint16(cursorX*this->characterWidth),
+			Sint16(cursorY*this->characterHeight),
+			(Uint16)this->characterWidth,
+			(Uint16)this->characterHeight
+		};
+		SDL_FillRect(dst->screen->virtualScreen,&rect,rmask|gmask|bmask|amask);
+	}
+	dst->screen->updateWithoutLock();
 }
