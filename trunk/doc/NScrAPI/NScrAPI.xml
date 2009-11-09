@@ -1779,9 +1779,9 @@ Use "off" as the parameter to make the colors return to normal.</description>
       <simple-desc>set negative screen display</simple-desc>
       <format>
         <format-string desc="nega (display-flag)">nega NUM</format-string>
-        <arg type="NUM">Display flag (0: off, 1: monochrome-priority, 2: negative-priority)</arg>
+        <arg type="NUM">Display flag (0: off, 1: negative-priority, 2: monochrome-priority)</arg>
       </format>
-      <description>If flag is 1 or 2, it causes a negative of the current image. Use 1 to apply (any) <b>monocro</b> first, 2 to apply <b>nega</b> before <b>monocro</b>.<br />
+      <description>If flag is 1 or 2, it causes a negative of the current image. Use 1 to apply <b>nega</b> before <b>monocro</b>, 2 to apply (any) <b>monocro</b> first.<br />
 If 0, the image flips back to positive.<br />
 Neither <b>monocro</b> nor <b>nega</b> update the screen themselves, so please call <b>print</b> afterwards.</description>
       <related cmd="monocro" />

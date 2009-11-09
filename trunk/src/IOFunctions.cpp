@@ -32,7 +32,7 @@
 #include <SDL/SDL.h>
 #include <iostream>
 #include <ctime>
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
 
@@ -368,7 +368,7 @@ void NONS_RedirectedOutput::indent(long a){
 }
 
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 	if (file==INVALID_HANDLE_VALUE)
 		return 0;
@@ -383,7 +383,7 @@ uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
 #endif
 }
 
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 uchar *readfile(HANDLE file,ulong &len,ulong offset){
 	if (file==INVALID_HANDLE_VALUE)
 		return 0;
@@ -421,7 +421,7 @@ uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
 #endif
 
 uchar *readfile(const std::wstring &name,ulong &len){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_FLAG_SEQUENTIAL_SCAN,0);
 	if (file==INVALID_HANDLE_VALUE)
 		return 0;
@@ -449,7 +449,7 @@ uchar *readfile(const std::wstring &name,ulong &len){
 }
 
 char writefile(const std::wstring &name,char *buffer,ulong size){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&name[0],GENERIC_WRITE,0,0,TRUNCATE_EXISTING,0,0);
 	if (file==INVALID_HANDLE_VALUE)
 		file=CreateFile(&name[0],GENERIC_WRITE,0,0,CREATE_NEW,0,0);
@@ -470,7 +470,7 @@ char writefile(const std::wstring &name,char *buffer,ulong size){
 
 bool fileExists(const std::wstring &name){
 	bool ret;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,0,0,OPEN_EXISTING,0,0);
 	ret=(file!=INVALID_HANDLE_VALUE);
 	CloseHandle(file);

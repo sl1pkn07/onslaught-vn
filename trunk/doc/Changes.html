@@ -492,12 +492,13 @@ The syntax is identical to centerh.<br/>
 In order to support this command, a new escape sequence was added: &quot;!nl&quot;. It is replaced by a newline during the printing process.<br/>
 It is important when using centerv that all printing commands end with a \:<p/>
 <font face="monospace">
-`Sample vertically!nlcentered text.\ ;&lt;-- Ok.<br/>
-`Sample vertically!nlcentered text. ;&lt;-- May produce strange artifacts.<br/>
-\ ;&lt;-- If this appears before the next printing command, there's no problem.<p/>
+`Sample vertically!nlcentered text.\ <font color="#808080">;&lt;-- Ok.</font><br/>
+`Sample vertically!nlcentered text. &nbsp;<font color="#808080">;&lt;-- May produce strange artifacts.</font><br/>
+\ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#808080">;&lt;-- If this appears before the next printing command, there's no problem.</font><p/>
 </font>
 Also, at the moment vertical centering produces incorrect results when the size of a page of text is greater than the size of the screen. This may be fixed in future releases.<br/>
 An example of text printed to the center of the screen:<p/>
+
 <font face="monospace">
 <b>centerh</b> 50<br/>
 <b>centerv</b> 50<br/>
@@ -508,6 +509,29 @@ An example of text printed to the center of the screen:<p/>
 
 <font face="monospace" color="#ff0000">savetime2 c%fileno, %year, %month, %day, %hour, %minute, %second</font><br/>
 The same as savetime, but also gives the year and the second the savegame was generated.<p/>
+
+<font face="monospace" color="#ff0000">async_effect {0|c%effectno, c%frequency</font><br/>
+Starts an ansynchronous effect that's applied to the entire screen <font face="monospace">c$frequency</font> times per second.<br/>
+If 0 is passed, the effect is turned off.<br/>
+There are no built-in effects. They must be programmed using the plug-in API.<p/>
+
+<font face="monospace" color="#ff0000">add_filter {0|c%effectno, c%color, c$rule}</font><br/>
+Adds a filter to the middle filter pipeline. This is the same pipeline used for commands <font face="monospace">monocro</font> and <font face="monospace">nega</font>. This command should not be combined with those two.<br/>
+Passing a 0 clears the pipeline.<br/>
+<font face="monospace">c%color</font> can be used to pass an RGB color value in hex notation if the filter needs it.<br/>
+<font face="monospace">c$rule</font> can be used to pass a rule file if the filter needs it.<p/>
+
+<font face="monospace">
+<b>add_filter</b> 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#808080">;clear the pipeline</font><br/>
+<b>add_filter</b> 1, #ff0000, "" &nbsp;&nbsp;<font color="#808080">;equivalent to monocro #ff0000</font><br/>
+<b>add_filter</b> 2, 0, "" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#808080">;equivalent to nega</font><br/>
+<b>add_filter</b> 3, 0, "rule.bmp" <font color="#808080">;calls a user-defined filter</font><p/>
+</font>
+
+New filters can be added using the plug-in API.<p/>
+
+<font face="monospace" color="#ff0000">add_overall_filter {0|c%effectno, c%color, c$rule}</font><br/>
+Same as <font face="monospace">add_filter</font> in every way, except the filter is applied to the entire screen over everything else, including the text window.<p/>
 
 <h1><a name="5">5. Undocumented commands</a></h1>
 These are commands that, while existing in ONScripter, their documentation is either lacking or missing.<p/>

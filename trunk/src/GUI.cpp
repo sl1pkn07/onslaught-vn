@@ -157,13 +157,13 @@ int NONS_Lookback::display(NONS_VirtualScreen *dst){
 	if (!this->output->log.size())
 		return ret;
 	NONS_EventQueue queue;
-	SDL_Surface *copyDst=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
-	SDL_Surface *preBlit=makeSurface(dst->virtualScreen->w,dst->virtualScreen->h,32);
-	manualBlit(dst->virtualScreen,0,copyDst,0);
+	SDL_Surface *copyDst=makeSurface(dst->screens[VIRTUAL]->w,dst->screens[VIRTUAL]->h,32);
+	SDL_Surface *preBlit=makeSurface(dst->screens[VIRTUAL]->w,dst->screens[VIRTUAL]->h,32);
+	manualBlit(dst->screens[VIRTUAL],0,copyDst,0);
 	long end=this->output->log.size(),
 		currentPage=end-1;
 	this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
-	manualBlit(dst->virtualScreen,0,preBlit,0);
+	manualBlit(dst->screens[VIRTUAL],0,preBlit,0);
 	int mouseOver=-1;
 	int x,y;
 	uchar visibility=(!!currentPage)<<1;
@@ -215,7 +215,7 @@ int NONS_Lookback::display(NONS_VirtualScreen *dst){
 						if (event.button.button==SDL_BUTTON_LEFT){
 							if (mouseOver<0 || !visibility)
 								break;
-							manualBlit(copyDst,0,dst->virtualScreen,0);
+							manualBlit(copyDst,0,dst->screens[VIRTUAL],0);
 							int dir;
 							if (!mouseOver)
 								dir=-1;
@@ -269,12 +269,12 @@ bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NO
 	long end=this->output->log.size();
 	if (!dir || -dir>currentPage)
 		return 1;
-	manualBlit(copyDst,0,dst->virtualScreen,0);
+	manualBlit(copyDst,0,dst->screens[VIRTUAL],0);
 	currentPage+=dir;
 	if (currentPage==end)
 		return 0;
 	this->output->ephemeralOut(&this->output->log[currentPage],dst,0,0,&this->foreground);
-	manualBlit(dst->virtualScreen,0,preBlit,0);
+	manualBlit(dst->screens[VIRTUAL],0,preBlit,0);
 	visibility=(!!currentPage<<1)|(currentPage!=end-1);
 	int x,y;
 	getCorrectedMousePosition(dst,&x,&y);
@@ -428,8 +428,8 @@ bool NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	screen->BlendNoText(0);
 	{
 		NONS_MutexLocker ml(screenMutex);
-		manualBlit(screen->screenBuffer,0,screen->screen->virtualScreen,0);
-		multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->virtualScreen,&(screen->output->shadeLayer->clip_rect));
+		manualBlit(screen->screenBuffer,0,screen->screen->screens[VIRTUAL],0);
+		multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->screens[VIRTUAL],&(screen->output->shadeLayer->clip_rect));
 	}
 	if (screen->lookback->display(screen->screen)==INT_MIN || queue->emptify())
 		return 0;
@@ -706,19 +706,19 @@ void NONS_Button::mergeWithoutUpdate(NONS_VirtualScreen *dst,SDL_Surface *origin
 	rect.y=this->posy;
 
 	NONS_MutexLocker ml(screenMutex);
-	manualBlit(original,&rect,dst->virtualScreen,&rect);
+	manualBlit(original,&rect,dst->screens[VIRTUAL],&rect);
 	if (this->shadowLayer){
 		rect.x++;
 		rect.y++;
-		manualBlit(this->shadowLayer->data,0,dst->virtualScreen,&rect);
+		manualBlit(this->shadowLayer->data,0,dst->screens[VIRTUAL],&rect);
 		rect.x--;
 		rect.y--;
 	}
 	this->status=status;
 	if (this->status)
-		manualBlit(this->onLayer->data,0,dst->virtualScreen,&rect);
+		manualBlit(this->onLayer->data,0,dst->screens[VIRTUAL],&rect);
 	else if (this->offLayer)
-		manualBlit(this->offLayer->data,0,dst->virtualScreen,&rect);
+		manualBlit(this->offLayer->data,0,dst->screens[VIRTUAL],&rect);
 }
 
 void NONS_Button::merge(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force){
@@ -731,8 +731,8 @@ void NONS_Button::merge(NONS_VirtualScreen *dst,SDL_Surface *original,bool statu
 	dst->updateScreen(
 		rect.x,
 		rect.y,
-		(rect.w+rect.x>dst->virtualScreen->w)?(dst->virtualScreen->w-rect.x):(rect.w),
-		(rect.h+rect.y>dst->virtualScreen->h)?(dst->virtualScreen->h-rect.y):(rect.h));
+		(rect.w+rect.x>dst->screens[VIRTUAL]->w)?(dst->screens[VIRTUAL]->w-rect.x):(rect.w),
+		(rect.h+rect.y>dst->screens[VIRTUAL]->h)?(dst->screens[VIRTUAL]->h-rect.y):(rect.h));
 }
 
 bool NONS_Button::MouseOver(SDL_Event *event){
@@ -859,7 +859,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 	SDL_Surface *screenCopy=makeSurface(this->screen->screen->inRect.w,this->screen->screen->inRect.h,32);
 	{
 		NONS_MutexLocker ml(screenMutex);
-		manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
+		manualBlit(this->screen->screen->screens[VIRTUAL],0,screenCopy,0);
 	}
 	int mouseOver=-1;
 	getCorrectedMousePosition(this->screen->screen,&x,&y);
@@ -887,13 +887,13 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				multiplyBlend(
 					this->screen->output->shadeLayer->data,
 					&(this->screen->output->shadeLayer->clip_rect),
-					this->screen->screen->virtualScreen,
+					this->screen->screen->screens[VIRTUAL],
 					0);
 				if (this->screen->lookback->display(this->screen->screen)==INT_MIN || queue.emptify()){
 					SDL_FreeSurface(screenCopy);
 					return INT_MIN;
 				}
-				manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
+				manualBlit(screenCopy,0,this->screen->screen->screens[VIRTUAL],0);
 			}
 			getCorrectedMousePosition(this->screen->screen,&x,&y);
 			for (ulong a=0;a<this->buttons.size();a++){
@@ -1010,7 +1010,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 						}
 						{
 							NONS_MutexLocker ml(screenMutex);
-							manualBlit(screenCopy,0,this->screen->screen->virtualScreen,0);
+							manualBlit(screenCopy,0,this->screen->screen->screens[VIRTUAL],0);
 						}
 						this->screen->screen->updateWholeScreen();
 						SDL_FreeSurface(screenCopy);
@@ -1047,8 +1047,8 @@ int NONS_ButtonLayer::getUserInput(ulong expiration){
 	SDL_Surface *screenCopy;
 	{
 		NONS_MutexLocker ml(screenMutex);
-		screenCopy=makeSurface(this->screen->screen->virtualScreen->w,this->screen->screen->virtualScreen->h,32);
-		manualBlit(this->screen->screen->virtualScreen,0,screenCopy,0);
+		screenCopy=makeSurface(this->screen->screen->screens[VIRTUAL]->w,this->screen->screen->screens[VIRTUAL]->h,32);
+		manualBlit(this->screen->screen->screens[VIRTUAL],0,screenCopy,0);
 	}
 	int mouseOver=-1;
 	int x,y;
@@ -1203,7 +1203,7 @@ NONS_Menu::NONS_Menu(NONS_ScriptInterpreter *interpreter){
 	this->buttons=0;
 	this->files=0;
 	NONS_ScreenSpace *scr=interpreter->screen;
-	this->shade=new NONS_Layer(&(scr->screen->virtualScreen->clip_rect),0xCCCCCCCC|amask);
+	this->shade=new NONS_Layer(&(scr->screen->screens[VIRTUAL]->clip_rect),0xCCCCCCCC|amask);
 	this->slots=10;
 	this->audio=interpreter->audio;
 	this->archive=interpreter->archive;
@@ -1228,8 +1228,8 @@ NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *
 	this->defaultFont=interpreter->main_font;
 	this->buttons=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
 	this->files=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
-	int w=scr->screen->virtualScreen->w,
-		h=scr->screen->virtualScreen->h;
+	int w=scr->screen->screens[VIRTUAL]->w,
+		h=scr->screen->screens[VIRTUAL]->h;
 	this->audio=interpreter->audio;
 	this->archive=interpreter->archive;
 	this->buttons->makeTextButtons(
@@ -1246,7 +1246,7 @@ NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *
 		h);
 	this->x=(w-this->buttons->boundingBox.w)/2;
 	this->y=(h-this->buttons->boundingBox.h)/2;
-	this->shade=new NONS_Layer(&(scr->screen->virtualScreen->clip_rect),0xCCCCCCCC|amask);
+	this->shade=new NONS_Layer(&(scr->screen->screens[VIRTUAL]->clip_rect),0xCCCCCCCC|amask);
 	this->rightClickMode=1;
 }
 
@@ -1262,7 +1262,7 @@ int NONS_Menu::callMenu(){
 	this->interpreter->screen->BlendNoText(0);
 	multiplyBlend(this->shade->data,0,this->interpreter->screen->screenBuffer,0);
 	manualBlit(this->interpreter->screen->screenBuffer,0,
-		this->interpreter->screen->screen->virtualScreen,0);
+		this->interpreter->screen->screen->screens[VIRTUAL],0);
 	int choice=this->buttons->getUserInput(this->x,this->y);
 	if (choice<0){
 		if (choice!=INT_MIN && this->voiceCancel.size()){
@@ -1293,8 +1293,8 @@ void NONS_Menu::reset(){
 	this->shade->setShade(this->shadeColor.r,this->shadeColor.g,this->shadeColor.b);
 	NONS_ScreenSpace *scr=interpreter->screen;
 	this->buttons=new NONS_ButtonLayer(this->font,scr,1,0);
-	int w=scr->screen->virtualScreen->w,
-		h=scr->screen->virtualScreen->h;
+	int w=scr->screen->screens[VIRTUAL]->w,
+		h=scr->screen->screens[VIRTUAL]->h;
 	this->buttons->makeTextButtons(
 		this->strings,
 		&this->on,
@@ -1317,8 +1317,8 @@ void NONS_Menu::resetStrings(std::vector<std::wstring> *options){
 	}
 	NONS_ScreenSpace *scr=interpreter->screen;
 	this->buttons=new NONS_ButtonLayer(!this->font?this->defaultFont:this->font,scr,1,0);
-	int w=scr->screen->virtualScreen->w,
-		h=scr->screen->virtualScreen->h;
+	int w=scr->screen->screens[VIRTUAL]->w,
+		h=scr->screen->screens[VIRTUAL]->h;
 	this->buttons->makeTextButtons(
 		this->strings,
 		&this->on,
@@ -1348,15 +1348,15 @@ int NONS_Menu::write(const std::wstring &txt,int y){
 			outputBuffer2.push_back(tempCacheShadow->getGlyph(*i));
 	}
 	NONS_ScreenSpace *scr=interpreter->screen;
-	int w=scr->screen->virtualScreen->w;
+	int w=scr->screen->screens[VIRTUAL]->w;
 	//Unused:
-	//	h=scr->screen->virtualScreen->h;
+	//	h=scr->screen->screens[VIRTUAL]->h;
 	int x=(w-width)/2;
 	for (ulong a=0;a<outputBuffer.size();a++){
 		int advance=outputBuffer[a]->getadvance();
 		if (tempCacheShadow)
-			outputBuffer2[a]->putGlyph(scr->screen->virtualScreen,x+1,y+1,0,0);
-		outputBuffer[a]->putGlyph(scr->screen->virtualScreen,x,y,0,0);
+			outputBuffer2[a]->putGlyph(scr->screen->screens[VIRTUAL],x+1,y+1,0,0);
+		outputBuffer[a]->putGlyph(scr->screen->screens[VIRTUAL],x,y,0,0);
 		x+=advance;
 	}
 	delete tempCacheForeground;
@@ -1400,8 +1400,8 @@ int NONS_Menu::save(){
 				pusher+=L"-------------------";
 			strings.push_back(pusher);
 		}
-		int w=scr->screen->virtualScreen->w,
-			h=scr->screen->virtualScreen->h;
+		int w=scr->screen->screens[VIRTUAL]->w,
+			h=scr->screen->screens[VIRTUAL]->h;
 		this->files->makeTextButtons(
 			strings,
 			&this->on,
@@ -1474,8 +1474,8 @@ int NONS_Menu::load(){
 				pusher+=L"-------------------";
 			strings.push_back(pusher);
 		}
-		int w=scr->screen->virtualScreen->w,
-			h=scr->screen->virtualScreen->h;
+		int w=scr->screen->screens[VIRTUAL]->w,
+			h=scr->screen->screens[VIRTUAL]->h;
 		this->files->makeTextButtons(
 			strings,
 			&this->on,
@@ -1554,11 +1554,11 @@ int NONS_Menu::call(const std::wstring &string){
 	}else if (string==L"lookback"){
 		NONS_ScreenSpace *scr=this->interpreter->screen;
 		scr->BlendNoText(0);
-		manualBlit(scr->screenBuffer,0,scr->screen->virtualScreen,0);
+		manualBlit(scr->screenBuffer,0,scr->screen->screens[VIRTUAL],0);
 		multiplyBlend(
 			scr->output->shadeLayer->data,
 			&(scr->output->shadeLayer->clip_rect),
-			scr->screen->virtualScreen,
+			scr->screen->screens[VIRTUAL],
 			0);
 		ret=scr->lookback->display(scr->screen);
 	}else if (string==L"skip"){
@@ -1795,13 +1795,13 @@ void NONS_DebuggingConsole::enter(NONS_ScreenSpace *dst){
 		if (!this->screenW){
 			this->characterWidth=getGlyphWidth(this->cache);
 			this->characterHeight=this->font->lineSkip;
-			this->screenW=dst->screen->virtualScreen->w/this->characterWidth;
-			this->screenH=dst->screen->virtualScreen->h/this->characterHeight;
+			this->screenW=dst->screen->screens[VIRTUAL]->w/this->characterWidth;
+			this->screenH=dst->screen->screens[VIRTUAL]->h/this->characterHeight;
 			this->screen.resize(this->screenW*this->screenH);
 			this->cursorX=this->cursorY=0;
 		}
-		dstCopy=copySurface(dst->screen->virtualScreen);
-		SDL_FillRect(dst->screen->virtualScreen,0,amask);
+		dstCopy=copySurface(dst->screen->screens[VIRTUAL]);
+		SDL_FillRect(dst->screen->screens[VIRTUAL],0,amask);
 		gScriptInterpreter->getSymbolListing(this->autocompleteVector);
 		std::sort(this->autocompleteVector.begin(),this->autocompleteVector.end());
 		dst->screen->updateWithoutLock();
@@ -2053,7 +2053,7 @@ bool NONS_DebuggingConsole::input(std::wstring &input,NONS_ScreenSpace *dst){
 
 void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulong lineHeight){
 	static SDL_Color white={0xFF,0xFF,0xFF,0xFF};
-	SDL_FillRect(dst->screen->virtualScreen,0,amask);
+	SDL_FillRect(dst->screen->screens[VIRTUAL],0,amask);
 	long startAt=this->screen.size()/this->screenW-this->screenH;
 	if (this->cursorY+lineHeight>=this->screenH)
 		startAt+=startFromLine+lineHeight;
@@ -2066,7 +2066,7 @@ void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulon
 			wchar_t c=this->locate(x,y+startAt);
 			if (!c)
 				continue;
-			this->cache->getGlyph(c)->putGlyph(dst->screen->virtualScreen,x*this->characterWidth,y*this->characterHeight,&white);
+			this->cache->getGlyph(c)->putGlyph(dst->screen->screens[VIRTUAL],x*this->characterWidth,y*this->characterHeight,&white);
 		}
 	}
 }
@@ -2092,10 +2092,10 @@ void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulon
 						(Uint16)this->characterWidth,
 						(Uint16)this->characterHeight
 					};
-					SDL_FillRect(dst->screen->virtualScreen,&rect,rmask|gmask|bmask|amask);
+					SDL_FillRect(dst->screen->screens[VIRTUAL],&rect,rmask|gmask|bmask|amask);
 				}
 				this->cache->getGlyph(line[a])->putGlyph(
-					dst->screen->virtualScreen,
+					dst->screen->screens[VIRTUAL],
 					cursorX*this->characterWidth,
 					cursorY*this->characterHeight,
 					(a!=cursor)?&white:&black
@@ -2111,7 +2111,7 @@ void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulon
 		for (ulong a=0;a<line.size();a++){
 			if (cursorY<(long)this->screenH)
 				this->cache->getGlyph(line[a])->putGlyph(
-					dst->screen->virtualScreen,
+					dst->screen->screens[VIRTUAL],
 					cursorX*this->characterWidth,
 					cursorY*this->characterHeight,
 					&white
@@ -2128,7 +2128,7 @@ void NONS_DebuggingConsole::redraw(NONS_ScreenSpace *dst,long startFromLine,ulon
 			(Uint16)this->characterWidth,
 			(Uint16)this->characterHeight
 		};
-		SDL_FillRect(dst->screen->virtualScreen,&rect,rmask|gmask|bmask|amask);
+		SDL_FillRect(dst->screen->screens[VIRTUAL],&rect,rmask|gmask|bmask|amask);
 	}
 	dst->screen->updateWithoutLock();
 }

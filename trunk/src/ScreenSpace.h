@@ -151,8 +151,8 @@ struct NONS_ScreenSpace{
 	SDL_Surface *screenBuffer;
 	NONS_StandardOutput *output;
 	NONS_GFXstore *gfx_store;
-	NONS_GFX *monochrome,
-		*negative;
+	bool apply_monochrome_first;
+	std::vector<pipelineElement> filterPipeline;
 	ulong sprite_priority;
 	NONS_Lookback *lookback;
 	ulong char_baseline;

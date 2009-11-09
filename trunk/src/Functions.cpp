@@ -74,7 +74,7 @@ Uint32 secondsSince1970(){
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
 void manualBlit_threaded(void *parameters);
 
-void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
+DECLSPEC void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
 		return;
 	SDL_Rect srcRect0,dstRect0;
@@ -1366,11 +1366,9 @@ ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 	return NONS_NO_ERROR;
 }
 
-#ifdef NONS_SYS_WINDOWS
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 #include <windows.h>
 extern HWND mainWindow;
-#endif
 
 BOOL CALLBACK findMainWindow_callback(HWND handle,LPARAM lparam){
 	const std::wstring *caption=(const std::wstring *)lparam;
@@ -1545,7 +1543,6 @@ void WC_UTF8(uchar *dst,const wchar_t *src,ulong srcl){
 			*dst++=character&0x3F|0x80;
 		}
 #endif
-		//TODO: fix me
 	}
 }
 

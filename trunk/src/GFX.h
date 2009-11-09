@@ -42,6 +42,9 @@ enum{
 	POSTPROCESSING=1
 };
 
+typedef void(*transitionFX_f)(ulong,ulong,SDL_Surface *,SDL_Surface *,NONS_VirtualScreen *);
+#define TRANSIC_EFFECT_F(name) void name(ulong effectNo,ulong duration,SDL_Surface *src,SDL_Surface *rule,NONS_VirtualScreen *dst)
+
 struct NONS_GFX{
 	ulong effect;
 	ulong duration;
@@ -50,10 +53,15 @@ struct NONS_GFX{
 	bool stored;
 	SDL_Color color;
 	static ulong effectblank;
+	static bool listsInitialized;
+	static std::vector<filterFX_f> filters;
+	static std::vector<transitionFX_f> transitions;
+
 	NONS_GFX(ulong effect=0,ulong duration=0,const std::wstring *rule=0);
 	NONS_GFX(const NONS_GFX &b);
 	NONS_GFX &operator=(const NONS_GFX &b);
 	static ErrorCode callEffect(ulong number,long duration,const std::wstring *rule,SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
+	static ErrorCode callFilter(ulong number,const SDL_Color &color,const std::wstring &rule,SDL_Surface *src,SDL_Surface *dst);
 	ErrorCode call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *dst);
 	void effectNothing(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
 	void effectOnlyUpdate(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
@@ -75,9 +83,7 @@ struct NONS_GFX{
 	void effectMosaicOut(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
 	void effectSoftMask(SDL_Surface *src0,SDL_Surface *src1,NONS_VirtualScreen *dst);
 
-	void effectMonochrome(SDL_Surface *src0,SDL_Surface *dst);
-	void effectNegative(SDL_Surface *src0,SDL_Surface *dst);
-	void effectNegativeMono(SDL_Surface *src0,SDL_Surface *dst);
+	static void initializeLists();
 };
 
 struct NONS_GFXstore{

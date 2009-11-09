@@ -14,6 +14,7 @@ set(LIBS
 	SDL_mixer
 	bz2
 	freetype
+	dl
 )
 
 add_executable(ONSlaught
@@ -22,7 +23,6 @@ add_executable(ONSlaught
 	src/CommandLineOptions.cpp
 	src/ConfigFile.cpp
 	src/ErrorCodes.cpp
-	src/Everything.cpp
 	src/ExpressionParser.tab.cpp
 	src/FileLog.cpp
 	src/Functions.cpp
@@ -31,7 +31,6 @@ add_executable(ONSlaught
 	src/INIParser.tab.cpp
 	src/INIfile.cpp
 	src/IOFunctions.cpp
-	src/Image.cpp
 	src/ImageLoader.cpp
 	src/MacroParser.cpp
 	src/MacroParser.tab.cpp
@@ -48,6 +47,11 @@ add_executable(ONSlaught
 	src/VirtualScreen.cpp
 	src/commandPreParser.tab.cpp
 	src/sha1.cpp
+	src/Plugin/LibraryLoader.cpp
+)
+
+add_library(plugin SHARED
+	src/Plugin/Plugin.cpp
 )
 
 target_link_libraries(ONSlaught ${LIBS})

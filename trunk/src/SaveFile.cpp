@@ -30,10 +30,11 @@
 #include "SaveFile.h"
 #include "IOFunctions.h"
 #include "CommandLineOptions.h"
+#include "VirtualScreen.h"
 
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 #include <windows.h>
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -45,7 +46,7 @@ const wchar_t *settings_filename=L"settings.cfg";
 
 tm *getDate(const std::wstring &filename){
 	tm *res=new tm();
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 	FILETIME time;
 	SYSTEMTIME time2;
 #ifdef UNICODE
@@ -63,7 +64,7 @@ tm *getDate(const std::wstring &filename){
 	res->tm_hour=time2.wHour;
 	res->tm_min=time2.wMinute;
 	res->tm_sec=time2.wSecond;
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 	struct stat buf;
 	stat(UniToUTF8(filename).c_str(),&buf);
 	*res=*localtime(&(buf.st_mtime));
@@ -95,7 +96,7 @@ std::vector<tm *> existing_files(const std::wstring &location){
 	return res;
 }
 
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 #ifndef UNICODE
 #define UNICODE
 #include <windows.h>
@@ -167,7 +168,7 @@ WINDOWS_VERSION getWindowsVersion(){
 	return ret;
 }
 
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 #include <cerrno>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -176,7 +177,7 @@ WINDOWS_VERSION getWindowsVersion(){
 #endif
 
 std::wstring getConfigLocation(){
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 	if (getWindowsVersion()<V2K)
 		return L"./";
 	HKEY k;
@@ -206,7 +207,7 @@ std::wstring getConfigLocation(){
 	}
 	pathStr.push_back(UNICODE_SLASH);
 	return pathStr;
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 	passwd* pwd=getpwuid(getuid());
 	if (!pwd)
 		return L"./";
@@ -226,18 +227,18 @@ std::wstring getConfigLocation(){
 }
 
 std::wstring getSaveLocation(unsigned hash[5]){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	if (getWindowsVersion()<V2K)
 		return L"./";
 #endif
 	std::wstring root=config_directory;
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 #ifdef UNICODE
 	std::wstring path=root;
 #else
 	std::string path=UniToISO88591(root);
 #endif
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 	std::wstring path=root;
 #else
 	return root;
@@ -250,12 +251,12 @@ std::wstring getSaveLocation(unsigned hash[5]){
 		path.append(stream.str());
 	}else
 		path.append(CLOptions.savedir);
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 	if (!CreateDirectory((LPCTSTR)path.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS)
 		return root;
 	path.push_back(UNICODE_SLASH);
 	return path;
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 	if (mkdir(UniToUTF8(path).c_str(),~0) && errno!=EEXIST)
 		return root;
 	path.push_back(UNICODE_SLASH);
@@ -525,11 +526,47 @@ void NONS_SaveFile::load(std::wstring filename){
 				}
 			}
 			this->spritePriority=readDWord(buffer,offset);
-			this->monochrome=!!readByte(buffer,offset);
-			this->monochromeColor.r=readByte(buffer,offset);
-			this->monochromeColor.g=readByte(buffer,offset);
-			this->monochromeColor.b=readByte(buffer,offset);
-			this->negative=!!readByte(buffer,offset);
+			this->pipelines[0].clear();
+			this->pipelines[1].clear();
+			if (this->version<4){
+				bool monochrome=!!readByte(buffer,offset);
+				SDL_Color monochromeColor={
+					readByte(buffer,offset),
+					readByte(buffer,offset),
+					readByte(buffer,offset),
+					0
+				};
+				bool negative=!!readByte(buffer,offset);
+				if (monochrome)
+					this->pipelines->push_back(pipelineElement(0,monochromeColor,L"",0));
+				if (negative)
+					this->pipelines->push_back(pipelineElement(1,SDL_Color(),L"",0));
+			}else{
+				this->nega_parameter=!!readByte(buffer,offset);
+
+				this->pipelines->resize(readDWord(buffer,offset));
+				for (ulong a=0;a<this->pipelines->size();a++){
+					pipelineElement &el=this->pipelines[0][a];
+					el.effectNo=readDWord(buffer,offset);
+					el.color.r=readByte(buffer,offset);
+					el.color.g=readByte(buffer,offset);
+					el.color.b=readByte(buffer,offset);
+					el.ruleStr=UniFromUTF8(readString(buffer,offset));
+				}
+
+				this->asyncEffect_no=readDWord(buffer,offset);
+				this->asyncEffect_freq=readDWord(buffer,offset);
+
+				this->pipelines[1].resize(readDWord(buffer,offset));
+				for (ulong a=0;a<this->pipelines[1].size();a++){
+					pipelineElement &el=this->pipelines[1][a];
+					el.effectNo=readDWord(buffer,offset);
+					el.color.r=readByte(buffer,offset);
+					el.color.g=readByte(buffer,offset);
+					el.color.b=readByte(buffer,offset);
+					el.ruleStr=UniFromUTF8(readString(buffer,offset));
+				}
+			}
 		}
 		//audio
 		offset=header[3];
@@ -805,11 +842,29 @@ bool NONS_SaveFile::save(std::wstring filename){
 		}else
 			writeDWord(0,buffer);
 		writeDWord(this->spritePriority,buffer);
-		writeByte(this->monochrome,buffer);
-		writeByte(this->monochromeColor.r,buffer);
-		writeByte(this->monochromeColor.g,buffer);
-		writeByte(this->monochromeColor.b,buffer);
-		writeByte(this->negative,buffer);
+
+		writeByte(this->nega_parameter,buffer);
+
+		for (ulong a=0;a<this->pipelines->size();a++){
+			pipelineElement &el=this->pipelines[0][a];
+			writeDWord(el.effectNo,buffer);
+			writeByte(el.color.r,buffer);
+			writeByte(el.color.g,buffer);
+			writeByte(el.color.b,buffer);
+			writeString(el.ruleStr,buffer);
+		}
+
+		writeDWord(this->asyncEffect_no,buffer);
+		writeDWord(this->asyncEffect_freq,buffer);
+
+		for (ulong a=0;a<this->pipelines[1].size();a++){
+			pipelineElement &el=this->pipelines[1][a];
+			writeDWord(el.effectNo,buffer);
+			writeByte(el.color.r,buffer);
+			writeByte(el.color.g,buffer);
+			writeByte(el.color.b,buffer);
+			writeString(el.ruleStr,buffer);
+		}
 	}
 	//audio
 	writeDWord(buffer.size(),buffer,header[3]);

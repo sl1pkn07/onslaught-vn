@@ -34,18 +34,18 @@
 #include <vector>
 typedef void (*NONS_ThreadedFunctionPointer)(void *);
 
-#ifdef NONS_SYS_UNIX
+#if NONS_SYS_UNIX
 #include <pthread.h>
 #include <semaphore.h>
 #endif
 
-//#define USE_THREAD_MANAGER
+#define USE_THREAD_MANAGER
 
 class NONS_Event{
 	bool initialized;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE event;
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	sem_t sem;
 #endif
 public:
@@ -59,10 +59,10 @@ public:
 
 class NONS_Thread{
 	struct threadStruct{ NONS_ThreadedFunctionPointer f; void *d; };
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE thread;
 	static DWORD __stdcall runningThread(void *);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_t thread;
 	static void *runningThread(void *);
 #endif
@@ -73,7 +73,6 @@ public:
 	~NONS_Thread();
 	void call(NONS_ThreadedFunctionPointer function,void *data);
 	void join();
-	void kill();
 };
 
 class NONS_ManagedThread{
@@ -100,19 +99,19 @@ public:
 	NONS_ThreadManager(){}
 	NONS_ThreadManager(ulong CPUs);
 	void init(ulong CPUs);
-	ulong call(ulong onThread,NONS_ThreadedFunctionPointer f,void *p);
-	void wait(ulong index);
-	void waitAll();
+	DLLexport ulong call(ulong onThread,NONS_ThreadedFunctionPointer f,void *p);
+	DLLexport void wait(ulong index);
+	DLLexport void waitAll();
 	static void setCPUcount();
 };
 
-extern NONS_ThreadManager threadManager;
+extern DLLexport NONS_ThreadManager threadManager;
 
-class NONS_Mutex{
-#ifdef NONS_SYS_WINDOWS
+class DLLexport NONS_Mutex{
+#if NONS_SYS_WINDOWS
 	//pointer to CRITICAL_SECTION
 	void *mutex;
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_mutex_t mutex;
 #endif
 public:

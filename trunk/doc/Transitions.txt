@@ -1,5 +1,7 @@
-0: Don't display. Wait until redraw.
-1: No effect.
+Transition effects:
+
+0: Do nothing. The old image remains on the screen.
+1: No effect. The new image is displayed immediately.
 Shutters:
     Description: The screen is divided in shutters and each shutter is filled
     with the dst in one direction:
@@ -17,5 +19,18 @@ Curtains:
 7: Leftward curtain.
 8: Downward curtain.
 9: Upward curtain.
-
-TODO: A few effects are missing.
+10: Crossfade.
+Scrolls:
+    Description: The new image starts off-screen and progressively pushes the
+    old image to the opposite side.
+11: Rightward scroll.
+12: Leftward scroll.
+13: Downward scroll.
+14: Upward scroll.
+15: Hard mask. Using a separate image as the rule, the old image is
+progressively replaced by the new one.
+16: Mosaic in. The new image starts heavily pixelated and gradually becomes more
+detailed.
+17: Mosaic out. Same as 16, but reversed.
+18: Soft mask. Same as 15, but using soft edges.
+19 and above: User-defined effects.

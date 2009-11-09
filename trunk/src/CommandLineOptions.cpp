@@ -124,7 +124,7 @@ void usage(){
 		"  -debug\n"
 		"      Enable debug mode.\n"
 		"      See the documentation for details.\n"
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 		"  -no-console\n"
 		"      Hide the console.\n"
 #endif
@@ -310,7 +310,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				}
 				exit(0);
 			case 12: //-no-console
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 				this->noconsole=1;
 				this->debugMode=0;
 				this->override_stdout=1;

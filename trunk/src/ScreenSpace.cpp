@@ -256,6 +256,7 @@ NONS_StandardOutput::NONS_StandardOutput(NONS_Font *font,SDL_Rect *size,SDL_Rect
 	this->printingStarted=0;
 	this->shadowPosX=this->shadowPosY=1;
 	this->indentationLevel=0;
+	this->maxLogPages=-1;
 }
 
 NONS_StandardOutput::~NONS_StandardOutput(){
@@ -446,7 +447,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 					1
 				);
 				glyph2->putGlyph(
-					dst->virtualScreen,
+					dst->screens[VIRTUAL],
 					x0+this->shadowPosX,
 					y0+this->shadowPosY,
 					0
@@ -459,7 +460,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				&this->foregroundLayer->fontCache->foreground,
 				1
 			);
-			glyph->putGlyph(dst->virtualScreen,x0,y0,0);
+			glyph->putGlyph(dst->screens[VIRTUAL],x0,y0,0);
 		}
 		if (glyph2){
 			long tempX=(this->shadowPosX<=0)?0:this->shadowPosX,
@@ -536,18 +537,18 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 				if (glyph2){
 					glyph2->putGlyph(this->shadowLayer->data,x+1,y+1,&this->shadowLayer->fontCache->foreground,1);
 					if (!!dst)
-						glyph2->putGlyph(dst->virtualScreen,x+1,y+1,0);
+						glyph2->putGlyph(dst->screens[VIRTUAL],x+1,y+1,0);
 				}
 				glyph->putGlyph(this->foregroundLayer->data,x,y,!col?&this->foregroundLayer->fontCache->foreground:col,1);
 				if (!!dst){
 					if (glyph2)
-						glyph2->putGlyph(dst->virtualScreen,x+1,y+1,0);
-					glyph->putGlyph(dst->virtualScreen,x,y,0);
+						glyph2->putGlyph(dst->screens[VIRTUAL],x+1,y+1,0);
+					glyph->putGlyph(dst->screens[VIRTUAL],x,y,0);
 				}
 			}else if (!!dst){
 				if (glyph2)
-					glyph2->putGlyph(dst->virtualScreen,x+1,y+1,&this->shadowLayer->fontCache->foreground);
-				glyph->putGlyph(dst->virtualScreen,x,y,!col?&this->foregroundLayer->fontCache->foreground:col);
+					glyph2->putGlyph(dst->screens[VIRTUAL],x+1,y+1,&this->shadowLayer->fontCache->foreground);
+				glyph->putGlyph(dst->screens[VIRTUAL],x,y,!col?&this->foregroundLayer->fontCache->foreground:col);
 			}
 			x+=glyph->getadvance();
 		}
@@ -706,10 +707,8 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->leftChar=0;
 	this->centerChar=0;
 	this->rightChar=0;
-	this->screenBuffer=makeSurface(this->screen->virtualScreen->w,this->screen->virtualScreen->h,SCREENBUFFER_BITS);
+	this->screenBuffer=makeSurface(this->screen->screens[VIRTUAL]->w,this->screen->screens[VIRTUAL]->h,SCREENBUFFER_BITS);
 	this->gfx_store=new NONS_GFXstore();
-	this->monochrome=0;
-	this->negative=0;
 	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
 	this->lookback=new NONS_Lookback(this->output,temp->r,temp->g,temp->b);
@@ -723,6 +722,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(int framesize,NONS_Font *font){
 	this->charactersBlendOrder.push_back(0);
 	this->charactersBlendOrder.push_back(1);
 	this->charactersBlendOrder.push_back(2);
+	this->apply_monochrome_first=0;
 }
 
 NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *font,bool shadow){
@@ -735,7 +735,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 	this->leftChar=0;
 	this->centerChar=0;
 	this->rightChar=0;
-	this->screenBuffer=makeSurface(this->screen->virtualScreen->w,this->screen->virtualScreen->h,SCREENBUFFER_BITS);
+	this->screenBuffer=makeSurface(this->screen->screens[VIRTUAL]->w,this->screen->screens[VIRTUAL]->h,SCREENBUFFER_BITS);
 	this->gfx_store=new NONS_GFXstore();
 	this->sprite_priority=25;
 	SDL_Color *temp=&this->output->foregroundLayer->fontCache->foreground;
@@ -750,6 +750,7 @@ NONS_ScreenSpace::NONS_ScreenSpace(SDL_Rect *window,SDL_Rect *frame,NONS_Font *f
 	this->charactersBlendOrder.push_back(0);
 	this->charactersBlendOrder.push_back(1);
 	this->charactersBlendOrder.push_back(2);
+	this->apply_monochrome_first=0;
 }
 
 NONS_ScreenSpace::~NONS_ScreenSpace(){
@@ -765,10 +766,6 @@ NONS_ScreenSpace::~NONS_ScreenSpace(){
 	//delete this->this->cursor;
 	SDL_FreeSurface(this->screenBuffer);
 	delete this->gfx_store;
-	if (this->monochrome)
-		delete this->monochrome;
-	if (this->negative)
-		delete this->negative;
 	delete this->lookback;
 }
 
@@ -829,17 +826,18 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 		NONS_Layer *p=this->layerStack[a];
 		BLEND_OPTIM(p,manualBlit);
 	}
-	BLEND_OPTIM(this->leftChar,manualBlit);
-	BLEND_OPTIM(this->rightChar,manualBlit);
-	BLEND_OPTIM(this->centerChar,manualBlit);
+	for (ulong a=0;a<this->charactersBlendOrder.size();a++){
+		NONS_Layer *lay=*this->characters[charactersBlendOrder[a]];
+		BLEND_OPTIM(lay,manualBlit);
+	}
 	for (long a=this->sprite_priority;a>=0;a--){
 		NONS_Layer *p=this->layerStack[a];
 		BLEND_OPTIM(p,manualBlit);
 	}
-	if (this->monochrome)
-		this->monochrome->call(0,this->screenBuffer,0);
-	if (this->negative)
-		this->negative->call(0,this->screenBuffer,0);
+	for (ulong a=0;a<this->filterPipeline.size();a++){
+		pipelineElement &el=this->filterPipeline[a];
+		NONS_GFX::callFilter(el.effectNo,el.color,el.ruleStr,this->screenBuffer,this->screenBuffer);
+	}
 	if (this->output->visible){
 		if (!this->output->shadeLayer->useDataAsDefaultShade){
 			BLEND_OPTIM(this->output->shadeLayer,multiplyBlend);
@@ -852,7 +850,7 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 	BLEND_OPTIM(this->cursor,manualBlit);
 	{
 		NONS_MutexLocker ml(screenMutex);
-		manualBlit(this->screenBuffer,&refresh_area,this->screen->virtualScreen,&refresh_area);
+		manualBlit(this->screenBuffer,&refresh_area,this->screen->screens[VIRTUAL],&refresh_area);
 	}
 	this->screen->updateScreen(refresh_area.x,refresh_area.y,refresh_area.w,refresh_area.h);
 }
@@ -927,10 +925,10 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 					&this->layerStack[a]->position,
 					this->layerStack[a]->alpha);
 	}
-	if (this->monochrome)
-		this->monochrome->call(0,this->screenBuffer,0);
-	if (this->negative)
-		this->negative->call(0,this->screenBuffer,0);
+	for (ulong a=0;a<this->filterPipeline.size();a++){
+		pipelineElement &el=this->filterPipeline[a];
+		NONS_GFX::callFilter(el.effectNo,el.color,el.ruleStr,this->screenBuffer,this->screenBuffer);
+	}
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
 		if (!e)

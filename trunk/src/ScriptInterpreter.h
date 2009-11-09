@@ -371,9 +371,9 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_maxkaisoupage(NONS_Statement &stmt);
 	ErrorCode command_checkpage(NONS_Statement &stmt);
 	ErrorCode command_getlog(NONS_Statement &stmt);
+	ErrorCode command_async_effect(NONS_Statement &stmt);
+	ErrorCode command_add_filter(NONS_Statement &stmt);
 	/*
-	ErrorCode command_(NONS_Statement &stmt);
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
