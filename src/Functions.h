@@ -419,8 +419,15 @@ inline SDL_Surface *makeSurface(ulong w,ulong h,ulong bits,Uint32 r=rmask,Uint32
 }
 
 //bitmap processing functions
+inline ulong SDLcolor2rgb(const SDL_Color &color){
+	return (color.r<<16)|(color.g<<8)|color.b;
+}
+inline SDL_Color rgb2SDLcolor(ulong rgb){
+	SDL_Color c={(rgb>>16)&0xFF,(rgb>>8)&0xFF,rgb&0xFF,0};
+	return c;
+}
 typedef long manualBlitAlpha_t;
-void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha=255);
+DECLSPEC void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha=255);
 void multiplyBlend(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
 void FlipSurfaceH(SDL_Surface *src,SDL_Surface *dst);
 void FlipSurfaceV(SDL_Surface *src,SDL_Surface *dst);
@@ -487,7 +494,7 @@ bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t 
 
 ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode);
 
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 void findMainWindow(const wchar_t *caption);
 #endif
 
@@ -700,4 +707,33 @@ void trim_string(std::basic_string<T> &str){
 	second++;
 	str=str.substr(first,second-first);
 }
+
+struct surfaceData{
+	uchar *pixels;
+	uchar Roffset,
+		Goffset,
+		Boffset,
+		Aoffset;
+	ulong advance,
+		pitch,
+		w,h;
+	bool alpha;
+	surfaceData(){}
+	surfaceData(const SDL_Surface *surface){
+		*this=surface;
+	}
+	const surfaceData &operator=(const SDL_Surface *surface){
+		this->pixels=(uchar *)surface->pixels;
+		this->Roffset=(surface->format->Rshift)>>3;
+		this->Goffset=(surface->format->Gshift)>>3;
+		this->Boffset=(surface->format->Bshift)>>3;
+		this->Aoffset=(surface->format->Ashift)>>3;
+		this->advance=surface->format->BytesPerPixel;
+		this->pitch=surface->pitch;
+		this->w=surface->w;
+		this->h=surface->h;
+		this->alpha=(this->Aoffset!=this->Roffset && this->Aoffset!=this->Goffset && this->Aoffset!=this->Boffset);
+		return *this;
+	}
+};
 #endif

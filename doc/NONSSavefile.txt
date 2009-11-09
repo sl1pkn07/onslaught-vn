@@ -1,5 +1,5 @@
 //All strings are UTF-8.
-//Latest version: 3
+//Latest version: 4
 
 String. "NONS". (magic word)
 Word. Version.
@@ -224,11 +224,35 @@ Screen section{
 			Byte. Alpha.
 		}
 		DWord. Sprite priority.
-		Byte. Monochrome?
-		Byte. Monochrome R.
-		Byte. Monochrome G.
-		Byte. Monochrome B.
-		Byte. Negative?
+		if (save_version<4){
+			Byte. Monochrome?
+			Byte. Monochrome R.
+			Byte. Monochrome G.
+			Byte. Monochrome B.
+			Byte. Negative?
+		}else{
+			Byte. Apply monochrome first?
+			//(Pre-text window filter pipeline.)
+			DWord. Size of the filter pipeline (n).
+			n*Pipeline element{
+				DWord. Effect number.
+				Byte. Red component.
+				Byte. Green component.
+				Byte. Blue component.
+				String. Rule.
+			}
+			DWord. Asynchronous effect number. //(0 if none)
+			DWord. Frequency.
+			//(Overall filter pipeline.)
+			DWord. Size of the filter pipeline (n).
+			n*Pipeline element{
+				DWord. Effect number.
+				Byte. Red component.
+				Byte. Green component.
+				Byte. Blue component.
+				String. Rule.
+			}
+		}
 	}
 }
 Audio section{

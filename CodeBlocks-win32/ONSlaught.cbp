@@ -18,6 +18,19 @@
 					<Add option="-D_DEBUG" />
 				</Compiler>
 			</Target>
+			<Target title="Debug.lib">
+				<Option output="..\bin-win32\ONSlaught_d-win32-MinGW" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\bin-win32" />
+				<Option object_output="obj\Debug\" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+			</Target>
 			<Target title="SVN">
 				<Option output="..\bin-win32\ONSlaught-win32-MinGW" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="..\bin-win32" />
@@ -25,6 +38,24 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-w" />
+					<Add option="-DNONS_SVN" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="SVN.lib">
+				<Option output="..\bin-win32\ONSlaught-win32-MinGW" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\bin-win32" />
+				<Option object_output="obj\SVN\" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
 					<Add option="-w" />
 					<Add option="-DNONS_SVN" />
@@ -35,6 +66,10 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-Wmain" />
+			<Add option="-pedantic" />
+			<Add option="-DUNICODE" />
+			<Add option="-D_UNICODE" />
 			<Add directory="..\include" />
 		</Compiler>
 		<Linker>
@@ -48,6 +83,7 @@
 			<Add library="SDL" />
 			<Add directory="..\lib-win32" />
 		</Linker>
+		<Unit filename="..\onslaught.rc" />
 		<Unit filename="..\src\Archive.cpp" />
 		<Unit filename="..\src\Archive.h" />
 		<Unit filename="..\src\Audio.cpp" />
@@ -62,8 +98,6 @@
 		<Unit filename="..\src\enums.h" />
 		<Unit filename="..\src\ErrorCodes.cpp" />
 		<Unit filename="..\src\ErrorCodes.h" />
-		<Unit filename="..\src\Everything.cpp" />
-		<Unit filename="..\src\Everything.h" />
 		<Unit filename="..\src\ExpressionParser.tab.cpp" />
 		<Unit filename="..\src\ExpressionParser.tab.hpp" />
 		<Unit filename="..\src\FileLog.cpp" />
@@ -87,6 +121,8 @@
 		<Unit filename="..\src\MacroParser.tab.cpp" />
 		<Unit filename="..\src\MacroParser.tab.hpp" />
 		<Unit filename="..\src\ONSlaught.cpp" />
+		<Unit filename="..\src\Plugin\LibraryLoader.cpp" />
+		<Unit filename="..\src\Plugin\LibraryLoader.h" />
 		<Unit filename="..\src\SaveFile.cpp" />
 		<Unit filename="..\src\SaveFile.h" />
 		<Unit filename="..\src\ScreenSpace.cpp" />
@@ -113,6 +149,7 @@
 		<Unit filename="..\src\version.h" />
 		<Unit filename="..\src\VirtualScreen.cpp" />
 		<Unit filename="..\src\VirtualScreen.h" />
+
 
 		<Extensions>
 			<code_completion />

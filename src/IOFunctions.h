@@ -73,7 +73,7 @@ inline std::ostream &operator<<(std::ostream &stream,const std::wstring &str){
 	return stream<<UniToUTF8(str);
 }
 uchar *readfile(const std::wstring &filename,ulong &len,ulong offset);
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 uchar *readfile(HANDLE file,ulong &len,ulong offset);
 #else
 uchar *readfile(std::ifstream &file,ulong &len,ulong offset);

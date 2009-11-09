@@ -34,13 +34,13 @@
 #include <iostream>
 #include "version.h"
 
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 #include <windows.h>
 HWND mainWindow=0;
 #endif
 
-volatile bool ctrlIsPressed=0;
-volatile bool forceSkip=0;
+DECLSPEC volatile bool ctrlIsPressed=0;
+DECLSPEC volatile bool forceSkip=0;
 NONS_ScriptInterpreter *gScriptInterpreter=0;
 
 #undef ABS
@@ -630,7 +630,10 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"stdout"]=&NONS_ScriptInterpreter::command_stdout;
 	this->commandList[L"stderr"]=&NONS_ScriptInterpreter::command_stdout;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command___userCommandCall__;
-	/*this->commandList[L""]=&NONS_ScriptInterpreter::command_;
+	this->commandList[L"async_effect"]=&NONS_ScriptInterpreter::command_async_effect;
+	this->commandList[L"add_overall_filter"]=&NONS_ScriptInterpreter::command_add_filter;
+	this->commandList[L"add_filter"]=&NONS_ScriptInterpreter::command_add_filter;
+	/*
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
@@ -1689,37 +1692,28 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 			scr->loadSprite(a,spr->string,spr->x,spr->y,0xFF,spr->visibility);
 	}
 	scr->sprite_priority=save.spritePriority;
-	if (save.monochrome){
-		if (!scr->monochrome)
-			scr->monochrome=new NONS_GFX();
-		scr->monochrome->type=POSTPROCESSING;
-		scr->monochrome->color=save.monochromeColor;
-		scr->monochrome->effect=0;
-	}else if (!!scr->monochrome){
-		delete scr->monochrome;
-		scr->monochrome=0;
-	}
-	if (save.negative){
-		if (!scr->negative)
-			scr->negative=new NONS_GFX();
-		scr->negative->type=POSTPROCESSING;
-		scr->negative->effect=1;
-	}else if (!!scr->negative){
-		delete scr->negative;
-		scr->negative=0;
-	}
+	this->screen->apply_monochrome_first=save.nega_parameter;
+	this->screen->filterPipeline=save.pipelines[0];
 	//Preparations for audio
 	NONS_Audio *au=this->audio;
 	au->stopAllSound();
 	out->ephemeralOut(&out->currentBuffer,0,0,1,0);
 	{
-		SDL_Surface *srf=makeSurface(scr->screen->virtualScreen->w,scr->screen->virtualScreen->h,32);
+		SDL_Surface *srf=makeSurface(scr->screen->screens[VIRTUAL]->w,scr->screen->screens[VIRTUAL]->h,32);
 		SDL_FillRect(srf,0,amask);
 		NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
 		SDL_FreeSurface(srf);
 	}
 	SDL_Delay(1500);
 	scr->BlendNoCursor(10,1000,0);
+	this->screen->screen->applyFilter(0,SDL_Color(),L"");
+	for (ulong a=0;a<save.pipelines[1].size();a++){
+		pipelineElement &el=save.pipelines[1][a];
+		this->screen->screen->applyFilter(el.effectNo+1,el.color,el.ruleStr);
+	}
+	this->screen->screen->stopEffect();
+	if (save.asyncEffect_no)
+		this->screen->screen->callEffect(save.asyncEffect_no,save.asyncEffect_freq);
 	scr->showText();
 	//audio
 	if (save.musicTrack>=0){
@@ -1930,10 +1924,13 @@ bool NONS_ScriptInterpreter::save(int file){
 			}
 		}
 		this->saveGame->spritePriority=this->screen->sprite_priority;
-		this->saveGame->monochrome=!!scr->monochrome;
-		if (this->saveGame->monochrome)
-			this->saveGame->monochromeColor=scr->monochrome->color;
-		this->saveGame->negative=!!scr->negative;
+		this->saveGame->nega_parameter=this->screen->apply_monochrome_first;
+		this->saveGame->pipelines[0]=this->screen->filterPipeline;
+		if (this->screen->screen->usingFeature[ASYNC_EFFECT]){
+			this->saveGame->asyncEffect_no=this->screen->screen->aeffect_no;
+			this->saveGame->asyncEffect_freq=this->screen->screen->aeffect_freq;
+		}
+		this->saveGame->pipelines[1]=this->screen->screen->filterPipeline;
 	}
 	{
 		NONS_Audio *au=this->audio;
@@ -2022,6 +2019,38 @@ ErrorCode NONS_ScriptInterpreter::command_add(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_add_filter(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long effect,rgb;
+	std::wstring rule;
+	_GETINTVALUE(effect,0);
+	if (stdStrCmpCI(stmt.commandName,L"add_filter")){
+		if (!effect)
+			this->screen->screen->applyFilter(0,SDL_Color(),L"");
+		else{
+			MINIMUM_PARAMETERS(3);
+			_GETINTVALUE(rgb,1);
+			_GETWCSVALUE(rule,2);
+			ErrorCode error=this->screen->screen->applyFilter(effect,rgb2SDLcolor(rgb),rule);
+			if (error!=NONS_NO_ERROR)
+				return error;
+		}
+	}else{
+		if (!effect)
+			this->screen->filterPipeline.clear();
+		else{
+			MINIMUM_PARAMETERS(3);
+			_GETINTVALUE(rgb,1);
+			_GETWCSVALUE(rule,2);
+			effect--;
+			if ((ulong)effect>=NONS_GFX::filters.size())
+				return NONS_NO_EFFECT;
+			this->screen->filterPipeline.push_back(pipelineElement(effect,rgb2SDLcolor(rgb),rule,0));
+		}
+	}
+	return NONS_NO_ERROR;
+}
+
 ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	/*if (this->interpreter_mode!=DEFINE)
@@ -2057,6 +2086,23 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_allsphide(NONS_Statement &stmt){
 	this->screen->blendSprites=!stdStrCmpCI(stmt.commandName,L"allspresume");
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_async_effect(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long effectNo,
+		frequency;
+	_GETINTVALUE(effectNo,0);
+	if (!effectNo){
+		this->screen->screen->stopEffect();
+		return NONS_NO_ERROR;
+	}
+	MINIMUM_PARAMETERS(2);
+	_GETINTVALUE(frequency,1);
+	if (effectNo<0 || frequency<=0)
+		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
+	this->screen->screen->callEffect(effectNo-1,frequency);
 	return NONS_NO_ERROR;
 }
 
@@ -2101,8 +2147,8 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 		_GETWCSVALUE(filename,0);
 		scr->hideText();
 		scr->Background->load(&filename);
-		scr->Background->position.x=(scr->screen->virtualScreen->w-scr->Background->clip_rect.w)/2;
-		scr->Background->position.y=(scr->screen->virtualScreen->h-scr->Background->clip_rect.h)/2;
+		scr->Background->position.x=(scr->screen->screens[VIRTUAL]->w-scr->Background->clip_rect.w)/2;
+		scr->Background->position.y=(scr->screen->screens[VIRTUAL]->h-scr->Background->clip_rect.h)/2;
 	}
 	scr->leftChar->unload();
 	scr->rightChar->unload();
@@ -2123,7 +2169,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_bgcopy(NONS_Statement &stmt){
 	NONS_MutexLocker ml(screenMutex);
-	this->screen->Background->load(this->screen->screen->virtualScreen);
+	this->screen->Background->load(this->screen->screen->screens[VIRTUAL]);
 	return NONS_NO_ERROR;
 }
 
@@ -2156,14 +2202,14 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_Statement &stmt){
 	ulong x_multiplier=1,y_multiplier=1;
 	if (imgW==screenW && imgH==screenH){
 		NONS_MutexLocker ml(screenMutex);
-		manualBlit(this->imageButtons->loadedGraphic,&srcRect,this->screen->screen->virtualScreen,&dstRect);
+		manualBlit(this->imageButtons->loadedGraphic,&srcRect,this->screen->screen->screens[VIRTUAL],&dstRect);
 	}else{
 		x_multiplier=(screenW<<8)/imgW;
 		y_multiplier=(screenH<<8)/imgH;
 		NONS_MutexLocker ml(screenMutex);
 		interpolationFunction(
 			this->imageButtons->loadedGraphic,&srcRect,
-			this->screen->screen->virtualScreen,
+			this->screen->screen->screens[VIRTUAL],
 			&dstRect,x_multiplier,y_multiplier
 		);
 	}
@@ -2232,8 +2278,8 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 	_GETWCSVALUE(filename,0)
 	if (!filename.size()){
 		SDL_Surface *tmpSrf=makeSurface(
-			this->screen->screen->virtualScreen->w,
-			this->screen->screen->virtualScreen->h,
+			this->screen->screen->screens[VIRTUAL]->w,
+			this->screen->screen->screens[VIRTUAL]->h,
 			32);
 		this->imageButtons=new NONS_ButtonLayer(tmpSrf,this->screen);
 		this->imageButtons->inputOptions.Wheel=this->useWheel;
@@ -2284,7 +2330,7 @@ ErrorCode NONS_ScriptInterpreter::command_caption(NONS_Statement &stmt){
 	else{
 		std::wstring temp;
 		_GETWCSVALUE(temp,0)
-#ifndef NONS_SYS_WINDOWS
+#if !NONS_SYS_WINDOWS
 		SDL_WM_SetCaption(UniToUTF8(temp).c_str(),0);
 #else
 		SetWindowText(mainWindow,temp.c_str());
@@ -2807,8 +2853,6 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_Statement &stmt){
 	if (this->gfx_store->retrieve(code))
 		return NONS_DUPLICATE_EFFECT_DEFINITION;
 	_GETINTVALUE(effect,1)
-	if (effect>255)
-		return NONS_EFFECT_CODE_OUT_OF_RANGE;
 	if (stmt.parameters.size()>2)
 		_GETINTVALUE(timing,2)
 	if (stmt.parameters.size()>3)
@@ -3079,7 +3123,7 @@ ErrorCode NONS_ScriptInterpreter::command_getscreenshot(NONS_Statement &stmt){
 	if (!!this->screenshot)
 		SDL_FreeSurface(this->screenshot);
 	screenMutex.lock();
-	SDL_Surface *scr=this->screen->screen->virtualScreen;
+	SDL_Surface *scr=this->screen->screen->screens[VIRTUAL];
 	if (scr->format->BitsPerPixel<32){
 		SDL_Surface *temp=makeSurface(scr->w,scr->h,32);
 		manualBlit(scr,0,temp,0);
@@ -3358,15 +3402,15 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
 	switch (stmt.parameters[0][0]){
 		case UNICODE_l:
 			l=&this->screen->leftChar;
-			off=this->screen->screen->virtualScreen->w/4;
+			off=this->screen->screen->screens[VIRTUAL]->w/4;
 			break;
 		case UNICODE_c:
 			l=&this->screen->centerChar;
-			off=this->screen->screen->virtualScreen->w/2;
+			off=this->screen->screen->screens[VIRTUAL]->w/2;
 			break;
 		case UNICODE_r:
 			l=&this->screen->rightChar;
-			off=this->screen->screen->virtualScreen->w/4*3;
+			off=this->screen->screen->screens[VIRTUAL]->w/4*3;
 			break;
 		default:
 			return NONS_INVALID_PARAMETER;
@@ -3622,29 +3666,25 @@ ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long color;
 	if (!stdStrCmpCI(stmt.parameters[0],L"off")){
-		/*if (!this->screen)
-			this->setDefaultWindow();*/
-		if (this->screen->monochrome){
-			delete this->screen->monochrome;
-			this->screen->monochrome=0;
-		}
+		if (this->screen->filterPipeline.size() && this->screen->filterPipeline[0].effectNo==pipelineElement::MONOCHROME)
+			this->screen->filterPipeline.erase(this->screen->filterPipeline.begin());
+		else if (this->screen->filterPipeline.size()>1 && this->screen->filterPipeline[1].effectNo==pipelineElement::MONOCHROME)
+			this->screen->filterPipeline.erase(this->screen->filterPipeline.begin()+1);
 		return NONS_NO_ERROR;
 	}
-	_GETINTVALUE(color,0)
-	uchar r=uchar((color&0xFF0000)>>16),
-		g=(color&0xFF00)>>8,
-		b=color&0xFF;
-	/*if (!this->screen)
-		this->setDefaultWindow();*/
+	_GETINTVALUE(color,0);
 
-	if (!this->screen->monochrome){
-		this->screen->monochrome=new NONS_GFX();
-		this->screen->monochrome->type=POSTPROCESSING;
-	}
-	this->screen->monochrome->effect=0;
-	this->screen->monochrome->color.r=r;
-	this->screen->monochrome->color.g=g;
-	this->screen->monochrome->color.b=b;
+	if (this->screen->filterPipeline.size()){
+		if (this->screen->apply_monochrome_first && this->screen->filterPipeline[0].effectNo==pipelineElement::NEGATIVE){
+			this->screen->filterPipeline.push_back(this->screen->filterPipeline[0]);
+			this->screen->filterPipeline[0].effectNo=pipelineElement::MONOCHROME;
+			this->screen->filterPipeline[0].color=rgb2SDLcolor(color);
+		}else if (this->screen->filterPipeline[0].effectNo==pipelineElement::MONOCHROME)
+			this->screen->filterPipeline[0].color=rgb2SDLcolor(color);
+		else
+			this->screen->filterPipeline.push_back(pipelineElement(pipelineElement::MONOCHROME,rgb2SDLcolor(color),L"",0));
+	}else
+		this->screen->filterPipeline.push_back(pipelineElement(pipelineElement::MONOCHROME,rgb2SDLcolor(color),L"",0));
 	return NONS_NO_ERROR;
 }
 
@@ -3788,15 +3828,44 @@ ErrorCode NONS_ScriptInterpreter::command_nega(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long onoff;
 	_GETINTVALUE(onoff,0)
+	std::vector<pipelineElement> &v=this->screen->filterPipeline;
 	if (onoff){
-		if (!this->screen->negative)
-			this->screen->negative=new NONS_GFX(onoff==1?1:2,0,0);
-		else
-			this->screen->negative->effect=onoff==1?1:2;
-		this->screen->negative->type=POSTPROCESSING;
-	}else if (this->screen->negative){
-		delete this->screen->negative;
-		this->screen->negative=0;
+		onoff=onoff==1;
+		this->screen->apply_monochrome_first=!onoff;
+		bool push=0;
+		switch (v.size()){
+			case 0:
+				push=1;
+				break;
+			case 1:
+				if (v[0].effectNo==pipelineElement::MONOCHROME){
+					if (onoff){
+						v.push_back(v[0]);
+						v[0].effectNo=pipelineElement::NEGATIVE;
+					}else
+						push=1;
+				}
+				break;
+			case 2:
+				if (v.size() && v[0].effectNo==pipelineElement::NEGATIVE){
+					if (!onoff){
+						v.push_back(v[0]);
+						v.erase(v.begin());
+					}
+				}else if (v.size()>1 && v[1].effectNo==pipelineElement::NEGATIVE){
+					if (onoff){
+						v.insert(v.begin(),v.back());
+						v.pop_back();
+					}
+				}
+		}
+		if (push)
+			v.push_back(pipelineElement(pipelineElement::NEGATIVE,SDL_Color(),L"",0));
+	}else{
+		if (v.size() && v[0].effectNo==pipelineElement::NEGATIVE)
+			v.erase(v.begin());
+		else if (v.size()>1 && v[1].effectNo==pipelineElement::NEGATIVE)
+			v.erase(v.begin()+1);
 	}
 	return NONS_NO_ERROR;
 }
@@ -3937,7 +4006,8 @@ ErrorCode NONS_ScriptInterpreter::command_quake(NONS_Statement &stmt){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	amplitude*=2;
 	amplitude=this->screen->screen->convertW(amplitude);
-	shake(this->screen->screen->realScreen,amplitude,duration);
+	NONS_MutexLocker ml(screenMutex);
+	shake(this->screen->screen->screens[REAL],amplitude,duration);
 	return 0;
 }
 
@@ -3950,12 +4020,10 @@ ErrorCode NONS_ScriptInterpreter::command_repaint(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_reset(NONS_Statement &stmt){
 	this->uninit();
 	this->init();
-	//if (this->screen){
 	this->screen->clear();
 	delete this->gfx_store;
 	this->gfx_store=new NONS_GFXstore();
 	this->screen->gfx_store=this->gfx_store;
-	//}
 	this->audio->stopAllSound();
 	return NONS_NO_ERROR;
 }
@@ -4104,7 +4172,7 @@ ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_Statement &stmt){
 	_GETWCSVALUE(filename,0)
 	if (!this->screenshot){
 		NONS_MutexLocker ml(screenMutex);
-		SDL_SaveBMP(this->screen->screen->virtualScreen,UniToUTF8(filename).c_str());
+		SDL_SaveBMP(this->screen->screen->screens[VIRTUAL],UniToUTF8(filename).c_str());
 	}else{
 		SDL_SaveBMP(this->screenshot,UniToUTF8(filename).c_str());
 		if (!stdStrCmpCI(stmt.commandName,L"savescreenshot")){
@@ -4425,7 +4493,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		Uint16(frameYend-frameYstart)
 	};
 	{
-		SDL_Surface *scr=this->screen->screen->virtualScreen;
+		SDL_Surface *scr=this->screen->screen->screens[VIRTUAL];
 		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
 			o_stderr <<"Warning: The text frame is larger than the screen\n";
 		if (this->screen->output->shadeLayer->useDataAsDefaultShade){
@@ -4523,7 +4591,8 @@ ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt)
 		amplitude=this->screen->screen->convertW(amplitude);
 	else
 		amplitude=this->screen->screen->convertH(amplitude);
-	quake(this->screen->screen->realScreen,(char)stmt.commandName[5],amplitude,duration);
+	NONS_MutexLocker ml(screenMutex);
+	quake(this->screen->screen->screens[REAL],(char)stmt.commandName[5],amplitude,duration);
 	return NONS_NO_ERROR;
 }
 
@@ -4870,3 +4939,45 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+/*
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
+	return NONS_NO_ERROR;
+}
+
+*/

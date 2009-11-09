@@ -48,6 +48,8 @@ tm *getDate(const std::wstring &filename);
 
 struct printingPage;
 
+struct pipelineElement;
+
 struct NONS_SaveFile{
 	char format;
 	ushort version;
@@ -114,9 +116,11 @@ struct NONS_SaveFile{
 		std::vector<std::wstring> parameters;
 	};
 	std::vector<stackEl *> stack;
-	bool monochrome;
-	SDL_Color monochromeColor;
-	bool negative;
+	std::vector<pipelineElement> pipelines[2];
+	//0: apply negative first; 1: apply monochrome first
+	bool nega_parameter;
+	ulong asyncEffect_no,
+		asyncEffect_freq;
 	std::wstring midi;
 	std::wstring wav;
 	std::wstring music;

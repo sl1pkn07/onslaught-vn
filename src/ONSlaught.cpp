@@ -40,7 +40,7 @@
 #include "CommandLineOptions.h"
 #include "version.h"
 
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
 
@@ -69,7 +69,7 @@ void enditall(bool stop_thread){
 		SDL_KillThread(dbgThread);
 	if (gScriptInterpreter)
 		delete gScriptInterpreter;
-#ifdef NONS_SYS_LINUX
+#if NONS_SYS_LINUX
 	/*
 	This deserves some explanation.
 	There's a segmentation fault I haven't been able to fix that occurs only on
@@ -82,7 +82,7 @@ void enditall(bool stop_thread){
 #endif
 	if (ImageLoader)
 		delete ImageLoader;
-#if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
+#if NONS_SYS_WINDOWS && defined _CONSOLE
 	if (CLOptions.noconsole){
 		HWND console=GetConsoleWindow();
 		if (!!console){
@@ -290,7 +290,7 @@ int main(int argc,char **argv){
 	settings.init(config_directory+settings_filename,UTF8_ENCODING);
 
 	
-#if defined(NONS_SYS_WINDOWS) && defined(_CONSOLE)
+#if NONS_SYS_WINDOWS && defined _CONSOLE
 	if (CLOptions.noconsole)
 		FreeConsole();
 #endif
@@ -299,7 +299,7 @@ int main(int argc,char **argv){
 	if (CLOptions.debugMode)
 		console.init(interpreter->archive);
 	SDL_WM_SetCaption("ONSlaught ("ONSLAUGHT_BUILD_VERSION_STR")",0);
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	findMainWindow(L"ONSlaught ("ONSLAUGHT_BUILD_VERSION_WSTR L")");
 #endif
 	thread.call(mainThread,0);

@@ -137,7 +137,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 	this->archive_type=UNRECOGNIZED;
 	this->loaded=0;
 	this->root=0;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	this->file=INVALID_HANDLE_VALUE;
 #endif
 	if (!fileExists(filename)){
@@ -156,7 +156,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 		if (temp0[a]==UNICODE_PERIOD)
 			temp0[a]=UNICODE_UNDERSCORE;
 	this->root=new NONS_TreeNode(temp0);
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	this->file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
 #else
 	this->file.open(UniToUTF8(filename).c_str(),std::ios::binary);
@@ -183,7 +183,7 @@ NONS_Archive::NONS_Archive(const std::wstring &filename,bool failSilently){
 NONS_Archive::~NONS_Archive(){
 	if (this->root)
 		delete this->root;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	if (this->file!=INVALID_HANDLE_VALUE)
 		CloseHandle(this->file);
 #endif

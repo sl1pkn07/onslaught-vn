@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="freetype.lib libbz2.lib SDL.lib SDL_image.lib SDL_mixer.lib"
-				OutputFile="$(OutDir)\ONSlaught-win32-VC++.exe"
+				OutputFile="$(OutDir)/ONSlaught_d-win32-VC++.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../../lib-win32"
 				GenerateDebugInformation="true"
@@ -92,7 +92,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
+			Name="SVN|Win32"
 			OutputDirectory="../../bin-win32"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
@@ -140,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="freetype.lib libbz2.lib SDL.lib SDL_image.lib SDL_mixer.lib"
-				OutputFile="$(OutDir)\ONSlaught-win32-VC++.exe"
+				OutputFile="$(OutDir)/ONSlaught-win32-VC++.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../../lib-win32"
 				GenerateManifest="false"
@@ -186,7 +186,6 @@
 <File RelativePath="..\..\src\CommandLineOptions.cpp"></File>
 <File RelativePath="..\..\src\ConfigFile.cpp"></File>
 <File RelativePath="..\..\src\ErrorCodes.cpp"></File>
-<File RelativePath="..\..\src\Everything.cpp"></File>
 <File RelativePath="..\..\src\ExpressionParser.tab.cpp"></File>
 <File RelativePath="..\..\src\FileLog.cpp"></File>
 <File RelativePath="..\..\src\Functions.cpp"></File>
@@ -217,7 +216,6 @@
 <File RelativePath="..\..\src\Common.h"></File>
 <File RelativePath="..\..\src\ConfigFile.h"></File>
 <File RelativePath="..\..\src\ErrorCodes.h"></File>
-<File RelativePath="..\..\src\Everything.h"></File>
 <File RelativePath="..\..\src\ExpressionParser.tab.hpp"></File>
 <File RelativePath="..\..\src\FileLog.h"></File>
 <File RelativePath="..\..\src\Functions.h"></File>
@@ -242,9 +240,11 @@
 <File RelativePath="..\..\src\enums.h"></File>
 <File RelativePath="..\..\src\sha1.h"></File>
 <File RelativePath="..\..\src\version.h"></File>
+<File RelativePath="..\..\src\Plugin\LibraryLoader.cpp"></File>
+<File RelativePath="..\..\src\Plugin\LibraryLoader.h"></File>
 		</Filter>
 		<File
-			RelativePath="..\..\onslaught.rc"
+			RelativePath="../../onslaught.rc"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"

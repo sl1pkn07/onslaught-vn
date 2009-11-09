@@ -70,7 +70,7 @@ private:
 
 struct NONS_Archive{
 	NONS_TreeNode *root;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	HANDLE file;
 #else
 	std::ifstream file;

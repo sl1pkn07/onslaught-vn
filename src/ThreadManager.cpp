@@ -33,17 +33,17 @@
 
 #define NONS_PARALLELIZE
 
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
 
-ulong cpu_count=1;
-NONS_ThreadManager threadManager;
+DLLexport ulong cpu_count=1;
+DLLexport NONS_ThreadManager threadManager;
 
 void NONS_Event::init(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	this->event=CreateEvent(0,0,0,0);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	sem_init(&this->sem,0,0);
 #endif
 	this->initialized=1;
@@ -52,31 +52,31 @@ void NONS_Event::init(){
 NONS_Event::~NONS_Event(){
 	if (!this->initialized)
 		return;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	CloseHandle(this->event);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	sem_destroy(&this->sem);
 #endif
 }
 
 void NONS_Event::set(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	SetEvent(this->event);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	sem_post(&this->sem);
 #endif
 }
 
 void NONS_Event::reset(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	ResetEvent(this->event);
 #endif
 }
 
 void NONS_Event::wait(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	WaitForSingleObject(this->event,INFINITE);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	sem_wait(&this->sem);
 #endif
 }
@@ -108,8 +108,6 @@ void NONS_ManagedThread::call(NONS_ThreadedFunctionPointer f,void *p){
 }
 
 void NONS_ManagedThread::wait(){
-	/*if (!this->function)
-		return;*/
 	this->callEndedEvent.wait();
 }
 
@@ -126,9 +124,6 @@ void NONS_ThreadManager::init(ulong CPUs){
 ulong NONS_ThreadManager::call(ulong onThread,NONS_ThreadedFunctionPointer f,void *p){
 	if (onThread>=this->threads.size())
 		return -1;
-	/*volatile NONS_ThreadedFunctionPointer *f2=&this->threads[onThread].function;
-	while (!!*f2);*/
-	//this->wait(onThread);
 	this->threads[onThread].call(f,p);
 	return onThread;
 }
@@ -160,11 +155,11 @@ void NONS_ThreadManager::setCPUcount(){
 #ifdef NONS_PARALLELIZE
 		//get CPU count
 		{
-#if defined(NONS_SYS_WINDOWS)
+#if NONS_SYS_WINDOWS
 			SYSTEM_INFO si;
 			GetSystemInfo(&si);
 			cpu_count=si.dwNumberOfProcessors;
-#elif defined(NONS_SYS_LINUX)
+#elif NONS_SYS_UNIX
 			FILE * fp;
 			char res[128];
 			fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
@@ -193,7 +188,9 @@ NONS_Thread::~NONS_Thread(){
 	if (!this->called)
 		return;
 	this->join();
+#if NONS_SYS_WINDOWS
 	CloseHandle(this->thread);
+#endif
 }
 
 void NONS_Thread::call(NONS_ThreadedFunctionPointer function,void *data){
@@ -202,9 +199,9 @@ void NONS_Thread::call(NONS_ThreadedFunctionPointer function,void *data){
 	threadStruct *ts=new threadStruct;
 	ts->f=function;
 	ts->d=data;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	this->thread=CreateThread(0,0,(LPTHREAD_START_ROUTINE)runningThread,ts,0,0);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_create(&this->thread,0,runningThread,ts);
 #endif
 	this->called=1;
@@ -213,26 +210,17 @@ void NONS_Thread::call(NONS_ThreadedFunctionPointer function,void *data){
 void NONS_Thread::join(){
 	if (!this->called)
 		return;
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	WaitForSingleObject(this->thread,INFINITE);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_join(this->thread,0);
 #endif
+	this->called=0;
 }
 
-void NONS_Thread::kill(){
-	if (!this->called)
-		return;
-#ifdef NONS_SYS_WINDOWS
-	TerminateThread(this->thread,0);
-#elif defined(NONS_SYS_UNIX)
-	pthread_kill(this->thread,0);
-#endif
-}
-
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 DWORD WINAPI 
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 void *
 #endif
 NONS_Thread::runningThread(void *p){
@@ -244,35 +232,39 @@ NONS_Thread::runningThread(void *p){
 }
 
 NONS_Mutex::NONS_Mutex(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	this->mutex=new CRITICAL_SECTION;
 	InitializeCriticalSection((CRITICAL_SECTION *)this->mutex);
-#elif defined(NONS_SYS_UNIX)
-	this->mutex=PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+#elif NONS_SYS_UNIX
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&this->mutex,&attr);
+	pthread_mutexattr_destroy(&attr);
 #endif
 }
 
 NONS_Mutex::~NONS_Mutex(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	DeleteCriticalSection((CRITICAL_SECTION *)this->mutex);
 	delete (CRITICAL_SECTION *)this->mutex;
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_mutex_destroy(&this->mutex);
 #endif
 }
 
 void NONS_Mutex::lock(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	EnterCriticalSection((CRITICAL_SECTION *)this->mutex);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_mutex_lock(&this->mutex);
 #endif
 }
 
 void NONS_Mutex::unlock(){
-#ifdef NONS_SYS_WINDOWS
+#if NONS_SYS_WINDOWS
 	LeaveCriticalSection((CRITICAL_SECTION *)this->mutex);
-#elif defined(NONS_SYS_UNIX)
+#elif NONS_SYS_UNIX
 	pthread_mutex_unlock(&this->mutex);
 #endif
 }
