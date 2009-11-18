@@ -24,11 +24,36 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#define TOOLS_BARE_FILE
-#include <UTF.cpp>
-#include <IO_System/FileIO.cpp>
-#include <iostream>
+typedef unsigned long ulong;
+typedef unsigned char uchar;
 
+#include <iostream>
+#include <fstream>
+#include "Unicode.h"
+
+uchar *readfile(const std::wstring &name,ulong &len){
+	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary|std::ios::ate);
+	if (!file)
+		return 0;
+	ulong pos=file.tellg();
+	len=pos;
+	file.seekg(0,std::ios::beg);
+	uchar *buffer=new uchar[pos];
+	file.read((char *)buffer,pos);
+	file.close();
+	return buffer;
+}
+
+char writefile(const std::wstring &name,char *buffer,ulong size){
+	std::ofstream file(UniToUTF8(name).c_str(),std::ios::binary);
+	if (!file)
+		return 1;
+	file.write(buffer,size);
+	file.close();
+	return 0;
+}
+
+namespace ENCODINGS{
 enum{
 	AUTO_ENCODING=0,
 	UCS2_ENCODING=1,
@@ -38,6 +63,7 @@ enum{
 	ISO_8859_1_ENCODING=5,
 	SJIS_ENCODING=6
 };
+}
 
 const char *encodings[][2]={
 	{"auto","Attempt to automatically determine the encoding"},
@@ -45,7 +71,7 @@ const char *encodings[][2]={
 	{"ucs2l","UCS-2 (little endian)"},
 	{"ucs2b","UCS-2 (big endian)"},
 	{"utf8","UTF-8"},
-	{"iso-8859-1","ISO-8859-1"},
+	{"iso","ISO 8859-1"},
 	{"sjis","Shift JIS"},
 	{0,0},
 };
@@ -76,7 +102,7 @@ int main(int argc,char **argv){
 			inputEncoding=a;
 	if (inputEncoding==-1){
 		std::cout <<"Could not make sense of argument. Input encoding defaults to auto."<<std::endl;
-		inputEncoding=AUTO_ENCODING;
+		inputEncoding=ENCODINGS::AUTO_ENCODING;
 	}
 	ulong l;
 	char *buffer=(char *)readfile(ifile,l);
@@ -89,39 +115,39 @@ int main(int argc,char **argv){
 	std::wstring WmiddleBuffer;
 	if (isValidUTF8(&middleBuffer[0],middleBuffer.size())){
 		std::cout <<"The script seems to be a valid UTF-8 stream. Using it as such.\n";
-		inputEncoding=UTF8_ENCODING;
+		inputEncoding=ENCODINGS::UTF8_ENCODING;
 	}else if (isValidSJIS(&middleBuffer[0],middleBuffer.size())){
 		std::cout <<"The script seems to be a valid Shift JIS stream. Using it as such.\n";
-		inputEncoding=SJIS_ENCODING;
+		inputEncoding=ENCODINGS::SJIS_ENCODING;
 	}else{
 		std::cout <<"The script seems to be a valid ISO-8859-1 stream. Using it as such.\n";
-		inputEncoding=ISO_8859_1_ENCODING;
+		inputEncoding=ENCODINGS::ISO_8859_1_ENCODING;
 	}
-	if (inputEncoding!=AUTO_ENCODING){
-		if ((uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C && inputEncoding!=UTF8_ENCODING)
+	if (inputEncoding!=ENCODINGS::AUTO_ENCODING){
+		if ((uchar)buffer[0]==BOM8A && (uchar)buffer[1]==BOM8B && (uchar)buffer[2]==BOM8C && inputEncoding!=ENCODINGS::UTF8_ENCODING)
 			std::cout <<"WARNING: The file appears to be a UTF-8."<<std::endl;
-		else if ((uchar)buffer[0]==BOM16BA && (uchar)buffer[1]==BOM16BB && inputEncoding==UCS2L_ENCODING)
+		else if ((uchar)buffer[0]==BOM16BA && (uchar)buffer[1]==BOM16BB && inputEncoding==ENCODINGS::UCS2L_ENCODING)
 			std::cout <<"WARNING: The file appears to be a big endian UCS-2."<<std::endl;
-		else if ((uchar)buffer[0]==BOM16LA && (uchar)buffer[1]==BOM16LB && inputEncoding==UCS2B_ENCODING)
+		else if ((uchar)buffer[0]==BOM16LA && (uchar)buffer[1]==BOM16LB && inputEncoding==ENCODINGS::UCS2B_ENCODING)
 			std::cout <<"WARNING: The file appears to be a little endian UCS-2."<<std::endl;
 	}
 	switch (inputEncoding){
-		case UCS2_ENCODING:
+		case ENCODINGS::UCS2_ENCODING:
 			WmiddleBuffer=UniFromUCS2(middleBuffer);
 			break;
-		case UCS2L_ENCODING:
+		case ENCODINGS::UCS2L_ENCODING:
 			WmiddleBuffer=UniFromUCS2(middleBuffer,NONS_LITTLE_ENDIAN);
 			break;
-		case UCS2B_ENCODING:
+		case ENCODINGS::UCS2B_ENCODING:
 			WmiddleBuffer=UniFromUCS2(middleBuffer,NONS_BIG_ENDIAN);
 			break;
-		case UTF8_ENCODING:
+		case ENCODINGS::UTF8_ENCODING:
 			WmiddleBuffer=UniFromUTF8(middleBuffer);
 			break;
-		case ISO_8859_1_ENCODING:
+		case ENCODINGS::ISO_8859_1_ENCODING:
 			WmiddleBuffer=UniFromISO88591(middleBuffer);
 			break;
-		case SJIS_ENCODING:
+		case ENCODINGS::SJIS_ENCODING:
 			WmiddleBuffer=UniFromSJIS(middleBuffer);
 			break;
 	}
@@ -131,11 +157,11 @@ int main(int argc,char **argv){
 			outputEncoding=a;
 	if (outputEncoding==-1){
 		std::cout <<"Could not make sense of argument. Output encoding defaults to auto."<<std::endl;
-		outputEncoding=AUTO_ENCODING;
+		outputEncoding=ENCODINGS::AUTO_ENCODING;
 	}
 switchOutputEncoding:
 	switch (outputEncoding){
-		case AUTO_ENCODING:
+		case ENCODINGS::AUTO_ENCODING:
 			{
 				bool canbeISO=1;
 				for (long a=0;a<l && canbeISO;a++)
@@ -144,31 +170,31 @@ switchOutputEncoding:
 				long UTF8size=getUTF8size(&WmiddleBuffer[0],WmiddleBuffer.size());
 				long ucs2size=l*2+2;
 				if (canbeISO && float(UTF8size)/float(l)>1.25){
-					outputEncoding=ISO_8859_1_ENCODING;
+					outputEncoding=ENCODINGS::ISO_8859_1_ENCODING;
 					goto switchOutputEncoding;
 				}else if (UTF8size<ucs2size){
-					outputEncoding=UTF8_ENCODING;
+					outputEncoding=ENCODINGS::UTF8_ENCODING;
 					goto switchOutputEncoding;
 				}
-				outputEncoding=UCS2_ENCODING;
+				outputEncoding=ENCODINGS::UCS2_ENCODING;
 				goto switchOutputEncoding;
 			}
-		case UCS2_ENCODING:
+		case ENCODINGS::UCS2_ENCODING:
 			middleBuffer=UniToUCS2(WmiddleBuffer);
 			break;
-		case UCS2L_ENCODING:
+		case ENCODINGS::UCS2L_ENCODING:
 			middleBuffer=UniToUCS2(WmiddleBuffer,NONS_LITTLE_ENDIAN);
 			break;
-		case UCS2B_ENCODING:
+		case ENCODINGS::UCS2B_ENCODING:
 			middleBuffer=UniToUCS2(WmiddleBuffer,NONS_BIG_ENDIAN);
 			break;
-		case UTF8_ENCODING:
+		case ENCODINGS::UTF8_ENCODING:
 			middleBuffer=UniToUTF8(WmiddleBuffer);
 			break;
-		case ISO_8859_1_ENCODING:
+		case ENCODINGS::ISO_8859_1_ENCODING:
 			middleBuffer=UniToISO88591(WmiddleBuffer);
 			break;
-		case SJIS_ENCODING:
+		case ENCODINGS::SJIS_ENCODING:
 			middleBuffer=UniToSJIS(WmiddleBuffer);
 			break;
 	}
@@ -183,6 +209,6 @@ void usage(){
 		"\n"
 		"Available encodings:\n"<<std::endl;
 	for (short a=0;encodings[a][0];a++)
-		std::cout <<encodings[a][0]<<" - "<<encodings[a][1]<<std::endl;
+		std::cout <<encodings[a][0]<<"\t"<<encodings[a][1]<<std::endl;
 	exit(0);
 }

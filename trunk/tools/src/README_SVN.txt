@@ -1,1 +1,1 @@
-Copy "../../src" to "./NONS_src" to compile any of the tools.
+Copy "../../src/SJIS.table.cpp" to "./SJIS.table.cpp" and "../../../static/include" to "./include" to compile any of the tools.

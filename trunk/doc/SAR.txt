@@ -1,9 +1,35 @@
+All numbers are physically expressed in big endian. Strings are null-terminated
+character arrays.
+
 SAR Archive:
-All numbers are physically expressed in big endian.
-Offset 0, word: Total files in archive.
-Offset 2, dword: Start of the data stream.
-Offset 6, C string: Complete path of the first file.
-Offset 6+strlen(str), dword: Start of the file data relative to the start of the
-    data stream.
-Offset 6+strlen(str)+4, dword: size of first file.
-Offset 6+strlen(str)+4+4, string: Complete path of the second file.
+(Offset: 0)
+Word. Entries in the archive. (n)
+Dword. Offset to the first file data. (data_offset)
+for i = 1 to n {
+	String. Complete path of the ith file.
+	Dword. Offset to the start of the file data relative to data_offset.
+	Dword. File size in bytes. (file_size)
+}
+...
+(Offset: data_offset)
+for i = 1 to n {
+	file_size[i] bytes. File data.
+}
+
+NSA Archive:
+(Offset: 0)
+Word. Entries in the archive. (n)
+Dword. Offset to the first file data. (data_offset)
+for i = 1 to n {
+	String. Complete path of the ith file.
+	Byte. Compression algorithm.
+	Dword. Offset to the start of the file data relative to data_offset.
+	Dword. Compressed size in bytes. (file_size)
+	Dword. Uncompressed size in bytes.
+}
+...
+(Offset: data_offset)
+for i = 1 to n {
+	file_size[i] bytes. File data.
+}
+

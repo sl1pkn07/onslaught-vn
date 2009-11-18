@@ -1528,7 +1528,7 @@ void WC_UTF8(uchar *dst,const wchar_t *src,ulong srcl){
 #if WCHAR_MAX==0xFFFF
 		}else{
 #else
-		}else if (character<0x800){
+		}else if (character<0x10000){
 #endif
 			*dst++=(character>>12)|0xE0;
 			*dst++=((character>>6)&0x3F)|0x80;
@@ -1575,7 +1575,8 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 		wchar_t srcc=*src++,
 			character=Unicode2SJIS[srcc];
 		if (character==UNICODE_QUESTION_MARK && srcc!=UNICODE_QUESTION_MARK){
-			(o_stderr <<"ENCODING ERROR: Character U+").outputHex(srcc,4)<<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
+			(o_stderr <<"ENCODING ERROR: Character U+").outputHex(srcc,4)
+				<<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
 		}
 		if (character<0x100)
 			dst[ret++]=(uchar)character;
@@ -1667,7 +1668,7 @@ std::string UniToUCS2(const std::wstring &str,char end){
 std::string UniToSJIS(const std::wstring &str){
 	std::string res;
 	res.resize(str.size()*sizeRatio);
-	res.resize(WC_SJIS((uchar *)&str[0],&str[0],str.size()));
+	res.resize(WC_SJIS((uchar *)&res[0],&str[0],str.size()));
 	return res;
 }
 

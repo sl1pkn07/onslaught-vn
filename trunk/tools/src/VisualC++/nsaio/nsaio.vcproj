@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libbz2.lib"
-				OutputFile="$(OutDir)\nsaio-win32-VC++.exe"
+				OutputFile="$(OutDir)\nsaio.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../../lib-win32"
 				GenerateManifest="false"
@@ -121,7 +121,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="../../include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NONS_SVN"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -140,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libbz2.lib"
-				OutputFile="$(OutDir)\nsaio-win32-VC++.exe"
+				OutputFile="$(OutDir)\nsaio.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../../lib-win32"
 				GenerateManifest="false"
@@ -182,27 +182,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\nons_src\IO_System\SAR\Archive.cpp"
+				RelativePath="..\..\Archive.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nons_src\IO_System\SAR\Archive.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nons_src\IO_System\FileIO.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nons_src\IO_System\FileIO.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nons_src\Functions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nons_src\Functions.h"
+				RelativePath="..\..\Archive.h"
 				>
 			</File>
 			<File
@@ -210,15 +194,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\nons_src\SJIS.table.cpp"
+				RelativePath="..\..\Unicode.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\nons_src\UTF.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\nons_src\UTF.h"
+				RelativePath="..\..\Unicode.h"
 				>
 			</File>
 		</Filter>
