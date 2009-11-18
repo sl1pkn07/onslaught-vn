@@ -592,6 +592,7 @@ int lexcmp_CI_bounded(const T1 *a,size_t sizeA,const T2 *b,size_t sizeB){
 	return 0;
 }
 
+ulong getUTF8size(const wchar_t *buffer,ulong size);
 std::wstring UniFromISO88591(const std::string &str);
 std::wstring UniFromUTF8(const std::string &str);
 /*

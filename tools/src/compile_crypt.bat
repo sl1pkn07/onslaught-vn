@@ -1,1 +1,1 @@
-g++ crypt.cpp -I NONS_src -o crypt -O3 -s -fexpensive-optimizations
+g++ crypt.cpp Unicode.cpp -o crypt -O3 -s

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2009, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -24,267 +24,292 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <cwchar>
-#include <iostream>
-#include <stack>
+#include <fstream>
 #include <vector>
-#include <map>
-#include <set>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <algorithm>
+#include <cstring>
+#include <cmath>
+#include "Archive.h"
+#include <bzlib.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
-#include "NONS_src/UTF.h"
-#include "NONS_src/IO_System/SAR/Archive.h"
-#include "NONS_src/IO_System/FileIO.h"
-#include "NONS_src/Functions.h"
+#define NONS_SYS_WINDOWS (defined _WIN32 || defined _WIN64)
+#define NONS_SYS_UNIX (defined __unix__ || defined __unix)
 
-#if WCHAR_MAX<0xFFFF
-#error "Wide characters on this platform are too narrow."
-#endif
+typedef boost::filesystem::ifstream InputFile;
+typedef boost::filesystem::ofstream OutputFile;
 
-bool is_directory(const char *path){
-	return boost::filesystem::is_directory(boost::filesystem::path(path));
-}
+#define COMPRESSION_NONE	0
+#define COMPRESSION_SPB		1
+#define COMPRESSION_LZSS	2
+#define COMPRESSION_BZ2		4
+#define COMPRESSION_AUTO	-1
+#define COMPRESSION_AUTO_MT	(COMPRESSION_AUTO-1)
+#define COMPRESSION_DEFAULT	COMPRESSION_AUTO_MT
 
-bool is_directory(const wchar_t *path){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	return boost::filesystem::is_directory(boost::filesystem::wpath(path));
-#else
-	return is_directory(UniToUTF8(path));
-#endif
-}
-
-bool is_directory(const std::string &path){
-	return boost::filesystem::is_directory(boost::filesystem::path(path));
-}
-
-bool is_directory(const std::wstring &path){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	return boost::filesystem::is_directory(boost::filesystem::wpath(path));
-#else
-	return is_directory(UniToUTF8(path));
-#endif
-}
-
-bool create_directory(const std::string &path){
-	return boost::filesystem::create_directory(boost::filesystem::path(path));
-}
-
-bool create_directory(const std::wstring &path){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	return boost::filesystem::create_directory(boost::filesystem::wpath(path));
-#else
-	return create_directory(UniToUTF8(path));
-#endif
-}
-
-bool file_exists(const std::string &path){
-	return boost::filesystem::exists(boost::filesystem::path(path));
-}
-
-bool file_exists(const std::wstring &path){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	return boost::filesystem::exists(boost::filesystem::wpath(path.c_str()));
-#else
-	return file_exists(UniToUTF8(path));
-#endif
-}
-
-boost::uintmax_t file_size(const std::string &path){
-	return boost::filesystem::file_size(boost::filesystem::path(path.c_str()));
-}
-
-boost::uintmax_t file_size(const std::wstring &path){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	return boost::filesystem::file_size(boost::filesystem::wpath(path.c_str()));
-#else
-	return file_size(UniToUTF8(path));
-#endif
-}
-
-bool createDirectory(std::wstring &name){
-	if (!create_directory(name) && !file_exists(name))
-		return 0;
-	return 1;
-}
-
-bool output(NONS_Archive &archive,std::vector<NONS_TreeNode *> &stack,bool write=1){
-	std::wstring path(L".");
-	for (ulong a=0;a<stack.size();a++){
-		path.push_back('/');
-		path.append(stack[a]->data.name);
-	}
-	if (write && !createDirectory(path))
-		return 0;
-	std::vector<NONS_TreeNode *> &branches=stack.back()->branches;
-	for (ulong a=0;a<branches.size();a++){
-		NONS_TreeNode *node=branches[a];
-		if (node->branches.size()){
-			stack.push_back(node);
-			if (!output(archive,stack,write))
-				return 0;
-			stack.pop_back();
-		}else{
-			ulong l;
-			uchar *buffer;
-			if (write)
-				buffer=archive.getFileBuffer(node,l);
-			std::wstring filename=path;
-			filename.push_back('/');
-			filename.append(node->data.name);
-			{
-				std::string temp=UniToUTF8(filename.c_str());
-				if (write)
-					std::cout <<"Writing ";
-				std::cout <<"\""<<temp<<"\""<<std::endl;
+struct Options{
+	bool good;
+	char mode;
+	std::wstring outputFilename;
+	ulong compressionType;
+	std::vector<std::pair<std::wstring,bool> > inputFilenames;
+	Options(char **argv){
+		static std::pair<std::wstring,ulong> compressions[]={
+			std::make_pair(L"none",COMPRESSION_NONE),
+			std::make_pair(L"lzss",COMPRESSION_LZSS),
+			std::make_pair(L"bz2",COMPRESSION_BZ2),
+			std::make_pair(L"auto",COMPRESSION_AUTO),
+			std::make_pair(L"automt",COMPRESSION_AUTO_MT)
+		};
+		static const char *options[]={
+			"-h",
+			"-?",
+			"--help",
+			"--version",
+			"-o",
+			"-c",
+			"-r",
+			0
+		};
+		this->compressionType=COMPRESSION_DEFAULT;
+		this->good=0;
+		if (!++argv)
+			return;
+		std::string mode=*argv++;
+		if (mode=="e" || mode=="c" || mode=="l")
+			this->mode=mode[0];
+		else
+			return;
+		bool nextIsOutput=0,
+			nextIsCompression=0,
+			nextIsSkip=0;
+		while (*argv){
+			long option=-1;
+			for (ulong a=0;options[a] && option<0;a++)
+				if (!strcmp(*argv,options[a]))
+					option=a;
+			switch (option){
+				case 0: //-h
+				case 1: //-?
+				case 2: //--help
+					this->mode='h';
+					this->good=1;
+					return;
+				case 3: //--version
+					this->mode='v';
+					this->good=1;
+					return;
+				case 4: //-o
+					if (!(nextIsOutput || nextIsCompression || nextIsSkip)){
+						nextIsOutput=1;
+						break;
+					}
+				case 5: //-c
+					if (!(nextIsOutput || nextIsCompression || nextIsSkip)){
+						nextIsCompression=1;
+						break;
+					}
+				case 6: //-r
+					if (!(nextIsOutput || nextIsCompression || nextIsSkip)){
+						nextIsSkip=1;
+						break;
+					}
+				default:
+					if (nextIsOutput){
+						this->outputFilename=UniFromUTF8(*argv);
+						nextIsOutput=0;
+					}else if (nextIsCompression){
+						std::wstring s=UniFromUTF8(*argv);
+						for (ulong a=0,b=4;b;a++,b--){
+							if (s==compressions[a].first){
+								this->compressionType=compressions[a].second;
+								break;
+							}
+							if (b==1){
+								std::cerr <<"Unrecognized compression mode."<<std::endl;
+								return;
+							}
+						}
+						nextIsCompression=0;
+					}else{
+						this->inputFilenames.push_back(std::make_pair(UniFromUTF8(*argv),nextIsSkip));
+						nextIsSkip=0;
+					}
 			}
-			if (write){
-				writefile(filename,(char *)buffer,(long)l);
-				delete[] buffer;
-			}
+			argv++;
 		}
+		this->good=1;
 	}
-	return 1;
-}
-
-enum MODE{
-	LIST=0,
-	EXTRACT=1,
-	CREATE=2
 };
 
-long match(const char *string,const char **options){
-	for (long a=0;*options;options++,a++)
-		if (!strcmp(string,*options))
-			return a;
-	return -1;
+std::string humanReadableSize(ulong size){
+	static const char *prefixes[]={"","Ki","Mi","Gi","Ti","Pi","Ei","Zi","Yi"};
+	double d=size;
+	int prefix=0;
+	while (d>=1024){
+		d/=1024;
+		prefix++;
+	}
+	std::stringstream stream;
+	stream <<floor(d*100)/100<<' '<<prefixes[prefix]<<'B';
+	return stream.str();
 }
 
-void findfiles(const std::wstring &dir_path,std::vector<std::wstring> &vec){
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-	boost::filesystem::wdirectory_iterator end_itr;
-	for (boost::filesystem::wdirectory_iterator itr(dir_path);itr!=end_itr;itr++){
-		std::wstring filename=itr->path().string();
-		if (!boost::filesystem::is_directory(filename))
-			vec.push_back(filename);
-		else
-			findfiles(filename,vec);
+bool getbit(void *arr,size_t &byteoffset,size_t &bitoffset){
+	uchar *buffer=(uchar *)arr;
+	bool res=(buffer[byteoffset]>>(7-bitoffset))&1;
+	bitoffset++;
+	if (bitoffset>7){
+		byteoffset++;
+		bitoffset=0;
 	}
-#else
-	boost::filesystem::directory_iterator end_itr;
-	char *str=copyString(dir_path.c_str());
-	for (boost::filesystem::directory_iterator itr(str);itr!=end_itr;itr++){
-		std::string filename=itr->path().string();
-		wchar_t *wstr=copyWString(filename.c_str());
-		if (!is_directory(filename))
-			vec.push_back(new std::wstring(wstr));
-		else{
-			findfiles(std::wstring(wstr),vec);
+	return res;
+}
+
+ulong getbits(void *arr,uchar bits,size_t &byteoffset,size_t &bitoffset){
+	uchar *buffer=(uchar *)arr;
+	ulong res=0;
+	if (bits>sizeof(ulong)*8)
+		bits=sizeof(ulong)*8;
+	for (;bits>0;bits--){
+		res<<=1;
+		res|=(ulong)getbit(buffer,byteoffset,bitoffset);
+	}
+	return res;
+}
+
+char *compressBuffer_BZ2(void *src,size_t srcl,size_t &dstl){
+	unsigned int l=srcl,
+		realsize=l;
+	char *dst=new char[l];
+	while (BZ2_bzBuffToBuffCompress(dst,&l,(char *)src,srcl,9,0,30)==BZ_OUTBUFF_FULL){
+		delete[] dst;
+		l*=2;
+		realsize=l;
+		dst=new char[l];
+	}
+	if (l!=realsize){
+		char *temp=new char[l];
+		memcpy(temp,dst,l);
+		delete[] dst;
+		dst=temp;
+	}
+	dstl=l;
+	return dst;
+}
+
+uchar *readfile(const std::wstring &name,ulong &len){
+	InputFile file(name,std::ios::binary|std::ios::ate);
+	if (!file)
+		return 0;
+	ulong pos=file.tellg();
+	len=pos;
+	file.seekg(0,std::ios::beg);
+	uchar *buffer=new uchar[pos];
+	file.read((char *)buffer,pos);
+	file.close();
+	return buffer;
+}
+
+uchar *readfile(InputFile &file,ulong &len,ulong offset){
+	if (!file)
+		return 0;
+	ulong originalPosition=file.tellg();
+	file.seekg(0,std::ios::end);
+	ulong size=file.tellg();
+	file.seekg(offset,std::ios::beg);
+	size=size-offset>=len?len:size-offset;
+	len=size;
+	uchar *buffer=new uchar[size];
+	file.read((char *)buffer,size);
+	file.seekg(originalPosition,std::ios::beg);
+	return buffer;
+}
+
+char writefile(const std::wstring &name,char *buffer,ulong size){
+	boost::filesystem::ofstream file(name,std::ios::binary);
+	if (!file)
+		return 1;
+	file.write(buffer,size);
+	file.close();
+	return 0;
+}
+
+struct sarExtra{
+	ulong offset,
+		compression,
+		compressed_length,
+		uncompressed_length;
+	sarExtra()
+		:offset(0),
+		compression(0),
+		compressed_length(0),
+		uncompressed_length(0){}
+};
+
+class sarArchive:public Archive<sarExtra>{
+	InputFile file;
+	Path file_source;
+	bool constructed_for_extracting;
+	ulong total,
+		progress;
+public:
+	bool good;
+	sarArchive():constructed_for_extracting(0),good(1){}
+	sarArchive(const std::wstring &filename,bool nsa);
+	~sarArchive(){}
+	void write(const std::wstring &outputFilename,ulong compression);
+	void write(){}
+	void write(const Path &src,const std::wstring &dst,bool dir){}
+	void list();
+	void extract(const std::wstring &outputFilename);
+};
+
+sarArchive::sarArchive(const std::wstring &filename,bool nsa){
+	this->good=0;
+	this->constructed_for_extracting=1;
+	this->file_source=boost::filesystem::complete(filename);
+	this->file.open(this->file_source,std::ios::binary);
+	if (!this->file)
+		return;
+	ulong l=6;
+	char *buffer=(char *)readfile(this->file,l,0);
+	if (l<6){
+		delete[] buffer;
+		return;
+	}
+	size_t offset=0;
+	ulong n=readBigEndian(2,buffer,offset),
+		file_data_start=readBigEndian(4,buffer,offset);
+	delete[] buffer;
+	l=file_data_start-offset;
+	buffer=(char *)readfile(this->file,l,offset);
+	if (l<file_data_start-offset){
+		delete[] buffer;
+		return;
+	}
+	offset=0;
+	for (ulong a=0;a<n;a++){
+		TreeNode<sarExtra> *new_node;
+		{
+			std::string path=buffer+offset;
+			offset+=path.size()+1;
+			new_node=this->root.get_branch(UniFromSJIS(path),1);
 		}
-		delete[] wstr;
-	}
-#endif
-}
-
-void resolveFilenames(std::vector<std::wstring> &filelist,std::vector<bool> &removes){
-	std::vector<std::wstring> res;
-	std::vector<bool> res2;
-	for (ulong a=0;a<filelist.size();a++){
-		if (is_directory(filelist[a]))
-			findfiles(filelist[a],res);
+		if (nsa)
+			new_node->extraData.compression=readByte(buffer,offset);
 		else
-			res.push_back(filelist[a]);
-		while (res.size()>res2.size())
-			res2.push_back(removes[a]);
+			new_node->extraData.compression=COMPRESSION_NONE;
+		new_node->extraData.offset=file_data_start+readBigEndian(4,buffer,offset);
+		new_node->extraData.compressed_length=readBigEndian(4,buffer,offset);
+		if (nsa)
+			new_node->extraData.uncompressed_length=readBigEndian(4,buffer,offset);
+		else
+			new_node->extraData.uncompressed_length=new_node->extraData.compressed_length;
 	}
-	filelist.clear();
-	filelist=res;
-	removes.clear();
-	removes=res2;
-}
-
-template <class T0,class T1>
-bool like(const T0 *string,const T1 *pattern){
-	switch (pattern[0]){
-		case '\0':
-			return !string[0];
-		case '*':
-			return like(string,pattern+1) || string[0] && like(string+1,pattern);
-		case '?':
-			return string[0] && like(string+1,pattern+1);
-		default:
-			return (pattern[0] == string[0]) && like(string+1,pattern+1);
-	}
-}
-
-void usage(){
-	std::cout <<"nsaio <mode> <options> <files>\n"
-		"\n"
-		"MODES:\n"
-		"    e - Extract\n"
-		"    c - Create\n"
-		"    l - List (same as extract but doesn't write to the file system)\n"
-		"\n"
-		"OPTIONS:\n"
-		"    -o <file name>\n"
-		"        Output file name.\n"
-		"        If used for extraction, the archives will be extracted to the same\n"
-		"        directory in the same order the engine would read them (arc.sar,\n"
-		"        arc.nsa, arc1.nsa, ..., arc9.nsa, and then all other file names than\n"
-		"        don't match).\n"
-		"        If used for creation, this sets the name of the resulting archive.\n"
-		"        Set to \"arc.sar\" by default.\n"
-		"    -f {sar|nsa}\n"
-		"        Sets the format of the created archive. If not used, the format will be\n"
-		"        guessed from the file name passed to -o.\n"
-		"    -nbz <wildcard pattern>\n"
-		"    -lzss <wildcard pattern>\n"
-		"    -spb <wildcard pattern>\n"
-		"        Sets the compression type as NBZ (BZ2), LZSS, and SPB respectively for\n"
-		"        all files matching the wildcard pattern.\n"
-		"        This automatically sets the format to nsa. If -o was not used, it's set\n"
-		"        to \"arc.nsa\".\n"
-		"    -r <directory>\n"
-		"        Only used for creating new archives.\n"
-		"        It will cause the packer to put the files and subdirectories inside the\n"
-		"        directory in the root of the archive, instead of of inside the\n"
-		"        directory.\n"
-		"        Example:\n"
-		"        Let's say we have the following directory structure:\n"
-		"            ./arc_sar/\n"
-		"            ./arc_sar/0.bmp\n"
-		"            ./arc_sar/icon/\n"
-		"            ./arc_sar/image/\n"
-		"            ./arc_sar/wave/\n"
-		"        If we call the packer like this:\n"
-		"        nsaio c arc_sar\n"
-		"        the archive will have the following structure:\n"
-		"            /arc_sar/\n"
-		"            /arc_sar/0.bmp\n"
-		"            /arc_sar/icon/\n"
-		"            /arc_sar/image/\n"
-		"            /arc_sar/wave/\n"
-		"        but if we call it like this:\n"
-		"        nsaio c -r arc_sar\n"
-		"        the archive will have the following structure:\n"
-		"            /\n"
-		"            /0.bmp\n"
-		"            /icon/\n"
-		"            /image/\n"
-		"            /wave/\n"
-		"        Note that the option applies only to the directory that comes after it.\n";
-	exit(0);
-}
-
-ulong compare(uchar *current,uchar *test,ulong max){
-	for (ulong a=0;a<max;a++){
-		if (current[a]!=test[a] || test+a>=current)
-			return a;
-	}
-	return max;
+	delete[] buffer;
+	this->good=1;
 }
 
 void writeBits(uchar *buffer,ulong *byteOffset,ulong *bitOffset,ulong data,ushort s){
@@ -306,43 +331,52 @@ void writeBits(uchar *buffer,ulong *byteOffset,ulong *bitOffset,ulong data,ushor
 const ulong NN=8,
 	MAXS=4;
 
-std::string encode_LZSS(char *buffer,ulong decompressedSize){
+ulong compare(void *current,void *test,ulong max){
+	uchar *A=(uchar *)current,
+		*B=(uchar *)test;
+	for (ulong a=0;a<max;a++)
+		if (A[a]!=B[a] || B+a>=A)
+			return a;
+	return max;
+}
+
+char *encode_LZSS(void *src,size_t srcl,size_t &dstl){
 	ulong window_bits=NN,
 		window_size=1<<window_bits,
 		max_string_bits=MAXS,
 		threshold=1+window_bits+max_string_bits,
 		max_string_len=(1<<max_string_bits);
-	threshold=threshold/8+!!(threshold%8);
+	uchar *buffer=(uchar *)src;
+	threshold=(threshold>>3)+!!(threshold&7);
 	max_string_len+=threshold-1;
-	uchar *unsigned_buffer=(uchar *)buffer;
-	ulong res_size=decompressedSize+decompressedSize/8+!!(decompressedSize%8);
+	ulong res_size=srcl+(srcl>>3)+!!(srcl&7);
 	uchar *res=new uchar[res_size];
 	memset(res,0,res_size);
-	memset(res,0,decompressedSize);
 	ulong byte=0,bit=0;
 	std::vector<ulong> tree[256];
 	ulong starts[256];
 	ulong offset=window_size-max_string_len;
-	for (ulong a=0;a<decompressedSize;a++)
-		tree[unsigned_buffer[a]].push_back(a);
+	for (ulong a=0;a<srcl;a++)
+		tree[buffer[a]].push_back(a);
 	memset(starts,0,256*sizeof(ulong));
-	for (ulong a=0;a<decompressedSize;){
+	for (ulong a=0;a<srcl;){
 		if (byte==0x3a04)
 			byte=byte;
 		long found=-1,max=-1;
 		ulong found_size=0;
-		for (std::vector<ulong>::iterator i2=tree[unsigned_buffer[a]].begin()+starts[unsigned_buffer[a]];i2!=tree[unsigned_buffer[a]].end();i2++){
-			if (a>=window_size && *i2<a-window_size){
-				starts[unsigned_buffer[a]]++;
+		for (ulong b=starts[buffer[a]],size=tree[buffer[a]].size();b<size;b++){
+			ulong &element=tree[buffer[a]][b];
+			if (a>=window_size && element<a-window_size){
+				starts[buffer[a]]++;
 				continue;
 			}
-			if (*i2>=a)
+			if (element>=a)
 				break;
-			found_size=compare(unsigned_buffer+a,unsigned_buffer+*i2,max_string_len);
+			found_size=compare(buffer+a,buffer+element,max_string_len);
 			if (found_size<threshold)
 				continue;
 			if (max<0 || found_size>(ulong)max){
-				found=*i2;
+				found=element;
 				max=found_size;
 				if (max==max_string_len)
 					break;
@@ -351,20 +385,270 @@ std::string encode_LZSS(char *buffer,ulong decompressedSize){
 		found_size=max;
 		if (found<0){
 			writeBits(res,&byte,&bit,1,1);
-			writeBits(res,&byte,&bit,unsigned_buffer[a],8);
+			writeBits(res,&byte,&bit,buffer[a],8);
 			a++;
 		}else{
 			writeBits(res,&byte,&bit,0,1);
 			ulong pos=(found+offset)%window_size;
-			writeBits(res,&byte,&bit,pos,window_bits);
-			writeBits(res,&byte,&bit,found_size-threshold,max_string_bits);
+			writeBits(res,&byte,&bit,pos,(ushort)window_bits);
+			writeBits(res,&byte,&bit,found_size-threshold,(ushort)max_string_bits);
 			a+=found_size;
 		}
 	}
 	byte+=bit?1:0;
-	std::string res_buf((const char *)res,(size_t)byte);
-	delete[] res;
-	return res_buf;
+	dstl=byte;
+	return (char *)res;
+}
+
+struct sarArchiveWrite_param{
+	OutputFile &file;
+	std::string buffer;
+	ulong step,
+		total,
+		progress;
+	std::vector<ulong> compression_offsets;
+	ulong compression_used;
+	sarArchiveWrite_param(OutputFile &f):file(f),step(0),compression_used(COMPRESSION_DEFAULT){}
+};
+
+void compression_helper(char *(*f)(void *,size_t,size_t &),char **r,void *a,size_t b,size_t *c){
+	*r=f(a,b,*c);
+}
+
+void sarArchiveWrite(const std::wstring &ex_path,const std::wstring &in_path,bool is_dir,const sarExtra &extraData,sarArchiveWrite_param &params){
+	if (is_dir)
+		return;
+	if (!params.step){
+		std::wstring path_temp=in_path;
+		tolower(path_temp);
+		tobackslash(path_temp);
+		std::string sjis=UniToSJIS(path_temp);
+		params.buffer.append(sjis);
+		writeByte(params.buffer,0); //terminating zero
+		params.compression_offsets.push_back(params.buffer.size());
+		writeByte(params.buffer,0);
+		writeBigEndian(4,params.buffer,0);
+		writeBigEndian(4,params.buffer,0);
+		writeBigEndian(4,params.buffer,0);
+	}else{
+		(std::cout <<'(').width(2);
+		std::cout <<(params.progress++*100/params.total)<<"%) "<<UniToUTF8(in_path)<<"..."<<std::endl;
+		ulong raw_l;
+		char *raw=(char *)readfile(ex_path,raw_l);
+		ulong compression=(raw_l)?params.compression_used:COMPRESSION_NONE;
+		size_t compressed_l;
+		char *compressed;
+		switch (compression){
+			case COMPRESSION_NONE:
+				compressed=raw;
+				compressed_l=raw_l;
+				break;
+			case COMPRESSION_LZSS:
+				compressed=(char *)encode_LZSS(raw,raw_l,compressed_l);
+				delete[] raw;
+				break;
+			case COMPRESSION_BZ2:
+				compressed=compressBuffer_BZ2(raw,raw_l,compressed_l);
+				delete[] raw;
+				raw=new char[compressed_l+4];
+				{
+					std::string temp;
+					writeBigEndian(4,temp,raw_l);
+					memcpy(raw,&temp[0],4);
+				}
+				memcpy(raw+4,compressed,compressed_l);
+				delete[] compressed;
+				compressed=raw;
+				compressed_l+=4;
+				break;
+			case COMPRESSION_AUTO:
+			case COMPRESSION_AUTO_MT:
+				{
+					size_t lzss=raw_l,
+						bz2=raw_l;
+					char *bz2_buffer,
+						*lzss_buffer;
+					if (compression==COMPRESSION_AUTO_MT){
+						boost::thread thread(boost::bind(compression_helper,compressBuffer_BZ2,&bz2_buffer,raw,raw_l,&bz2));
+						lzss_buffer=encode_LZSS(raw,raw_l,lzss);
+						thread.join();
+					}else{
+						bz2_buffer=compressBuffer_BZ2(raw,raw_l,bz2);
+						lzss_buffer=encode_LZSS(raw,raw_l,lzss);
+					}
+					if (raw_l<=lzss && raw_l<=bz2){
+						compressed=raw;
+						compressed_l=raw_l;
+						delete[] lzss_buffer;
+						delete[] bz2_buffer;
+						compression=COMPRESSION_NONE;
+					}else{
+						delete[] raw;
+						if (lzss<raw_l && lzss<=bz2){
+							compressed=lzss_buffer;
+							compressed_l=lzss;
+							delete[] bz2_buffer;
+							compression=COMPRESSION_LZSS;
+						}else{
+							compressed=bz2_buffer;
+							compressed_l=bz2;
+							delete[] lzss_buffer;
+							compression=COMPRESSION_BZ2;
+						}
+					}
+				}
+		}
+		ulong offset=params.compression_offsets[params.step++-1];
+		params.buffer[offset]=(char)compression;
+		writeBigEndian(4,params.buffer,size_t(params.file.tellp())-params.buffer.size(),offset+1);
+		writeBigEndian(4,params.buffer,compressed_l,offset+5);
+		writeBigEndian(4,params.buffer,raw_l,offset+9);
+		params.file.write(compressed,compressed_l);
+		delete[] compressed;
+	}
+}
+
+void sarArchive::write(const std::wstring &outputFilename,ulong compression){
+	OutputFile file(outputFilename.size()?outputFilename:L"output.nsa",std::ios::binary);
+	sarArchiveWrite_param params(file);
+	params.total=this->root.count(0);
+	params.progress=0;
+	params.compression_used=compression;
+	writeBigEndian(2,params.buffer,params.total);
+	writeBigEndian(4,params.buffer,0);
+	this->root.foreach<sarArchiveWrite_param,sarArchiveWrite>(L"",L"",params);
+	writeBigEndian(4,params.buffer,params.buffer.size(),2);
+	file.write(&params.buffer[0],params.buffer.size());
+	params.step++;
+	this->root.foreach<sarArchiveWrite_param,sarArchiveWrite>(L"",L"",params);
+	file.seekp(0);
+	file.write(&params.buffer[0],params.buffer.size());
+	std::cout <<"Done."<<std::endl;
+}
+
+void listSARfunction(const std::wstring &ex_path,const std::wstring &in_path,bool is_dir,const sarExtra &extraData,void *&){
+	static const char *methods[]={
+		"No",
+		"SPB",
+		"LZSS",
+		0,
+		"BZ2",
+	};
+	if (!is_dir)
+		std::cout <<UniToUTF8(in_path)<<std::endl
+			<<"\tCompressed:   "<<humanReadableSize(extraData.compressed_length)<<std::endl
+			<<"\tUncompressed: "<<humanReadableSize(extraData.uncompressed_length)<<std::endl
+			<<'\t'<<methods[extraData.compression]<<" compression."<<std::endl;
+}
+
+void sumSizes(const std::wstring &ex_path,const std::wstring &in_path,bool is_dir,const sarExtra &extraData,ulong *&sizes){
+	if (is_dir)
+		return;
+	sizes[0]+=extraData.compressed_length;
+	sizes[1]+=extraData.uncompressed_length;
+}
+
+void sarArchive::list(){
+	if (!this->good || !this->constructed_for_extracting)
+		return;
+	void *p;
+	this->root.foreach<void *,listSARfunction>(L"",L"",p);
+	ulong sizes[2]={0};
+	{
+		ulong *cast=sizes;
+		this->root.foreach<ulong *,sumSizes>(L"",L"",cast);
+	}
+	std::cout
+		<<"\nFile count: "<<this->root.count(0)
+		<<"\nTotal size of the archive (compressed):   "<<humanReadableSize(sizes[0])
+		<<"\n                          (uncompressed): "<<humanReadableSize(sizes[1])
+		<<"\nCompression ratio: "<<double(sizes[0])/double(sizes[1])<<std::endl;
+}
+
+char *decode_SPB(char *buffer,ulong compressedSize,ulong decompressedSize){
+	size_t ioffset=0;
+	ulong width=readBigEndian(2,buffer,ioffset),
+		height=readBigEndian(2,buffer,ioffset);
+	ulong width_pad=(4-width*3%4)%4,
+		original_length=(width*3+width_pad)*height+54;
+	char *res=new char[original_length];
+	memset(res,0,original_length);
+	size_t ooffset=0;
+	writeByte(res,'B',ooffset);
+	writeByte(res,'M',ooffset);
+	writeLittleEndian(4,res,original_length,ooffset);
+	ooffset=10;
+	writeByte(res,54,ooffset);
+	ooffset=14;
+	writeByte(res,40,ooffset);
+	ooffset=18;
+	writeLittleEndian(4,res,width,ooffset);
+	writeLittleEndian(4,res,height,ooffset);
+	writeLittleEndian(2,res,1,ooffset);
+	writeByte(res,24,ooffset);
+	ooffset=34;
+	writeLittleEndian(4,res,original_length-54,ooffset);
+	size_t ibitoffset=0;
+	char *buf=res+54;
+	ulong surface=width*height,
+		decompressionbufferlen=surface+4;
+	char *decompressionbuffer=new char[decompressionbufferlen];
+	ooffset=54;
+	for (int a=0;a<3;a++){
+		ulong count=0;
+		uchar x=(uchar)getbits(buffer,8,ioffset,ibitoffset);
+		decompressionbuffer[count++]=x;
+		while (count<surface){
+			uchar n=(uchar)getbits(buffer,3,ioffset,ibitoffset);
+			if (!n){
+				for (int b=4;b;b--)
+					decompressionbuffer[count++]=x;
+				continue;
+			}
+			uchar m;
+			if (n==7)
+				m=getbit(buffer,ioffset,ibitoffset)+1;
+			else
+				m=n+2;
+			for (int b=4;b;b--){
+				if (m==8)
+					x=(uchar)getbits(buffer,8,ioffset,ibitoffset);
+				else{
+					ulong k=(ulong)getbits(buffer,m,ioffset,ibitoffset);
+					if (k&1)
+						x+=uchar((k>>1)+1);
+					else
+						x-=uchar(k>>1);
+				}
+				decompressionbuffer[count++]=x;
+			}
+		}
+		char *pbuf=buf+(width*3+width_pad)*(height-1)+a;
+		char *psbuf=decompressionbuffer;
+		for (ulong b=0;b<height;b++){
+			if (b&1){
+				for (ulong c=0;c<width;c++,pbuf-=3)
+					*pbuf=*psbuf++;
+				pbuf-=width*3+width_pad-3;
+			}else{
+				for (ulong c=0;c<width;c++,pbuf+=3)
+					*pbuf=*psbuf++;
+				pbuf-=width*3+width_pad+3;
+			}
+		}
+		long b=0;
+		for (long y0=height-1;y0>=0;y0--){
+			if (y0&1){
+				for (ulong x0=0;x0<width;x0++)
+					buf[a+x0*3+y0*(width*3+width_pad)]=decompressionbuffer[b++];
+			}else{
+				for (long x0=(long)width-1;x0>=0;x0--)
+					buf[a+x0*3+y0*(width*3+width_pad)]=decompressionbuffer[b++];
+			}
+		}
+	}
+	delete[] decompressionbuffer;
+	return res;
 }
 
 char *decode_LZSS(char *buffer,ulong compressedSize,ulong decompressedSize){
@@ -372,17 +656,17 @@ char *decode_LZSS(char *buffer,ulong compressedSize,ulong decompressedSize){
 	ulong decompresssion_buffer_offset=239;
 	memset(decompression_buffer,0,239);
 	uchar *res=new uchar[decompressedSize];
-	ulong byteoffset=0;
-	uchar bitoffset=0;
+	size_t byteoffset=0;
+	size_t bitoffset=0;
 	for (ulong len=0;len<decompressedSize;){
-		if (getbit((uchar *)buffer,&byteoffset,&bitoffset)){
-			uchar a=getbits((uchar *)buffer,8,&byteoffset,&bitoffset);
+		if (getbit(buffer,byteoffset,bitoffset)){
+			uchar a=(uchar)getbits(buffer,8,byteoffset,bitoffset);
 			res[len++]=a;
 			decompression_buffer[decompresssion_buffer_offset++]=a;
 			decompresssion_buffer_offset&=0xFF;
 		}else{
-			uchar a=getbits((uchar *)buffer,8,&byteoffset,&bitoffset);
-			uchar b=getbits((uchar *)buffer,4,&byteoffset,&bitoffset);
+			uchar a=(uchar)getbits(buffer,8,byteoffset,bitoffset);
+			uchar b=(uchar)getbits(buffer,4,byteoffset,bitoffset);
 			for (long c=0;c<=b+1 && len<decompressedSize;c++){
 				uchar d=decompression_buffer[(a+c)&0xFF];
 				res[len++]=d;
@@ -400,7 +684,7 @@ char *decode_LZSS2(char *buffer,ulong compressedSize,ulong decompressedSize){
 		max_string_bits=MAXS,
 		threshold=1+window_bits+max_string_bits,
 		max_string_len=(1<<max_string_bits);
-	threshold=threshold/8+!!(threshold%8);
+	threshold=(threshold>>3)+!!(threshold&7);
 	max_string_len+=threshold-1;
 	ulong offset=window_size-max_string_len;
 
@@ -408,18 +692,18 @@ char *decode_LZSS2(char *buffer,ulong compressedSize,ulong decompressedSize){
 	ulong decompression_buffer_offset=offset;
 	memset(decompression_buffer,0,window_size);
 	uchar *res=new uchar[decompressedSize];
-	ulong byteoffset=0;
-	uchar bitoffset=0;
+	size_t byteoffset=0;
+	size_t bitoffset=0;
 	ulong len;
 	for (len=0;len<decompressedSize;){
-		if (getbit((uchar *)buffer,&byteoffset,&bitoffset)){
-			uchar a=getbits((uchar *)buffer,8,&byteoffset,&bitoffset);
+		if (getbit(buffer,byteoffset,bitoffset)){
+			uchar a=(uchar)getbits(buffer,8,byteoffset,bitoffset);
 			res[len++]=a;
 			decompression_buffer[decompression_buffer_offset++]=a;
 			decompression_buffer_offset%=window_size;
 		}else{
-			ulong a=getbits((uchar *)buffer,window_bits,&byteoffset,&bitoffset);
-			ulong b=getbits((uchar *)buffer,max_string_bits,&byteoffset,&bitoffset)+threshold;
+			ulong a=(uchar)getbits(buffer,(uchar)window_bits,byteoffset,bitoffset);
+			ulong b=(uchar)getbits(buffer,(uchar)max_string_bits,byteoffset,bitoffset)+threshold;
 			for (ulong c=0;c<b;c++){
 				uchar d=decompression_buffer[(a+c)%window_size];
 				res[len++]=d;
@@ -433,370 +717,187 @@ char *decode_LZSS2(char *buffer,ulong compressedSize,ulong decompressedSize){
 	return (char *)res;
 }
 
-std::string encode_NBZ(char *buffer,long decompressedSize){
-	std::string res;
-	writeDWordBig(decompressedSize,res);
-	ulong compressedSize;
-	char *compressed=compressBuffer_BZ2(buffer,decompressedSize,&compressedSize);
-	res.append(compressed,compressedSize);
-	return res;
+char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long &dstl){
+	unsigned long l=dstl,realsize=l;
+	char *dst=new char[l];
+	while (BZ2_bzBuffToBuffDecompress(dst,(unsigned int *)&l,src,srcl,1,0)==BZ_OUTBUFF_FULL){
+		delete[] dst;
+		l*=2;
+		realsize=l;
+		dst=new char[l];
+	}
+	if (l!=realsize){
+		char *temp=new char[l];
+		memcpy(temp,dst,l);
+		delete[] dst;
+		dst=temp;
+	}
+	dstl=l;
+	return dst;
+}
+
+static uchar *decompress(uchar *src,ulong srcl,ulong dstl,ulong method){
+	uchar *ret;
+	switch (method){
+		case COMPRESSION_NONE:
+			ret=src;
+			break;
+		case COMPRESSION_SPB:
+			ret=(uchar *)decode_SPB((char *)src,srcl,dstl);
+			delete[] src;
+			break;
+		case COMPRESSION_LZSS:
+			ret=(uchar *)decode_LZSS((char *)src,srcl,dstl);
+			delete[] src;
+			break;
+		case COMPRESSION_BZ2:
+			ret=(uchar *)decompressBuffer_BZ2((char *)src+4,srcl,dstl);
+			delete[] src;
+			break;
+	}
+	return ret;
+}
+
+struct extractSARfunction_param{
+	Path working_dir;
+	InputFile &file;
+};
+
+void extractSARfunction(const std::wstring &ex_path,const std::wstring &in_path,bool is_dir,const sarExtra &extraData,extractSARfunction_param &params){
+	Path working_dir=params.working_dir;
+	working_dir/=in_path;
+	std::cout <<UniToUTF8(in_path)<<std::endl;
+	if (is_dir)
+		boost::filesystem::create_directory(working_dir);
+	else{
+		ulong l=extraData.compressed_length;
+		uchar *buffer=readfile(params.file,l,extraData.offset);
+		if (extraData.compression==COMPRESSION_SPB)
+			std::cout <<"\tSPB"<<std::endl;
+		buffer=decompress(buffer,extraData.compressed_length,extraData.uncompressed_length,extraData.compression);
+		OutputFile file(working_dir,std::ios::binary);
+		file.write((char *)buffer,extraData.uncompressed_length);
+		delete[] buffer;
+	}
+}
+
+void sarArchive::extract(const std::wstring &outputFilename){
+	if (!this->good || !this->constructed_for_extracting)
+		return;
+	extractSARfunction_param params={
+		boost::filesystem::initial_path<Path>(),
+		this->file
+	};
+	if (!outputFilename.size()){
+		std::wstring temp=this->file_source.leaf();
+		for (ulong a=0;a<temp.size();a++)
+			if (temp[a]=='.')
+				temp[a]='_';
+		tolower(temp);
+		params.working_dir/=temp;
+	}else
+		params.working_dir/=outputFilename;
+	boost::filesystem::create_directory(params.working_dir);
+	this->root.foreach<extractSARfunction_param,extractSARfunction>(L"",L"",params);
+}
+
+void version(){
+	std::cout <<"nsaio v0.99\n\n"
+		"Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)\n"
+		"All rights reserved.\n\n";
+}
+
+void usage(){
+	version();
+	std::cout <<
+		"nsaio <mode> <options> <input files>\n"
+		"\n"
+		"MODES:\n"
+		"    e - Extract\n"
+		"    c - Create\n"
+		"    l - List\n"
+		"\n"
+		"OPTIONS:\n"
+		"    -o <filename>\n"
+		"        Output filename.\n"
+		"    -c <compression>\n"
+		"        Set compression.\n"
+		"    -r <directory>\n"
+		"        Add subdirectories instead of the directory passed as argument.\n"
+		"\n"
+		"See the documentation for details.\n";
+}
+
+bool isNSA(const std::wstring &filename){
+	size_t dot=filename.rfind('.');
+	if (dot==filename.npos)
+		return 0;
+	std::wstring extension=filename.substr(dot+1);
+	tolower(extension);
+	if (extension==L"sar")
+		return 0;
+	return 1;
 }
 
 int main(int argc,char **argv){
-	if (argc<2){
-		std::cout <<"Not enough arguments.";
-		usage();
-		return 0;
-	}
-	MODE mode=LIST;
-	const char *options[]={
-		"l",
-		"e",
-		"c",
-		"--help",
-		"-h",
-		"-?",
-		"-o",
-		"-f",
-		"-nbz",
-		"-lzss",
-		"-spb",
-		"-r",
-		0
-	};
-	std::vector<std::wstring> filelist;
-	std::vector<bool> removeslist;
-	std::set<std::wstring> NBZlist,LZSSlist,SPBlist;
-	std::wstring outputfile;
-	ulong outputformat=NONS_Archive::UNRECOGNIZED;
-	bool forcensa=0;
-	for (argv++;*argv;argv++){
-		long option=match(*argv,options);
-		switch (option){
-			case 0:
-				mode=LIST;
-				break;
-			case 1:
-				mode=EXTRACT;
-				break;
-			case 2:
-				mode=CREATE;
-				break;
-			case 3:
-			case 4:
-			case 5:
-				usage();
-			case 6:
-				{
-					argv++;
-					outputfile=UniFromUTF8(*argv);
-				}
-				break;
-			case 7:
-				argv++;
-				if (!strcmp(*argv,"nsa"))
-					outputformat=NONS_Archive::NSA_ARCHIVE;
-				else
-					outputformat=NONS_Archive::SAR_ARCHIVE;
-				break;
-			case 8:
-				{
-					argv++;
-					std::wstring wtemp(UniFromUTF8(*argv));
-					NBZlist.insert(wtemp);
-					std::set<std::wstring>::iterator lzss=LZSSlist.find(wtemp);
-					if (lzss!=LZSSlist.end())
-						LZSSlist.erase(lzss);
-					std::set<std::wstring>::iterator spb=SPBlist.find(wtemp);
-					if (spb!=SPBlist.end())
-						SPBlist.erase(spb);
-					forcensa=1;
-				}
-				break;
-			case 9:
-				{
-					argv++;
-					std::wstring wtemp(UniFromUTF8(*argv));
-					std::set<std::wstring>::iterator nbz=NBZlist.find(wtemp);
-					if (nbz!=NBZlist.end())
-						NBZlist.erase(nbz);
-					LZSSlist.insert(wtemp);
-					std::set<std::wstring>::iterator spb=SPBlist.find(wtemp);
-					if (spb!=SPBlist.end())
-						SPBlist.erase(spb);
-					forcensa=1;
-				}
-				break;
-			case 10:
-				{
-					argv++;
-					std::wstring wtemp(UniFromUTF8(*argv));
-					std::set<std::wstring>::iterator nbz=NBZlist.find(wtemp);
-					if (nbz!=NBZlist.end())
-						NBZlist.erase(nbz);
-					std::set<std::wstring>::iterator lzss=LZSSlist.find(wtemp);
-					if (lzss!=LZSSlist.end())
-						LZSSlist.erase(lzss);
-					SPBlist.insert(wtemp);
-					forcensa=1;
-				}
-				break;
-			case 11:
-				{
-					argv++;
-					filelist.push_back(UniFromUTF8(*argv));
-					removeslist.push_back(1);
-				}
-				break;
-			default:
-				{
-					filelist.push_back(UniFromUTF8(*argv));
-					removeslist.push_back(0);
-				}
-		}
-	}
-	if (forcensa)
-		outputformat=NONS_Archive::NSA_ARCHIVE;
-	const wchar_t *archive_names[]={
-		L"arc.sar",
-		L"arc.nsa",
-		L"arc1.nsa",
-		L"arc2.nsa",
-		L"arc3.nsa",
-		L"arc4.nsa",
-		L"arc5.nsa",
-		L"arc6.nsa",
-		L"arc7.nsa",
-		L"arc8.nsa",
-		L"arc9.nsa",
-		0
-	};
-	switch (mode){
-		case EXTRACT:
-			if (outputfile.size()){
-				std::vector<std::wstring> temp;
-				for (ulong a=0;a<filelist.size();a++){
-					temp.push_back(filelist[a]);
-					tolower(temp[a]);
-				}
-				for (ulong a=0,pos=0;archive_names[pos] && a<filelist.size();a++){
-					long m=-1;
-					for (ulong b=pos;m<0 && b<filelist.size();b++)
-						if (temp[b]==archive_names[pos])
-							m=b;
-					if (m<0)
-						continue;
-					std::swap(filelist[pos],filelist[m]);
-					std::swap(temp[pos++],temp[m]);
-				}
-			}
-		case LIST:
-			for (ulong a=0;a<filelist.size();a++){
-				NONS_Archive archive(filelist[a],0);
-				if (!archive.readArchive())
-					continue;
-				std::vector<NONS_TreeNode *> stack;
-				if (outputfile.size())
-					archive.root->data.name=outputfile;
-				stack.push_back(archive.root);
-				output(archive,stack,mode==EXTRACT);
-				stack.pop_back();
-			}
+	Options options(argv);
+	if (!options.good)
+		return 1;
+	switch (options.mode){
+		case 'h':
+			usage();
 			break;
-		case CREATE:
+		case 'v':
+			version();
+			break;
+		case 'e':
+			if (options.inputFilenames.size()>1){
+				std::cerr <<"No input files."<<std::endl;
+				return 1;
+			}
+			if (options.inputFilenames.size()>1){
+				std::cerr <<"Too many input files."<<std::endl;
+				return 1;
+			}
 			{
-				if (!outputfile.size()){
-					if (outputformat==NONS_Archive::SAR_ARCHIVE || outputformat==NONS_Archive::UNRECOGNIZED)
-						outputfile.append(L"arc.sar");
-					else
-						outputfile.append(L"arc.nsa");
+				boost::posix_time::ptime t0=boost::posix_time::microsec_clock::local_time();
+				{
+					std::wstring &filename=options.inputFilenames[0].first;
+					sarArchive archive(filename,isNSA(filename));
+					if (!archive.good){
+						std::cerr <<"\""<<UniToUTF8(filename)<<"\" is not a valid archive."<<std::endl;
+						return 1;
+					}
+					archive.extract(options.outputFilename);
 				}
-				if (outputformat==NONS_Archive::UNRECOGNIZED){
-					ulong dot=outputfile.find_last_of('.');
-					if (dot<outputfile.size()){
-						dot++;
-						std::wstring ext=outputfile.substr(dot);
-						tolower(ext);
-						if (ext==L"sar")
-							outputformat=NONS_Archive::SAR_ARCHIVE;
-						else
-							outputformat=NONS_Archive::NSA_ARCHIVE;
-					}
+				boost::posix_time::ptime t1=boost::posix_time::microsec_clock::local_time();
+				std::cout <<"Elapsed time: "<<double((t1-t0).total_milliseconds())/1000.0<<'s'<<std::endl;
+			}
+			break;
+		case 'c':
+			{
+				boost::posix_time::ptime t0=boost::posix_time::microsec_clock::local_time();
+				{
+					sarArchive archive;
+					for (ulong a=0;a<options.inputFilenames.size();a++)
+						archive.add(options.inputFilenames[a].first,options.inputFilenames[a].second);
+					archive.write(options.outputFilename+L".nsa",options.compressionType);
 				}
-				resolveFilenames(filelist,removeslist);
-				std::vector<std::wstring> translated_paths;
-				for (ulong a=0;a<filelist.size();a++){
-					if (!file_exists(filelist[a])){
-						filelist.erase(filelist.begin()+a--);
-						continue;
-					}
-					std::wstring str=filelist[a];
-					bool dont_remove=0,
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-						remove_twice=boost::filesystem::wpath(str).has_root_path();
-#else
-						remove_twice=boost::filesystem::path(UniToUTF8(str)).has_root_path();
-#endif
-					while (!remove_twice && (!str.find(L"../") || !str.find(L"./"))){
-						ulong slash=str.find_first_of('/');
-						str.erase(0,slash+1);
-						dont_remove=1;
-					}
-					if (!dont_remove && removeslist[a]){
-						ulong slash=str.find_first_of('/');
-						str.erase(0,slash+1);
-						if (remove_twice){
-							slash=str.find_first_of('/');
-							str.erase(0,slash+1);
-						}
-					}
-					translated_paths.push_back(str);
+				boost::posix_time::ptime t1=boost::posix_time::microsec_clock::local_time();
+				std::cout <<"Elapsed time: "<<double((t1-t0).total_milliseconds())/1000.0<<'s'<<std::endl;
+			}
+			break;
+		case 'l':
+			for (ulong a=0;a<options.inputFilenames.size();a++){
+				std::wstring &filename=options.inputFilenames[a].first;
+				sarArchive archive(filename,isNSA(filename));
+				if (!archive.good){
+					std::cerr <<"\""<<UniToUTF8(filename)<<"\" is not a valid archive."<<std::endl;
+					continue;
 				}
-				if (!filelist.size())
-					break;
-				std::vector<ulong> compressions(translated_paths.size(),NONS_TreeNode::NONS_ArchivedFile::NO_COMPRESSION);
-
-				//SPB compression is unsupported.
-				if (SPBlist.size())
-					std::cerr <<"SPB compression is unsupported."<<std::endl;
-				for (std::set<std::wstring>::iterator i=LZSSlist.begin();i!=LZSSlist.end();i++){
-					for (ulong b=0;b<translated_paths.size();b++){
-						ulong p=translated_paths[b].rfind('/');
-						p=(p==std::string::npos)?0:p+1;
-						if (like(translated_paths[b].c_str()+p,i->c_str()))
-							compressions[b]=NONS_TreeNode::NONS_ArchivedFile::LZSS_COMPRESSION;
-					}
-				}
-				for (std::set<std::wstring>::iterator i=NBZlist.begin();i!=NBZlist.end();i++){
-					for (ulong b=0;b<translated_paths.size();b++){
-						ulong p=translated_paths[b].rfind('/');
-						p=(p==std::string::npos)?0:p+1;
-						if (like(translated_paths[b].c_str()+p,i->c_str()))
-							compressions[b]=NONS_TreeNode::NONS_ArchivedFile::NBZ_COMPRESSION;
-					}
-				}
-
-				NONS_Archive archive(outputformat);
-				//archive.root->makeDirectory();
-				for (ulong a=0;a<translated_paths.size();a++){
-					NONS_TreeNode *node=archive.root->getBranch(translated_paths[a],1);
-					node->data.archivepath=translated_paths[a];
-					node->data.filepath=filelist[a];
-					node->data.original_length=file_size(filelist[a]);
-					node->data.compression_type=compressions[a];
-				}
-				archive.root->sort();
-				std::vector<NONS_TreeNode *> allnodes;
-				archive.root->vectorizeFiles(allnodes);
-
-				std::string buffer;
-				writeWordBig(translated_paths.size(),buffer);
-				std::vector<ulong> fillout;
-				//Reserve space for the offset of the data stream start.
-				fillout.push_back(buffer.size());
-				writeDWordBig(0,buffer);
-				if (outputformat==NONS_Archive::SAR_ARCHIVE){
-					ulong start=0;
-					for (ulong a=0;a<allnodes.size();a++){
-						std::string path=UniToSJIS(allnodes[a]->data.archivepath);
-						tobackslash(path);
-						buffer.append(path);
-						buffer.push_back(0);
-						writeDWordBig(start,buffer);
-						writeDWordBig(allnodes[a]->data.original_length,buffer);
-						start+=allnodes[a]->data.original_length;
-					}
-					writeDWordBig(buffer.size(),buffer,fillout[0]);
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-					boost::filesystem::ofstream file(outputfile,std::ios::binary);
-#else
-					boost::filesystem::ofstream file(UniToUTF8(outputfile),std::ios::binary);
-#endif
-					file.write(buffer.c_str(),buffer.size());
-					for (ulong a=0;a<filelist.size();a++){
-						std::cout <<"Adding \"/"<<UniToUTF8(allnodes[a]->data.archivepath)<<"\"."<<std::endl;
-						ulong size=allnodes[a]->data.original_length;
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-						boost::filesystem::ifstream tempfile(allnodes[a]->data.filepath,std::ios::binary);
-#else
-						boost::filesystem::ifstream tempfile(UniToUTF8(allnodes[a]->data.filepath),std::ios::binary);
-#endif
-						char *tempbuf=new char[size];
-						tempfile.read(tempbuf,size);
-						file.write(tempbuf,size);
-						delete[] tempbuf;
-					}
-					file.close();
-				}else{
-					for (ulong a=0;a<allnodes.size();a++){
-						std::string path=UniToSJIS(allnodes[a]->data.archivepath);
-						tobackslash(path);
-						buffer.append(path);
-						buffer.push_back(0);
-						writeByte(allnodes[a]->data.compression_type,buffer);
-						//Reserve space for the offset.
-						fillout.push_back(buffer.size());
-						writeDWordBig(0,buffer);
-						//Reserve space for the compressed size (actual size in
-						//the archive).
-						fillout.push_back(buffer.size());
-						writeDWordBig(0,buffer);
-						writeDWordBig(allnodes[a]->data.original_length,buffer);
-					}
-					writeDWordBig(buffer.size(),buffer,fillout[0]);
-					fillout.erase(fillout.begin());
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-					boost::filesystem::ofstream file(outputfile,std::ios::binary);
-#else
-					boost::filesystem::ofstream file;
-					{
-						char *temp_copy=copyString(outputfile.c_str());
-						file.open(temp_copy,std::ios::binary);
-						delete[] temp_copy;
-					}
-#endif
-					file.write(buffer.c_str(),buffer.size());
-					ulong start=0;
-					for (ulong a=0;a<filelist.size();a++){
-						std::cout <<"Adding \"/"<<UniToUTF8(allnodes[a]->data.archivepath)<<"\"."<<std::endl;
-						ulong original_size=allnodes[a]->data.original_length;
-#ifndef BOOST_FILESYSTEM_NARROW_ONLY
-						boost::filesystem::ifstream tempfile(allnodes[a]->data.filepath,std::ios::binary);
-#else
-						boost::filesystem::ifstream tempfile(UniToUTF8(allnodes[a]->data.filepath),std::ios::binary);
-#endif
-						char *ibuffer=new char[original_size];
-						tempfile.read(ibuffer,original_size);
-						{
-							std::string obuffer;
-							switch (allnodes[a]->data.compression_type){
-								case NONS_TreeNode::NONS_ArchivedFile::NO_COMPRESSION:
-									break;
-								case NONS_TreeNode::NONS_ArchivedFile::NBZ_COMPRESSION:
-									obuffer=encode_NBZ(ibuffer,original_size);
-									delete[] ibuffer;
-									break;
-								case NONS_TreeNode::NONS_ArchivedFile::LZSS_COMPRESSION:
-									obuffer=encode_LZSS(ibuffer,original_size);
-									delete[] ibuffer;
-									break;
-								case NONS_TreeNode::NONS_ArchivedFile::SPB_COMPRESSION:
-									break;
-							}
-							file.write(&obuffer[0],obuffer.size());
-							writeDWordBig(start,buffer,fillout[a*2]);
-							writeDWordBig(obuffer.size(),buffer,fillout[a*2+1]);
-							start+=obuffer.size();
-						}
-						delete[] ibuffer;
-					}
-					file.seekp(0,std::ios::beg);
-					file.write(buffer.c_str(),buffer.size());
-					file.close();
-				}
+				archive.list();
 			}
 			break;
 	}
-	std::cout <<"Done."<<std::endl;
 	return 0;
 }

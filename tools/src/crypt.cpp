@@ -25,14 +25,69 @@
 */
 
 typedef unsigned long ulong;
+typedef unsigned char uchar;
 
-#define TOOLS_BARE_FILE
 #include <iostream>
-#include <ErrorCodes.h>
-#include <enums.h>
-#include <Functions.cpp>
-#include <UTF.cpp>
-#include <IO_System/FileIO.cpp>
+#include <fstream>
+#include <cwchar>
+#include "Unicode.h"
+
+enum ENCRYPTION{
+	NO_ENCRYPTION=0,
+	XOR84_ENCRYPTION=1,
+	VARIABLE_XOR_ENCRYPTION=2,
+	TRANSFORM_THEN_XOR84_ENCRYPTION=3
+};
+
+void inPlaceDecryption(char *buffer,ulong length,ulong mode){
+	switch (mode){
+		case NO_ENCRYPTION:
+		default:
+			return ;
+		case XOR84_ENCRYPTION:
+			for (ulong a=0;a<length;a++)
+				buffer[a]^=0x84;
+			return;
+		case VARIABLE_XOR_ENCRYPTION:
+			{
+				static const uchar magic_numbers[5]={0x79,0x57,0x0d,0x80,0x04};
+				ulong index=0;
+				for (ulong a=0;a<length;a++){
+					((uchar *)buffer)[a]^=magic_numbers[index];
+					index=(index+1)%5;
+				}
+				return;
+			}
+		case TRANSFORM_THEN_XOR84_ENCRYPTION:
+			{
+				std::cerr <<"TRANSFORM_THEN_XOR84 (aka mode 4) encryption not implemented for a very good\n"
+					"reason. Which I, of course, don\'t need to explain to you. Good day.";
+				return;
+			}
+	}
+}
+
+uchar *readfile(const std::wstring &name,ulong &len){
+	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary|std::ios::ate);
+	if (!file)
+		return 0;
+	ulong pos=file.tellg();
+	len=pos;
+	file.seekg(0,std::ios::beg);
+	uchar *buffer=new uchar[pos];
+	file.read((char *)buffer,pos);
+	file.close();
+	return buffer;
+}
+
+char writefile(const std::wstring &name,char *buffer,ulong size){
+	std::ofstream file(UniToUTF8(name).c_str(),std::ios::binary);
+	if (!file)
+		return 1;
+	file.write(buffer,size);
+	file.close();
+	return 0;
+}
 
 const char *methods[][2]={
 	{"none","Do nothing."},
