@@ -393,6 +393,10 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		SDL_FreeSurface(this->image);
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
 	SDL_Surface *surface=IMG_Load_RW(rwops,0);
+	if (!surface){
+		this->image=0;
+		return 0;
+	}
 	this->image=makeSurface(surface->w,surface->h,32);
 	if (!!surface && surface->format->BitsPerPixel<24)
 		SDL_BlitSurface(surface,0,this->image,0);

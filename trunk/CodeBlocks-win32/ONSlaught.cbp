@@ -116,6 +116,10 @@
 		<Unit filename="..\src\INIParser.tab.hpp" />
 		<Unit filename="..\src\IOFunctions.cpp" />
 		<Unit filename="..\src\IOFunctions.h" />
+		<Unit filename="..\src\LZMA.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\LZMA.h" />
 		<Unit filename="..\src\MacroParser.cpp" />
 		<Unit filename="..\src\MacroParser.h" />
 		<Unit filename="..\src\MacroParser.tab.cpp" />
@@ -123,6 +127,10 @@
 		<Unit filename="..\src\ONSlaught.cpp" />
 		<Unit filename="..\src\Plugin\LibraryLoader.cpp" />
 		<Unit filename="..\src\Plugin\LibraryLoader.h" />
+		<Unit filename="..\src\puff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\puff.h" />
 		<Unit filename="..\src\SaveFile.cpp" />
 		<Unit filename="..\src\SaveFile.h" />
 		<Unit filename="..\src\ScreenSpace.cpp" />

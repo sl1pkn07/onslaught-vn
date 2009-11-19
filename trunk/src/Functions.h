@@ -378,13 +378,13 @@ std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
 }
 
 //binary parsing functions
-bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset);
-ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
+bool getbit(void *arr,ulong *byteoffset,uchar *bitoffset);
+ulong getbits(void *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
 Uint8 readByte(char *buffer,ulong &offset);
 Sint16 readSignedWord(char *buffer,ulong &offset);
-Uint16 readWord(char *buffer,ulong &offset);
+Uint16 readWord(void *buffer,ulong &offset);
 Sint32 readSignedDWord(char *buffer,ulong &offset);
-Uint32 readDWord(char *buffer,ulong &offset);
+Uint32 readDWord(void *buffer,ulong &offset);
 std::string readString(char *buffer,ulong &offset);
 void writeByte(Uint8 a,std::string &str,ulong offset=ULONG_MAX);
 void writeWord(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
@@ -414,8 +414,11 @@ extern const int gmask;
 extern const int bmask;
 extern const int amask;
 
+//#define USE_HARDWARE_SURFACES SDL_HWSURFACE
+#define USE_HARDWARE_SURFACES 0
+
 inline SDL_Surface *makeSurface(ulong w,ulong h,ulong bits,Uint32 r=rmask,Uint32 g=gmask,Uint32 b=bmask,Uint32 a=amask){
-	return SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,w,h,bits,r,g,b,a);
+	return SDL_CreateRGBSurface(USE_HARDWARE_SURFACES|SDL_SRCALPHA,w,h,bits,r,g,b,a);
 }
 
 //bitmap processing functions

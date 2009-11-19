@@ -43,9 +43,9 @@ void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newNa
 	ulong l;
 	this->saveAs=save_directory;
 	this->saveAs.append(newName);
-	char *buffer=(char *)readfile(this->saveAs,l);
+	char *buffer=(char *)NONS_File::read(this->saveAs,l);
 	if (!buffer)
-		buffer=(char *)readfile(oldName,l);
+		buffer=(char *)NONS_File::read(oldName,l);
 	if (!buffer)
 		return;
 	if (firstcharsCI(std::string(buffer),0,"BZh")){
@@ -110,7 +110,7 @@ void NONS_LogStrings::writeOut(){
 	inPlaceDecryption(&buf[startEncryption],buf.size()-startEncryption,XOR84_ENCRYPTION);
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2(&buf[0],buf.size(),&l);
-	writefile(this->saveAs,writebuffer,l);
+	NONS_File::write(this->saveAs,writebuffer,l);
 	delete[] writebuffer;
 }
 

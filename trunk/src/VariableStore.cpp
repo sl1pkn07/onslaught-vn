@@ -277,9 +277,9 @@ NONS_VariableStore::NONS_VariableStore(){
 	ulong l;
 	this->commitGlobals=0;
 	std::wstring dir=save_directory+L"global.sav";
-	uchar *buffer=readfile(dir.c_str(),l);
+	uchar *buffer=NONS_File::read(dir.c_str(),l);
 	if (!buffer){
-		buffer=readfile(L"gloval.sav",l);
+		buffer=NONS_File::read(L"gloval.sav",l);
 		if (!buffer)
 			return;
 		for (ulong a=0,stackpos=200;a<l;stackpos++){
@@ -390,7 +390,7 @@ void NONS_VariableStore::saveData(){
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
 	std::wstring dir=save_directory+L"global.sav";
-	writefile(dir.c_str(),writebuffer,l);
+	NONS_File::write(dir.c_str(),writebuffer,l);
 	delete[] writebuffer;
 }
 

@@ -67,7 +67,7 @@ ConfigFile::ConfigFile(const std::wstring &filename,ENCODINGS encoding){
 void ConfigFile::init(const std::wstring &filename,ENCODINGS encoding){
 	this->entries.clear();
 	ulong l;
-	char *buffer=(char *)readfile(filename,l);
+	char *buffer=(char *)NONS_File::read(filename,l);
 	if (!buffer)
 		return;
 	std::wstring decoded;
@@ -176,7 +176,7 @@ void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
 
 void ConfigFile::writeOut(const std::wstring &filename,ENCODINGS encoding){
 	std::string temp=this->writeOut(encoding);
-	writefile(filename,&temp[0],temp.size());
+	NONS_File::write(filename,&temp[0],temp.size());
 }
 
 std::string ConfigFile::writeOut(ENCODINGS encoding){
