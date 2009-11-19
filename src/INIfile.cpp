@@ -83,7 +83,7 @@ INIfile::INIfile(){}
 
 INIfile::INIfile(const std::wstring &filename,ENCODINGS encoding){
 	ulong l;
-	char *buffer=(char *)readfile(filename,l);
+	char *buffer=(char *)NONS_File::read(filename,l);
 	if (!!buffer){
 		this->readFile(buffer,l,encoding);
 		delete buffer;

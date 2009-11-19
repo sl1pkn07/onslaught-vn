@@ -472,6 +472,15 @@ void sarArchiveWrite(const std::wstring &ex_path,const std::wstring &in_path,boo
 						boost::thread thread(boost::bind(compression_helper,compressBuffer_BZ2,&bz2_buffer,raw,raw_l,&bz2));
 						lzss_buffer=encode_LZSS(raw,raw_l,lzss);
 						thread.join();
+						{
+							char *temp=new char[bz2+4];
+							size_t temp2=0;
+							writeBigEndian(4,temp,raw_l,temp2);
+							memcpy(temp+4,bz2_buffer,bz2);
+							delete[] bz2_buffer;
+							bz2_buffer=temp;
+							bz2+=4;
+						}
 					}else{
 						bz2_buffer=compressBuffer_BZ2(raw,raw_l,bz2);
 						lzss_buffer=encode_LZSS(raw,raw_l,lzss);

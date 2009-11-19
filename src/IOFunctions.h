@@ -72,14 +72,34 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y);
 inline std::ostream &operator<<(std::ostream &stream,const std::wstring &str){
 	return stream<<UniToUTF8(str);
 }
-uchar *readfile(const std::wstring &filename,ulong &len,ulong offset);
+
+class NONS_File{
 #if NONS_SYS_WINDOWS
-uchar *readfile(HANDLE file,ulong &len,ulong offset);
+	HANDLE
 #else
-uchar *readfile(std::ifstream &file,ulong &len,ulong offset);
+	std::fstream
 #endif
-uchar *readfile(const std::wstring &name,ulong &len);
-char writefile(const std::wstring &name,char *buffer,ulong size);
+		file;
+	bool opened_for_read;
+	bool is_open;
+	NONS_File(const NONS_File &){}
+	const NONS_File &operator=(const NONS_File &){}
+public:
+	typedef uchar type;
+	NONS_File():is_open(0){}
+	NONS_File(const std::wstring &path,bool open_for_read);
+	~NONS_File(){ this->close(); }
+	void open(const std::wstring &path,bool open_for_read);
+	void close();
+	bool operator!();
+	type *read(ulong read_bytes,ulong &bytes_read,ulong offset);
+	type *read(ulong &bytes_read);
+	bool write(void *buffer,ulong size);
+	ulong filesize();
+	static type *read(const std::wstring &path,ulong read_bytes,ulong &bytes_read,ulong offset);
+	static type *read(const std::wstring &path,ulong &bytes_read);
+	static bool write(const std::wstring &path,void *buffer,ulong size);
+};
 bool fileExists(const std::wstring &name);
 
 struct NONS_CommandLineOptions;

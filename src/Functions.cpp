@@ -46,8 +46,9 @@ struct PSF_parameters{
 	SDL_Color color;
 };
 
-bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset){
-	bool res=(arr[*byteoffset]>>(7-*bitoffset))&1;
+bool getbit(void *arr,ulong *byteoffset,uchar *bitoffset){
+	uchar *array=(uchar *)arr;
+	bool res=(array[*byteoffset]>>(7-*bitoffset))&1;
 	(*bitoffset)++;
 	if (*bitoffset>7){
 		(*byteoffset)++;
@@ -56,13 +57,14 @@ bool getbit(uchar *arr,ulong *byteoffset,uchar *bitoffset){
 	return res;
 }
 
-ulong getbits(uchar *arr,uchar bits,ulong *byteoffset,uchar *bitoffset){
+ulong getbits(void *arr,uchar bits,ulong *byteoffset,uchar *bitoffset){
+	uchar *array=(uchar *)arr;
 	ulong res=0;
 	if (bits>sizeof(ulong)*8)
 		bits=sizeof(ulong)*8;
 	for (;bits>0;bits--){
 		res<<=1;
-		res|=(ulong)getbit(arr,byteoffset,bitoffset);
+		res|=(ulong)getbit(array,byteoffset,bitoffset);
 	}
 	return res;
 }
@@ -985,17 +987,8 @@ void FlipSurfaceHV(SDL_Surface *src,SDL_Surface *dst){
 SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
 	if (!src || src->format->BitsPerPixel<24)
 		return 0;
-	if (!amount){
-		SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,
-			src->format->BitsPerPixel,
-			src->format->Rmask,
-			src->format->Gmask,
-			src->format->Bmask,
-			src->format->Amask
-		);
-		manualBlit(src,0,res,0);
-		return res;
-	}
+	if (!amount)
+		return copySurface(src);
 
 	ulong w=src->w,
 		h=src->h;
@@ -1003,7 +996,8 @@ SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
 	//ulong resWidth=float(src->w)*(1.0f+ABS(amount));
 	//ulong resWidth=float(src->w)*(1.0f+ABS(amount)*(float(src->h)/float(src->w)));
 	ulong resWidth=ulong(src->w+ABS(amount)*float(src->h));
-	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,resWidth,src->h,
+	SDL_Surface *res=makeSurface(
+		resWidth,src->h,
 		src->format->BitsPerPixel,
 		src->format->Rmask,
 		src->format->Gmask,
@@ -1069,24 +1063,16 @@ SDL_Surface *horizontalShear(SDL_Surface *src,float amount){
 SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 	if (!src || src->format->BitsPerPixel<24)
 		return 0;
-	if (!amount){
-		SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,src->h,
-			src->format->BitsPerPixel,
-			src->format->Rmask,
-			src->format->Gmask,
-			src->format->Bmask,
-			src->format->Amask
-		);
-		manualBlit(src,0,res,0);
-		return res;
-	}
+	if (!amount)
+		return copySurface(src);
 
 	ulong w=src->w,
 		h=src->h;
 
 	//ulong resHeight=float(src->h)*(1.0f+ABS(amount)*(float(src->w)/float(src->h)));
 	ulong resHeight=ulong(src->h+ABS(amount)*float(src->w));
-	SDL_Surface *res=SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA,src->w,resHeight,
+	SDL_Surface *res=makeSurface(
+		src->w,resHeight,
 		src->format->BitsPerPixel,
 		src->format->Rmask,
 		src->format->Gmask,
@@ -1195,11 +1181,12 @@ Sint16 readSignedWord(char *buffer,ulong &offset){
 	return r;
 }
 
-Uint16 readWord(char *buffer,ulong &offset){
+Uint16 readWord(void *_buffer,ulong &offset){
+	uchar *buffer=(uchar *)_buffer;
 	Uint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[offset+a];
+		r|=buffer[offset+a];
 	}
 	offset+=2;
 	return r;
@@ -1215,11 +1202,12 @@ Sint32 readSignedDWord(char *buffer,ulong &offset){
 	return r;
 }
 
-Uint32 readDWord(char *buffer,ulong &offset){
+Uint32 readDWord(void *_buffer,ulong &offset){
+	uchar *buffer=(uchar *)_buffer;
 	Uint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[offset+a];
+		r|=buffer[offset+a];
 	}
 	offset+=4;
 	return r;

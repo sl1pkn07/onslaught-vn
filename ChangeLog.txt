@@ -3,6 +3,7 @@
     * In-game console replacing old debugging console added.
     * Font path moved to the configuration file under "default font".
     * Added plug-in system.
+    * Added ZIP support.
     * Fixed compliance error in effects 11, 12, 13, and 14.
     * Fixed compliance error in nega.
     * Fixed major bug in file reading function.

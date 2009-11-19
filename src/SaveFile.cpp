@@ -282,7 +282,7 @@ NONS_VariableMember *readArray(char *buffer,ulong &offset){
 
 void NONS_SaveFile::load(std::wstring filename){
 	ulong l;
-	char *buffer=(char *)readfile(filename.c_str(),l);
+	char *buffer=(char *)NONS_File::read(filename.c_str(),l);
 	if (!buffer)
 		return;
 	ulong offset=0;
@@ -885,7 +885,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 
 	ulong l;
 	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
-	bool ret=!writefile(filename.c_str(),writebuffer,l);
+	bool ret=!NONS_File::write(filename.c_str(),writebuffer,l);
 	delete[] writebuffer;
 	return ret;
 	//return !writefile(filename,(char *)buffer.c_str(),buffer.size());

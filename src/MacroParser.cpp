@@ -990,7 +990,7 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 	ulong l;
 	char *temp;
 	bool ret;
-	if (temp=(char *)readfile(L"macros.txt",l)){
+	if (temp=(char *)NONS_File::read(L"macros.txt",l)){
 		std::wstringstream stream(UniFromUTF8(std::string(temp,l)));
 		delete[] temp;
 		NONS_Macro::MacroFile *MacroFile;
@@ -998,13 +998,13 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 		if (pointerIsValid && MacroFile->checkSymbols() && preprocess(dst,script,*MacroFile,1)){
 			if (CLOptions.outputPreprocessedFile){
 				std::string str2=UniToUTF8(dst);
-				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
+				NONS_File::write(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
 			ret=1;
 		}else{
 			if (CLOptions.outputPreprocessedFile){
 				std::string str2=UniToUTF8(script);
-				writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
+				NONS_File::write(CLOptions.preprocessedFile,&str2[0],str2.size());
 			}
 			ret=0;
 		}
@@ -1013,7 +1013,7 @@ bool preprocess(std::wstring &dst,const std::wstring &script){
 	}else{
 		if (CLOptions.outputPreprocessedFile){
 			std::string str2=UniToUTF8(script);
-			writefile(CLOptions.preprocessedFile,&str2[0],str2.size());
+			NONS_File::write(CLOptions.preprocessedFile,&str2[0],str2.size());
 		}
 		ret=0;
 	}

@@ -31,80 +31,131 @@
 #define NONS_ARCHIVE_H
 
 #include "Common.h"
+#include "IOFunctions.h"
 #include "ErrorCodes.h"
 #include <string>
 #include <vector>
+#include <map>
 #include <fstream>
 
-struct NONS_TreeNode{
-	struct NONS_ArchivedFile{
-		std::wstring name;
-		ulong compression_type;
-		enum{
-			NO_COMPRESSION=0,
-			SPB_COMPRESSION=1,
-			LZSS_COMPRESSION=2,
-			NBZ_COMPRESSION=4
-		};
-		ulong offset;
-		ulong length;
-		long original_length;
-		NONS_ArchivedFile(){
-			this->offset=0;
-			this->length=0;
-			this->original_length=0;
-			this->compression_type=NO_COMPRESSION;
-		}
-	} data;
-	std::vector<NONS_TreeNode *> branches;
-	NONS_TreeNode(const std::wstring &name);
-	~NONS_TreeNode();
-	NONS_TreeNode *getBranch(const std::wstring &name,bool createIfMissing);
-	void sort();
-	void vectorizeFiles(std::vector<NONS_TreeNode *> &vector);
-private:
-	NONS_TreeNode *newBranch(const std::wstring &name);
+struct TreeNodeComp{
+	bool operator()(const std::wstring &opA,const std::wstring &opB) const{
+		return stdStrCmpCI(opA,opB)<0;
+	}
 };
 
-#define READ_LENGTH 4096
+struct TreeNode{
+	std::wstring name;
+	typedef std::map<std::wstring,TreeNode,TreeNodeComp> container;
+	typedef container::iterator container_iterator;
+	typedef container::const_iterator const_container_iterator;
+	container branches;
+public:
+	void *extraData;
+	void(*freeExtraData)(void *);
+	bool is_dir,
+		skip;
+	TreeNode():is_dir(0),skip(0),extraData(0),freeExtraData(0){}
+	TreeNode(const std::wstring &s):is_dir(0),name(s),skip(0),extraData(0),freeExtraData(0){}
+	~TreeNode();
+	void clear(){ this->branches.clear(); }
+	TreeNode *get_branch(const std::wstring &path,bool create);
+};
 
-struct NONS_Archive{
-	NONS_TreeNode *root;
-#if NONS_SYS_WINDOWS
-	HANDLE file;
-#else
-	std::ifstream file;
-#endif
+class Archive{
+protected:
+	TreeNode root;
+public:
+	bool good;
+	Archive():root(L""),good(0){
+		this->root.is_dir=1;
+		this->root.skip=1;
+	}
+	virtual ~Archive(){}
+	bool exists(const std::wstring &path);
+	bool test();
+	bool test_rec(TreeNode *node);
+	uchar *get_file_buffer(const std::wstring &path,ulong &size);
+protected:
+	virtual uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size)=0;
+};
+
+struct NSAdata{
+	ulong offset;
+	enum compression_type{
+		COMPRESSION_NONE=0,
+		COMPRESSION_SPB=1,
+		COMPRESSION_LZSS=2,
+		COMPRESSION_BZ2=4
+	} compression;
+	ulong compressed,
+		uncompressed;
+	NSAdata():offset(0),compression(COMPRESSION_NONE),compressed(0),uncompressed(0){}
+};
+
+class NSAarchive:public Archive{
 	std::wstring path;
-	ulong archive_type;
-	enum{
-		UNRECOGNIZED=0,
-		SAR_ARCHIVE=1,
-		NSA_ARCHIVE=2,
-		NS2_ARCHIVE=3,
-		NS3_ARCHIVE=4
+	NONS_File file;
+public:
+	bool nsa;
+	NSAarchive(const std::wstring &path,bool nsa);
+	uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size);
+	static void freeExtraData(void *);
+	//dereference extra data
+	static const NSAdata &derefED(void *p){
+		return *(NSAdata *)p;
+	}
+};
+
+struct ZIPdata{
+	ulong bit_flag;
+	enum compression_type{
+		COMPRESSION_NONE=0,
+		COMPRESSION_DEFLATE=8,
+		COMPRESSION_BZ2=12,
+		COMPRESSION_LZMA=14
+	} compression;
+	Uint32 crc32;
+	ulong compressed,
+		uncompressed,
+		disk,
+		data_offset;
+	ZIPdata()
+		:bit_flag(0),
+		compression(COMPRESSION_NONE),
+		crc32(0),
+		compressed(0),
+		uncompressed(0),
+		disk(0),
+		data_offset(0){}
+};
+
+class ZIParchive:public Archive{
+	std::vector<std::wstring> disks;
+public:
+	ZIParchive(const std::wstring &path);
+	uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size);
+	static void freeExtraData(void *);
+	static const ZIPdata &derefED(void *p){
+		return *(ZIPdata *)p;
+	}
+
+	enum SignatureType{
+		NOT_A_SIGNATURE=0,
+		LOCAL_HEADER,
+		CENTRAL_HEADER,
+		EOCDR
 	};
-	bool loaded;
-	NONS_Archive(const std::wstring &filename,bool failSilently);
-	~NONS_Archive();
-	/*
-	1 if the archive has been loaded or if it had already been loaded.
-	0 if it failed to load.
-	*/
-	bool readArchive();
-	bool readSAR();
-	bool readNSA();
-	uchar *getFileBuffer(NONS_TreeNode *node,ulong &buffersize);
-	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
-	bool exists(const std::wstring &filepath);
+	static SignatureType getSignatureType(void *buffer);
+	static const ulong   local_signature=0x04034B50,
+	                   central_signature=0x02014B50,
+	                     EOCDR_signature=0x06054b50;
 };
 
 struct NONS_GeneralArchive{
-	NONS_Archive *archive;
-	std::vector<NONS_Archive *> NSAarchives;
+	std::vector<Archive *> archives;
 	NONS_GeneralArchive();
 	~NONS_GeneralArchive();
-	ErrorCode init(const std::wstring &filename,bool which,bool failSilently);
 	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
 	bool exists(const std::wstring &filepath);
 };

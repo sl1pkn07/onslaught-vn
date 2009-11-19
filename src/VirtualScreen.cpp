@@ -39,6 +39,7 @@ DLLexport NONS_Mutex screenMutex;
 
 //#define ONLY_NEAREST_NEIGHBOR
 //#define BENCHMARK_INTERPOLATION
+#define DEFAULT_SCREEN_COLOR_DEPTH 32
 
 pipelineElement::pipelineElement(ulong effectNo,const SDL_Color &color,const std::wstring &rule,bool loadRule)
 		:effectNo(effectNo),color(color),ruleStr(rule){
@@ -100,7 +101,7 @@ void _asyncEffectThread(void *param){
 }
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
-	this->screens[REAL]=SDL_SetVideoMode(w,h,32,SDL_HWSURFACE|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
+	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (!this->screens[REAL]){
 		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
 			<<"Terminating."<<std::endl;
@@ -122,7 +123,7 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 }
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
-	this->screens[REAL]=SDL_SetVideoMode(ow,oh,24,SDL_HWSURFACE|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
+	this->screens[REAL]=SDL_SetVideoMode(ow,oh,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (!this->screens[REAL]){
 		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
 			<<"Terminating."<<std::endl;
@@ -348,7 +349,7 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	SDL_Surface *tempCopy=0;
 	if (!this->usingFeature[INTERPOLATION] && !this->usingFeature[ASYNC_EFFECT])
 		tempCopy=copySurface(this->screens[REAL]);
-	this->screens[REAL]=SDL_SetVideoMode(w,h,24,SDL_HWSURFACE|SDL_DOUBLEBUF|((this->fullscreen)?SDL_FULLSCREEN:0));
+	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((this->fullscreen)?SDL_FULLSCREEN:0));
 	if (tempCopy){
 		if (!this->usingFeature[OVERALL_FILTER])
 			this->screens[VIRTUAL]=this->screens[REAL];

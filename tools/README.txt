@@ -49,52 +49,52 @@ Usage:
 nsaio <mode> <options> <input files>
 
 MODES:
-	e - Extract
-	c - Create
-	l - List
+    e - Extract
+    c - Create
+    l - List
 
 OPTIONS:
-	-h, -?, --help
-		Print a short description of the arguments
-	--version
-		Print the version
-	-o <filename> (default: output)
-		Use for mode c. Gives the created archive that name. Do not include the
-		extension in the name.
-	-c {none|lzss|bz2|auto|automt} (default: automt)
-		Selects the compression algorithm to use.
-		none: Do not compress any file.
-		lzss: Apply LZSS (Lempel-Ziv-Storer-Szymanski) to all files.
-		bz2: Apply BZ2 to all files.
-		auto: Find the algorithm that will yield the best compression for each
-			file. Takes longer and uses more memory, but gives the best possible
-			results.
-		automt: Same as auto, but uses multi-threading to speed up the process.
-			On systems with two or more cores, it can run almost twice as fast
-			as auto.
-	-r <directory>
-		Instead of adding the directory to the root of the archive, add its
-		contents.
-		Example:
-		For this directory structure
-			./arc/0.bmp
-			./arc/icon/
-			./arc/image/
-			./arc/wave/
-		this command line
-			nsaio arc
-		gives this archive
-			output.nsa/arc/0.bmp
-			output.nsa/arc/icon/
-			output.nsa/arc/image/
-			output.nsa/arc/wave/
-		but this one
-			nsaio -r arc
-		gives this archive
-			output.nsa/0.bmp
-			output.nsa/icon/
-			output.nsa/image/
-			output.nsa/wave/
+    -h, -?, --help
+        Print a short description of the arguments
+    --version
+        Print the version
+    -o <filename> (default: output)
+        Use for mode c. Gives the created archive that name. Do not include the
+        extension in the name.
+    -c {none|lzss|bz2|auto|automt} (default: automt)
+        Selects the compression algorithm to use.
+        none: Do not compress any file.
+        lzss: Apply LZSS (Lempel-Ziv-Storer-Szymanski) to all files.
+        bz2: Apply BZ2 to all files.
+        auto: Find the algorithm that will yield the best compression for each
+            file. Takes longer and uses more memory, but gives the best possible
+            results.
+        automt: Same as auto, but uses multi-threading to speed up the process.
+            On systems with two or more cores, it can run almost twice as fast
+            as auto.
+    -r <directory>
+        Instead of adding the directory to the root of the archive, add its
+        contents.
+        Example:
+        For this directory structure
+            ./arc/0.bmp
+            ./arc/icon/
+            ./arc/image/
+            ./arc/wave/
+        this command line
+            nsaio arc
+        gives this archive
+            output.nsa/arc/0.bmp
+            output.nsa/arc/icon/
+            output.nsa/arc/image/
+            output.nsa/arc/wave/
+        but this one
+            nsaio -r arc
+        gives this archive
+            output.nsa/0.bmp
+            output.nsa/icon/
+            output.nsa/image/
+            output.nsa/wave/
 
 
                                       zip
@@ -120,30 +120,30 @@ Usage:
 zip <options> <input files>
 
 OPTIONS:
-	-h, -?, --help
-		Print a short description of the arguments
-	--version
-		Print the version
-	-o <filename> (default: output)
-		Gives the created archive that name. Do not include the extension in the
-		name.
-	-c {none|bz2|lzma|auto|automt} (default: automt)
-		Selects the compression algorithm to use.
-		none: Do not compress any file.
-		bz2: Apply BZ2 to all files.
-		lzma: Apply LZMA (Lempel-Ziv-Markov chain-Algorithm) to all files.
-		auto: Find the algorithm that will yield the best compression for each
-			file. Takes longer and uses more memory, but gives the best possible
-			results.
-		automt: Same as auto, but uses multi-threading to speed up the process.
-			On systems with two or more cores, it can run almost twice as fast
-			as auto.
-	-r <directory>
-		See nsaio.
-	-s <file size> (default [and max]: 2147483647)
-		Generates a split archive with parts no bigger than the size passed.
-		The size should be in bytes, but the following multipliers are
-		supported: K (or k), M (or m), and G (or g).
-		1K == 1024
-		1M == 1024K
-		1G == 1024M
+    -h, -?, --help
+        Print a short description of the arguments
+    --version
+        Print the version
+    -o <filename> (default: output)
+        Gives the created archive that name. Do not include the extension in the
+        name.
+    -c {none|bz2|lzma|auto|automt} (default: automt)
+        Selects the compression algorithm to use.
+        none: Do not compress any file.
+        bz2: Apply BZ2 to all files.
+        lzma: Apply LZMA (Lempel-Ziv-Markov chain-Algorithm) to all files.
+        auto: Find the algorithm that will yield the best compression for each
+            file. Takes longer and uses more memory, but gives the best possible
+            results.
+        automt: Same as auto, but uses multi-threading to speed up the process.
+            On systems with two or more cores, it can run almost twice as fast
+            as auto.
+    -r <directory>
+        See nsaio.
+    -s <file size> (default [and max]: 2147483647)
+        Generates a split archive with parts no bigger than the size passed.
+        The size should be in bytes, but the following multipliers are
+        supported: K (or k), M (or m), and G (or g).
+        1K == 1024
+        1M == 1024K
+        1G == 1024M

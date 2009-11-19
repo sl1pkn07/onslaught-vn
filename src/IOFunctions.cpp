@@ -367,105 +367,132 @@ void NONS_RedirectedOutput::indent(long a){
 		this->indentation+=a;
 }
 
-uchar *readfile(const std::wstring &filename,ulong &len,ulong offset){
+NONS_File::NONS_File(const std::wstring &path,bool read){
+	this->is_open=0;
+	this->file=INVALID_HANDLE_VALUE;
+	this->open(path,read);
+}
+
+void NONS_File::open(const std::wstring &path,bool open_for_read){
+	this->close();
+	this->opened_for_read=open_for_read;
 #if NONS_SYS_WINDOWS
-	HANDLE file=CreateFile(&filename[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,0,0);
-	if (file==INVALID_HANDLE_VALUE)
-		return 0;
-	uchar *ret=readfile(file,len,offset);
-	CloseHandle(file);
-	return ret;
+	this->file=CreateFile(
+		&path[0],
+		(open_for_read?FILE_READ_DATA:FILE_WRITE_DATA),
+		(open_for_read?FILE_SHARE_READ:FILE_SHARE_WRITE),
+		0,
+		(open_for_read?OPEN_EXISTING:TRUNCATE_EXISTING),
+		0,0
+	);
 #else
-	std::ifstream file(UniToUTF8(filename).c_str(),std::ios::binary);
-	if (!file)
-		return 0;
-	return readfile(file,len,offset);
+	this->file.open(UniToUTF8(path),std::ios::binary|(read?std::ios::in:std::ios::out));
+#endif
+	this->is_open=!!*this;
+}
+
+void NONS_File::close(){
+	if (!this->is_open)
+		return;
+#if NONS_SYS_WINDOWS
+	if (!!*this)
+		CloseHandle(this->file);
+#else
+	this->file.close();
+#endif
+	this->is_open=0;
+}
+	
+bool NONS_File::operator!(){
+#if NONS_SYS_WINDOWS
+	return this->file==INVALID_HANDLE_VALUE;
+#else
+	return !this->file;
 #endif
 }
 
-#if NONS_SYS_WINDOWS
-uchar *readfile(HANDLE file,ulong &len,ulong offset){
-	if (file==INVALID_HANDLE_VALUE)
+ulong NONS_File::filesize(){
+	if (!this->is_open)
 		return 0;
-	DWORD filesize=GetFileSize(file,0)/*,
-		originalPosition=SetFilePointer(file,0,0,FILE_CURRENT)*/;
+#if NONS_SYS_WINDOWS
+	return GetFileSize(this->file,0);
+#else
+	this->file.seekg(0,std::ios::end);
+	return this->file.tellg();
+#endif
+}
 
+NONS_File::type *NONS_File::read(ulong read_bytes,ulong &bytes_read,ulong offset){
+	if (!this->is_open || !this->opened_for_read)
+		return 0;
+	ulong filesize=this->filesize();
 	if (offset>=filesize)
 		offset=filesize-1;
-
-	SetFilePointer(file,offset,0,FILE_BEGIN);
-
-	filesize=filesize-offset>=len?len:filesize-offset;
-
-	uchar *buffer=new uchar[filesize];
-	ReadFile(file,buffer,filesize,&filesize,0);
-
-	len=filesize;
-	return buffer;
-}
-#else
-uchar *readfile(std::ifstream &file,ulong &len,ulong offset){
-	if (!file)
-		return 0;
-	ulong originalPosition=file.tellg();
-	file.seekg(0,std::ios::end);
-	ulong size=file.tellg();
-	file.seekg(offset,std::ios::beg);
-	size=size-offset>=len?len:size-offset;
-	len=size;
-	uchar *buffer=new uchar[size];
-	file.read((char *)buffer,size);
-	file.seekg(originalPosition,std::ios::beg);
-	return buffer;
-}
-#endif
-
-uchar *readfile(const std::wstring &name,ulong &len){
 #if NONS_SYS_WINDOWS
-	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,FILE_SHARE_READ,0,OPEN_EXISTING,FILE_FLAG_SEQUENTIAL_SCAN,0);
-	if (file==INVALID_HANDLE_VALUE)
-		return 0;
-	DWORD filesize;
-	filesize=GetFileSize(file,0);
-	
-	uchar *buffer=new uchar[filesize];
-	ReadFile(file,buffer,filesize,&filesize,0);
-	CloseHandle(file);
-
-	len=filesize;
-	return buffer;
+	SetFilePointer(this->file,offset,0,FILE_BEGIN);
 #else
-	std::ifstream file(UniToUTF8(name).c_str(),std::ios::binary|std::ios::ate);
-	if (!file)
-		return 0;
-	ulong pos=file.tellg();
-	len=pos;
-	file.seekg(0,std::ios::beg);
-	uchar *buffer=new uchar[pos];
-	file.read((char *)buffer,pos);
-	file.close();
-	return buffer;
+	this->file.seekg(offset);
 #endif
+	if (filesize-offset<read_bytes)
+		read_bytes=filesize-offset;
+	NONS_File::type *buffer=new NONS_File::type[read_bytes];
+#if NONS_SYS_WINDOWS
+	DWORD rb=read_bytes,br=0;
+	ReadFile(this->file,buffer,rb,&br,0);
+#else
+	this->file.read(buffer,read_bytes);
+#endif
+	bytes_read=read_bytes;
+	return buffer;
 }
 
-char writefile(const std::wstring &name,char *buffer,ulong size){
+NONS_File::type *NONS_File::read(ulong &bytes_read){
+	if (!this->is_open || !this->opened_for_read)
+		return 0;
+	ulong filesize=this->filesize();
 #if NONS_SYS_WINDOWS
-	HANDLE file=CreateFile(&name[0],GENERIC_WRITE,0,0,TRUNCATE_EXISTING,0,0);
-	if (file==INVALID_HANDLE_VALUE)
-		file=CreateFile(&name[0],GENERIC_WRITE,0,0,CREATE_NEW,0,0);
-	if (file==INVALID_HANDLE_VALUE)
-		return 1;
-	WriteFile(file,buffer,size,&size,0);
-	CloseHandle(file);
-	return 0;
+	SetFilePointer(this->file,0,0,FILE_BEGIN);
 #else
-	std::ofstream file(UniToUTF8(name).c_str(),std::ios::binary);
-	if (!file)
-		return 1;
-	file.write(buffer,size);
-	file.close();
-	return 0;
+	this->file.seekg(0);
 #endif
+	NONS_File::type *buffer=new NONS_File::type[filesize];
+#if NONS_SYS_WINDOWS
+	DWORD rb=filesize,br=0;
+	ReadFile(this->file,buffer,rb,&br,0);
+#else
+	this->file.read(buffer,filesize);
+#endif
+	bytes_read=filesize;
+	return buffer;
+}
+
+bool NONS_File::write(void *buffer,ulong size){
+	if (!this->is_open || this->opened_for_read)
+		return 0;
+#if NONS_SYS_WINDOWS
+	SetFilePointer(this->file,0,0,FILE_BEGIN);
+	DWORD a=size;
+	WriteFile(this->file,buffer,a,&a,0);
+#else
+	this->file.seekp(0);
+	this->file.write((char *)buffer,size);
+#endif
+	return 1;
+}
+
+NONS_File::type *NONS_File::read(const std::wstring &path,ulong read_bytes,ulong &bytes_read,ulong offset){
+	NONS_File file(path,1);
+	return file.read(read_bytes,bytes_read,offset);
+}
+
+NONS_File::type *NONS_File::read(const std::wstring &path,ulong &bytes_read){
+	NONS_File file(path,1);
+	return file.read(bytes_read);
+}
+
+bool NONS_File::write(const std::wstring &path,void *buffer,ulong size){
+	NONS_File file(path,0);
+	return file.write(buffer,size);
 }
 
 bool fileExists(const std::wstring &name){

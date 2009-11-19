@@ -32,6 +32,7 @@ add_executable(ONSlaught
 	src/INIfile.cpp
 	src/IOFunctions.cpp
 	src/ImageLoader.cpp
+	src/LZMA.c
 	src/MacroParser.cpp
 	src/MacroParser.tab.cpp
 	src/ONSlaught.cpp
@@ -46,6 +47,7 @@ add_executable(ONSlaught
 	src/VariableStore.cpp
 	src/VirtualScreen.cpp
 	src/commandPreParser.tab.cpp
+	src/puff.c
 	src/sha1.cpp
 	src/Plugin/LibraryLoader.cpp
 )
