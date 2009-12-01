@@ -136,6 +136,7 @@ struct NONS_VirtualScreen{
 	DECLSPEC void updateWholeScreen(bool fast=0);
 	//If 0, to window; if 1, to fullscreen; if 2, toggle.
 	bool toggleFullscreen(uchar mode=2);
+	SDL_Surface *toggleFullscreenFromVideo();
 	long convertX(long x);
 	long convertY(long y);
 	long unconvertX(long x);
@@ -144,6 +145,7 @@ struct NONS_VirtualScreen{
 	ulong convertH(ulong h);
 	DECLSPEC void updateWithoutLock(bool fast=0);
 	std::string takeScreenshot(const std::string &filename="");
+	void takeScreenshotFromVideo();
 	void initEffectList();
 	ErrorCode callEffect(ulong effectNo,ulong frequency);
 	void stopEffect();

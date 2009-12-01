@@ -30,6 +30,7 @@
 #include "ScriptInterpreter.h"
 #include "IOFunctions.h"
 #include "CommandLineOptions.h"
+#include "Plugin/LibraryLoader.h"
 #include <iomanip>
 #include <iostream>
 #include "version.h"
@@ -331,7 +332,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"autoclick"]=&NONS_ScriptInterpreter::command_autoclick;
 	this->commandList[L"automode_time"]=0;
 	this->commandList[L"automode"]=0;
-	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_avi;
 	this->commandList[L"bar"]=0;
 	this->commandList[L"barclear"]=0;
 	this->commandList[L"bg"]=&NONS_ScriptInterpreter::command_bg;
@@ -508,7 +509,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"mp3save"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"mp3stop"]=&NONS_ScriptInterpreter::command_playstop;
 	this->commandList[L"mp3vol"]=&NONS_ScriptInterpreter::command_mp3vol;
-	this->commandList[L"mpegplay"]=&NONS_ScriptInterpreter::command_mpegplay;
+	this->commandList[L"mpegplay"]=&NONS_ScriptInterpreter::command_avi;
 	this->commandList[L"msp"]=&NONS_ScriptInterpreter::command_msp;
 	this->commandList[L"mul"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"nega"]=&NONS_ScriptInterpreter::command_nega;
@@ -822,6 +823,187 @@ void NONS_ScriptInterpreter::queue(NONS_ScriptLine *line){
 	this->commandQueue.push(line);
 }
 
+#include "../video_player.h"
+
+struct playback_input_thread_params{
+	bool allow_quit;
+	int *stop;
+	int *toggle_fullscreen;
+	int *take_screenshot;
+};
+
+extern bool video_playback;
+
+void playback_input_thread(void *p){
+	playback_input_thread_params params=*(playback_input_thread_params *)p;
+	NONS_EventQueue queue;
+	video_playback=1;
+	while (!*params.stop){
+		while (!queue.empty() && !*params.stop){
+			SDL_Event event=queue.pop();
+			switch (event.type){
+				case SDL_QUIT:
+					*params.stop=1;
+					break;
+				case SDL_KEYDOWN:
+					switch (event.key.keysym.sym){
+						case SDLK_ESCAPE:
+							if (params.allow_quit)
+								*params.stop=1;
+							break;
+						case SDLK_f:
+							*params.toggle_fullscreen=1;
+							break;
+						case SDLK_RETURN:
+							if (CHECK_FLAG(event.key.keysym.mod,KMOD_ALT))
+								*params.toggle_fullscreen=1;
+							break;
+						case SDLK_F12:
+							*params.take_screenshot=1;
+						default:
+							break;
+					}
+				default:
+					break;
+			}
+		}
+		SDL_Delay(10);
+	}
+	video_playback=0;
+}
+
+struct video_playback_params{
+	NONS_VirtualScreen *vs;
+};
+
+SDL_Surface *playback_fullscreen_callback(volatile SDL_Surface *screen,void *user_data){
+	video_playback_params params=*(video_playback_params *)user_data;
+	return params.vs->toggleFullscreenFromVideo();
+}
+
+SDL_Surface *playback_screenshot_callback(volatile SDL_Surface *screen,void *user_data){
+	video_playback_params params=*(video_playback_params *)user_data;
+	params.vs->takeScreenshotFromVideo();
+	return (SDL_Surface *)screen;
+}
+
+ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool skippable){
+	NONS_LibraryLoader video_player("video_player",0);
+	video_playback_fp function=(video_playback_fp)video_player.getFunction(PLAYBACK_FUNCTION_NAME_STRING);
+	if (!function){
+		switch (video_player.error){
+			case NONS_LibraryLoader::LIBRARY_NOT_FOUND:
+				return NONS_LIBRARY_NOT_FOUND;
+			case NONS_LibraryLoader::FUNCTION_NOT_FOUND:
+				return NONS_FUNCTION_NOT_FOUND;
+		}
+	}
+	int error;
+	{
+		NONS_MutexLocker ml(screenMutex);
+		SDL_Surface *screen=this->screen->screen->screens[REAL];
+		SDL_FillRect(screen,0,0);
+		int stop=0,
+			toggle_fullscreen=0,
+			take_screenshot=0;
+		playback_input_thread_params thread_params={
+			skippable,
+			&stop,
+			&toggle_fullscreen,
+			&take_screenshot
+		};
+		video_playback_params playback_params={ this->screen->screen };
+		NONS_Thread input_thread(playback_input_thread,&thread_params);
+		while (1){
+			error=function(
+				screen,
+				UniToUTF8(filename).c_str(),
+				&stop,
+				&playback_params,
+				&toggle_fullscreen,
+				&take_screenshot,
+				playback_fullscreen_callback,
+				playback_screenshot_callback,
+				0
+			);
+			if (CHECK_FLAG(error,PLAYBACK_OPEN_AUDIO_OUTPUT_FAILED) && this->audio){
+				delete this->audio;
+				this->audio=0;
+				continue;
+			}
+			if (!this->audio){
+				this->audio=new NONS_Audio(CLOptions.musicDirectory);
+				if (CLOptions.musicFormat.size())
+					this->audio->musicFormat=CLOptions.musicFormat;
+			}
+			break;
+		}
+		stop=1;
+	}
+	if (error!=PLAYBACK_NO_ERROR){
+		if (CHECK_FLAG(error,PLAYBACK_FILE_NOT_FOUND))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): File not found.\n";
+		if (CHECK_FLAG(error,PLAYBACK_STREAM_INFO_NOT_FOUND))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Stream info not found. Bad file?\n";
+		if (CHECK_FLAG(error,PLAYBACK_NO_VIDEO_STREAM))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): No video stream.\n";
+		if (CHECK_FLAG(error,PLAYBACK_NO_AUDIO_STREAM))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): No audio stream. Pure video files not yet supported.\n";
+		if (CHECK_FLAG(error,PLAYBACK_UNSUPPORTED_VIDEO_CODEC))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Unsupported video codec.\n";
+		if (CHECK_FLAG(error,PLAYBACK_UNSUPPORTED_AUDIO_CODEC))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Unsupported audio codec.\n";
+		if (CHECK_FLAG(error,PLAYBACK_OPEN_VIDEO_CODEC_FAILED))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't open video codec.\n";
+		if (CHECK_FLAG(error,PLAYBACK_OPEN_AUDIO_CODEC_FAILED))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't open audio codec.\n";
+		if (CHECK_FLAG(error,PLAYBACK_OPEN_AUDIO_OUTPUT_FAILED))
+			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't initialize audio output module.\n";
+	}
+	return (error==PLAYBACK_NO_ERROR)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
+}
+
+bool NONS_ScriptInterpreter::generic_play(const std::wstring &filename,bool from_archive){
+	if (from_archive){
+		ulong l;
+		uchar *buffer=this->archive->getFileBuffer(filename,l);
+		if (!buffer)
+			return 0;
+		ErrorCode error=this->audio->playMusic(filename,(char *)buffer,l,1);
+		delete[] buffer;
+		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
+			return 0;
+		NONS_EventQueue queue;
+		bool _break=0;
+		while (this->audio->music->is_playing() && !_break){
+			while (!queue.empty() && !_break){
+				SDL_Event event=queue.pop();
+				if (event.type==SDL_KEYDOWN || event.type==SDL_MOUSEBUTTONDOWN)
+					_break=1;
+			}
+			SDL_Delay(50);
+		}
+	}else{
+		if (!CHECK_FLAG(this->play_video(filename,1),NONS_NO_ERROR_FLAG)){
+			ErrorCode error=this->audio->playMusic(&filename,1);
+			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
+				return 0;
+			NONS_EventQueue queue;
+			bool _break=0;
+			while (this->audio->music->is_playing() && !_break){
+				while (!queue.empty() && !_break){
+					SDL_Event event=queue.pop();
+					if (event.type==SDL_KEYDOWN ||
+							event.type==SDL_MOUSEBUTTONDOWN ||
+							event.type==SDL_QUIT)
+						_break=1;
+				}
+				SDL_Delay(50);
+			}
+		}
+	}
+	return 1;
+}
 
 ulong NONS_ScriptInterpreter::totalCommands(){
 	return this->commandList.size()-1;
@@ -1722,9 +1904,11 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 		au->playMusic(&temp,save.loopMp3?-1:0);
 	}else if (save.music.size()){
 		ulong size;
-		char *buffer=(char *)this->archive->getFileBuffer(save.music,size);
+		char *buffer=(char *)this->archive->getFileBufferWithoutFS(save.music,size);
 		if (buffer)
-			au->playMusic(save.music,buffer,size,save.loopMp3?-1:0);
+			this->audio->playMusic(save.music,buffer,size,save.loopMp3?-1:0);
+		else
+			this->audio->playMusic(&save.music,save.loopMp3?-1:0);
 	}
 	au->musicVolume(save.musicVolume);
 	for (ushort a=0;a<save.channels.size();a++){
@@ -2124,6 +2308,15 @@ ErrorCode NONS_ScriptInterpreter::command_autoclick(NONS_Statement &stmt){
 		ms=0;
 	this->autoclick=ms;
 	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_avi(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	std::wstring filename;
+	long skippable;
+	_GETWCSVALUE(filename,0);
+	_GETINTVALUE(skippable,1);
+	return this->play_video(filename,!!skippable);
 }
 
 ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
@@ -3787,10 +3980,6 @@ ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
-ErrorCode NONS_ScriptInterpreter::command_mpegplay(NONS_Statement &stmt){
-	return NONS_UNIMPLEMENTED_COMMAND;
-}
-
 ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
 	long spriten,x,y,alpha;
@@ -3936,12 +4125,12 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 			this->saveGame->musicTrack=-1;
 	}else{
 		ulong size;
-		char *buffer=(char *)this->archive->getFileBuffer(name,size);
+		char *buffer=(char *)this->archive->getFileBufferWithoutFS(name,size);
 		this->saveGame->musicTrack=-1;
-		if (!buffer)
-			error=NONS_FILE_NOT_FOUND;
-		else
+		if (buffer)
 			error=this->audio->playMusic(name,buffer,size,this->mp3_loop?-1:0);
+		else
+			error=this->audio->playMusic(&name,this->mp3_loop?-1:0);
 		if (error==NONS_NO_ERROR)
 			this->saveGame->music=name;
 		else

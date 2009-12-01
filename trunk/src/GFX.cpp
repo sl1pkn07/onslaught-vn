@@ -37,7 +37,7 @@
 #include <cmath>
 #include <iostream>
 
-#if defined _DEBUG || 1
+#if defined _DEBUG
 #define BENCHMARK_EFFECTS
 #endif
 
@@ -87,7 +87,7 @@ void NONS_GFX::initializeLists(){
 	NONS_GFX::listsInitialized=1;
 	NONS_GFX::filters.push_back(effectMonochrome);
 	NONS_GFX::filters.push_back(effectNegative);
-	libraryFunction fp=pluginLibrary.getFunction("getFunctionPointers");
+	pluginLibraryFunction fp=(pluginLibraryFunction)pluginLibrary.getFunction("getFunctionPointers");
 	if (!fp)
 		return;
 	{

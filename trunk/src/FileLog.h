@@ -53,7 +53,7 @@ struct NONS_FileLog:NONS_LogStrings{
 	NONS_FileLog(const std::wstring &oldName,const std::wstring &newName)
 		:NONS_LogStrings(oldName,newName){}
 	bool addString(const std::wstring &string);
-	bool check(std::wstring string);
+	bool check(const std::wstring &string);
 };
 
 struct NONS_LabelLog:NONS_LogStrings{

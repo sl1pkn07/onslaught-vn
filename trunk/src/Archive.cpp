@@ -816,11 +816,15 @@ NONS_GeneralArchive::~NONS_GeneralArchive(){
 }
 
 uchar *NONS_GeneralArchive::getFileBuffer(const std::wstring &filepath,ulong &buffersize){
+	uchar *res=getFileBufferWithoutFS(filepath,buffersize);
+	return (res)?res:NONS_File::read(filepath,buffersize);
+}
+
+uchar *NONS_GeneralArchive::getFileBufferWithoutFS(const std::wstring &filepath,ulong &buffersize){
 	uchar *res=0;
 	for (long a=this->archives.size()-1;a>=0;a--)
 		if (res=this->archives[a]->get_file_buffer(filepath,buffersize))
 			return res;
-	res=NONS_File::read(filepath,buffersize);
 	return res;
 }
 

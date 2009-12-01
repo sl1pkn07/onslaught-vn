@@ -101,6 +101,7 @@ void _asyncEffectThread(void *param){
 }
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
+	memset(this->screens,0,(REAL+1)*sizeof(*this->screens));
 	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (!this->screens[REAL]){
 		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
@@ -123,6 +124,7 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 }
 
 NONS_VirtualScreen::NONS_VirtualScreen(ulong iw,ulong ih,ulong ow,ulong oh){
+	memset(this->screens,0,(REAL+1)*sizeof(*this->screens));
 	this->screens[REAL]=SDL_SetVideoMode(ow,oh,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (!this->screens[REAL]){
 		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
@@ -361,6 +363,22 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 	return this->fullscreen;
 }
 
+SDL_Surface *NONS_VirtualScreen::toggleFullscreenFromVideo(){
+	this->fullscreen=!this->fullscreen;
+	ushort w=this->screens[REAL]->w,
+		h=this->screens[REAL]->h;
+	bool tempCopy=0;
+	if (!this->usingFeature[INTERPOLATION] && !this->usingFeature[ASYNC_EFFECT])
+		tempCopy=1;
+	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((this->fullscreen)?SDL_FULLSCREEN:0));
+	if (tempCopy){
+		if (!this->usingFeature[OVERALL_FILTER])
+			this->screens[VIRTUAL]=this->screens[REAL];
+	}else if (this->usingFeature[INTERPOLATION])
+		this->screens[REAL]->clip_rect=this->outRect;
+	return this->screens[REAL];
+}
+
 std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
 	tm t;
 	ulong c;
@@ -380,6 +398,22 @@ std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
 	return filename;
 }
 
+void NONS_VirtualScreen::takeScreenshotFromVideo(void){
+	tm t;
+	ulong c;
+	{
+		time_t t2=time(0);
+		c=SDL_GetTicks();
+		t=*localtime(&t2);
+	}
+	std::string filename=
+		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+UNICODE_T+
+		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+UNICODE_UNDERSCORE+
+		itoa<char>(c,10)+".bmp";
+	const char *s=filename.c_str();
+	SDL_SaveBMP(this->screens[REAL],s);
+}
+
 void NONS_VirtualScreen::initEffectList(){
 	this->initializers.clear();
 	this->effects.clear();
@@ -387,7 +421,7 @@ void NONS_VirtualScreen::initEffectList(){
 	this->filters.clear();
 	this->filters.push_back(effectMonochrome);
 	this->filters.push_back(effectNegative);
-	libraryFunction fp=pluginLibrary.getFunction("getFunctionPointers");
+	pluginLibraryFunction fp=(pluginLibraryFunction)pluginLibrary.getFunction("getFunctionPointers");
 	if (!fp)
 		return;
 	{

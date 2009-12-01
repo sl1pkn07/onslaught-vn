@@ -99,6 +99,7 @@ public:
 	void pause();
 	int volume(int vol);
 	bool loaded();
+	bool is_playing();
 };
 
 typedef std::map<int,NONS_SoundEffect *> channels_map_t;

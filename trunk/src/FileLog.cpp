@@ -137,7 +137,8 @@ bool NONS_FileLog::addString(const std::wstring &string){
 	return 1;
 }
 
-bool NONS_FileLog::check(std::wstring string){
+bool NONS_FileLog::check(const std::wstring &_string){
+	std::wstring string=_string;
 	tolower(string);
 	toforwardslash(string);
 	return this->log.find(string)!=this->log.end();

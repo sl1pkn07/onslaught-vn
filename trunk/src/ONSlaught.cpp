@@ -59,8 +59,6 @@ bool useArgumentsFile(const char *filename,const std::vector<std::wstring> &argc
 	return 1;
 }
 
-NONS_Thread thread;
-
 void enditall(bool stop_thread){
 	if (stop_thread)
 		gScriptInterpreter->stop();
@@ -106,7 +104,8 @@ volatile bool stopEventHandling=0;
 
 int lastClickX=0;
 int lastClickY=0;
-bool useDebugMode=0;
+bool useDebugMode=0,
+	video_playback=0;
 
 void handleInputEvent(SDL_Event &event){
 	long x,y;
@@ -164,20 +163,26 @@ void handleInputEvent(SDL_Event &event){
 						ctrlIsPressed=!ctrlIsPressed;
 						break;
 					case SDLK_f:
-						full=1;
+						if (!video_playback)
+							full=1;
+						else
+							notify=1;
 						break;
 					case SDLK_s:
 						if (gScriptInterpreter->audio)
 							gScriptInterpreter->audio->toggleMute();
 						break;
 					case SDLK_RETURN:
-						if (!!(event.key.keysym.mod&KMOD_ALT))
+						if (CHECK_FLAG(event.key.keysym.mod,KMOD_ALT) && !video_playback)
 							full=1;
 						else
 							notify=1;
 						break;
 					case SDLK_F12:
-						o_stdout <<"Screenshot saved to \""<<gScriptInterpreter->screen->screen->takeScreenshot()<<"\".\n";
+						if (!video_playback)
+							o_stdout <<"Screenshot saved to \""<<gScriptInterpreter->screen->screen->takeScreenshot()<<"\".\n";
+						else
+							notify=1;
 						break;
 					case SDLK_NUMLOCK:
 					case SDLK_CAPSLOCK:
@@ -302,7 +307,7 @@ int main(int argc,char **argv){
 #if NONS_SYS_WINDOWS
 	findMainWindow(L"ONSlaught ("ONSLAUGHT_BUILD_VERSION_WSTR L")");
 #endif
-	thread.call(mainThread,0);
+	NONS_Thread thread(mainThread,0);
 
 	SDL_Event event;
 	while (!stopEventHandling){
@@ -316,6 +321,9 @@ int main(int argc,char **argv){
 }
 
 void mainThread(void *){
-	while (gScriptInterpreter->interpretNextLine());
+	if (CLOptions.play.size())
+		gScriptInterpreter->generic_play(CLOptions.play,CLOptions.play_from_archive);
+	else
+		while (gScriptInterpreter->interpretNextLine());
 	stopEventHandling=1;
 }

@@ -1,9 +1,11 @@
 ????????
+    * Implemented: avi, mpegplay.
     * The engine is confirmed to compile with MinGW versions 4.x and above.
     * In-game console replacing old debugging console added.
     * Font path moved to the configuration file under "default font".
     * Added plug-in system.
     * Added ZIP support.
+    * Added full video support.
     * Fixed compliance error in effects 11, 12, 13, and 14.
     * Fixed compliance error in nega.
     * Fixed major bug in file reading function.
