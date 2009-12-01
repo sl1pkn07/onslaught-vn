@@ -27,6 +27,8 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "Common.h"
+
 const char *errorMessages[]={
 	//NONS_NO_ERROR
 	"",
@@ -201,5 +203,13 @@ const char *errorMessages[]={
 	"The goto index is larger than the goto table.",
 	//NONS_NOT_ENOUGH_LOG_PAGES
 	"Not enough pages in the log.",
+	//NONS_LIBRARY_NOT_FOUND
+#if NONS_SYS_WINDOWS
+	"DLL not found.",
+#elif NONS_SYS_UNIX
+	"Shared object (.so) not found.",
+#endif
+	//NONS_FUNCTION_NOT_FOUND
+	"Function not found. Invalid dynamic library.",
 	0
 };

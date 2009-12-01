@@ -384,6 +384,23 @@ NONS_Image::~NONS_Image(){
 		SDL_FreeSurface(this->image);
 }
 
+SDL_Surface *generateEmptySurface(ulong w,ulong h){
+	SDL_Surface *res=makeSurface(w,h,32);
+	SDL_LockSurface(res);
+	surfaceData data=res;
+	for (ulong y=0;y<data.h;y++){
+		for (ulong x=0;x<data.w;x++){
+			uchar foreground=uchar(!((x+y)%10) || !((w-x+y)%10))*0xFF;
+			data.pixels[y*data.pitch+x*data.advance+data.Roffset]=foreground;
+			data.pixels[y*data.pitch+x*data.advance+data.Goffset]=~foreground;
+			data.pixels[y*data.pitch+x*data.advance+data.Boffset]=foreground;
+			data.pixels[y*data.pitch+x*data.advance+data.Aoffset]=0xFF;
+		}
+	}
+	SDL_UnlockSurface(res);
+	return res;
+}
+
 #undef LoadImage
 
 SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize){
@@ -393,17 +410,16 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		SDL_FreeSurface(this->image);
 	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
 	SDL_Surface *surface=IMG_Load_RW(rwops,0);
-	if (!surface){
-		this->image=0;
-		return 0;
-	}
-	this->image=makeSurface(surface->w,surface->h,32);
-	if (!!surface && surface->format->BitsPerPixel<24)
-		SDL_BlitSurface(surface,0,this->image,0);
-	else
-		manualBlit(surface,0,this->image,0);
-	SDL_FreeSurface(surface);
-	SDL_FreeRW(rwops);
+	if (surface){
+		this->image=makeSurface(surface->w,surface->h,32);
+		if (!!surface && surface->format->BitsPerPixel<24)
+			SDL_BlitSurface(surface,0,this->image,0);
+		else
+			manualBlit(surface,0,this->image,0);
+		SDL_FreeSurface(surface);
+		SDL_FreeRW(rwops);
+	}else
+		this->image=generateEmptySurface(320,240);
 	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;

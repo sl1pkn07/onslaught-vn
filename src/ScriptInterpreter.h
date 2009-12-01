@@ -248,7 +248,6 @@ class NONS_ScriptInterpreter{
 	//ErrorCode command_dwavefree(NONS_Statement &stmt);
 	ErrorCode command_mp3fadeout(NONS_Statement &stmt);
 	ErrorCode command_stop(NONS_Statement &stmt);
-	ErrorCode command_mpegplay(NONS_Statement &stmt);
 	ErrorCode command_getini(NONS_Statement &stmt);
 	ErrorCode command_setwindow(NONS_Statement &stmt);
 	ErrorCode command_new_set_window(NONS_Statement &stmt);
@@ -373,8 +372,8 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_getlog(NONS_Statement &stmt);
 	ErrorCode command_async_effect(NONS_Statement &stmt);
 	ErrorCode command_add_filter(NONS_Statement &stmt);
+	ErrorCode command_avi(NONS_Statement &stmt);
 	/*
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
@@ -457,6 +456,8 @@ public:
 	std::wstring getValue(const std::wstring &str);
 	std::wstring interpretFromConsole(const std::wstring &str);
 	void queue(NONS_ScriptLine *line);
+	bool generic_play(const std::wstring &filename,bool from_archive);
+	ErrorCode play_video(const std::wstring &filename,bool skippable);
 };
 
 extern NONS_ScriptInterpreter *gScriptInterpreter;

@@ -59,6 +59,8 @@ struct NONS_CommandLineOptions{
 	std::wstring preprocessedFile;
 	bool noThreads;
 	bool preprocessAndQuit;
+	std::wstring play;
+	bool play_from_archive;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);

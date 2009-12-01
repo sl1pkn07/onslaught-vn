@@ -369,7 +369,9 @@ void NONS_RedirectedOutput::indent(long a){
 
 NONS_File::NONS_File(const std::wstring &path,bool read){
 	this->is_open=0;
+#if NONS_SYS_WINDOWS
 	this->file=INVALID_HANDLE_VALUE;
+#endif
 	this->open(path,read);
 }
 
@@ -386,7 +388,7 @@ void NONS_File::open(const std::wstring &path,bool open_for_read){
 		0,0
 	);
 #else
-	this->file.open(UniToUTF8(path),std::ios::binary|(read?std::ios::in:std::ios::out));
+	this->file.open(UniToUTF8(path).c_str(),std::ios::binary|(open_for_read?std::ios::in:std::ios::out));
 #endif
 	this->is_open=!!*this;
 }
@@ -440,7 +442,7 @@ NONS_File::type *NONS_File::read(ulong read_bytes,ulong &bytes_read,ulong offset
 	DWORD rb=read_bytes,br=0;
 	ReadFile(this->file,buffer,rb,&br,0);
 #else
-	this->file.read(buffer,read_bytes);
+	this->file.read((char *)buffer,read_bytes);
 #endif
 	bytes_read=read_bytes;
 	return buffer;
@@ -460,7 +462,7 @@ NONS_File::type *NONS_File::read(ulong &bytes_read){
 	DWORD rb=filesize,br=0;
 	ReadFile(this->file,buffer,rb,&br,0);
 #else
-	this->file.read(buffer,filesize);
+	this->file.read((char *)buffer,filesize);
 #endif
 	bytes_read=filesize;
 	return buffer;
@@ -498,7 +500,7 @@ bool NONS_File::write(const std::wstring &path,void *buffer,ulong size){
 bool fileExists(const std::wstring &name){
 	bool ret;
 #if NONS_SYS_WINDOWS
-	HANDLE file=CreateFile(&name[0],FILE_READ_DATA,0,0,OPEN_EXISTING,0,0);
+	HANDLE file=CreateFile(&name[0],0,0,0,OPEN_EXISTING,0,0);
 	ret=(file!=INVALID_HANDLE_VALUE);
 	CloseHandle(file);
 #else

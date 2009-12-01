@@ -157,6 +157,8 @@ struct NONS_GeneralArchive{
 	NONS_GeneralArchive();
 	~NONS_GeneralArchive();
 	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
+	//Same as above, but doesn't try the file system
+	uchar *getFileBufferWithoutFS(const std::wstring &filepath,ulong &buffersize);
 	bool exists(const std::wstring &filepath);
 };
 #endif

@@ -31,15 +31,21 @@
 #define NONS_LIBRARYLOADER
 #include "../Common.h"
 
-typedef void *(*libraryFunction)(void *);
+typedef void *(*pluginLibraryFunction)(void *);
 
 class NONS_LibraryLoader{
 	void *lib;
 public:
-	NONS_LibraryLoader(const char *libName);
+	enum reason{
+		NO_ERROR=0,
+		LIBRARY_NOT_FOUND,
+		FUNCTION_NOT_FOUND
+	} error;
+	NONS_LibraryLoader(const char *libName,bool append_debug=1);
 	~NONS_LibraryLoader();
-	libraryFunction getFunction(const char *functionName);
+	void *getFunction(const char *functionName);
 };
 
 extern NONS_LibraryLoader pluginLibrary;
+
 #endif

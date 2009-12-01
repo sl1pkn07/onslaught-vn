@@ -83,7 +83,7 @@ class NONS_File{
 	bool opened_for_read;
 	bool is_open;
 	NONS_File(const NONS_File &){}
-	const NONS_File &operator=(const NONS_File &){}
+	const NONS_File &operator=(const NONS_File &){ return *this; }
 public:
 	typedef uchar type;
 	NONS_File():is_open(0){}

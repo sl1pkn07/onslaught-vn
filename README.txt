@@ -1,8 +1,12 @@
+(Updated: 2009-11-30)
 
 ONSlaught - An ONScripter clone with Unicode support.
 
 
-INTRODUCTION
+                                  Introduction
+
+I suck at writing so I'll just steal from ONScripter. I hope whoever's
+maintaining it at the time doesn't mind.
 
 <<Excerpt from the ONScripter-En README>>
   HISTORY
@@ -34,7 +38,7 @@ Instead of putting up with it and developing ONScripter-es, I decided to scrap
 the entire code and write my own engine from scratch. The result of this effort
 is ONSlaught.
 
-ONSlaught's implicit and explicit goal is it supersede ONScripter, while at the
+ONSlaught's implicit and explicit goal is to supersede ONScripter, while at the
 same time maintaining a simple design, and code as portable as possible.
 
 

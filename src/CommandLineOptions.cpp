@@ -123,7 +123,7 @@ void usage(){
 		"      Default to 0.\n"
 		"  -debug\n"
 		"      Enable debug mode.\n"
-		"      See the documentation for details.\n"
+		"      See the documentation for more information.\n"
 #if NONS_SYS_WINDOWS
 		"  -no-console\n"
 		"      Hide the console.\n"
@@ -150,41 +150,46 @@ void usage(){
 		"      Preprocesses the script and quits. Only makes sense when used with\n"
 		"      -pp-output.\n"
 		"  -disable-threading\n"
-		"      Disables threading for blit operations.\n";
+		"      Disables threading for blit operations.\n"
+		"  -play [a] <filename>\n"
+		"      Play the file and quit. The file can be an audio or video file. This can\n"
+		"      be used to test whether this build can play the file.\n"
+		"      See the documentation for more information.\n";
 	exit(0);
 }
 
 void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 	static const wchar_t *options[]={
-		L"--help",                        //0
-		L"-script",                       //1
-		L"-encoding",                     //2
-		L"-music-format",                 //3
-		L"-music-directory",              //4
-		L"",                              //5
-		L"",                              //6
-		L"-image-cache-size",             //7
-		L"-debug",                        //8
-		L"-redirect",                     //9
-		L"--version",                     //10
-		L"-implementation",               //11
-		L"-no-console",                   //12
-		L"-dump-text",                    //13
-		L"-f",                            //14
-		L"-r",                            //15
-		L"-verbosity",                    //16
-		L"-sdebug",                       //17
-		L"-s",                            //18
-		L"-h",                            //19
-		L"-?",                            //20
-		L"-save-directory",               //21
-		L"-!reset-out-files",             //22
-		L"-!redirect",                    //23
-		L"-stop-on-first-error",          //24
-		L"-archive-directory",            //25
-		L"-pp-output",                    //26
-		L"-disable-threading",            //27
-		L"-pp-then-quit",                 //28
+		L"--help",                  //0
+		L"-script",                 //1
+		L"-encoding",               //2
+		L"-music-format",           //3
+		L"-music-directory",        //4
+		L"",                        //5
+		L"",                        //6
+		L"-image-cache-size",       //7
+		L"-debug",                  //8
+		L"-redirect",               //9
+		L"--version",               //10
+		L"-implementation",         //11
+		L"-no-console",             //12
+		L"-dump-text",              //13
+		L"-f",                      //14
+		L"-r",                      //15
+		L"-verbosity",              //16
+		L"-sdebug",                 //17
+		L"-s",                      //18
+		L"-h",                      //19
+		L"-?",                      //20
+		L"-save-directory",         //21
+		L"-!reset-out-files",       //22
+		L"-!redirect",              //23
+		L"-stop-on-first-error",    //24
+		L"-archive-directory",      //25
+		L"-pp-output",              //26
+		L"-disable-threading",      //27
+		L"-pp-then-quit",           //28
+		L"-play",                   //29
 		0
 	};
 
@@ -376,7 +381,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					toforwardslash(this->archiveDirectory);
 				}
 				break;
-			case 26:
+			case 26: //-pp-output
 				if (a+1>=size)
 					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
 				else{
@@ -385,12 +390,27 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					toforwardslash(this->preprocessedFile);
 				}
 				break;
-			case 27:
+			case 27: //-disable-threading
 				this->noThreads=1;
 				break;
-			case 28:
+			case 28: //-pp-then-quit
 				this->preprocessAndQuit=1;
 				break;
+			case 29: //-play
+				if (a+1>=size)
+					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+				else{
+					this->play=arguments[++a];
+					if (tolowerCopy(this->play)==L"a"){
+						this->play_from_archive=1;
+						this->play.clear();
+						if (a+1>=size)
+							std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
+						else
+							this->play=arguments[++a];
+					}
+					toforwardslash(this->play);
+				}
 			case 17://-sdebug
 			default:
 				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;

@@ -216,9 +216,10 @@ NONS_Music::NONS_Music(const std::wstring &filename,char *databuffer,long size){
 
 NONS_Music::~NONS_Music(){
 	this->stop();
-	if (this->data){
+	if (this->data)
 		Mix_FreeMusic(this->data);
-	}
+	if (this->buffer)
+		delete[] this->buffer;
 }
 
 void NONS_Music::play(long times){
@@ -250,6 +251,10 @@ bool NONS_Music::loaded(){
 int NONS_Music::volume(int vol){
 	Mix_VolumeMusic(vol);
 	return Mix_VolumeMusic(-1);
+}
+
+bool NONS_Music::is_playing(){
+	return !!Mix_PlayingMusic();
 }
 
 NONS_Audio::NONS_Audio(const std::wstring &musicDir){
@@ -325,7 +330,7 @@ ErrorCode NONS_Audio::playMusic(const std::wstring *filename,long times){
 			}
 		}else
 			temp=this->musicDir+L"/"+*filename+L"."+this->musicFormat;
-		if (!fileExists(temp))
+		if (!fileExists(temp) && !fileExists(temp=*filename))
 			return NONS_FILE_NOT_FOUND;
 		this->music=new NONS_Music(temp);
 		if (!this->music->loaded())
