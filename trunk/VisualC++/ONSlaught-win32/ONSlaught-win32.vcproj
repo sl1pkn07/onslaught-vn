@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype.lib jpeg.lib libbz2.lib libmikmod.lib libogg.lib libpng.lib libtiff.lib libvorbis.lib libvorbisfile.lib native_midi.lib SDL.lib SDL_image_d.lib SDL_mixer.lib SDLmain.lib smpeg.lib timidity.lib zlib.lib winmm.lib"
+				AdditionalDependencies="freetype.lib jpeg.lib libbz2.lib libmikmod.lib libogg.lib libpng.lib libtiff.lib libvorbis.lib libvorbisfile.lib native_midi.lib SDL.lib SDL_image.lib SDL_mixer.lib SDLmain.lib smpeg.lib timidity.lib zlib.lib winmm.lib"
 				OutputFile="$(OutDir)/ONSlaught_d.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../../lib-win32/MSVC"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype.lib jpeg.lib libbz2.lib libmikmod.lib libogg.lib libpng.lib libtiff.lib libvorbis.lib libvorbisfile.lib native_midi.lib SDL.lib SDL_image_d.lib SDL_mixer.lib SDLmain.lib smpeg.lib timidity.lib zlib.lib winmm.lib"
+				AdditionalDependencies="freetype.lib jpeg.lib libbz2.lib libmikmod.lib libogg.lib libpng.lib libtiff.lib libvorbis.lib libvorbisfile.lib native_midi.lib SDL.lib SDL_image.lib SDL_mixer.lib SDLmain.lib smpeg.lib timidity.lib zlib.lib winmm.lib"
 				OutputFile="$(OutDir)/ONSlaught-win32-VC++.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../../lib-win32/MSVC"

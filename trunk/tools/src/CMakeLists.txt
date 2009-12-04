@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.4.7)
 project (nsaio)
 
 set(EXECUTABLE_OUTPUT_PATH .)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_BUILD_TYPE Release)
 
 set(LIBS
 	${LIBS}

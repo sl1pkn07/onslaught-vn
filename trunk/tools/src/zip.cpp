@@ -28,7 +28,6 @@
 #include <vector>
 #include <boost/cstdint.hpp>
 #include <bzlib.h>
-#include <zlib.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
