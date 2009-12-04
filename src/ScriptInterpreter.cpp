@@ -1072,12 +1072,12 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	if (CLOptions.verbosity>=1)
 		o_stderr <<"Interpreting line "<<current_line<<"\n";
 	if (CLOptions.verbosity>=3 && stmt->type==NONS_Statement::STATEMENT_COMMAND){
-		o_stderr <<"\""<<stmt->commandName<<"\" ";
+		o_stderr <<"["<<stmt->commandName<<"] ";
 		if (stmt->parameters.size()){
 			o_stderr <<"(\n";
 			o_stderr.indent(1);
 			for (ulong a=0;;a++){
-				o_stderr <<"\""<<stmt->parameters[a]<<"\"";
+				o_stderr <<"["<<stmt->parameters[a]<<"]";
 				if (a==stmt->parameters.size()-1){
 					o_stderr <<"\n";
 					break;
@@ -1148,12 +1148,12 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 						o_stderr <<"{\n";
 						o_stderr.indent(1);
 						o_stderr <<"Line "<<current_line<<": \n"
-							"\""<<commandName<<"\" ";
+							"["<<commandName<<"] ";
 						if (parameters.size()){
 							o_stderr <<"(\n";
 							o_stderr.indent(1);
 							for (ulong a=0;;a++){
-								o_stderr <<"\""<<parameters[a]<<"\"";
+								o_stderr <<"["<<parameters[a]<<"]";
 								if (a==parameters.size()-1){
 									o_stderr <<"\n";
 									break;

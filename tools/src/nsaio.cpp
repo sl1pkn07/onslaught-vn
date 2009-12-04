@@ -341,61 +341,106 @@ ulong compare(void *current,void *test,ulong max){
 }
 
 char *encode_LZSS(void *src,size_t srcl,size_t &dstl){
+	//NN is the size in bits of the offset component of a keyword.
 	ulong window_bits=NN,
+		//We determine the size of the window by doing 2^NN
 		window_size=1<<window_bits,
+		//MAXS is the size in bits of the size component of a keyword.
 		max_string_bits=MAXS,
+		//Right now, threshold contains the size of a keyword plus the size of a flag
 		threshold=1+window_bits+max_string_bits,
+		//Again, determine the size of something by raising 2 to some power.
 		max_string_len=(1<<max_string_bits);
 	uchar *buffer=(uchar *)src;
+	//Transform threshold into the minimum sequence size in bytes that will be
+	//considered a match. Considering a sequence smaller than this a match will
+	//inflate the data.
 	threshold=(threshold>>3)+!!(threshold&7);
+	//Because the smallest sequence we can store is not zero, we can change the
+	//meaning of size zero in a keyword. Now, a size of zero found in a keyword
+	//translates to an actual size of threshold.
+	//I think I made an off-by-one error here. I'm not sure.
 	max_string_len+=threshold-1;
+	//No matter how much entropy the input contains, it will not be inflated by
+	//more than srcl/8+(srcl%8!=0)
 	ulong res_size=srcl+(srcl>>3)+!!(srcl&7);
 	uchar *res=new uchar[res_size];
 	memset(res,0,res_size);
-	ulong byte=0,bit=0;
+	//Offsets in bytes and bits. bit<=7 should always be true.
+	ulong byte=0,
+		bit=0;
+	
+	//I'll explain these lines later on.
 	std::vector<ulong> tree[256];
 	ulong starts[256];
 	ulong offset=window_size-max_string_len;
 	for (ulong a=0;a<srcl;a++)
 		tree[buffer[a]].push_back(a);
 	memset(starts,0,256*sizeof(ulong));
+	
+	//We will be advancing a manually, so a++ is unnecessary.
 	for (ulong a=0;a<srcl;){
-		if (byte==0x3a04)
-			byte=byte;
 		long found=-1,max=-1;
 		ulong found_size=0;
+		//What we do in this loop is look for matches in the past input. We do
+		//this by using tree[256], an array of vectors that contain offsets
+		//where byte values appear. starts[256] stores offsets within each
+		//vector. Below this offset, the offsets stored by the vector are
+		//already useless. Using starts is *much* faster than using
+		//std::vector::erase().
 		for (ulong b=starts[buffer[a]],size=tree[buffer[a]].size();b<size;b++){
+			//element is the offset of a possible match.
 			ulong &element=tree[buffer[a]][b];
+			//Is element outside of the sliding window?
 			if (a>=window_size && element<a-window_size){
+				//It is. Increment starts and try again
 				starts[buffer[a]]++;
 				continue;
 			}
+			//Is element in the future?
 			if (element>=a)
+				//It is. We can't store offsets to sequences we haven't seen
+				//yet, so that means there are no matches.
 				break;
+			//compare() compares two buffers and returns how many bytes from the
+			//start they have in common
 			found_size=compare(buffer+a,buffer+element,max_string_len);
+			//Do the buffers have in common so few bytes that it would produce
+			//inflation?
 			if (found_size<threshold)
+				//Yes. Try next match.
 				continue;
+			//We're trying to find the biggest match possible.
 			if (max<0 || found_size>(ulong)max){
 				found=element;
 				max=found_size;
 				if (max==max_string_len)
+					//If we're already at the biggest match allowed by the
+					//algorithm, stop looking for matches.
 					break;
 			}
 		}
 		found_size=max;
 		if (found<0){
+			//We couldn't find a match, so write flag 1 and the byte.
 			writeBits(res,&byte,&bit,1,1);
 			writeBits(res,&byte,&bit,buffer[a],8);
 			a++;
 		}else{
+			//We found a match, write flag 0...
 			writeBits(res,&byte,&bit,0,1);
 			ulong pos=(found+offset)%window_size;
+			//...the offset within the sliding window...
 			writeBits(res,&byte,&bit,pos,(ushort)window_bits);
+			//...and the size of the match. Here we're taking advantage of
+			//knowing the size of the smallest possible match.
 			writeBits(res,&byte,&bit,found_size-threshold,(ushort)max_string_bits);
 			a+=found_size;
 		}
 	}
-	byte+=bit?1:0;
+	//We had to write at least one more bit, so the output size is incremented.
+	//This is the reason for the !!(srcl&7) above.
+	byte+=!!bit;
 	dstl=byte;
 	return (char *)res;
 }

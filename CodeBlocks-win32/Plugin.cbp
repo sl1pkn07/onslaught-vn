@@ -50,6 +50,7 @@
 			<Add directory="..\include" />
 		</Compiler>
 		<Linker>
+			<Add option="-static-libgcc" />
 			<Add library="SDL" />
 			<Add library="winmm" />
 			<Add directory="..\lib-win32\MinGW" />

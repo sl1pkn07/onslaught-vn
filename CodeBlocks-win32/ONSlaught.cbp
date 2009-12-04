@@ -72,6 +72,7 @@
 			<Add directory="..\include" />
 		</Compiler>
 		<Linker>
+			<Add option="-static-libgcc" />
 			<Add library="mingw32" />
 			<Add library="SDL_mixer" />
 			<Add library="SDL_image" />
@@ -90,7 +91,7 @@
 			<Add library="png" />
 			<Add library="tiff" />
 			<Add library="z" />
-			<Add directory="..\lib-win32" />
+			<Add directory="..\lib-win32\MinGW" />
 		</Linker>
 		<Unit filename="..\onslaught.rc" />
 		<Unit filename="..\src\Archive.cpp" />
