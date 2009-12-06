@@ -145,15 +145,15 @@ void usage(){
 		"      command\" (when the command will not be implemented) errors don't count.\n"
 		"  -pp-output\n"
 		"      Writes the preprocessor output to <filename>. The details of each macro\n"
-        "      call are sent to stderr.\n"
+		"      call are sent to stderr.\n"
 		"  -pp-then-quit\n"
 		"      Preprocesses the script and quits. Only makes sense when used with\n"
 		"      -pp-output.\n"
 		"  -disable-threading\n"
 		"      Disables threading for blit operations.\n"
 		"  -play [a] <filename>\n"
-		"      Play the file and quit. The file can be an audio or video file. This can\n"
-		"      be used to test whether this build can play the file.\n"
+		"      Play the file and quit. The file can be a graphics, audio or video file.\n"
+		"      This option can be used to test whether the engine can read the file.\n"
 		"      See the documentation for more information.\n";
 	exit(0);
 }
@@ -411,6 +411,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					}
 					toforwardslash(this->play);
 				}
+				break;
 			case 17://-sdebug
 			default:
 				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;

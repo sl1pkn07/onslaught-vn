@@ -762,25 +762,31 @@ NONS_GeneralArchive::NONS_GeneralArchive(){
 			L".nsa",
 			L".zip",
 			0
-	};
-	for (ulong a=0;;a++){
-		std::wstring name=base;
-		if (a)
-			name.append(itoa<wchar_t>(a));
-		bool found=0;
-		ulong format;
+		};
+	for (ulong a=ULONG_MAX;;a++){
 		std::wstring full_name;
-		for (ulong b=0;formats[b] && !found;b++){
-			full_name=path;
-			full_name.append(name);
-			full_name.append(formats[b]);
-			if (!fileExists(full_name) && !fileExists(toupperCopy(full_name)))
-				continue;
-			found=1;
-			format=b;
+		ulong format;
+		if (a!=ULONG_MAX){
+			std::wstring name=base;
+			if (a)
+				name.append(itoa<wchar_t>(a));
+			bool found=0;
+			//!a: if a==0, ".sar" should not be tested
+			for (ulong b=!a;formats[b] && !found;b++){
+				full_name=path;
+				full_name.append(name);
+				full_name.append(formats[b]);
+				if (!fileExists(full_name) && !fileExists(toupperCopy(full_name)))
+					continue;
+				found=1;
+				format=b;
+			}
+			if (!found)
+				break;
+		}else{
+			full_name=L"arc.sar";
+			format=0;
 		}
-		if (!found)
-			break;
 		Archive *arc;
 		switch (format){
 			case 0:

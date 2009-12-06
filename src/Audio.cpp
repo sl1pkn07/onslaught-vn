@@ -333,8 +333,10 @@ ErrorCode NONS_Audio::playMusic(const std::wstring *filename,long times){
 		if (!fileExists(temp) && !fileExists(temp=*filename))
 			return NONS_FILE_NOT_FOUND;
 		this->music=new NONS_Music(temp);
-		if (!this->music->loaded())
+		if (!this->music->loaded()){
+			o_stderr <<Mix_GetError()<<"\n";
 			return NONS_UNDEFINED_ERROR;
+		}
 		return this->playMusic(0,times);
 	}
 }
@@ -349,8 +351,10 @@ ErrorCode NONS_Audio::playMusic(const std::wstring &filename,char *buffer,long l
 			delete this->music;
 		}
 		this->music=new NONS_Music(filename,buffer,l);
-		if (!this->music->loaded())
+		if (!this->music->loaded()){
+			o_stderr <<Mix_GetError()<<"\n";
 			return NONS_UNDEFINED_ERROR;
+		}
 		if (this->notmute)
 			this->music->volume(this->mvol);
 		else

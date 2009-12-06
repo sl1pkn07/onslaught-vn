@@ -35,6 +35,8 @@
 
 #if NONS_SYS_WINDOWS
 #include <windows.h>
+#elif NONS_SYS_UNIX
+#include <unistd.h>
 #endif
 
 DLLexport ulong cpu_count=1;
@@ -159,13 +161,17 @@ void NONS_ThreadManager::setCPUcount(){
 			SYSTEM_INFO si;
 			GetSystemInfo(&si);
 			cpu_count=si.dwNumberOfProcessors;
-#elif NONS_SYS_UNIX
+/*#elif NONS_SYS_LINUX
 			FILE * fp;
 			char res[128];
 			fp = popen("/bin/cat /proc/cpuinfo |grep -c '^processor'","r");
 			fread(res, 1, sizeof(res)-1, fp);
 			fclose(fp);
-			cpu_count=atoi(res);
+			cpu_count=atoi(res);*/
+#elif NONS_SYS_UNIX
+			cpu_count=sysconf(_SC_NPROCESSORS_ONLN);
+			if (cpu_count<1)
+				cpu_count=1;
 #endif
 		}
 		o_stdout <<"Using "<<cpu_count<<" CPU"<<(cpu_count!=1?"s":"")<<".\n";

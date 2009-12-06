@@ -942,65 +942,67 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 	}
 	if (error!=PLAYBACK_NO_ERROR){
 		if (CHECK_FLAG(error,PLAYBACK_FILE_NOT_FOUND))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): File not found.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): File not found.\n";
 		if (CHECK_FLAG(error,PLAYBACK_STREAM_INFO_NOT_FOUND))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Stream info not found. Bad file?\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Stream info not found. Bad file?\n";
 		if (CHECK_FLAG(error,PLAYBACK_NO_VIDEO_STREAM))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): No video stream.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): No video stream.\n";
 		if (CHECK_FLAG(error,PLAYBACK_NO_AUDIO_STREAM))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): No audio stream. Pure video files not yet supported.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): No audio stream. Pure video files not yet supported.\n";
 		if (CHECK_FLAG(error,PLAYBACK_UNSUPPORTED_VIDEO_CODEC))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Unsupported video codec.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Unsupported video codec.\n";
 		if (CHECK_FLAG(error,PLAYBACK_UNSUPPORTED_AUDIO_CODEC))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Unsupported audio codec.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Unsupported audio codec.\n";
 		if (CHECK_FLAG(error,PLAYBACK_OPEN_VIDEO_CODEC_FAILED))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't open video codec.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Couldn't open video codec.\n";
 		if (CHECK_FLAG(error,PLAYBACK_OPEN_AUDIO_CODEC_FAILED))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't open audio codec.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Couldn't open audio codec.\n";
 		if (CHECK_FLAG(error,PLAYBACK_OPEN_AUDIO_OUTPUT_FAILED))
-			o_stderr <<"NONS_ScriptInterpreter::command_avi(): Couldn't initialize audio output module.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video(): Couldn't initialize audio output module.\n";
 	}
 	return (error==PLAYBACK_NO_ERROR)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
 
+#define generic_play_loop(condition) {\
+	NONS_EventQueue queue;\
+	bool _break=0;\
+	while ((condition) && !_break){\
+		while (!queue.empty() && !_break){\
+			SDL_Event event=queue.pop();\
+			if (event.type==SDL_KEYDOWN ||\
+					event.type==SDL_MOUSEBUTTONDOWN ||\
+					event.type==SDL_QUIT)\
+				_break=1;\
+		}\
+		SDL_Delay(50);\
+	}\
+}
+
 bool NONS_ScriptInterpreter::generic_play(const std::wstring &filename,bool from_archive){
-	if (from_archive){
-		ulong l;
-		uchar *buffer=this->archive->getFileBuffer(filename,l);
-		if (!buffer)
-			return 0;
-		ErrorCode error=this->audio->playMusic(filename,(char *)buffer,l,1);
-		delete[] buffer;
-		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
-			return 0;
-		NONS_EventQueue queue;
-		bool _break=0;
-		while (this->audio->music->is_playing() && !_break){
-			while (!queue.empty() && !_break){
-				SDL_Event event=queue.pop();
-				if (event.type==SDL_KEYDOWN || event.type==SDL_MOUSEBUTTONDOWN)
-					_break=1;
-			}
-			SDL_Delay(50);
-		}
+	NONS_ScreenSpace *scr=this->screen;
+	if (scr->Background->load(&filename)){
+		scr->Background->position.x=(scr->screen->screens[VIRTUAL]->w-scr->Background->clip_rect.w)/2;
+		scr->Background->position.y=(scr->screen->screens[VIRTUAL]->h-scr->Background->clip_rect.h)/2;
+		scr->BlendOnlyBG(1);
+		generic_play_loop(1);
 	}else{
-		if (!CHECK_FLAG(this->play_video(filename,1),NONS_NO_ERROR_FLAG)){
-			ErrorCode error=this->audio->playMusic(&filename,1);
+		if (from_archive){
+			ulong l;
+			uchar *buffer=this->archive->getFileBuffer(filename,l);
+			if (!buffer)
+				return 0;
+			ErrorCode error=this->audio->playMusic(filename,(char *)buffer,l,1);
+			delete[] buffer;
 			if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
 				return 0;
-			NONS_EventQueue queue;
-			bool _break=0;
-			while (this->audio->music->is_playing() && !_break){
-				while (!queue.empty() && !_break){
-					SDL_Event event=queue.pop();
-					if (event.type==SDL_KEYDOWN ||
-							event.type==SDL_MOUSEBUTTONDOWN ||
-							event.type==SDL_QUIT)
-						_break=1;
-				}
-				SDL_Delay(50);
+		}else{
+			if (!CHECK_FLAG(this->play_video(filename,1),NONS_NO_ERROR_FLAG)){
+				ErrorCode error=this->audio->playMusic(&filename,1);
+				if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
+					return 0;
 			}
 		}
+		generic_play_loop(this->audio->music->is_playing());
 	}
 	return 1;
 }
