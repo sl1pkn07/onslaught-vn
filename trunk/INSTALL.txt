@@ -28,7 +28,8 @@ libfreetype.so                         │    libfreetype.a       (Alternatively
 After a successful build, the binary will be put in ./ONSlaught.
 
 There's also a separate package (fulldep) that includes all the dependecies with
-their sources, in case the target system doesn't have them.
+their sources, in case the target system doesn't have them. This package is
+almost guaranteed to produce a correct executable.
 
 Installation:
 The best way to install is to move this file to /usr/bin/ (most likely will

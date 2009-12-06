@@ -51,7 +51,6 @@ NONS_LibraryLoader::NONS_LibraryLoader(const char *libName,bool append_debug){
 	std::string filename="lib";
 	filename.append(libName);
 	filename.append(".so");
-	std::cout <<"Trying to load "<<filename<<std::endl;
 	this->lib=dlopen(filename.c_str(),RTLD_LAZY);
 #endif
 	this->error=reason((!this->lib)?LIBRARY_NOT_FOUND:NO_ERROR);
@@ -81,40 +80,3 @@ void *NONS_LibraryLoader::getFunction(const char *functionName){
 }
 
 NONS_LibraryLoader pluginLibrary("plugin");
-/*
-NONS_LibraryLoader::NONS_LibraryLoader(const char *libName){
-#if NONS_SYS_WINDOWS
-	std::wstring filename=UniFromISO88591(libName);
-#ifdef _DEBUG
-	filename.append(L"_d");
-#endif
-	filename.append(L".dll");
-	this->lib=LoadLibrary(filename.c_str());
-#else
-	std::string filename="lib";
-	filename.append(libName);
-	filename.append(".so");
-	this->lib=dlopen(filename.c_str(),RTLD_LAZY);
-#endif
-}
-
-NONS_LibraryLoader::~NONS_LibraryLoader(){
-	if (!this->lib)
-		return;
-#if NONS_SYS_WINDOWS
-	FreeLibrary((HMODULE)this->lib);
-#else
-	dlclose(this->lib);
-#endif
-}
-
-libraryFunction NONS_LibraryLoader::getFunction(const char *functionName){
-	if (!this->lib)
-		return 0;
-#if NONS_SYS_WINDOWS
-	return (libraryFunction)GetProcAddress((HMODULE)this->lib,functionName);
-#else
-	return (libraryFunction)dlsym(this->lib,functionName);
-#endif
-}
-*/

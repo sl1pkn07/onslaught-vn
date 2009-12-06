@@ -1,4 +1,4 @@
-<program name> [options]
+ONSlaught [options]
 
 --help
 -?
@@ -20,16 +20,16 @@ By default, the engine performs a partial SHA1 on the loaded script (not on the
 actual script file) and uses the first 64 bits to create a directory.
 For example, calling ONSlaught without this option might cause the save games to
 go in
-"C:\Documents and Settings\User\My Documents\.ONSlaught\e38ba7ef 3bd29d16\" in
-Windows XP, and in "~/.ONSlaught/e38ba7ef 3bd29d16/" in Linux, which is very
+"C:\Documents and Settings\User\My Documents\.ONSlaught\e38ba7ef 3bd29d16\" on
+Windows XP, and in "~/.ONSlaught/e38ba7ef 3bd29d16/" on UNIX, which is very
 cumbersome.
 Using the following command line:
 ONSlaught -save-directory "Parrot Sketch"
 would cause save games to go in
-"C:\Documents and Settings\User\My Documents\.ONSlaught\Parrot Sketch\" in
-Windows XP, and in "~/.ONSlaught/Parrot Sketch/" in Linux.
+"C:\Documents and Settings\User\My Documents\.ONSlaught\Parrot Sketch\" under
+Windows XP, and in "~/.ONSlaught/Parrot Sketch/" under UNIX.
 
-At the time of this writing (2009-01-24), this option only has effect on Linux
+At the time of this writing (2009-01-24), this option only has effect on UNIX
 and Windows. Any other platform the engine is compiled for will put its save
 game files in the working directory.
 
@@ -169,3 +169,19 @@ Preprocesses the script and quits. Only makes sense when used with -pp-output.
 
 -disable-threading
 Disables threading for blit operations.
+
+
+-play [a] <filename>
+Play a file and quit.
+The file can be a graphics, audio, or video file. This option can be used to
+test whether the engine can read the file.
+The optional a is ignored when reading image files. If the a is not present, the
+engine will not try to read from the archives, only from the file system. This
+is important when attempting to play videos, as reading from the archives loads
+entire files to memory.
+In other words, there are five possible ways of using this option:
+-play graphics.file
+-play a graphics.file (a is ignored)
+-play audio.file
+-play a audio.file (a is not ignored)
+-play video.file (no a)

@@ -1000,7 +1000,7 @@ int play_video(PLAYBACK_FUNCTION_PARAMETERS){
 			avcodec_close(audioCC);
 		av_close_input_file(avfc);
 	}
-	return 1;
+	return PLAYBACK_NO_ERROR;
 }
 
 PLAYBACK_FUNCTION_SIGNATURE{

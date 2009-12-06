@@ -369,11 +369,11 @@ char *encode_LZSS(void *src,size_t srcl,size_t &dstl){
 	//Offsets in bytes and bits. bit<=7 should always be true.
 	ulong byte=0,
 		bit=0;
+	ulong offset=window_size-max_string_len;
 	
 	//I'll explain these lines later on.
 	std::vector<ulong> tree[256];
 	ulong starts[256];
-	ulong offset=window_size-max_string_len;
 	for (ulong a=0;a<srcl;a++)
 		tree[buffer[a]].push_back(a);
 	memset(starts,0,256*sizeof(ulong));

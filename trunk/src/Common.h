@@ -35,6 +35,7 @@ typedef unsigned char uchar;
 
 #define NONS_SYS_WINDOWS (defined _WIN32 || defined _WIN64)
 #define NONS_SYS_LINUX (defined linux || defined __linux)
+#define NONS_SYS_BSD (defined __bsdi__)
 #define NONS_SYS_UNIX (defined __unix__ || defined __unix)
 
 #if NONS_SYS_WINDOWS
