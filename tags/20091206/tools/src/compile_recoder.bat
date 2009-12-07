@@ -1,1 +1,0 @@
-g++ recoder.cpp Unicode.cpp -o recoder -O3 -s

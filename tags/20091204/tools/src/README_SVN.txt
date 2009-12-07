@@ -1,1 +1,0 @@
-Copy "../../src/SJIS.table.cpp" to "./SJIS.table.cpp" and "../../../static/include" to "./include" to compile any of the tools.
