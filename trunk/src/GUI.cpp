@@ -1453,8 +1453,8 @@ int NONS_Menu::load(){
 	std::vector<tm *> files=existing_files(save_directory);
 	int choice,
 		ret;
-	while (1){
-		std::vector<std::wstring> strings;
+	std::vector<std::wstring> strings;
+	{
 		std::wstring pusher;
 		for (ulong a=0;a<slots;a++){
 			tm *t=files[a];
@@ -1474,6 +1474,8 @@ int NONS_Menu::load(){
 				pusher+=L"-------------------";
 			strings.push_back(pusher);
 		}
+	}
+	while (1){
 		int w=scr->screen->screens[VIRTUAL]->w,
 			h=scr->screen->screens[VIRTUAL]->h;
 		this->files->makeTextButtons(
@@ -1493,6 +1495,7 @@ int NONS_Menu::load(){
 		else{
 			if (choice==-2){
 				this->slots--;
+				strings.pop_back();
 				continue;
 			}
 			if (choice<0 && this->voiceCancel.size()){
@@ -1510,7 +1513,10 @@ int NONS_Menu::load(){
 		break;
 	}
 	for (ulong a=0;a<files.size();a++)
-		delete files[a];
+		if (files[a])
+			delete files[a];
+	delete this->files;
+	this->files=0;
 	return ret;
 }
 

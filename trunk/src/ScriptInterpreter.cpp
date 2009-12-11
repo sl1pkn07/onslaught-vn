@@ -69,7 +69,7 @@ ErrorCode getVar(NONS_VariableMember *&var,const std::wstring &str,NONS_Variable
 
 ErrorCode getIntVar(NONS_VariableMember *&var,const std::wstring &str,NONS_VariableStore *store){
 	ErrorCode error=getVar(var,str,store);
-	_HANDLE_POSSIBLE_ERRORS(error);
+	HANDLE_POSSIBLE_ERRORS(error);
 	if (var->getType()!=INTEGER)
 		return NONS_EXPECTED_NUMERIC_VARIABLE;
 	return NONS_NO_ERROR;
@@ -77,7 +77,7 @@ ErrorCode getIntVar(NONS_VariableMember *&var,const std::wstring &str,NONS_Varia
 
 ErrorCode getStrVar(NONS_VariableMember *&var,const std::wstring &str,NONS_VariableStore *store){
 	ErrorCode error=getVar(var,str,store);
-	_HANDLE_POSSIBLE_ERRORS(error);
+	HANDLE_POSSIBLE_ERRORS(error);
 	if (var->getType()!=INTEGER)
 		return NONS_EXPECTED_STRING_VARIABLE;
 	return NONS_NO_ERROR;
@@ -256,7 +256,7 @@ ErrorCode init_script(NONS_Script *&script,NONS_GeneralArchive *archive,ulong en
 }
 
 std::string getDefaultFontFilename(){
-	if (!settings.exists(L"console font"))
+	if (!settings.exists(L"default font"))
 		settings.assignWString(L"default font",L"default.ttf");
 	return UniToUTF8(settings.getWString(L"default font"));
 }
@@ -1767,6 +1767,8 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	//screen
 	//window
 	NONS_ScreenSpace *scr=this->screen;
+	if (this->main_font)
+		delete this->main_font;
 	this->main_font=init_font(save.fontSize,this->archive,getDefaultFontFilename().c_str());
 	scr->resetParameters(&save.textWindow,&save.windowFrame,this->main_font,save.fontShadow);
 	NONS_StandardOutput *out=scr->output;
@@ -2161,9 +2163,9 @@ ErrorCode NONS_ScriptInterpreter::command___userCommandCall__(NONS_Statement &st
 ErrorCode NONS_ScriptInterpreter::command_add(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	long val;
-	_GETINTVALUE(val,1)
+	GET_INT_VALUE(val,1);
 	while (1){
 		if (!stdStrCmpCI(stmt.commandName,L"add")){
 			var->add(val);
@@ -2209,14 +2211,14 @@ ErrorCode NONS_ScriptInterpreter::command_add_filter(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long effect,rgb;
 	std::wstring rule;
-	_GETINTVALUE(effect,0);
+	GET_INT_VALUE(effect,0);
 	if (stdStrCmpCI(stmt.commandName,L"add_filter")){
 		if (!effect)
 			this->screen->screen->applyFilter(0,SDL_Color(),L"");
 		else{
 			MINIMUM_PARAMETERS(3);
-			_GETINTVALUE(rgb,1);
-			_GETWCSVALUE(rule,2);
+			GET_INT_VALUE(rgb,1);
+			GET_STR_VALUE(rule,2);
 			ErrorCode error=this->screen->screen->applyFilter(effect,rgb2SDLcolor(rgb),rule);
 			if (error!=NONS_NO_ERROR)
 				return error;
@@ -2226,8 +2228,8 @@ ErrorCode NONS_ScriptInterpreter::command_add_filter(NONS_Statement &stmt){
 			this->screen->filterPipeline.clear();
 		else{
 			MINIMUM_PARAMETERS(3);
-			_GETINTVALUE(rgb,1);
-			_GETWCSVALUE(rule,2);
+			GET_INT_VALUE(rgb,1);
+			GET_STR_VALUE(rule,2);
 			effect--;
 			if ((ulong)effect>=NONS_GFX::filters.size())
 				return NONS_NO_EFFECT;
@@ -2250,14 +2252,14 @@ ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 			val=new NONS_VariableMember(INTEGER);
 			if (stmt.parameters.size()>1){
 				long temp;
-				_GETINTVALUE(temp,1)
+				GET_INT_VALUE(temp,1);
 				val->set(temp);
 			}
 		}else{
 			val=new NONS_VariableMember(STRING);
 			if (stmt.parameters.size()>1){
 				std::wstring temp;
-				_GETWCSVALUE(temp,1)
+				GET_STR_VALUE(temp,1);
 				val->set(temp);
 			}
 		}
@@ -2279,13 +2281,13 @@ ErrorCode NONS_ScriptInterpreter::command_async_effect(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long effectNo,
 		frequency;
-	_GETINTVALUE(effectNo,0);
+	GET_INT_VALUE(effectNo,0);
 	if (!effectNo){
 		this->screen->screen->stopEffect();
 		return NONS_NO_ERROR;
 	}
 	MINIMUM_PARAMETERS(2);
-	_GETINTVALUE(frequency,1);
+	GET_INT_VALUE(frequency,1);
 	if (effectNo<0 || frequency<=0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->screen->screen->callEffect(effectNo-1,frequency);
@@ -2295,9 +2297,9 @@ ErrorCode NONS_ScriptInterpreter::command_async_effect(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_atoi(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	std::wstring val;
-	_GETWCSVALUE(val,1)
+	GET_STR_VALUE(val,1);
 	dst->atoi(val);
 	return NONS_NO_ERROR;
 }
@@ -2305,7 +2307,7 @@ ErrorCode NONS_ScriptInterpreter::command_atoi(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_autoclick(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long ms;
-	_GETINTVALUE(ms,0)
+	GET_INT_VALUE(ms,0);
 	if (ms<0)
 		ms=0;
 	this->autoclick=ms;
@@ -2316,8 +2318,8 @@ ErrorCode NONS_ScriptInterpreter::command_avi(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	std::wstring filename;
 	long skippable;
-	_GETWCSVALUE(filename,0);
-	_GETINTVALUE(skippable,1);
+	GET_STR_VALUE(filename,0);
+	GET_INT_VALUE(skippable,1);
 	return this->play_video(filename,!!skippable);
 }
 
@@ -2325,6 +2327,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_ScreenSpace *scr=this->screen;
 	long color=0;
+	scr->hideText();
 	if (!stdStrCmpCI(stmt.parameters[0],L"white")){
 		scr->Background->setShade(-1,-1,-1);
 		scr->Background->Clear();
@@ -2339,8 +2342,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 		scr->Background->Clear();
 	}else{
 		std::wstring filename;
-		_GETWCSVALUE(filename,0);
-		scr->hideText();
+		GET_STR_VALUE(filename,0);
 		scr->Background->load(&filename);
 		scr->Background->position.x=(scr->screen->screens[VIRTUAL]->w-scr->Background->clip_rect.w)/2;
 		scr->Background->position.y=(scr->screen->screens[VIRTUAL]->h-scr->Background->clip_rect.h)/2;
@@ -2350,12 +2352,12 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 	scr->centerChar->unload();
 	long number,duration;
 	ErrorCode ret;
-	_GETINTVALUE(number,1)
+	GET_INT_VALUE(number,1);
 	if (stmt.parameters.size()>2){
 		std::wstring rule;
-		_GETINTVALUE(duration,2)
+		GET_INT_VALUE(duration,2);
 		if (stmt.parameters.size()>3)
-			_GETWCSVALUE(rule,3)
+			GET_STR_VALUE(rule,3);
 		ret=scr->BlendNoCursor(number,duration,&rule);
 	}else
 		ret=scr->BlendNoCursor(number);
@@ -2374,14 +2376,14 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_Statement &stmt){
 		return NONS_NO_BUTTON_IMAGE;
 	long screenX,screenY,screenW,screenH,
 		imgX,imgY,imgW,imgH;
-	_GETINTVALUE(screenX,0)
-	_GETINTVALUE(screenY,1)
-	_GETINTVALUE(screenW,2)
-	_GETINTVALUE(screenH,3)
-	_GETINTVALUE(imgX,4)
-	_GETINTVALUE(imgY,5)
-	_GETINTVALUE(imgW,6)
-	_GETINTVALUE(imgH,7)
+	GET_INT_VALUE(screenX,0);
+	GET_INT_VALUE(screenY,1);
+	GET_INT_VALUE(screenW,2);
+	GET_INT_VALUE(screenH,3);
+	GET_INT_VALUE(imgX,4);
+	GET_INT_VALUE(imgY,5);
+	GET_INT_VALUE(imgW,6);
+	GET_INT_VALUE(imgH,7);
 	SDL_Rect dstRect={
 			(Sint16)screenX,
 			(Sint16)screenY,
@@ -2448,13 +2450,13 @@ ErrorCode NONS_ScriptInterpreter::command_btn(NONS_Statement &stmt){
 	if (!this->imageButtons)
 		return NONS_NO_BUTTON_IMAGE;
 	long index,butX,butY,width,height,srcX,srcY;
-	_GETINTVALUE(index,0)
-	_GETINTVALUE(butX,1)
-	_GETINTVALUE(butY,2)
-	_GETINTVALUE(width,3)
-	_GETINTVALUE(height,4)
-	_GETINTVALUE(srcX,5)
-	_GETINTVALUE(srcY,6)
+	GET_INT_VALUE(index,0);
+	GET_INT_VALUE(butX,1);
+	GET_INT_VALUE(butY,2);
+	GET_INT_VALUE(width,3);
+	GET_INT_VALUE(height,4);
+	GET_INT_VALUE(srcX,5);
+	GET_INT_VALUE(srcY,6);
 	if (index<=0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	index--;
@@ -2470,7 +2472,7 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 	if (!stdStrCmpCI(stmt.parameters[0],L"clear"))
 		return NONS_NO_ERROR;
 	std::wstring filename;
-	_GETWCSVALUE(filename,0)
+	GET_STR_VALUE(filename,0);
 	if (!filename.size()){
 		SDL_Surface *tmpSrf=makeSurface(
 			this->screen->screen->screens[VIRTUAL]->w,
@@ -2494,7 +2496,7 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_btntime(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long time;
-	_GETINTVALUE(time,0)
+	GET_INT_VALUE(time,0);
 	if (time<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->imageButtonExpiration=time;
@@ -2506,7 +2508,7 @@ ErrorCode NONS_ScriptInterpreter::command_btnwait(NONS_Statement &stmt){
 	if (!this->imageButtons)
 		return NONS_NO_BUTTON_IMAGE;
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	int choice=this->imageButtons->getUserInput(this->imageButtonExpiration);
 	if (choice==INT_MIN)
 		return NONS_END;
@@ -2524,7 +2526,7 @@ ErrorCode NONS_ScriptInterpreter::command_caption(NONS_Statement &stmt){
 		SDL_WM_SetCaption("",0);
 	else{
 		std::wstring temp;
-		_GETWCSVALUE(temp,0)
+		GET_STR_VALUE(temp,0);
 #if !NONS_SYS_WINDOWS
 		SDL_WM_SetCaption(UniToUTF8(temp).c_str(),0);
 #else
@@ -2538,8 +2540,8 @@ ErrorCode NONS_ScriptInterpreter::command_cell(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long sprt,
 		cell;
-	_GETINTVALUE(sprt,0)
-	_GETINTVALUE(cell,1)
+	GET_INT_VALUE(sprt,0);
+	GET_INT_VALUE(cell,1);
 	if (sprt<0 || cell<0 || (ulong)sprt>=this->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	NONS_Layer *layer=this->screen->layerStack[sprt];
@@ -2560,7 +2562,7 @@ ErrorCode NONS_ScriptInterpreter::command_cell(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_centerh(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long fraction;
-	_GETINTVALUE(fraction,0)
+	GET_INT_VALUE(fraction,0);
 	this->screen->output->setCenterPolicy(UNICODE_h,fraction);
 	return NONS_NO_ERROR;
 }
@@ -2568,7 +2570,7 @@ ErrorCode NONS_ScriptInterpreter::command_centerh(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_centerv(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long fraction;
-	_GETINTVALUE(fraction,0)
+	GET_INT_VALUE(fraction,0);
 	this->screen->output->setCenterPolicy(UNICODE_v,fraction);
 	return NONS_NO_ERROR;
 }
@@ -2576,9 +2578,9 @@ ErrorCode NONS_ScriptInterpreter::command_centerv(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_checkpage(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	long page;
-	_GETINTVALUE(page,1)
+	GET_INT_VALUE(page,1);
 	if (page<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	dst->set(this->screen->output->log.size()>=(ulong)page);
@@ -2615,12 +2617,12 @@ ErrorCode NONS_ScriptInterpreter::command_cl(NONS_Statement &stmt){
 	}
 	long number,duration;
 	ErrorCode ret;
-	_GETINTVALUE(number,1)
+	GET_INT_VALUE(number,1);
 	if (stmt.parameters.size()>2){
 		std::wstring rule;
-		_GETINTVALUE(duration,2)
+		GET_INT_VALUE(duration,2);
 		if (stmt.parameters.size()>3)
-			_GETWCSVALUE(rule,3)
+			GET_STR_VALUE(rule,3);
 		ret=this->screen->BlendNoCursor(number,duration,&rule);
 	}else
 		ret=this->screen->BlendNoCursor(number);
@@ -2634,17 +2636,17 @@ ErrorCode NONS_ScriptInterpreter::command_click(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_clickstr(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
-	_GETWCSVALUE(this->clickStr,0)
+	GET_STR_VALUE(this->clickStr,0);
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	std::wstring opA,opB;
-	_GETWCSVALUE(opA,1)
-	_GETWCSVALUE(opB,2)
+	GET_STR_VALUE(opA,1);
+	GET_STR_VALUE(opB,2);
 	var->set(wcscmp(opA.c_str(),opB.c_str()));
 	return NONS_NO_ERROR;
 }
@@ -2652,7 +2654,7 @@ ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_csp(NONS_Statement &stmt){
 	long n=-1;
 	if (stmt.parameters.size()>0)
-		_GETINTVALUE(n,0)
+		GET_INT_VALUE(n,0);
 	if (n>0 && ulong(n)>=this->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (n<0){
@@ -2667,9 +2669,9 @@ ErrorCode NONS_ScriptInterpreter::command_csp(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_date(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *year,*month,*day;
-	_GETINTVARIABLE(year,0);
-	_GETINTVARIABLE(month,0);
-	_GETINTVARIABLE(day,0);
+	GET_INT_VARIABLE(year,0);
+	GET_INT_VARIABLE(month,0);
+	GET_INT_VARIABLE(day,0);
 	time_t t=time(0);
 	tm *time=localtime(&t);
 	if (stdStrCmpCI(stmt.commandName,L"date2"))
@@ -2684,9 +2686,9 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_defaultspeed(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	long slow,med,fast;
-	_GETINTVALUE(slow,0)
-	_GETINTVALUE(med,1)
-	_GETINTVALUE(fast,2)
+	GET_INT_VALUE(slow,0);
+	GET_INT_VALUE(med,1);
+	GET_INT_VALUE(fast,2);
 	if (slow<0 || med<0 || fast<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->default_speed_slow=slow;
@@ -2716,7 +2718,7 @@ ErrorCode NONS_ScriptInterpreter::command_defsub(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_delay(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long delay;
-	_GETINTVALUE(delay,0)
+	GET_INT_VALUE(delay,0);
 	waitCancellable(delay);
 	return NONS_NO_ERROR;
 }
@@ -2761,11 +2763,11 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 		long x,y,
 			xscale,yscale,
 			angle;
-		_GETINTVALUE(x,0)
-		_GETINTVALUE(y,1)
-		_GETINTVALUE(xscale,2)
-		_GETINTVALUE(yscale,3)
-		_GETINTVALUE(angle,4)
+		GET_INT_VALUE(x,0);
+		GET_INT_VALUE(y,1);
+		GET_INT_VALUE(xscale,2);
+		GET_INT_VALUE(yscale,3);
+		GET_INT_VALUE(angle,4);
 		if (!(xscale*yscale))
 			SDL_FillRect(this->screen->screenBuffer,0,this->screen->screenBuffer->format->Amask);
 		else{
@@ -2818,9 +2820,9 @@ ErrorCode NONS_ScriptInterpreter::command_drawclear(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_drawfill(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	long r,g,b;
-	_GETINTVALUE(r,0)
-	_GETINTVALUE(g,1)
-	_GETINTVALUE(b,2)
+	GET_INT_VALUE(r,0);
+	GET_INT_VALUE(g,1);
+	GET_INT_VALUE(b,2);
 	r=ulong(r)&0xFF;
 	g=ulong(g)&0xFF;
 	b=ulong(b)&0xFF;
@@ -2849,11 +2851,11 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 		rotation,
 		matrix_00=0,matrix_01=0,
 		matrix_10=0,matrix_11=0;
-	_GETINTVALUE(spriteno,0)
-	_GETINTVALUE(cell,1)
-	_GETINTVALUE(alpha,2)
-	_GETINTVALUE(x,3)
-	_GETINTVALUE(y,4)
+	GET_INT_VALUE(spriteno,0);
+	GET_INT_VALUE(cell,1);
+	GET_INT_VALUE(alpha,2);
+	GET_INT_VALUE(x,3);
+	GET_INT_VALUE(y,4);
 	ulong functionVersion=1;
 	if (!stdStrCmpCI(stmt.commandName,L"drawsp2"))
 		functionVersion=2;
@@ -2862,16 +2864,16 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 	switch (functionVersion){
 		case 2:
 			MINIMUM_PARAMETERS(8);
-			_GETINTVALUE(xscale,5)
-			_GETINTVALUE(yscale,6)
-			_GETINTVALUE(rotation,7)
+			GET_INT_VALUE(xscale,5);
+			GET_INT_VALUE(yscale,6);
+			GET_INT_VALUE(rotation,7);
 			break;
 		case 3:
 			MINIMUM_PARAMETERS(9);
-			_GETINTVALUE(matrix_00,5)
-			_GETINTVALUE(matrix_01,6)
-			_GETINTVALUE(matrix_10,7)
-			_GETINTVALUE(matrix_11,8)
+			GET_INT_VALUE(matrix_00,5);
+			GET_INT_VALUE(matrix_01,6);
+			GET_INT_VALUE(matrix_10,7);
+			GET_INT_VALUE(matrix_11,8);
 			break;
 	}
 
@@ -2998,11 +3000,11 @@ ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	ulong size;
 	long channel;
-	_GETINTVALUE(channel,0)
+	GET_INT_VALUE(channel,0);
 	if (channel<0 || channel>7)
 		return NONS_INVALID_CHANNEL_INDEX;
 	std::wstring name;
-	_GETWCSVALUE(name,1)
+	GET_STR_VALUE(name,1);
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
@@ -3021,11 +3023,11 @@ ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long channel;
-	_GETINTVALUE(channel,0)
+	GET_INT_VALUE(channel,0);
 	if (channel<0)
 		return NONS_INVALID_CHANNEL_INDEX;
 	std::wstring name;
-	_GETWCSVALUE(name,1)
+	GET_STR_VALUE(name,1);
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error=NONS_NO_ERROR;
@@ -3044,14 +3046,14 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long code,effect,timing=0;
 	std::wstring rule;
-	_GETINTVALUE(code,0)
+	GET_INT_VALUE(code,0);
 	if (this->gfx_store->retrieve(code))
 		return NONS_DUPLICATE_EFFECT_DEFINITION;
-	_GETINTVALUE(effect,1)
+	GET_INT_VALUE(effect,1);
 	if (stmt.parameters.size()>2)
-		_GETINTVALUE(timing,2)
+		GET_INT_VALUE(timing,2);
 	if (stmt.parameters.size()>3)
-		_GETWCSVALUE(rule,3)
+		GET_STR_VALUE(rule,3);
 	NONS_GFX *gfx=this->gfx_store->add(code,effect,timing,&rule);
 	gfx->stored=1;
 	return NONS_NO_ERROR;
@@ -3060,7 +3062,7 @@ ErrorCode NONS_ScriptInterpreter::command_effect(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_effectblank(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long a;
-	_GETINTVALUE(a,0)
+	GET_INT_VALUE(a,0);
 	if (a<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	NONS_GFX::effectblank=a;
@@ -3074,7 +3076,7 @@ ErrorCode NONS_ScriptInterpreter::command_end(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_erasetextwindow(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long yesno;
-	_GETINTVALUE(yesno,0)
+	GET_INT_VALUE(yesno,0);
 	this->hideTextDuringEffect=!!yesno;
 	return NONS_NO_ERROR;
 }
@@ -3082,9 +3084,9 @@ ErrorCode NONS_ScriptInterpreter::command_erasetextwindow(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	std::wstring filename;
-	_GETWCSVALUE(filename,1)
+	GET_STR_VALUE(filename,1);
 	dst->set(this->archive->exists(filename));
 	return NONS_NO_ERROR;
 }
@@ -3097,12 +3099,12 @@ ErrorCode NONS_ScriptInterpreter::command_filelog(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_for(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	long from,to,step=1;
-	_GETINTVALUE(from,1)
-	_GETINTVALUE(to,2)
+	GET_INT_VALUE(from,1);
+	GET_INT_VALUE(to,2);
 	if (stmt.parameters.size()>3)
-		_GETINTVALUE(step,3)
+		GET_INT_VALUE(step,3);
 	if (!step)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	var->set(from);
@@ -3123,7 +3125,7 @@ ErrorCode NONS_ScriptInterpreter::command_game(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getbtntimer(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	var->set(SDL_GetTicks()-this->btnTimer);
 	return NONS_NO_ERROR;
 }
@@ -3138,8 +3140,8 @@ ErrorCode NONS_ScriptInterpreter::command_getcursor(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getcursorpos(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *x,*y;
-	_GETINTVARIABLE(x,0);
-	_GETINTVARIABLE(y,1);
+	GET_INT_VARIABLE(x,0);
+	GET_INT_VARIABLE(y,1);
 	x->set(this->screen->output->x);
 	y->set(this->screen->output->y);
 	return NONS_NO_ERROR;
@@ -3162,13 +3164,13 @@ ErrorCode NONS_ScriptInterpreter::command_getfunction(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getini(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
 	NONS_VariableMember *dst;
-	_GETVARIABLE(dst,0);
+	GET_VARIABLE(dst,0);
 	std::wstring section,
 		filename,
 		key;
-	_GETWCSVALUE(filename,0);
-	_GETWCSVALUE(section,1);
-	_GETWCSVALUE(key,2);
+	GET_STR_VALUE(filename,0);
+	GET_STR_VALUE(section,1);
+	GET_STR_VALUE(key,2);
 	INIcacheType::iterator i=this->INIcache.find(filename);
 	INIfile *file=0;
 	if (i==this->INIcache.end()){
@@ -3207,9 +3209,9 @@ ErrorCode NONS_ScriptInterpreter::command_getinsert(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getlog(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETSTRVARIABLE(dst,0);
+	GET_STR_VARIABLE(dst,0);
 	long page;
-	_GETINTVALUE(page,1);
+	GET_INT_VALUE(page,1);
 	NONS_StandardOutput *out=this->screen->output;
 	if (page<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
@@ -3225,7 +3227,7 @@ ErrorCode NONS_ScriptInterpreter::command_getlog(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getmp3vol(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	dst->set(this->audio->musicVolume(-1));
 	return NONS_NO_ERROR;
 }
@@ -3284,13 +3286,13 @@ ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
 				return NONS_EXPECTED_SCALAR;
 			if (dst->getType()==INTEGER){
 				long val;
-				_HANDLE_POSSIBLE_ERRORS(this->store->getIntValue((*parameters)[a],val));
+				HANDLE_POSSIBLE_ERRORS(this->store->getIntValue((*parameters)[a],val));
 				actions.resize(actions.size()+1);
 				actions.back().first=dst;
 				actions.back().second.first=val;
 			}else{
 				std::wstring val;
-				_HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue((*parameters)[a],val));
+				HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue((*parameters)[a],val));
 				actions.resize(actions.size()+1);
 				actions.back().first=dst;
 				actions.back().second.second=val;
@@ -3311,8 +3313,8 @@ ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getscreenshot(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long w,h;
-	_GETINTVALUE(w,0)
-	_GETINTVALUE(h,1)
+	GET_INT_VALUE(w,0);
+	GET_INT_VALUE(h,1);
 	if (w<=0 || h<=0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (!!this->screenshot)
@@ -3342,7 +3344,7 @@ ErrorCode NONS_ScriptInterpreter::command_gettab(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_gettext(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *dst;
-	_GETSTRVARIABLE(dst,0);
+	GET_STR_VARIABLE(dst,0);
 	std::wstring text=removeTags(this->screen->output->currentBuffer);
 	dst->set(text);
 	return NONS_NO_ERROR;
@@ -3351,7 +3353,7 @@ ErrorCode NONS_ScriptInterpreter::command_gettext(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_gettimer(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	var->set(this->timer);
 	return NONS_NO_ERROR;
 }
@@ -3359,7 +3361,7 @@ ErrorCode NONS_ScriptInterpreter::command_gettimer(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_getversion(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *dst;
-	_GETVARIABLE(dst,0);
+	GET_VARIABLE(dst,0);
 	if (dst->getType()==INTEGER)
 		dst->set(ONSLAUGHT_BUILD_VERSION);
 	else
@@ -3384,7 +3386,7 @@ ErrorCode NONS_ScriptInterpreter::command_globalon(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_gosub(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring label;
-	_GETLABEL(label,0)
+	GET_LABEL(label,0);
 	if (!this->gosub_label(label)){
 		handleErrors(NONS_NO_SUCH_BLOCK,stmt.lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::command_gosub",1);
 		return NONS_NO_SUCH_BLOCK;
@@ -3395,7 +3397,7 @@ ErrorCode NONS_ScriptInterpreter::command_gosub(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_goto(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring label;
-	_GETLABEL(label,0)
+	GET_LABEL(label,0);
 	if (!this->goto_label(label))
 		return NONS_NO_SUCH_BLOCK;
 	return NONS_NO_ERROR_BUT_BREAK;
@@ -3404,7 +3406,7 @@ ErrorCode NONS_ScriptInterpreter::command_goto(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring order;
-	_GETWCSVALUE(order,0)
+	GET_STR_VALUE(order,0);
 	std::vector<ulong> porder;
 	bool found[3]={0};
 	ulong offsets[26];
@@ -3432,12 +3434,12 @@ ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
 	}
 	long number,duration;
 	ErrorCode ret;
-	_GETINTVALUE(number,1)
+	GET_INT_VALUE(number,1);
 	if (stmt.parameters.size()>2){
-		_GETINTVALUE(duration,2)
+		GET_INT_VALUE(duration,2);
 		std::wstring rule;
 		if (stmt.parameters.size()>3)
-			_GETWCSVALUE(rule,3)
+			GET_STR_VALUE(rule,3);
 		this->screen->hideText();
 		this->screen->charactersBlendOrder=porder;
 		ret=this->screen->BlendNoCursor(number,duration,&rule);
@@ -3452,7 +3454,7 @@ ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_humanz(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long z;
-	_GETINTVALUE(z,0)
+	GET_INT_VALUE(z,0);
 	if (z<-1)
 		z=-1;
 	else if (ulong(z)>=this->screen->layerStack.size())
@@ -3493,7 +3495,7 @@ ErrorCode NONS_ScriptInterpreter::command_if(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_inc(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	if (!stdStrCmpCI(stmt.commandName,L"inc"))
 		var->inc();
 	else
@@ -3504,7 +3506,7 @@ ErrorCode NONS_ScriptInterpreter::command_inc(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_indent(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long indent;
-	_GETINTVALUE(indent,0)
+	GET_INT_VALUE(indent,0);
 	if (indent<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->screen->output->indentationLevel=indent;
@@ -3514,10 +3516,10 @@ ErrorCode NONS_ScriptInterpreter::command_indent(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_intlimit(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	long lower,upper;
-	_GETINTVALUE(lower,1);
-	_GETINTVALUE(upper,2);
+	GET_INT_VALUE(lower,1);
+	GET_INT_VALUE(upper,2);
 	dst->setlimits(lower,upper);
 	return NONS_NO_ERROR;
 }
@@ -3525,7 +3527,7 @@ ErrorCode NONS_ScriptInterpreter::command_intlimit(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_isdown(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	var->set(CHECK_FLAG(SDL_GetMouseState(0,0),SDL_BUTTON(SDL_BUTTON_LEFT)));
 	return NONS_NO_ERROR;
 }
@@ -3533,7 +3535,7 @@ ErrorCode NONS_ScriptInterpreter::command_isdown(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_isfull(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *var;
-	_GETINTVARIABLE(var,0);
+	GET_INT_VARIABLE(var,0);
 	NONS_MutexLocker ml(screenMutex);
 	var->set(this->screen->screen->fullscreen);
 	return NONS_NO_ERROR;
@@ -3542,7 +3544,7 @@ ErrorCode NONS_ScriptInterpreter::command_isfull(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_ispage(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	if (!this->insideTextgosub())
 		dst->set(0);
 	else{
@@ -3556,9 +3558,9 @@ ErrorCode NONS_ScriptInterpreter::command_ispage(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_itoa(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETSTRVARIABLE(dst,0);
+	GET_STR_VARIABLE(dst,0);
 	long src;
-	_GETINTVALUE(src,1)
+	GET_INT_VALUE(src,1);
 	std::wstringstream stream;
 	stream <<src;
 	std::wstring str=stream.str();
@@ -3591,7 +3593,7 @@ ErrorCode NONS_ScriptInterpreter::command_labellog(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	std::wstring name;
-	_GETWCSVALUE(name,1)
+	GET_STR_VALUE(name,1);
 	NONS_Layer **l=0;
 	long off;
 	switch (stmt.parameters[0][0]){
@@ -3622,12 +3624,12 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
 	(*l)->useBaseline(this->screen->char_baseline);
 	long number,duration;
 	ErrorCode ret;
-	_GETINTVALUE(number,2)
+	GET_INT_VALUE(number,2);
 	if (stmt.parameters.size()>3){
-		_GETINTVALUE(duration,3)
+		GET_INT_VALUE(duration,3);
 		std::wstring rule;
 		if (stmt.parameters.size()>4)
-			_GETWCSVALUE(rule,4)
+			GET_STR_VALUE(rule,4);
 		ret=this->screen->BlendNoCursor(number,duration,&rule);
 	}else
 		ret=this->screen->BlendNoCursor(number);
@@ -3637,9 +3639,9 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_len(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	std::wstring src;
-	_GETWCSVALUE(src,1)
+	GET_STR_VALUE(src,1);
 	dst->set(src.size());
 	return NONS_NO_ERROR;
 }
@@ -3669,7 +3671,7 @@ ErrorCode NONS_ScriptInterpreter::command_literal_print(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_loadgame(NONS_Statement &stmt){
 	long file;
-	_GETINTVALUE(file,0)
+	GET_INT_VALUE(file,0);
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	return this->load(file);
@@ -3690,8 +3692,8 @@ ErrorCode NONS_ScriptInterpreter::command_loadgosub(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_locate(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long x,y;
-	_GETINTVALUE(x,0)
-	_GETINTVALUE(y,1)
+	GET_INT_VALUE(x,0);
+	GET_INT_VALUE(y,1);
 	if (x<0 || y<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->screen->output->setPosition(x,y);
@@ -3701,10 +3703,10 @@ ErrorCode NONS_ScriptInterpreter::command_locate(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
 	std::wstring A,B,C,D;
-	_GETWCSVALUE(A,0)
-	_GETWCSVALUE(B,1)
-	_GETWCSVALUE(C,2)
-	_GETWCSVALUE(D,3)
+	GET_STR_VALUE(A,0);
+	GET_STR_VALUE(B,1);
+	GET_STR_VALUE(C,2);
+	GET_STR_VALUE(D,3);
 	NONS_AnimationInfo anim;
 	anim.parse(A);
 	A=L":l;";
@@ -3725,7 +3727,7 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackbutton(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_lookbackcolor(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long a;
-	_GETINTVALUE(a,0)
+	GET_INT_VALUE(a,0);
 	SDL_Color col={Sint8((a&0xFF0000)>>16),(a&0xFF00)>>8,a&0xFF,0};
 	this->screen->lookback->foreground=col;
 	return NONS_NO_ERROR;
@@ -3740,24 +3742,24 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
 	long spriten,x,y,alpha=255;
 	std::wstring str;
-	_GETINTVALUE(spriten,0)
-	_GETINTVALUE(x,2)
-	_GETINTVALUE(y,3)
+	GET_INT_VALUE(spriten,0);
+	GET_INT_VALUE(x,2);
+	GET_INT_VALUE(y,3);
 	if (stmt.parameters.size()>4)
-		_GETINTVALUE(alpha,4)
-	_GETWCSVALUE(str,1)
+		GET_INT_VALUE(alpha,4);
+	GET_STR_VALUE(str,1);
 	if (alpha>255)
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	_HANDLE_POSSIBLE_ERRORS(this->screen->loadSprite(spriten,str,x,y,(uchar)alpha,!stdStrCmpCI(stmt.commandName,L"lsp")));
+	HANDLE_POSSIBLE_ERRORS(this->screen->loadSprite(spriten,str,x,y,(uchar)alpha,!stdStrCmpCI(stmt.commandName,L"lsp")));
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_maxkaisoupage(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long max;
-	_GETINTVALUE(max,0)
+	GET_INT_VALUE(max,0);
 	if (max<=0)
 		max=-1;
 	this->screen->output->maxLogPages=max;
@@ -3772,9 +3774,9 @@ ErrorCode NONS_ScriptInterpreter::command_menu_full(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_menuselectcolor(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	long on,off,nofile;
-	_GETINTVALUE(on,0)
-	_GETINTVALUE(off,1)
-	_GETINTVALUE(nofile,2)
+	GET_INT_VALUE(on,0);
+	GET_INT_VALUE(off,1);
+	GET_INT_VALUE(nofile,2);
 	SDL_Color coloron={Uint8((on&0xFF0000)>>16),(on&0xFF00)>>8,on&0xFF,0},
 		coloroff={Uint8((off&0xFF0000)>>16),(off&0xFF00)>>8,off&0xFF,0},
 		colornofile={Uint8((nofile&0xFF0000)>>16),(nofile&0xFF00)>>8,nofile&0xFF,0};
@@ -3793,12 +3795,12 @@ ErrorCode NONS_ScriptInterpreter::command_menuselectvoice(NONS_Statement &stmt){
 		click,
 		yes,
 		no;
-	_GETWCSVALUE(entry,0)
-	_GETWCSVALUE(cancel,1)
-	_GETWCSVALUE(mouse,2)
-	_GETWCSVALUE(click,3)
-	_GETWCSVALUE(yes,5)
-	_GETWCSVALUE(no,6)
+	GET_STR_VALUE(entry,0);
+	GET_STR_VALUE(cancel,1);
+	GET_STR_VALUE(mouse,2);
+	GET_STR_VALUE(click,3);
+	GET_STR_VALUE(yes,5);
+	GET_STR_VALUE(no,6);
 	this->menu->voiceEntry=entry;
 	this->menu->voiceCancel=cancel;
 	this->menu->voiceMO=mouse;
@@ -3814,12 +3816,12 @@ ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
 	long fontX,fontY,spacingX,spacingY,
 		//bold,
 		shadow,hexcolor;
-	_GETINTVALUE(fontX,0)
-	_GETINTVALUE(fontY,1)
-	_GETINTVALUE(spacingX,2)
-	_GETINTVALUE(spacingY,3)
-	_GETINTVALUE(shadow,5)
-	_GETINTVALUE(hexcolor,6)
+	GET_INT_VALUE(fontX,0);
+	GET_INT_VALUE(fontY,1);
+	GET_INT_VALUE(spacingX,2);
+	GET_INT_VALUE(spacingY,3);
+	GET_INT_VALUE(shadow,5);
+	GET_INT_VALUE(hexcolor,6);
 	SDL_Color color={
 		Uint8((hexcolor&0xFF0000)>>16),
 		(hexcolor&0xFF00)>>8,
@@ -3838,18 +3840,18 @@ ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_mid(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *dst;
-	_GETSTRVARIABLE(dst,0);
+	GET_STR_VARIABLE(dst,0);
 	long start,len;
-	_GETINTVALUE(start,2);
+	GET_INT_VALUE(start,2);
 	std::wstring src;
-	_GETWCSVALUE(src,1);
+	GET_STR_VALUE(src,1);
 	len=src.size();
 	if ((ulong)start>=src.size()){
 		dst->set(L"");
 		return NONS_NO_ERROR;
 	}
 	if (stmt.parameters.size()>3){
-		_GETINTVALUE(len,3)
+		GET_INT_VALUE(len,3);
 	}
 	if ((ulong)start+len>src.size())
 		len=src.size()-start;
@@ -3867,7 +3869,7 @@ ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_Statement &stmt){
 			this->screen->filterPipeline.erase(this->screen->filterPipeline.begin()+1);
 		return NONS_NO_ERROR;
 	}
-	_GETINTVALUE(color,0);
+	GET_INT_VALUE(color,0);
 
 	if (this->screen->filterPipeline.size()){
 		if (this->screen->apply_monochrome_first && this->screen->filterPipeline[0].effectNo==pipelineElement::NEGATIVE){
@@ -3886,14 +3888,14 @@ ErrorCode NONS_ScriptInterpreter::command_monocro(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_mov(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *var;
-	_GETVARIABLE(var,0);
+	GET_VARIABLE(var,0);
 	if (var->getType()==INTEGER){
 		long val;
-		_GETINTVALUE(val,1)
+		GET_INT_VALUE(val,1);
 		var->set(val);
 	}else{
 		std::wstring val;
-		_GETWCSVALUE(val,1)
+		GET_STR_VALUE(val,1);
 		var->set(val);
 	}
 	return NONS_NO_ERROR;
@@ -3912,7 +3914,7 @@ ErrorCode NONS_ScriptInterpreter::command_movl(NONS_Statement &stmt){
 		handleErrors(NONS_TOO_MANY_PARAMETERS,stmt.lineOfOrigin->lineNumber,"NONS_ScriptInterpreter::command_movl",1);
 	for (ulong a=0;a<dst->dimensionSize && a<stmt.parameters.size()-1;a++){
 		long temp;
-		_GETINTVALUE(temp,a+1)
+		GET_INT_VALUE(temp,a+1);
 		dst->dimension[a]->set(temp);
 	}
 	return NONS_NO_ERROR;
@@ -3922,7 +3924,7 @@ ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
 	ulong functionVersion=atoi(stmt.commandName.substr(3));
 	MINIMUM_PARAMETERS(functionVersion+1);
 	NONS_VariableMember *first;
-	_GETVARIABLE(first,0);
+	GET_VARIABLE(first,0);
 	Sint32 index=this->store->getVariableIndex(first);
 	if (Sint32(index+functionVersion)>NONS_VariableStore::indexUpperLimit)
 		return NONS_NOT_ENOUGH_VARIABLE_INDICES;
@@ -3931,11 +3933,11 @@ ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
 	for (ulong a=0;a<functionVersion;a++){
 		if (first->getType()==INTEGER){
 			long val;
-			_GETINTVALUE(val,a+1)
+			GET_INT_VALUE(val,a+1);
 			intvalues.push_back(val);
 		}else{
 			std::wstring val;
-			_GETWCSVALUE(val,a+1)
+			GET_STR_VALUE(val,a+1);
 			strvalues.push_back(val);
 		}
 	}
@@ -3954,7 +3956,7 @@ ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long ms;
-	_GETINTVALUE(ms,0)
+	GET_INT_VALUE(ms,0);
 	if (ms<25){
 		this->audio->stopMusic();
 		return NONS_NO_ERROR;
@@ -3969,7 +3971,7 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
 			current_vol=0;
 		this->audio->musicVolume((int)current_vol);
 	}
-	_HANDLE_POSSIBLE_ERRORS(this->audio->stopMusic());
+	HANDLE_POSSIBLE_ERRORS(this->audio->stopMusic());
 	this->audio->musicVolume((int)original_vol);
 	return NONS_NO_ERROR;
 }
@@ -3977,7 +3979,7 @@ ErrorCode NONS_ScriptInterpreter::command_mp3fadeout(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long vol;
-	_GETINTVALUE(vol,0)
+	GET_INT_VALUE(vol,0);
 	this->audio->musicVolume(vol);
 	return NONS_NO_ERROR;
 }
@@ -3985,10 +3987,10 @@ ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
 	long spriten,x,y,alpha;
-	_GETINTVALUE(spriten,0)
-	_GETINTVALUE(x,1)
-	_GETINTVALUE(y,2)
-	_GETINTVALUE(alpha,3)
+	GET_INT_VALUE(spriten,0);
+	GET_INT_VALUE(x,1);
+	GET_INT_VALUE(y,2);
+	GET_INT_VALUE(alpha,3);
 	if (ulong(spriten)>this->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	NONS_Layer *l=this->screen->layerStack[spriten];
@@ -4018,7 +4020,7 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_nega(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long onoff;
-	_GETINTVALUE(onoff,0)
+	GET_INT_VALUE(onoff,0);
 	std::vector<pipelineElement> &v=this->screen->filterPipeline;
 	if (onoff){
 		onoff=onoff==1;
@@ -4092,7 +4094,7 @@ ErrorCode NONS_ScriptInterpreter::command_nsa(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring temp;
-	_GETWCSVALUE(temp,0)
+	GET_STR_VALUE(temp,0);
 	this->nsadir=UniToUTF8(temp);
 	tolower(this->nsadir);
 	toforwardslash(this->nsadir);
@@ -4104,7 +4106,7 @@ ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring name;
-	_GETWCSVALUE(name,0)
+	GET_STR_VALUE(name,0);
 	ErrorCode error=NONS_UNDEFINED_ERROR;
 	this->mp3_loop=0;
 	this->mp3_save=0;
@@ -4151,12 +4153,12 @@ ErrorCode NONS_ScriptInterpreter::command_print(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long number,duration;
 	ErrorCode ret;
-	_GETINTVALUE(number,0)
+	GET_INT_VALUE(number,0);
 	if (stmt.parameters.size()>1){
-		_GETINTVALUE(duration,1)
+		GET_INT_VALUE(duration,1);
 		std::wstring rule;
 		if (stmt.parameters.size()>2)
-			_GETWCSVALUE(rule,2)
+			GET_STR_VALUE(rule,2);
 		this->screen->hideText();
 		ret=this->screen->BlendNoCursor(number,duration,&rule);
 	}else{
@@ -4191,8 +4193,8 @@ void shake(SDL_Surface *dst,long amplitude,ulong duration){
 ErrorCode NONS_ScriptInterpreter::command_quake(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long amplitude,duration;
-	_GETINTVALUE(amplitude,0)
-	_GETINTVALUE(duration,1)
+	GET_INT_VALUE(amplitude,0);
+	GET_INT_VALUE(duration,1);
 	if (amplitude<0 || duration<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	amplitude*=2;
@@ -4263,7 +4265,7 @@ ErrorCode NONS_ScriptInterpreter::command_rmenu(NONS_Statement &stmt){
 	std::vector<std::wstring> items;
 	for (ulong a=0;a<stmt.parameters.size();a++){
 		std::wstring s;
-		_GETWCSVALUE(s,a)
+		GET_STR_VALUE(s,a);
 		a++;
 		items.push_back(s);
 		items.push_back(stmt.parameters[a]);
@@ -4280,7 +4282,7 @@ ErrorCode NONS_ScriptInterpreter::command_rmode(NONS_Statement &stmt){
 	}
 	MINIMUM_PARAMETERS(1);
 	long a;
-	_GETINTVALUE(a,0)
+	GET_INT_VALUE(a,0);
 	if (!a)
 		this->menu->rightClickMode=0;
 	else
@@ -4296,15 +4298,15 @@ rnd2 %a,%min,%max ;a=[min;max]
 ErrorCode NONS_ScriptInterpreter::command_rnd(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	long min=0,max;
 	if (!stdStrCmpCI(stmt.commandName,L"rnd")){
-		_GETINTVALUE(max,1)
+		GET_INT_VALUE(max,1);
 		max--;
 	}else{
 		MINIMUM_PARAMETERS(3);
-		_GETINTVALUE(max,2)
-		_GETINTVALUE(min,1)
+		GET_INT_VALUE(max,2);
+		GET_INT_VALUE(min,1);
 	}
 	//lower+int(double(upper-lower+1)*rand()/(RAND_MAX+1.0))
 	dst->set(min+(rand()*(max-min))/RAND_MAX);
@@ -4314,9 +4316,9 @@ ErrorCode NONS_ScriptInterpreter::command_rnd(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_VariableMember *dst;
-	_GETINTVARIABLE(dst,0);
+	GET_INT_VARIABLE(dst,0);
 	long file;
-	_GETINTVALUE(file,1);
+	GET_INT_VALUE(file,1);
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
@@ -4327,7 +4329,7 @@ ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long file;
-	_GETINTVALUE(file,0)
+	GET_INT_VALUE(file,0);
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	return this->save(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
@@ -4338,9 +4340,9 @@ ErrorCode NONS_ScriptInterpreter::command_savename(NONS_Statement &stmt){
 	std::wstring save,
 		load,
 		slot;
-	_GETWCSVALUE(save,0)
-	_GETWCSVALUE(load,1)
-	_GETWCSVALUE(slot,2)
+	GET_STR_VALUE(save,0);
+	GET_STR_VALUE(load,1);
+	GET_STR_VALUE(slot,2);
 	this->menu->stringSave=save;
 	this->menu->stringLoad=load;
 	this->menu->stringSlot=slot;
@@ -4350,7 +4352,7 @@ ErrorCode NONS_ScriptInterpreter::command_savename(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savenumber(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long n;
-	_GETINTVALUE(n,0)
+	GET_INT_VALUE(n,0);
 	if (n<1 || n>20)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->menu->slots=(ushort)n;
@@ -4360,7 +4362,7 @@ ErrorCode NONS_ScriptInterpreter::command_savenumber(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring filename;
-	_GETWCSVALUE(filename,0)
+	GET_STR_VALUE(filename,0);
 	if (!this->screenshot){
 		NONS_MutexLocker ml(screenMutex);
 		SDL_SaveBMP(this->screen->screen->screens[VIRTUAL],UniToUTF8(filename).c_str());
@@ -4377,12 +4379,12 @@ ErrorCode NONS_ScriptInterpreter::command_savescreenshot(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(5);
 	NONS_VariableMember *month,*day,*hour,*minute;
-	_GETINTVARIABLE(month,1);
-	_GETINTVARIABLE(day,2);
-	_GETINTVARIABLE(hour,3);
-	_GETINTVARIABLE(minute,4);
+	GET_INT_VARIABLE(month,1);
+	GET_INT_VARIABLE(day,2);
+	GET_INT_VARIABLE(hour,3);
+	GET_INT_VARIABLE(minute,4);
 	long file;
-	_GETINTVALUE(file,0)
+	GET_INT_VALUE(file,0);
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
@@ -4405,14 +4407,14 @@ ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(7);
 	NONS_VariableMember *year,*month,*day,*hour,*minute,*second;
-	_GETINTVARIABLE(year,1);
-	_GETINTVARIABLE(month,2);
-	_GETINTVARIABLE(day,3);
-	_GETINTVARIABLE(hour,4);
-	_GETINTVARIABLE(minute,5);
-	_GETINTVARIABLE(second,6);
+	GET_INT_VARIABLE(year,1);
+	GET_INT_VARIABLE(month,2);
+	GET_INT_VARIABLE(day,3);
+	GET_INT_VARIABLE(hour,4);
+	GET_INT_VARIABLE(minute,5);
+	GET_INT_VARIABLE(second,6);
 	long file;
-	_GETINTVALUE(file,0);
+	GET_INT_VALUE(file,0);
 		if (file<1)
 			return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoa<wchar_t>(file)+L".dat";
@@ -4451,15 +4453,15 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 	}
 	NONS_VariableMember *var=0;
 	if (selnum)
-		_GETINTVARIABLE(var,0);
+		GET_INT_VARIABLE(var,0);
 	std::vector<std::wstring> strings,jumps;
 	for (ulong a=selnum;a<stmt.parameters.size();a++){
 		std::wstring temp;
-		_GETWCSVALUE(temp,a)
+		GET_STR_VALUE(temp,a);
 		strings.push_back(temp);
 		if (!selnum){
 			a++;
-			_GETLABEL(temp,a)
+			GET_LABEL(temp,a);
 			jumps.push_back(temp);
 		}
 	}
@@ -4510,8 +4512,8 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_selectcolor(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long on,off;
-	_GETINTVALUE(on,0)
-	_GETINTVALUE(off,1)
+	GET_INT_VALUE(on,0);
+	GET_INT_VALUE(off,1);
 	this->selectOn.r=Uint8((on&0xFF0000)>>16);
 	this->selectOn.g=(on&0xFF00)>>8;
 	this->selectOn.b=on&0xFF;
@@ -4526,9 +4528,9 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_Statement &stmt){
 	std::wstring entry,
 		mouseover,
 		click;
-	_GETWCSVALUE(entry,0)
-	_GETWCSVALUE(mouseover,1)
-	_GETWCSVALUE(click,2)
+	GET_STR_VALUE(entry,0);
+	GET_STR_VALUE(mouseover,1);
+	GET_STR_VALUE(click,2);
 	tolower(entry);
 	tolower(mouseover);
 	tolower(click);
@@ -4563,7 +4565,7 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_set_default_font_size(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long a;
-	_GETINTVALUE(a,0)
+	GET_INT_VALUE(a,0);
 	this->defaultfs=a;
 	return NONS_NO_ERROR;
 }
@@ -4573,10 +4575,10 @@ ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_Statement &stmt){
 	long which,
 		x,y;
 	std::wstring string;
-	_GETINTVALUE(which,0)
-	_GETINTVALUE(x,2)
-	_GETINTVALUE(y,3)
-	_GETWCSVALUE(string,1)
+	GET_INT_VALUE(which,0);
+	GET_INT_VALUE(x,2);
+	GET_INT_VALUE(y,3);
+	GET_STR_VALUE(string,1);
 	bool absolute=stdStrCmpCI(stmt.commandName,L"abssetcursor")==0;
 	if (!which){
 		if (this->arrowCursor)
@@ -4612,27 +4614,27 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 	if (this->legacy_set_window){
 		long fontsizeY;
 		MINIMUM_PARAMETERS(14);
-		_GETINTVALUE(frameXstart,0)
-		_GETINTVALUE(frameYstart,1)
-		_GETINTVALUE(frameXend,2)
-		_GETINTVALUE(frameYend,3)
-		_GETINTVALUE(fontsize,4)
-		_GETINTVALUE(fontsizeY,5)
-		_GETINTVALUE(spacingX,6)
-		_GETINTVALUE(spacingY,7)
-		_GETINTVALUE(speed,8)
-		_GETINTVALUE(bold,9)
-		_GETINTVALUE(shadow,10)
-		_GETINTVALUE(windowXstart,12)
-		_GETINTVALUE(windowYstart,13)
+		GET_INT_VALUE(frameXstart,0);
+		GET_INT_VALUE(frameYstart,1);
+		GET_INT_VALUE(frameXend,2);
+		GET_INT_VALUE(frameYend,3);
+		GET_INT_VALUE(fontsize,4);
+		GET_INT_VALUE(fontsizeY,5);
+		GET_INT_VALUE(spacingX,6);
+		GET_INT_VALUE(spacingY,7);
+		GET_INT_VALUE(speed,8);
+		GET_INT_VALUE(bold,9);
+		GET_INT_VALUE(shadow,10);
+		GET_INT_VALUE(windowXstart,12);
+		GET_INT_VALUE(windowYstart,13);
 		if (this->store->getIntValue(stmt.parameters[11],color)!=NONS_NO_ERROR){
 			syntax=1;
-			_GETWCSVALUE(filename,11)
+			GET_STR_VALUE(filename,11);
 			windowXend=windowXstart+1;
 			windowYend=windowYstart+1;
 		}else{
-			_GETINTVALUE(windowXend,14)
-			_GETINTVALUE(windowYend,15)
+			GET_INT_VALUE(windowXend,14);
+			GET_INT_VALUE(windowYend,15);
 		}
 		frameXend*=fontsize+spacingX;
 		frameXend+=frameXstart;
@@ -4642,23 +4644,23 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		frameYend+=frameYstart;
 	}else{
 		MINIMUM_PARAMETERS(15);
-		_GETINTVALUE(frameXstart,0)
-		_GETINTVALUE(frameYstart,1)
-		_GETINTVALUE(frameXend,2)
-		_GETINTVALUE(frameYend,3)
-		_GETINTVALUE(fontsize,4)
-		_GETINTVALUE(spacingX,5)
-		_GETINTVALUE(spacingY,6)
-		_GETINTVALUE(speed,7)
-		_GETINTVALUE(bold,8)
-		_GETINTVALUE(shadow,9)
-		_GETINTVALUE(windowXstart,11)
-		_GETINTVALUE(windowYstart,12)
-		_GETINTVALUE(windowXend,13)
-		_GETINTVALUE(windowYend,14)
+		GET_INT_VALUE(frameXstart,0);
+		GET_INT_VALUE(frameYstart,1);
+		GET_INT_VALUE(frameXend,2);
+		GET_INT_VALUE(frameYend,3);
+		GET_INT_VALUE(fontsize,4);
+		GET_INT_VALUE(spacingX,5);
+		GET_INT_VALUE(spacingY,6);
+		GET_INT_VALUE(speed,7);
+		GET_INT_VALUE(bold,8);
+		GET_INT_VALUE(shadow,9);
+		GET_INT_VALUE(windowXstart,11);
+		GET_INT_VALUE(windowYstart,12);
+		GET_INT_VALUE(windowXend,13);
+		GET_INT_VALUE(windowYend,14);
 		if (this->store->getIntValue(stmt.parameters[10],color)!=NONS_NO_ERROR){
 			syntax=1;
-			_GETWCSVALUE(filename,10)
+			GET_STR_VALUE(filename,10);
 		}
 	}
 	bold=0;
@@ -4739,8 +4741,8 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_shadedistance(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long x,y;
-	_GETINTVALUE(x,0)
-	_GETINTVALUE(y,1)
+	GET_INT_VALUE(x,0);
+	GET_INT_VALUE(y,1);
 	this->screen->output->shadowPosX=x;
 	this->screen->output->shadowPosY=y;
 	return NONS_NO_ERROR;
@@ -4773,8 +4775,8 @@ void quake(SDL_Surface *dst,char axis,ulong amplitude,ulong duration){
 ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long amplitude,duration;
-	_GETINTVALUE(amplitude,0)
-	_GETINTVALUE(duration,1)
+	GET_INT_VALUE(amplitude,0);
+	GET_INT_VALUE(duration,1);
 	if (amplitude<0 || duration<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	amplitude*=10;
@@ -4789,9 +4791,8 @@ ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt)
 
 ErrorCode NONS_ScriptInterpreter::command_skip(NONS_Statement &stmt){
 	long count=2;
-	if (stmt.parameters.size()){
-		_GETINTVALUE(count,0)
-	}
+	if (stmt.parameters.size())
+		GET_INT_VALUE(count,0);
 	if (!count && !this->thread->getCurrentStatement()->statementNo)
 		return NONS_ZERO_VALUE_IN_SKIP;
 	if (!this->thread->skip(count))
@@ -4803,12 +4804,12 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	std::wstring srcStr,
 		searchStr;
-	_GETWCSVALUE(srcStr,0)
-	_GETWCSVALUE(searchStr,1)
+	GET_STR_VALUE(srcStr,0);
+	GET_STR_VALUE(searchStr,1);
 	std::vector <NONS_VariableMember *> dsts;
 	for (ulong a=2;a<stmt.parameters.size();a++){
 		NONS_VariableMember *var;
-		_GETVARIABLE(var,a);
+		GET_VARIABLE(var,a);
 		dsts.push_back(var);
 	}
 	ulong middle=0;
@@ -4856,13 +4857,12 @@ ErrorCode NONS_ScriptInterpreter::command_systemcall(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_tablegoto(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long val;
-	_GETINTVALUE(val,0)
+	GET_INT_VALUE(val,0);
 	if (val<0)
 		return NONS_NEGATIVE_GOTO_INDEX;
 	std::vector<std::wstring> labels(stmt.parameters.size()-1);
-	for (ulong a=1;a<stmt.parameters.size();a++){
-		_GETLABEL(labels[a-1],a)
-	}
+	for (ulong a=1;a<stmt.parameters.size();a++)
+		GET_LABEL(labels[a-1],a);
 	if ((ulong)val>labels.size())
 		return NONS_NOT_ENOUGH_LABELS;
 	if (!this->script->blockFromLabel(labels[val]))
@@ -4874,7 +4874,7 @@ ErrorCode NONS_ScriptInterpreter::command_tablegoto(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_tal(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long newalpha;
-	_GETINTVALUE(newalpha,1)
+	GET_INT_VALUE(newalpha,1);
 	switch (stmt.parameters[0][0]){
 		case UNICODE_l:
 			if (this->hideTextDuringEffect)
@@ -4914,14 +4914,14 @@ ErrorCode NONS_ScriptInterpreter::command_textgosub(NONS_Statement &stmt){
 	if (!stmt.parameters.size())
 		return NONS_NO_ERROR;
 	std::wstring label;
-	_GETLABEL(label,0)
-		if (!this->script->blockFromLabel(label))
+	GET_LABEL(label,0);
+	if (!this->script->blockFromLabel(label))
 		return NONS_NO_SUCH_BLOCK;
 	if (stmt.parameters.size()<2)
 		this->textgosubRecurses=0;
 	else{
 		long rec;
-		_GETINTVALUE(rec,1)
+		GET_INT_VALUE(rec,1);
 		this->textgosubRecurses=(rec!=0);
 	}
 	this->textgosub=label;
@@ -4939,7 +4939,7 @@ ErrorCode NONS_ScriptInterpreter::command_textonoff(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_textspeed(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long speed;
-	_GETINTVALUE(speed,0);
+	GET_INT_VALUE(speed,0);
 	if (speed<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->screen->output->display_speed=speed;
@@ -4949,9 +4949,9 @@ ErrorCode NONS_ScriptInterpreter::command_textspeed(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_time(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *h,*m,*s;
-	_GETINTVARIABLE(h,0);
-	_GETINTVARIABLE(m,1);
-	_GETINTVARIABLE(s,2);
+	GET_INT_VARIABLE(h,0);
+	GET_INT_VARIABLE(m,1);
+	GET_INT_VARIABLE(s,2);
 	time_t t=time(0);
 	tm *time=localtime(&t);
 	h->set(time->tm_hour);
@@ -4981,7 +4981,7 @@ ErrorCode NONS_ScriptInterpreter::command_trap(NONS_Statement &stmt){
 	else
 		kind=4;
 	std::wstring label;
-	_GETLABEL(label,0)
+	GET_LABEL(label,0);
 	if (!this->script->blockFromLabel(label))
 		return NONS_NO_SUCH_BLOCK;
 	this->trapLabel=label;
@@ -5004,7 +5004,7 @@ ErrorCode NONS_ScriptInterpreter::command_underline(NONS_Statement &stmt){
 	if (!stmt.parameters.size())
 		return 0;
 	long a;
-	_GETINTVALUE(a,0)
+	GET_INT_VALUE(a,0);
 	this->screen->char_baseline=a;
 	return NONS_NO_ERROR;
 }
@@ -5035,8 +5035,8 @@ ErrorCode NONS_ScriptInterpreter::command_usewheel(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	std::wstring str1,str2;
-	_GETWCSVALUE(str1,0)
-	_GETWCSVALUE(str2,1)
+	GET_STR_VALUE(str1,0);
+	GET_STR_VALUE(str2,1);
 	o_stdout <<"--------------------------------------------------------------------------------\n"
 		"versionstr says:\n"
 		<<str1<<"\n"
@@ -5048,8 +5048,8 @@ ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_vsp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long n=-1,visibility;
-	_GETINTVALUE(n,0)
-	_GETINTVALUE(visibility,1)
+	GET_INT_VALUE(n,0);
+	GET_INT_VALUE(visibility,1);
 	if (n>0 && ulong(n)>=this->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (this->screen->layerStack[n] && this->screen->layerStack[n]->data)
@@ -5062,7 +5062,7 @@ ErrorCode NONS_ScriptInterpreter::command_wait(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	//if( skip_flag || draw_one_page_flag || ctrl_pressed_status || skip_to_wait ) return RET_CONTINUE;
 	long ms;
-	_GETINTVALUE(ms,0)
+	GET_INT_VALUE(ms,0);
 	waitNonCancellable(ms);
 	return NONS_NO_ERROR;
 }
@@ -5070,7 +5070,7 @@ ErrorCode NONS_ScriptInterpreter::command_wait(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_waittimer(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long ms;
-	_GETINTVALUE(ms,0)
+	GET_INT_VALUE(ms,0);
 	if (ms<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	ulong now=SDL_GetTicks();
@@ -5088,7 +5088,7 @@ ErrorCode NONS_ScriptInterpreter::command_wave(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	ulong size;
 	std::wstring name;
-	_GETWCSVALUE(name,0)
+	GET_STR_VALUE(name,0);
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
@@ -5111,11 +5111,11 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long number,duration;
 	std::wstring rule;
-	_GETINTVALUE(number,0)
+	GET_INT_VALUE(number,0);
 	if (stmt.parameters.size()>1){
-		_GETINTVALUE(duration,1)
+		GET_INT_VALUE(duration,1);
 		if (stmt.parameters.size()>2)
-			_GETWCSVALUE(rule,2)
+			GET_STR_VALUE(rule,2);
 		if (!this->screen->output->transition->stored)
 			delete this->screen->output->transition;
 		this->screen->output->transition=new NONS_GFX(number,duration,&rule);

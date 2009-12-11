@@ -112,7 +112,7 @@ void usage(){
 		"      Default is \'auto\'.\n"
 		"  -s\n"
 		"      No sound.\n"
-		"  -music-format {auto|ogg|mp3|it|xm|s3m|mod}\n"
+		"  -music-format {auto|ogg|mp3|mid|it|xm|s3m|mod}\n"
 		"      Select the music format to be used.\n"
 		"      Default is \'auto\'.\n"
 		"  -music-directory <directory>\n"
@@ -143,7 +143,7 @@ void usage(){
 		"  -stop-on-first-error\n"
 		"      Stops executing the script when the first error occurs. \"Unimplemented\n"
 		"      command\" (when the command will not be implemented) errors don't count.\n"
-		"  -pp-output\n"
+		"  -pp-output <filename>\n"
 		"      Writes the preprocessor output to <filename>. The details of each macro\n"
 		"      call are sent to stderr.\n"
 		"  -pp-then-quit\n"
@@ -271,6 +271,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				}
 				if (arguments[a]==L"ogg" ||
 						arguments[a]==L"mp3" ||
+						arguments[a]==L"mid" ||
 						arguments[a]==L"it" ||
 						arguments[a]==L"xm" ||
 						arguments[a]==L"s3m" ||

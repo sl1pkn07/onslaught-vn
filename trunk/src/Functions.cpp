@@ -1143,30 +1143,6 @@ SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 	return res;
 }
 
-template <typename T,typename T2>
-bool multicomparison_template(T character,const T2 *characters){
-	for (;*characters;characters++)
-		if (character==*characters)
-			return 1;
-	return 0;
-}
-
-bool multicomparison(char character,const char *characters){
-	return multicomparison_template<char,char>(character,characters);
-}
-
-bool multicomparison(wchar_t character,const char *characters){
-	return multicomparison_template<wchar_t,char>(character,characters);
-}
-
-bool multicomparison(char character,const wchar_t *characters){
-	return multicomparison_template<char,wchar_t>(character,characters);
-}
-
-bool multicomparison(wchar_t character,const wchar_t *characters){
-	return multicomparison_template<wchar_t,wchar_t>(character,characters);
-}
-
 Uint8 readByte(char *buffer,ulong &offset){
 	return buffer[offset++];
 }

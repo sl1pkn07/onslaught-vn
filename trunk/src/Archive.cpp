@@ -784,7 +784,9 @@ NONS_GeneralArchive::NONS_GeneralArchive(){
 			if (!found)
 				break;
 		}else{
-			full_name=L"arc.sar";
+			full_name=path+L"arc.sar";
+			if (!fileExists(full_name) && !fileExists(toupperCopy(full_name)))
+				continue;
 			format=0;
 		}
 		Archive *arc;

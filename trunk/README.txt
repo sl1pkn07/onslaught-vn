@@ -1,4 +1,4 @@
-(Updated: 2009-11-30)
+(Updated: 2009-12-08)
 
 ONSlaught - An ONScripter clone with Unicode support.
 
@@ -49,6 +49,16 @@ SDL_image (should have been compiled at least with jpeg and png support),
 SDL_mixer (ogg support heavily recommended),
 FreeType 2,
 bz2lib.
+
+
+ABOUT MIDI
+
+MIDI is based on TiMidity, a software-based synthesizer. TiMidity needs sound
+fonts in order to render files. I have a configuration ready to be used at
+https://sourceforge.net/projects/onslaught-vn/files/Timidity%20config/timidity-config.7z/download
+The directory needs to be in the same directory as the game data in order to
+work. Technically, it needs to be in the engine's working directory, but since
+the two will most often be the same...
 
 
 PORTING

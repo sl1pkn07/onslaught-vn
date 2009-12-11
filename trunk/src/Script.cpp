@@ -447,8 +447,9 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 	SHA1 hash;
 	for (ulong a=0;a<this->blocksByLine.size();a++){
 		std::wstring &b=this->blocksByLine[a]->name;
-		wchar_t *temp=&b[0];
-		hash.Input((char *)temp,b.size()*sizeof(wchar_t));
+		std::vector<char> temp(b.size());
+		std::copy(b.begin(),b.end(),temp.begin());
+		hash.Input(&temp[0],temp.size()*sizeof(char));
 	}
 	hash.Result(this->hash);
 	save_directory=getSaveLocation(this->hash);

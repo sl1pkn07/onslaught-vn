@@ -149,7 +149,7 @@ void ConfigFile::assignWString(const std::wstring &var,const std::wstring &val,u
 	str+=val;
 	str.push_back(UNICODE_QUOTE);
 	if (i!=this->entries.end()){
-		if (subindex==ULONG_MAX || subindex>=i->second.size())
+		if (subindex>=i->second.size())
 			i->second.push_back(str);
 		else
 			i->second[subindex]=str;
@@ -164,7 +164,7 @@ void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
 	std::wstringstream stream;
 	stream <<val;
 	if (i!=this->entries.end()){
-		if (subindex==ULONG_MAX || subindex>=i->second.size())
+		if (subindex>=i->second.size())
 			i->second.push_back(stream.str());
 		else
 			i->second[subindex]=stream.str();

@@ -45,8 +45,8 @@ struct ConfigFile{
 	void init(const std::wstring &filename,ENCODINGS encoding);
 	std::wstring getWString(const std::wstring &index,ulong subindex=0);
 	long getInt(const std::wstring &index,ulong subindex=0);
-	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=ULONG_MAX);
-	void assignInt(const std::wstring &var,long val,ulong subindex=ULONG_MAX);
+	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=0);
+	void assignInt(const std::wstring &var,long val,ulong subindex=0);
 	void writeOut(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
 	std::string writeOut(ENCODINGS encoding=ISO_8859_1_ENCODING);
 	bool exists(const std::wstring &var);

@@ -178,7 +178,7 @@
 
 #define ABS(x) ((x)<0?-(x):(x))
 
-#define _HANDLE_POSSIBLE_ERRORS(x) {\
+#define HANDLE_POSSIBLE_ERRORS(x) {\
 	ErrorCode possible_error=(x);\
 	if (possible_error!=NONS_NO_ERROR)\
 		return possible_error;\
@@ -193,10 +193,13 @@
 #endif
 
 //string functions
-bool multicomparison(char character,const char *characters);
-bool multicomparison(wchar_t character,const char *characters);
-bool multicomparison(char character,const wchar_t *characters);
-bool multicomparison(wchar_t character,const wchar_t *characters);
+template <typename T,typename T2>
+bool multicomparison(T character,const T2 *characters){
+	for (;*characters;characters++)
+		if (character==*characters)
+			return 1;
+	return 0;
+}
 template <typename T>
 void toforwardslash(std::basic_string<T> &s){
 	for (ulong a=0,size=s.size();a<size;a++)

@@ -1,7 +1,4 @@
-20091206
-    * Minor bug fixes.
-
-20091204
+????????
     * Implemented: avi, mpegplay.
     * The engine is confirmed to compile with MinGW versions 4.x and above.
     * In-game console replacing old debugging console added.
@@ -9,12 +6,16 @@
     * Added plug-in system.
     * Added ZIP support.
     * Added full video support.
+    * Minor bug fixes.
     * Fixed compliance error in effects 11, 12, 13, and 14.
     * Fixed compliance error in nega.
     * Fixed major bug in file reading function.
     * Fixed bug in UTF-8 decoding function.
     * Fixed crashing bug in input events.
     * Fixed bug in the macro parser.
+    * Fixed bug in bg.
+    * Fixed memory leak in menu GUI element.
+    * Fixed memory leak in save game loading routine.
 
 20090904
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
