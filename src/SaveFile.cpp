@@ -845,6 +845,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 
 		writeByte(this->nega_parameter,buffer);
 
+		writeDWord(this->pipelines->size(),buffer);
 		for (ulong a=0;a<this->pipelines->size();a++){
 			pipelineElement &el=this->pipelines[0][a];
 			writeDWord(el.effectNo,buffer);
@@ -857,6 +858,7 @@ bool NONS_SaveFile::save(std::wstring filename){
 		writeDWord(this->asyncEffect_no,buffer);
 		writeDWord(this->asyncEffect_freq,buffer);
 
+		writeDWord(this->pipelines[1].size(),buffer);
 		for (ulong a=0;a<this->pipelines[1].size();a++){
 			pipelineElement &el=this->pipelines[1][a];
 			writeDWord(el.effectNo,buffer);

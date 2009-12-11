@@ -381,12 +381,24 @@ void NONS_File::open(const std::wstring &path,bool open_for_read){
 #if NONS_SYS_WINDOWS
 	this->file=CreateFile(
 		&path[0],
-		(open_for_read?FILE_READ_DATA:FILE_WRITE_DATA),
-		(open_for_read?FILE_SHARE_READ:FILE_SHARE_WRITE),
+		(open_for_read?GENERIC_READ:GENERIC_WRITE),
+		(open_for_read?FILE_SHARE_READ:0),
 		0,
 		(open_for_read?OPEN_EXISTING:TRUNCATE_EXISTING),
-		0,0
+		FILE_ATTRIBUTE_NORMAL,
+		0
 	);
+	if (this->file==INVALID_HANDLE_VALUE && GetLastError()==ERROR_FILE_NOT_FOUND){
+		this->file=CreateFile(
+			&path[0],
+			(open_for_read?GENERIC_READ:GENERIC_WRITE),
+			(open_for_read?FILE_SHARE_READ:0),
+			0,
+			(open_for_read?OPEN_EXISTING:CREATE_NEW),
+			FILE_ATTRIBUTE_NORMAL,
+			0
+		);
+	}
 #else
 	this->file.open(UniToUTF8(path).c_str(),std::ios::binary|(open_for_read?std::ios::in:std::ios::out));
 #endif

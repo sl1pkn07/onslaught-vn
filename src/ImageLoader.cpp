@@ -30,10 +30,12 @@
 #include "ImageLoader.h"
 #include "Functions.h"
 
+NONS_AnimationInfo::TRANSPARENCY_METHODS NONS_AnimationInfo::default_trans=COPY_TRANS;
+
 void NONS_AnimationInfo::parse(const std::wstring &image_string){
 	this->string=image_string;
 	this->valid=0;
-	this->method=COPY_TRANS;
+	this->method=NONS_AnimationInfo::default_trans;
 	this->animation_length=1;
 	this->animation_time_offset=0;
 	this->animation_direction=1;
@@ -419,7 +421,7 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		SDL_FreeSurface(surface);
 		SDL_FreeRW(rwops);
 	}else
-		this->image=generateEmptySurface(320,240);
+		return this->image=0;
 	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;
@@ -550,7 +552,10 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *r
 		if (!buffer)
 			return 0;
 		primary=new NONS_Image;
-		primary->LoadImage(anim.getFilename(),buffer,l);
+		if (!primary->LoadImage(anim.getFilename(),buffer,l)){
+			delete[] buffer;
+			return 0;
+		}
 		this->filelog.addString(anim.getFilename());
 		delete[] buffer;
 		freePrimary=1;

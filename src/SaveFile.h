@@ -39,7 +39,7 @@
 #include <ctime>
 #include <SDL/SDL.h>
 
-#define NONS_SAVEFILE_VERSION 3
+#define NONS_SAVEFILE_VERSION 4
 
 std::vector<tm *> existing_files(const std::wstring &location=L"./");
 std::wstring getConfigLocation();

@@ -51,45 +51,17 @@ extern SDL_Surface *(*rotationFunction)(SDL_Surface *,double);
 extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
-#define _GETINTVALUE(dst,src) _HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)))
-#define _GETWCSVALUE(dst,src) _HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)))
-#if 0
-#define _GETVARIABLE(varName,src){\
-	ErrorCode error;\
-	(varName)=this->store->retrieve(stmt.parameters[(src)],&error);\
-	if (!(varName)){\
-		return error;\
-	}\
-	if ((varName)->isConstant()){\
-		return NONS_EXPECTED_VARIABLE;\
-	}\
-	if ((varName)->getType()==INTEGER_ARRAY){\
-		return NONS_EXPECTED_SCALAR;\
-	}\
-}
-#define _GETINTVARIABLE(varName,src){\
-	_GETVARIABLE(varName,src)\
-	if ((varName)->getType()!=INTEGER){\
-		return NONS_EXPECTED_NUMERIC_VARIABLE;\
-	}\
-}
-#define _GETSTRVARIABLE(varName,src){\
-	_GETVARIABLE(varName,src)\
-	if ((varName)->getType()!=STRING){\
-		return NONS_EXPECTED_STRING_VARIABLE;\
-	}\
-}
-#else
-#define _GETVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getVar((varName),stmt.parameters[(src)],this->store))
-#define _GETINTVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getIntVar((varName),stmt.parameters[(src)],this->store))
-#define _GETSTRVARIABLE(varName,src) _HANDLE_POSSIBLE_ERRORS(getStrVar((varName),stmt.parameters[(src)],this->store))
-#endif
-#define _GETLABEL(dst,src){\
-	std::wstring &_GETLABEL_temp=stmt.parameters[(src)];\
-	if (_GETLABEL_temp[0]==UNICODE_ASTERISK)\
-		(dst)=_GETLABEL_temp;\
+#define GET_INT_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)))
+#define GET_STR_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)))
+#define GET_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getVar((varName),stmt.parameters[(src)],this->store))
+#define GET_INT_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getIntVar((varName),stmt.parameters[(src)],this->store))
+#define GET_STR_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getStrVar((varName),stmt.parameters[(src)],this->store))
+#define GET_LABEL(dst,src){\
+	std::wstring &GET_LABEL_temp=stmt.parameters[(src)];\
+	if (GET_LABEL_temp[0]==UNICODE_ASTERISK)\
+		(dst)=GET_LABEL_temp;\
 	else{\
-		_GETWCSVALUE((dst),(src))\
+		GET_STR_VALUE((dst),(src));\
 	}\
 }
 

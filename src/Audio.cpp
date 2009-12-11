@@ -304,7 +304,7 @@ void NONS_Audio::freeCacheElement(int channel){
 }
 
 ErrorCode NONS_Audio::playMusic(const std::wstring *filename,long times){
-	static const wchar_t *formats[]={L"ogg",L"mp3",L"it",L"xm",L"s3m",L"mod",0};
+	static const wchar_t *formats[]={L"ogg",L"mp3",L"mid",L"it",L"xm",L"s3m",L"mod",0};
 	if (this->uninitialized)
 		return NONS_NO_ERROR;
 	if (!filename){
@@ -407,7 +407,7 @@ ErrorCode NONS_Audio::playSoundAsync(const std::wstring *filename,char *buffer,l
 				"    on channel "<<se->channel<<std::endl;
 		return NONS_NO_ERROR;
 	}else{
-		_HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel));
+		HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel));
 		return this->playSoundAsync(0,0,0,channel,times);
 	}
 }

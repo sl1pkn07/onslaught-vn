@@ -65,6 +65,8 @@ struct NONS_AnimationInfo{
 	ulong animation_time_offset;
 	int animation_direction;
 	bool valid;
+	static TRANSPARENCY_METHODS default_trans;
+
 	NONS_AnimationInfo(){}
 	NONS_AnimationInfo(const std::wstring &image_string);
 	NONS_AnimationInfo(const NONS_AnimationInfo &b);
