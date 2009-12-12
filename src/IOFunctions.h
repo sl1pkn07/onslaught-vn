@@ -112,7 +112,7 @@ class VirtualConsole{
 		process;
 public:
 	bool good;
-	VirtualConsole(const std::string &name);
+	VirtualConsole(const std::string &name,ulong color);
 	~VirtualConsole();
 	void put(const char *str,size_t size=0);
 	void put(const std::string &str){

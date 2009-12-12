@@ -256,7 +256,7 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y){
 }
 
 #if NONS_SYS_WINDOWS
-VirtualConsole::VirtualConsole(const std::string &name){
+VirtualConsole::VirtualConsole(const std::string &name,ulong color){
 	this->good=0;
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength=sizeof(SECURITY_ATTRIBUTES);
@@ -275,7 +275,13 @@ VirtualConsole::VirtualConsole(const std::string &name){
 	si.hStdInput=this->far_end;
 	si.dwFlags|=STARTF_USESTDHANDLES;
 	TCHAR program[]=TEXT("console.exe");
-	if (!CreateProcess(program,0,0,0,1,CREATE_NEW_CONSOLE|CREATE_UNICODE_ENVIRONMENT,0,0,&si,&pi))
+	TCHAR arguments[100];
+#ifndef UNICODE
+	sprintf(arguments,"%d",color);
+#else
+	swprintf(arguments,L"0 %d",color);
+#endif
+	if (!CreateProcess(program,arguments,0,0,1,CREATE_NEW_CONSOLE|CREATE_UNICODE_ENVIRONMENT,0,0,&si,&pi))
 		return;
 	this->process=pi.hProcess;
 	CloseHandle(pi.hThread);
@@ -326,7 +332,7 @@ NONS_RedirectedOutput::~NONS_RedirectedOutput(){
 }
 
 void NONS_RedirectedOutput::write_to_stream(const std::stringstream &str){
-	if (CLOptions.verbosity>=255)
+	if (CLOptions.verbosity>=255 && this->vc)
 		this->vc->put(str.str());
 	else if (CLOptions.override_stdout && this->file)
 		(*this->file) <<str.str();
@@ -386,16 +392,21 @@ void NONS_RedirectedOutput::redirect(){
 	if (this->file)
 		delete this->file;
 	const char *str;
+	ulong color=7;
 	if (this->cout==std::cout)
 		str="stdout.txt";
-	else if (this->cout==std::cerr)
+	else if (this->cout==std::cerr){
 		str="stderr.txt";
-	else
+		color=12;
+	}else
 		str="stdlog.txt";
 #if NONS_SYS_WINDOWS
 	if (CLOptions.verbosity>=255){
-		this->vc=new VirtualConsole(str);
-		return;
+		this->vc=new VirtualConsole(str,color);
+		if (this->vc->good)
+			return;
+		delete this->vc;
+		this->vc=0;
 	}
 #endif
 	if (!CLOptions.override_stdout){
