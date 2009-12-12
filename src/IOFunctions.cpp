@@ -32,6 +32,7 @@
 #include <SDL/SDL.h>
 #include <iostream>
 #include <ctime>
+#include <cassert>
 #if NONS_SYS_WINDOWS
 #include <windows.h>
 #endif
@@ -254,26 +255,87 @@ Uint8 getCorrectedMousePosition(NONS_VirtualScreen *screen,int *x,int *y){
 	return r;
 }
 
+#if NONS_SYS_WINDOWS
+VirtualConsole::VirtualConsole(const std::string &name){
+	this->good=0;
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength=sizeof(SECURITY_ATTRIBUTES);
+	sa.bInheritHandle=1;
+	sa.lpSecurityDescriptor=0;
+	if (!CreatePipe(&this->far_end,&this->near_end,&sa,0)){
+		assert(this->near_end==INVALID_HANDLE_VALUE);
+		return;
+	}
+	SetHandleInformation(this->near_end,HANDLE_FLAG_INHERIT,0);
+	PROCESS_INFORMATION pi;
+	STARTUPINFO si;
+	ZeroMemory(&pi,sizeof(pi));
+	ZeroMemory(&si,sizeof(si));
+	si.cb=sizeof(STARTUPINFO);
+	si.hStdInput=this->far_end;
+	si.dwFlags|=STARTF_USESTDHANDLES;
+	TCHAR program[]=TEXT("console.exe");
+	if (!CreateProcess(program,0,0,0,1,CREATE_NEW_CONSOLE|CREATE_UNICODE_ENVIRONMENT,0,0,&si,&pi))
+		return;
+	this->process=pi.hProcess;
+	CloseHandle(pi.hThread);
+	this->good=1;
+
+	this->put(name);
+	this->put("\n",1);
+}
+
+VirtualConsole::~VirtualConsole(){
+	if (this->near_end!=INVALID_HANDLE_VALUE){
+		if (this->process!=INVALID_HANDLE_VALUE){
+			TerminateProcess(this->process,0);
+			CloseHandle(this->process);
+		}
+		CloseHandle(this->near_end);
+		CloseHandle(this->far_end);
+	}
+}
+	
+void VirtualConsole::put(const char *str,size_t size){
+	if (!this->good)
+		return;
+	if (!size)
+		size=strlen(str);
+	DWORD l;
+	WriteFile(this->near_end,str,size,&l,0);
+}
+#endif
+
 NONS_RedirectedOutput::NONS_RedirectedOutput(std::ostream &a)
 		:cout(a){
 	this->file=0;
 	this->indentation=0;
 	this->addIndentationNext=1;
+#if NONS_SYS_WINDOWS
+	this->vc=0;
+#endif
 }
 
 NONS_RedirectedOutput::~NONS_RedirectedOutput(){
 	if (this->file)
 		this->file->close();
+#if NONS_SYS_WINDOWS
+	if (this->vc)
+		delete this->vc;
+#endif
+}
+
+void NONS_RedirectedOutput::write_to_stream(const std::stringstream &str){
+	if (CLOptions.verbosity>=255)
+		this->vc->put(str.str());
+	else if (CLOptions.override_stdout && this->file)
+		(*this->file) <<str.str();
+	else
+		this->cout <<str.str();
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(ulong a){
-	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
-	if (this->addIndentationNext)
-		for (ulong a=0;a<this->indentation;a++)
-			stream <<INDENTATION_STRING;
-	this->addIndentationNext=0;
-	stream <<a;
-	return *this;
+	return *this <<itoa<char>(a);
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
@@ -286,17 +348,13 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(long a){
-	return *this <<(ulong)a;
+	return *this <<itoa<char>(a);
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(wchar_t a){
-	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
-	if (this->addIndentationNext)
-		for (ulong a=0;a<this->indentation;a++)
-			stream <<INDENTATION_STRING;
-	this->addIndentationNext=0;
-	stream <<a;
-	return *this;
+	std::wstring s;
+	s.push_back(a);
+	return *this <<UniToUTF8(s);
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const char *a){
@@ -304,7 +362,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const char *a){
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
-	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
+	std::stringstream stream;
 	for (ulong b=0;b<a.size();b++){
 		char c=a[b];
 		if (this->addIndentationNext)
@@ -316,6 +374,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
 			this->addIndentationNext=0;
 		stream <<c;
 	}
+	this->write_to_stream(stream);
 	return *this;
 }
 
@@ -324,20 +383,30 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::wstring &a){
 }
 
 void NONS_RedirectedOutput::redirect(){
-	if (!!this->file)
+	if (this->file)
 		delete this->file;
+	const char *str;
+	if (this->cout==std::cout)
+		str="stdout.txt";
+	else if (this->cout==std::cerr)
+		str="stderr.txt";
+	else
+		str="stdlog.txt";
+#if NONS_SYS_WINDOWS
+	if (CLOptions.verbosity>=255){
+		this->vc=new VirtualConsole(str);
+		return;
+	}
+#endif
 	if (!CLOptions.override_stdout){
 		this->file=0;
 		return;
 	}
-	if (this->cout==std::cout)
-		this->file=new std::ofstream("stdout.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	else if (this->cout==std::cerr)
-		this->file=new std::ofstream("stderr.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	else
-		this->file=new std::ofstream("stdlog.txt",CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
-	if (!this->file->is_open())
+	this->file=new std::ofstream(str,CLOptions.reset_redirection_files?std::ios::trunc:std::ios::app);
+	if (!this->file->is_open()){
 		delete this->file;
+		this->file=0;
+	}
 	else if (!CLOptions.reset_redirection_files){
 		time_t secs=time(0);
 		tm *t=localtime(&secs);

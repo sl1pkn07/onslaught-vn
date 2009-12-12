@@ -263,8 +263,8 @@ long atoi(const std::basic_string<T> &str){
 	long res;
 	return !(stream >>res)?0:res;
 }
-template <typename T>
-std::basic_string<T> itoa(long n,unsigned w=0){
+template <typename T,typename T2>
+std::basic_string<T> itoa(T2 n,unsigned w=0){
 	std::basic_stringstream<T> stream;
 	if (w){
 		stream.fill(UNICODE_0);

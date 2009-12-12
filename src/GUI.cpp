@@ -910,6 +910,9 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 			continue;
 		}
 		switch (event.type){
+			case SDL_QUIT:
+				SDL_FreeSurface(screenCopy);
+				return INT_MIN;
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym){
 					case SDLK_ESCAPE:
@@ -1201,7 +1204,6 @@ NONS_Menu::NONS_Menu(NONS_ScriptInterpreter *interpreter){
 	this->font=0;
 	this->defaultFont=interpreter->main_font;
 	this->buttons=0;
-	this->files=0;
 	NONS_ScreenSpace *scr=interpreter->screen;
 	this->shade=new NONS_Layer(&(scr->screen->screens[VIRTUAL]->clip_rect),0xCCCCCCCC|amask);
 	this->slots=10;
@@ -1227,7 +1229,6 @@ NONS_Menu::NONS_Menu(std::vector<std::wstring> *options,NONS_ScriptInterpreter *
 	NONS_ScreenSpace *scr=interpreter->screen;
 	this->defaultFont=interpreter->main_font;
 	this->buttons=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
-	this->files=new NONS_ButtonLayer(this->defaultFont,scr,1,0);
 	int w=scr->screen->screens[VIRTUAL]->w,
 		h=scr->screen->screens[VIRTUAL]->h;
 	this->audio=interpreter->audio;
@@ -1373,17 +1374,15 @@ int NONS_Menu::save(){
 	else
 		y0=this->write(L"~~ Save File ~~",20);
 	NONS_ScreenSpace *scr=interpreter->screen;
-	if (!this->files){
-		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
-	}
-	std::vector<tm *> files=existing_files(save_directory);
+	NONS_ButtonLayer files(this->font?this->font:this->defaultFont,scr,1,0);
+	std::vector<tm *> times=existing_files(save_directory);
 	int choice,
 		ret;
 	while (1){
 		std::vector<std::wstring> strings;
 		std::wstring pusher;
 		for (ulong a=0;a<slots;a++){
-			tm *t=files[a];
+			tm *t=times[a];
 			if (this->stringSlot.size())
 				pusher=this->stringSlot;
 			else
@@ -1402,7 +1401,7 @@ int NONS_Menu::save(){
 		}
 		int w=scr->screen->screens[VIRTUAL]->w,
 			h=scr->screen->screens[VIRTUAL]->h;
-		this->files->makeTextButtons(
+		files.makeTextButtons(
 			strings,
 			&this->on,
 			&this->off,
@@ -1412,7 +1411,7 @@ int NONS_Menu::save(){
 			&this->voiceClick,
 			this->audio,
 			this->archive,w,h);
-		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
+		choice=files.getUserInput((w-files.boundingBox.w)/2,y0*2+20);
 		if (choice==INT_MIN)
 			ret=INT_MIN;
 		else{
@@ -1436,8 +1435,9 @@ int NONS_Menu::save(){
 		}
 		break;
 	}
-	for (ulong a=0;a<files.size();a++)
-		delete files[a];
+	for (ulong a=0;a<times.size();a++)
+		if (times[a])
+			delete times[a];
 	return ret;
 }
 
@@ -1448,16 +1448,15 @@ int NONS_Menu::load(){
 	else
 		y0=this->write(L"~~ Load File ~~",20);
 	NONS_ScreenSpace *scr=interpreter->screen;
-	if (!this->files)
-		this->files=new NONS_ButtonLayer(this->font?this->font:this->defaultFont,scr,1,0);
-	std::vector<tm *> files=existing_files(save_directory);
+	NONS_ButtonLayer files(this->font?this->font:this->defaultFont,scr,1,0);
+	std::vector<tm *> times=existing_files(save_directory);
 	int choice,
 		ret;
 	std::vector<std::wstring> strings;
 	{
 		std::wstring pusher;
 		for (ulong a=0;a<slots;a++){
-			tm *t=files[a];
+			tm *t=times[a];
 			if (this->stringSlot.size())
 				pusher=this->stringSlot;
 			else
@@ -1478,7 +1477,7 @@ int NONS_Menu::load(){
 	while (1){
 		int w=scr->screen->screens[VIRTUAL]->w,
 			h=scr->screen->screens[VIRTUAL]->h;
-		this->files->makeTextButtons(
+		files.makeTextButtons(
 			strings,
 			&this->on,
 			&this->off,
@@ -1489,7 +1488,7 @@ int NONS_Menu::load(){
 			this->audio,
 			this->archive,
 			w,h);
-		choice=this->files->getUserInput((w-this->files->boundingBox.w)/2,y0*2+20);
+		choice=files.getUserInput((w-files.boundingBox.w)/2,y0*2+20);
 		if (choice==INT_MIN)
 			ret=INT_MIN;
 		else{
@@ -1512,11 +1511,9 @@ int NONS_Menu::load(){
 		}
 		break;
 	}
-	for (ulong a=0;a<files.size();a++)
-		if (files[a])
-			delete files[a];
-	delete this->files;
-	this->files=0;
+	for (ulong a=0;a<times.size();a++)
+		if (times[a])
+			delete times[a];
 	return ret;
 }
 

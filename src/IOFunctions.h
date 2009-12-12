@@ -105,11 +105,30 @@ bool fileExists(const std::wstring &name);
 struct NONS_CommandLineOptions;
 extern NONS_CommandLineOptions CLOptions;
 
+#if NONS_SYS_WINDOWS
+class VirtualConsole{
+	HANDLE near_end,
+		far_end,
+		process;
+public:
+	bool good;
+	VirtualConsole(const std::string &name);
+	~VirtualConsole();
+	void put(const char *str,size_t size=0);
+	void put(const std::string &str){
+		this->put(str.c_str(),str.size());
+	}
+};
+#endif
+
 #define INDENTATION_STRING "    "
 
 struct NONS_RedirectedOutput{
 	std::ofstream *file;
 	std::ostream &cout;
+#if NONS_SYS_WINDOWS
+	VirtualConsole *vc;
+#endif
 	ulong indentation;
 	bool addIndentationNext;
 	NONS_RedirectedOutput(std::ostream &a);
@@ -124,6 +143,8 @@ struct NONS_RedirectedOutput{
 	void redirect();
 	//std::ostream &getstream();
 	void indent(long);
+private:
+	void write_to_stream(const std::stringstream &str);
 };
 
 extern NONS_InputObserver InputObserver;
