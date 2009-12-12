@@ -407,7 +407,7 @@ ErrorCode NONS_VariableStore::evaluate(
 	param <<exp;
 	switch (expressionParser_yyparse(&param,this,&ImageLoader->filelog,result,invert_terms,array_decl,retrievedVar,string)){
 		case 0:
-			if (!!result && CLOptions.verbosity>=2){
+			if (!!result && CLOptions.verbosity>=2 && CLOptions.verbosity<255){
 				if (invert_terms)
 					o_stderr <<"notif";
 				o_stderr <<"("<<exp<<")=="<<*result<<"\n";

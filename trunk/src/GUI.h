@@ -220,7 +220,6 @@ struct NONS_Menu{
 	SDL_Color nofile;
 	bool shadow;
 	NONS_ButtonLayer *buttons;
-	NONS_ButtonLayer *files;
 	ushort slots;
 	NONS_ScriptInterpreter *interpreter;
 	int x,y;

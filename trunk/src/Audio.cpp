@@ -396,15 +396,15 @@ ErrorCode NONS_Audio::playSoundAsync(const std::wstring *filename,char *buffer,l
 			se->volume(this->svol);
 		else
 			se->volume(0);
+		if (CLOptions.verbosity>=255)
+			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
+				"    cache item "<<se->sound->chunk<<"\n"
+				"    on channel "<<se->channel<<std::endl;
 		se->play(0,times);
 		{
 			NONS_MutexLocker(this->soundcache->mutex);
 			this->soundcache->channelWatch.push_back(se);
 		}
-		if (CLOptions.verbosity>=255)
-			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
-				"    cache item "<<se->sound->chunk<<"\n"
-				"    on channel "<<se->channel<<std::endl;
 		return NONS_NO_ERROR;
 	}else{
 		HANDLE_POSSIBLE_ERRORS(this->loadAsyncBuffer(*filename,buffer,l,channel));

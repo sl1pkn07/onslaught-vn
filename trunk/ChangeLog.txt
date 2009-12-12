@@ -16,6 +16,7 @@
     * Fixed bug in bg.
     * Fixed memory leak in menu GUI element.
     * Fixed memory leak in save game loading routine.
+    * Fixed bug when playing very short audio samples while skipping.
 
 20090904
     * Implemented: versionstr, cell, bgcopy, bgcpy, draw, drawbg, drawbg2,
