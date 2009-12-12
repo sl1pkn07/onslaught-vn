@@ -79,7 +79,7 @@ void NONS_SoundCache::GarbageCollector(NONS_SoundCache *_this){
 					for (;i2!=_this->channelWatch.end();){
 						if (!Mix_Playing((*i2)->channel) && (*i2)->playingHasStarted){
 							if (CLOptions.verbosity>=255)
-								std::cout <<"At "<<now<<" stopped "<<*i2<<"\n"
+								std::cout <<"At "<<now<<" stopped "<<*i2<<" ("<<(*i2)->path<<")\n"
 									"    cache item "<<(*i2)->sound->chunk<<"\n"
 									"    on channel "<<(*i2)->channel<<std::endl;
 							(*i2)->unload();
@@ -397,7 +397,7 @@ ErrorCode NONS_Audio::playSoundAsync(const std::wstring *filename,char *buffer,l
 		else
 			se->volume(0);
 		if (CLOptions.verbosity>=255)
-			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<"\n"
+			std::cout <<"At "<<secondsSince1970()<<" started "<<se<<" ("<<se->path<<")\n"
 				"    cache item "<<se->sound->chunk<<"\n"
 				"    on channel "<<se->channel<<std::endl;
 		se->play(0,times);
@@ -450,6 +450,7 @@ ErrorCode NONS_Audio::loadAsyncBuffer(const std::wstring &filename,char *buffer,
 	i->second->load(cs);
 	if (!i->second->loaded())
 		return NONS_UNDEFINED_ERROR;
+	i->second->path=filename;
 	return NONS_NO_ERROR;
 }
 

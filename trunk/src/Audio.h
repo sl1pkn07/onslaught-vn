@@ -51,11 +51,11 @@ struct NONS_CachedSound{
 
 struct NONS_SoundEffect{
 	NONS_CachedSound *sound;
-	//void freeCacheElement(int chan);
 	int channel;
 	bool playingHasStarted;
 	bool isplaying;
 	long loops;
+	std::wstring path;
 	NONS_SoundEffect(int chan=0);
 	~NONS_SoundEffect();
 	bool loaded();
