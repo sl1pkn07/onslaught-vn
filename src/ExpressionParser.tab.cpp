@@ -1933,7 +1933,7 @@ yyreduce:
 			handleErrors(NONS_DIVISION_BY_ZERO,0,"yyparse",1);
 			YYABORT;
 		}
-		(yyval.obj)=new NONS_VariableMember(a+b);
+		(yyval.obj)=new NONS_VariableMember(a/b);
 		(yyval.obj)->temporary=1;
 		freeVM((yyvsp[(1) - (3)].obj));
 		freeVM((yyvsp[(3) - (3)].obj));

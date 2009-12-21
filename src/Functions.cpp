@@ -76,6 +76,72 @@ Uint32 secondsSince1970(){
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
 void manualBlit_threaded(void *parameters);
 
+DECLSPEC void manualBlit_unthreaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
+	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
+		return;
+	SDL_Rect srcRect0,dstRect0;
+	if (!srcRect){
+		srcRect0.x=0;
+		srcRect0.y=0;
+		srcRect0.w=src->w;
+		srcRect0.h=src->h;
+	}else
+		srcRect0=*srcRect;
+	if (!dstRect){
+		dstRect0.x=0;
+		dstRect0.y=0;
+		dstRect0.w=dst->w;
+		dstRect0.h=dst->h;
+	}else
+		dstRect0=*dstRect;
+
+	if (srcRect0.x<0){
+		if (srcRect0.w<=-srcRect0.x)
+			return;
+		srcRect0.w+=srcRect0.x;
+		srcRect0.x=0;
+	}else if (srcRect0.x>=src->w)
+		return;
+	if (srcRect0.y<0){
+		if (srcRect0.h<=-srcRect0.y)
+			return;
+		srcRect0.h+=srcRect0.y;
+		srcRect0.y=0;
+	}else if (srcRect0.y>=src->h)
+		return;
+	if (srcRect0.x+srcRect0.w>src->w)
+		srcRect0.w-=srcRect0.x+srcRect0.w-src->w;
+	if (srcRect0.y+srcRect0.h>src->h)
+		srcRect0.h-=srcRect0.y+srcRect0.h-src->h;
+	if (dstRect0.x+srcRect0.w>dst->w)
+		srcRect0.w-=dstRect0.x+srcRect0.w-dst->w;
+	if (dstRect0.y+srcRect0.h>dst->h)
+		srcRect0.h-=dstRect0.y+srcRect0.h-dst->h;
+
+	if (dstRect0.x<0){
+		srcRect0.x=-dstRect0.x;
+		srcRect0.w+=dstRect0.x;
+		dstRect0.x=0;
+	}else if (dstRect0.x>=dst->w)
+		return;
+	if (dstRect0.y<0){
+		srcRect0.y=-dstRect0.y;
+		srcRect0.h+=dstRect0.y;
+		dstRect0.y=0;
+	}else if (dstRect0.y>=dst->h)
+		return;
+
+	if (srcRect0.w<=0 || srcRect0.h<=0)
+		return;
+
+
+	SDL_LockSurface(src);
+	SDL_LockSurface(dst);
+	manualBlit_threaded(src,&srcRect0,dst,&dstRect0,alpha);
+	SDL_UnlockSurface(dst);
+	SDL_UnlockSurface(src);
+}
+
 DECLSPEC void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
 		return;

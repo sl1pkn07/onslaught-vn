@@ -1,3 +1,8 @@
+????????
+    * Added SVG support.
+    * Fixed bug in division operator (!).
+    * Fixed bug in fullscreen switch.
+
 20091212
     * Implemented: avi, mpegplay.
     * The engine is confirmed to compile with MinGW versions 4.x and above.

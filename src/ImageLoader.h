@@ -33,6 +33,8 @@
 #include "Common.h"
 #include "Archive.h"
 #include "FileLog.h"
+#include "../svg_loader.h"
+#include "Plugin/LibraryLoader.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <vector>
@@ -91,6 +93,21 @@ private:
 	std::wstring mask_filename;
 };
 
+struct SVG_Functions{
+#define SVG_Functions_DECLARE_MEMBER(id) id##_f id
+	SVG_Functions_DECLARE_MEMBER(SVG_load);
+	SVG_Functions_DECLARE_MEMBER(SVG_unload);
+	SVG_Functions_DECLARE_MEMBER(SVG_get_dimensions);
+	SVG_Functions_DECLARE_MEMBER(SVG_set_scale);
+	SVG_Functions_DECLARE_MEMBER(SVG_best_fit);
+	SVG_Functions_DECLARE_MEMBER(SVG_set_rotation);
+	SVG_Functions_DECLARE_MEMBER(SVG_set_matrix);
+	SVG_Functions_DECLARE_MEMBER(SVG_transform_coordinates);
+	SVG_Functions_DECLARE_MEMBER(SVG_render);
+	SVG_Functions_DECLARE_MEMBER(SVG_render2);
+	bool valid;
+};
+
 typedef std::map<std::pair<ulong,ulong>,SDL_Rect> optim_t;
 
 struct NONS_Image{
@@ -106,6 +123,14 @@ struct NONS_Image{
 	ulong age;
 	ulong refCount;
 	optim_t optimized_updates;
+	/*
+	If the image was rendered from an SVG, this holds the virtual pointer
+	returned by SVG_load().
+	Otherwise, this is set to zero.
+	*/
+	ulong svg_source;
+	static SVG_Functions *svg_functions;
+
 	NONS_Image();
 	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects=0);
 	~NONS_Image();
@@ -119,13 +144,13 @@ struct NONS_ImageLoader{
 	std::vector<NONS_Image *> imageCache;
 	//<0: infinite (until memory is exhausted)
 	long maxCacheSize;
+	NONS_LibraryLoader svg_library;
+	SVG_Functions svg_functions;
+
 	NONS_FileLog filelog;
 	NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize=-1);
 	~NONS_ImageLoader();
 	ulong getCacheSize();
-	//SDL_Surface *fetchImage(const wchar_t *name);
-	//SDL_Surface *fetchCursor(const wchar_t *name,int method);
-	//SDL_Surface *fetchSprite(const wchar_t *string,const wchar_t *name,int method);
 	SDL_Surface *fetchSprite(const std::wstring &string,optim_t *rects=0);
 	bool unfetchImage(SDL_Surface *which);
 	NONS_Image *elementFromSurface(SDL_Surface *srf);
