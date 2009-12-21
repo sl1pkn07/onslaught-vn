@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2009, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -91,8 +91,6 @@ typedef SDL_Surface *(*playback_cb)(volatile SDL_Surface *screen,void *user_data
  *     the opposite would produce a pillarboxed picture.
  *     The function does not clear (i.e. fill with black) the destination
  *     surface before or after. That job is left to the caller.
- *     OpenAL seems to behave with SDL_mixer, even when there is music and sound
- *     playing on the caller program.
  *     Like any video-related code, the function is rather resource-consuming.
  *     Depending on the screen size of the video, the function can use anywhere
  *     between ~20 MiB (512x382) and 60 MiB (720p high definition video).
@@ -137,7 +135,7 @@ typedef SDL_Surface *(*playback_cb)(volatile SDL_Surface *screen,void *user_data
  *         than coming back and forth from fullscreen mode or taking a
  *         screenshot. The parameters were so called merely because that's what
  *         the parent project uses them for.
- *         Using these parameters places the caller program under the GPL.
+ *         Using these parameters may place the caller program under the GPL.
  *
  * Returns:
  *     An error code describing the execution result. See the #defines below.

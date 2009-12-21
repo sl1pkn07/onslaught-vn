@@ -350,12 +350,12 @@ bool NONS_VirtualScreen::toggleFullscreen(uchar mode){
 		h=this->screens[REAL]->h;
 	SDL_Surface *tempCopy=0;
 	if (!this->usingFeature[INTERPOLATION] && !this->usingFeature[ASYNC_EFFECT])
-		tempCopy=copySurface(this->screens[REAL]);
+		tempCopy=copySurface(this->screens[REAL],0);
 	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((this->fullscreen)?SDL_FULLSCREEN:0));
 	if (tempCopy){
 		if (!this->usingFeature[OVERALL_FILTER])
 			this->screens[VIRTUAL]=this->screens[REAL];
-		manualBlit(tempCopy,0,this->screens[REAL],0);
+		manualBlit_unthreaded(tempCopy,0,this->screens[REAL],0);
 		SDL_FreeSurface(tempCopy);
 	}else if (this->usingFeature[INTERPOLATION])
 		this->screens[REAL]->clip_rect=this->outRect;

@@ -279,7 +279,7 @@ bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NO
 		!!currentPage,
 		currentPage!=end-1
 	};
-	visibility=(visibilitya[0]<<1)|visibilitya[1];
+	visibility=(visibilitya[0]<<1)|int(visibilitya[1]);
 	NONS_Button *buttons[]={
 		(NONS_Button *)this->up,
 		(NONS_Button *)this->down
@@ -287,7 +287,6 @@ bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NO
 	int x,y;
 	getCorrectedMousePosition(dst,&x,&y);
 	mouseOver=-1;
-	//if (visibility){
 	if (visibilitya[0] || visibilitya[1]){
 		for (int a=0;a<2;a++){
 			if (mouseOver<0 && buttons[a]->MouseOver(x,y))
@@ -295,25 +294,6 @@ bool NONS_Lookback::changePage(int dir,long &currentPage,SDL_Surface *copyDst,NO
 			if (visibilitya[a])
 				buttons[a]->mergeWithoutUpdate(dst,preBlit,mouseOver==a,1);
 		}
-
-		/*
-		if (visibility&2 && ((NONS_Button *)this->up)->MouseOver(x,y)){
-			((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-			mouseOver=0;
-			((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,1,1);
-		}else{
-			if (visibility&2)
-				((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,0,1);
-			if (visibility&1 && ((NONS_Button *)this->down)->MouseOver(x,y)){
-				mouseOver=1;
-				((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,1,1);
-			}else{
-				mouseOver=-1;
-				if (visibility&1)
-					((NONS_Button *)this->down)->mergeWithoutUpdate(dst,preBlit,0,1);
-			}
-		}
-		*/
 	}
 	//SDL_UpdateRect(dst,0,0,0,0);
 	dst->updateWholeScreen();

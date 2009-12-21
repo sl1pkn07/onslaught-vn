@@ -204,19 +204,25 @@ long NONS_AnimationInfo::getCurrentAnimationFrame(){
 	return -1;
 }
 
+SVG_Functions *NONS_Image::svg_functions=0;
+
 NONS_Image::NONS_Image(){
 	this->age=0;
 	this->image=0;
 	this->refCount=0;
+	this->svg_source=0;
 }
 
 NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects){
 	this->age=0;
 	this->image=0;
 	this->refCount=0;
-	if (!anim || !primary || anim->method==NONS_AnimationInfo::SEPARATE_MASK && !secondary)
+	this->svg_source=primary->svg_source;
+	if (!anim || !primary || anim->method==NONS_AnimationInfo::SEPARATE_MASK && !secondary && !this->svg_source)
 		return;
 	this->animation=*anim;
+	if (this->svg_source)
+		this->animation.method=NONS_AnimationInfo::COPY_TRANS;
 	if (this->animation.method==NONS_AnimationInfo::PARALLEL_MASK)
 		this->image=makeSurface(primary->image->w/2,primary->image->h,32);
 	else
@@ -420,8 +426,13 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 			manualBlit(surface,0,this->image,0);
 		SDL_FreeSurface(surface);
 		SDL_FreeRW(rwops);
+	}else if (svg_functions && svg_functions->valid){
+		this->svg_source=svg_functions->SVG_load((void *)buffer,bufferSize);
+		this->image=(!this->svg_source)?0:svg_functions->SVG_render(this->svg_source);
 	}else
-		return this->image=0;
+		this->image=0;
+	if (!this->image)
+		return 0;
 	this->animation.parse(string);
 	this->refCount=0;
 	return this->image;
@@ -485,13 +496,28 @@ SDL_Rect NONS_Image::getUpdateRect(ulong from,ulong to){
 NONS_ImageLoader *ImageLoader=0;
 
 NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize)
-		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW){
+		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW),
+		svg_library("svg_loader",0){
 	this->archive=archive;
 	this->maxCacheSize=maxCacheSize;
 	if (maxCacheSize<0)
 		this->imageCache.reserve(50);
 	else
 		this->imageCache.reserve(maxCacheSize);
+	this->svg_functions.valid=1;
+#define NONS_ImageLoader_INIT_MEMBER(id) if (this->svg_functions.valid && !(this->svg_functions.id=(id##_f)this->svg_library.getFunction(#id)))\
+	this->svg_functions.valid=0
+	NONS_ImageLoader_INIT_MEMBER(SVG_load);
+	NONS_ImageLoader_INIT_MEMBER(SVG_unload);
+	NONS_ImageLoader_INIT_MEMBER(SVG_get_dimensions);
+	NONS_ImageLoader_INIT_MEMBER(SVG_set_scale);
+	NONS_ImageLoader_INIT_MEMBER(SVG_best_fit);
+	NONS_ImageLoader_INIT_MEMBER(SVG_set_rotation);
+	NONS_ImageLoader_INIT_MEMBER(SVG_set_matrix);
+	NONS_ImageLoader_INIT_MEMBER(SVG_transform_coordinates);
+	NONS_ImageLoader_INIT_MEMBER(SVG_render);
+	NONS_ImageLoader_INIT_MEMBER(SVG_render2);
+	NONS_Image::svg_functions=&this->svg_functions;
 }
 
 NONS_ImageLoader::~NONS_ImageLoader(){
@@ -614,6 +640,7 @@ bool NONS_ImageLoader::unfetchImage(SDL_Surface *which){
 			temp->refCount--;
 			if (!temp->refCount){
 				if (!this->maxCacheSize){
+					this->svg_functions.SVG_unload(temp->svg_source);
 					delete temp;
 					this->imageCache[a]=0;
 				}else

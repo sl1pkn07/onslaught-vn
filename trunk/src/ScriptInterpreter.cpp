@@ -2774,6 +2774,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			SDL_FillRect(this->screen->screenBuffer,0,this->screen->screenBuffer->format->Amask);
 		else{
 			SDL_Surface *src=this->screen->Background->data;
+			NONS_Image *img=ImageLoader->elementFromSurface(src);
 			bool freeSrc=0;
 
 			if (xscale<0 || yscale<0){
@@ -2795,13 +2796,26 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 				manualBlit(src,0,dst,0);
 				freeSrc=1;
 			}
-			SDL_Surface *dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
-			if (freeSrc)
-				SDL_FreeSurface(src);
-			src=dst;
-			dst=rotationFunction(src,double(angle)/180*M_PI);
-			SDL_FreeSurface(src);
-			src=dst;
+			if (img->svg_source){
+				ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
+				ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(angle));
+				SDL_Surface *dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
+				if (freeSrc)
+					SDL_FreeSurface(src);
+				src=dst;
+			}else{
+				if (xscale!=100 || yscale!=100){
+					SDL_Surface *dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+					if (freeSrc)
+						SDL_FreeSurface(src);
+					src=dst;
+				}
+				if (angle!=0){
+					SDL_Surface *dst=rotationFunction(src,double(angle)/180*M_PI);
+					SDL_FreeSurface(src);
+					src=dst;
+				}
+			}
 			SDL_Rect dstR={
 				Sint16(-long(src->clip_rect.w/2)+x),
 				Sint16(-long(src->clip_rect.h/2)+y),
@@ -2887,6 +2901,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 	if (!sprite || !sprite->data)
 		return NONS_NO_SPRITE_LOADED_THERE;
 	SDL_Surface *src=sprite->data;
+	NONS_Image *img=ImageLoader->elementFromSurface(src);
 	if (cell<0 || (ulong)cell>=sprite->animation.animation_length)
 		return NONS_NO_ERROR;
 	if (functionVersion==2 && !(xscale*yscale))
@@ -2926,20 +2941,41 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 					yscale=ABS(yscale);
 					src=dst;
 				}
-				if (xscale!=100 || yscale!=100){
-					dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+				if (img->svg_source){
+					ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
+					ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(rotation));
+					dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
 					SDL_FreeSurface(src);
 					src=dst;
-				}
-				if (rotation){
-					dst=rotationFunction(src,double(rotation)/180*M_PI);
-					SDL_FreeSurface(src);
-					src=dst;
+				}else{
+					if (xscale!=100 || yscale!=100){
+						dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+						SDL_FreeSurface(src);
+						src=dst;
+					}
+					if (rotation){
+						dst=rotationFunction(src,double(rotation)/180*M_PI);
+						SDL_FreeSurface(src);
+						src=dst;
+					}
 				}
 			}
 			break;
 		case 3:
-			{
+			if (img->svg_source){
+				double matrix_safe[]={1,1,1,1};
+				double matrix[]={
+					double(matrix_00)/1000.0,
+					double(matrix_01)/1000.0,
+					double(matrix_10)/1000.0,
+					double(matrix_11)/1000.0
+				};
+				ImageLoader->svg_functions.SVG_set_matrix(img->svg_source,matrix_safe);
+				ImageLoader->svg_functions.SVG_set_matrix(img->svg_source,matrix);
+				SDL_Surface *dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
+				SDL_FreeSurface(src);
+				src=dst;
+			}else{
 				float matrix[]={
 					float(matrix_00)/1000.0f,
 					float(matrix_01)/1000.0f,
@@ -2951,8 +2987,8 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 					return NONS_BAD_MATRIX;
 				SDL_FreeSurface(src);
 				src=dst;
-				break;
 			}
+			break;
 	}
 	if (functionVersion>1){
 		srcRect.x=0;

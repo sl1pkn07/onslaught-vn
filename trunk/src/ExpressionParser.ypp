@@ -330,7 +330,7 @@ operation:
 			handleErrors(NONS_DIVISION_BY_ZERO,0,"yyparse",1);
 			YYABORT;
 		}
-		$$=new NONS_VariableMember(a+b);
+		$$=new NONS_VariableMember(a/b);
 		$$->temporary=1;
 		freeVM($1);
 		freeVM($3);
