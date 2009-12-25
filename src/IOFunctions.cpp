@@ -560,15 +560,21 @@ NONS_File::type *NONS_File::read(ulong &bytes_read){
 	return buffer;
 }
 
-bool NONS_File::write(void *buffer,ulong size){
+bool NONS_File::write(void *buffer,ulong size,bool write_at_end){
 	if (!this->is_open || this->opened_for_read)
 		return 0;
 #if NONS_SYS_WINDOWS
-	SetFilePointer(this->file,0,0,FILE_BEGIN);
+	if (!write_at_end)
+		SetFilePointer(this->file,0,0,FILE_BEGIN);
+	else
+		SetFilePointer(this->file,0,0,FILE_END);
 	DWORD a=size;
 	WriteFile(this->file,buffer,a,&a,0);
 #else
-	this->file.seekp(0);
+	if (!write_at_end)
+		this->file.seekp(0);
+	else
+		this->file.seekp(0,std::ios::end);
 	this->file.write((char *)buffer,size);
 #endif
 	return 1;
@@ -587,6 +593,15 @@ NONS_File::type *NONS_File::read(const std::wstring &path,ulong &bytes_read){
 bool NONS_File::write(const std::wstring &path,void *buffer,ulong size){
 	NONS_File file(path,0);
 	return file.write(buffer,size);
+}
+
+bool NONS_File::delete_file(const std::wstring &path){
+#if NONS_SYS_WINDOWS
+	return !!DeleteFile(&path[0]);
+#elif NONS_SYS_UNIX
+	std::string s=UniToUTF8(path);
+	return remove(&s[0])==0;
+#endif
 }
 
 bool fileExists(const std::wstring &name){

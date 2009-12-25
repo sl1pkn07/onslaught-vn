@@ -42,20 +42,20 @@ NONS_Lookback::NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b
 	this->foreground.b=b;
 	this->up=new NONS_Button();
 	this->down=new NONS_Button();
-	SDL_Rect temp=this->output->foregroundLayer->clip_rect;
+	SDL_Rect temp=this->output->foregroundLayer->clip_rect.to_SDL_Rect();
 	int thirdofscreen=temp.h/3;
 	temp.y=thirdofscreen;
-	((NONS_Button *)this->up)->onLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->up)->offLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->onLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->offLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->posy=thirdofscreen*2;
-	((NONS_Button *)this->up)->box=temp;
-	((NONS_Button *)this->up)->box.x=0;
-	((NONS_Button *)this->up)->box.y=0;
-	((NONS_Button *)this->down)->box=temp;
-	((NONS_Button *)this->down)->box.x=0;
-	((NONS_Button *)this->down)->box.y=0;
+	this->up->onLayer=new NONS_Layer(&temp,0);
+	this->up->offLayer=new NONS_Layer(&temp,0);
+	this->down->onLayer=new NONS_Layer(&temp,0);
+	this->down->offLayer=new NONS_Layer(&temp,0);
+	this->down->posy=thirdofscreen*2;
+	this->up->box=temp;
+	this->up->box.x=0;
+	this->up->box.y=0;
+	this->down->box=temp;
+	this->down->box.x=0;
+	this->down->box.y=0;
 	this->sUpon=0;
 	this->sUpoff=0;
 	this->sDownon=0;
@@ -63,8 +63,8 @@ NONS_Lookback::NONS_Lookback(NONS_StandardOutput *output,uchar r,uchar g,uchar b
 }
 
 NONS_Lookback::~NONS_Lookback(){
-	delete (NONS_Button *)this->up;
-	delete (NONS_Button *)this->down;
+	delete this->up;
+	delete this->down;
 	if (!!this->sUpon)
 		SDL_FreeSurface(this->sUpon);
 	if (!!this->sUpoff)
@@ -96,16 +96,16 @@ bool NONS_Lookback::setUpButtons(const std::wstring &upon,const std::wstring &up
 	this->sDownon=temp2;
 	this->sDownoff=temp3;
 	SDL_Rect src={0,0,this->sUpon->w,this->sUpon->h},
-		dst={((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpon->w,0,0,0};
-	manualBlit(this->sUpon,&src,((NONS_Button *)this->up)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpoff->w;
-	manualBlit(this->sUpoff,&src,((NONS_Button *)this->up)->offLayer->data,&dst);
-	dst.x=((NONS_Button *)this->down)->onLayer->clip_rect.w-this->sDownon->w;
-	dst.y=((NONS_Button *)this->down)->onLayer->clip_rect.h-this->sDownon->h;
-	manualBlit(this->sDownon,&src,((NONS_Button *)this->down)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->down)->offLayer->clip_rect.w-this->sDownoff->w;
-	dst.y=((NONS_Button *)this->down)->offLayer->clip_rect.h-this->sDownoff->h;
-	manualBlit(this->sDownoff,&src,((NONS_Button *)this->down)->offLayer->data,&dst);
+		dst={Sint16(this->up->onLayer->clip_rect.w-this->sUpon->w),0,0,0};
+	manualBlit(this->sUpon,&src,this->up->onLayer->data,&dst);
+	dst.x=Sint16(this->up->onLayer->clip_rect.w-this->sUpoff->w);
+	manualBlit(this->sUpoff,&src,this->up->offLayer->data,&dst);
+	dst.x=Sint16(this->down->onLayer->clip_rect.w-this->sDownon->w);
+	dst.y=Sint16(this->down->onLayer->clip_rect.h-this->sDownon->h);
+	manualBlit(this->sDownon,&src,this->down->onLayer->data,&dst);
+	dst.x=Sint16(this->down->offLayer->clip_rect.w-this->sDownoff->w);
+	dst.y=Sint16(this->down->offLayer->clip_rect.h-this->sDownoff->h);
+	manualBlit(this->sDownoff,&src,this->down->offLayer->data,&dst);
 	return 1;
 }
 
@@ -113,43 +113,43 @@ void NONS_Lookback::reset(NONS_StandardOutput *output){
 	delete (NONS_Button *)this->up;
 	delete (NONS_Button *)this->down;
 	this->output=output;
-	SDL_Rect temp=this->output->foregroundLayer->clip_rect;
+	SDL_Rect temp=this->output->foregroundLayer->clip_rect.to_SDL_Rect();
 	int thirdofscreen=temp.h/3;
 	temp.h=thirdofscreen;
 	this->up=new NONS_Button();
 	this->down=new NONS_Button();
-	((NONS_Button *)this->up)->onLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->up)->offLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->onLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->offLayer=new NONS_Layer(&temp,0);
-	((NONS_Button *)this->down)->posy=thirdofscreen*2;
-	((NONS_Button *)this->up)->box=temp;
-	((NONS_Button *)this->up)->box.x=0;
-	((NONS_Button *)this->up)->box.y=0;
-	((NONS_Button *)this->down)->box=temp;
-	((NONS_Button *)this->down)->box.x=0;
-	((NONS_Button *)this->down)->box.y=0;
-	((NONS_Button *)this->up)->posx+=temp.x;
-	((NONS_Button *)this->up)->posy+=temp.y;
-	((NONS_Button *)this->down)->posx+=temp.x;
-	((NONS_Button *)this->down)->posy+=temp.y;
+	this->up->onLayer=new NONS_Layer(&temp,0);
+	this->up->offLayer=new NONS_Layer(&temp,0);
+	this->down->onLayer=new NONS_Layer(&temp,0);
+	this->down->offLayer=new NONS_Layer(&temp,0);
+	this->down->posy=thirdofscreen*2;
+	this->up->box=temp;
+	this->up->box.x=0;
+	this->up->box.y=0;
+	this->down->box=temp;
+	this->down->box.x=0;
+	this->down->box.y=0;
+	this->up->posx+=temp.x;
+	this->up->posy+=temp.y;
+	this->down->posx+=temp.x;
+	this->down->posy+=temp.y;
 	if (!this->sUpon)
 		return;
 	SDL_Rect src={0,0,this->sUpon->w,this->sUpon->h},
-		dst={((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpon->w,0,0,0};
-	manualBlit(this->sUpon,&src,((NONS_Button *)this->up)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->up)->onLayer->clip_rect.w-this->sUpoff->w;
-	manualBlit(this->sUpoff,&src,((NONS_Button *)this->up)->offLayer->data,&dst);
-	//((NONS_Button *)this->up)->posx=((NONS_Button *)this->up)->onLayer->clip_rect.x;
-	//((NONS_Button *)this->up)->posy=((NONS_Button *)this->up)->onLayer->clip_rect.y;
-	dst.x=((NONS_Button *)this->down)->onLayer->clip_rect.w-this->sDownon->w;
-	dst.y=((NONS_Button *)this->down)->onLayer->clip_rect.h-this->sDownon->h;
-	manualBlit(this->sDownon,&src,((NONS_Button *)this->down)->onLayer->data,&dst);
-	dst.x=((NONS_Button *)this->down)->offLayer->clip_rect.w-this->sDownoff->w;
-	dst.y=((NONS_Button *)this->down)->offLayer->clip_rect.h-this->sDownoff->h;
-	manualBlit(this->sDownoff,&src,((NONS_Button *)this->down)->offLayer->data,&dst);
-	//((NONS_Button *)this->down)->posx=((NONS_Button *)this->down)->onLayer->clip_rect.x;
-	//((NONS_Button *)this->down)->posy=((NONS_Button *)this->down)->onLayer->clip_rect.y/*+thirdofscreen*2*/;
+		dst={Sint16(this->up->onLayer->clip_rect.w-this->sUpon->w),0,0,0};
+	manualBlit(this->sUpon,&src,this->up->onLayer->data,&dst);
+	dst.x=Sint16(this->up->onLayer->clip_rect.w-this->sUpoff->w);
+	manualBlit(this->sUpoff,&src,this->up->offLayer->data,&dst);
+	//this->up->posx=this->up->onLayer->clip_rect.x;
+	//this->up->posy=this->up->onLayer->clip_rect.y;
+	dst.x=Sint16(this->down->onLayer->clip_rect.w-this->sDownon->w);
+	dst.y=Sint16(this->down->onLayer->clip_rect.h-this->sDownon->h);
+	manualBlit(this->sDownon,&src,this->down->onLayer->data,&dst);
+	dst.x=Sint16(this->down->offLayer->clip_rect.w-this->sDownoff->w);
+	dst.y=Sint16(this->down->offLayer->clip_rect.h-this->sDownoff->h);
+	manualBlit(this->sDownoff,&src,this->down->offLayer->data,&dst);
+	//this->down->posx=this->down->onLayer->clip_rect.x;
+	//this->down->posy=this->down->onLayer->clip_rect.y/*+thirdofscreen*2*/;
 }
 
 int NONS_Lookback::display(NONS_VirtualScreen *dst){
@@ -169,12 +169,12 @@ int NONS_Lookback::display(NONS_VirtualScreen *dst){
 	uchar visibility=(!!currentPage)<<1;
 	if (visibility){
 		getCorrectedMousePosition(dst,&x,&y);
-		if (((NONS_Button *)this->up)->MouseOver(x,y)){
+		if (this->up->MouseOver(x,y)){
 			mouseOver=0;
-			((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,1,1);
+			this->up->mergeWithoutUpdate(dst,preBlit,1,1);
 		}else{
 			mouseOver=-1;
-			((NONS_Button *)this->up)->mergeWithoutUpdate(dst,preBlit,0,1);
+			this->up->mergeWithoutUpdate(dst,preBlit,0,1);
 		}
 	}else
 		mouseOver=-1;
@@ -190,21 +190,21 @@ int NONS_Lookback::display(NONS_VirtualScreen *dst){
 				case SDL_MOUSEMOTION:
 					{
 						if (visibility){
-							if (visibility&2 && ((NONS_Button *)this->up)->MouseOver(&event)){
+							if (visibility&2 && this->up->MouseOver(&event)){
 								if (visibility&1)
-									((NONS_Button *)this->down)->merge(dst,preBlit,0);
+									this->down->merge(dst,preBlit,0);
 								mouseOver=0;
-								((NONS_Button *)this->up)->merge(dst,preBlit,1);
+								this->up->merge(dst,preBlit,1);
 							}else{
 								if (visibility&2)
-									((NONS_Button *)this->up)->merge(dst,preBlit,0);
-								if (visibility&1 && ((NONS_Button *)this->down)->MouseOver(&event)){
+									this->up->merge(dst,preBlit,0);
+								if (visibility&1 && this->down->MouseOver(&event)){
 									mouseOver=1;
-									((NONS_Button *)this->down)->merge(dst,preBlit,1);
+									this->down->merge(dst,preBlit,1);
 								}else{
 									mouseOver=-1;
 									if (visibility&1)
-										((NONS_Button *)this->down)->merge(dst,preBlit,0);
+										this->down->merge(dst,preBlit,0);
 								}
 							}
 						}
@@ -326,8 +326,8 @@ int NONS_Cursor::animate(NONS_Menu *menu,ulong expiration){
 	if (CURRENTLYSKIPPING)
 		return 0;
 	this->screen->cursor=this->data;
-	this->data->position.x=this->xpos+(!this->absolute)?this->screen->output->x:0;
-	this->data->position.y=this->ypos+(!this->absolute)?this->screen->output->y:0;
+	this->data->position.x=float(this->xpos+(!this->absolute)?this->screen->output->x:0);
+	this->data->position.y=float(this->ypos+(!this->absolute)?this->screen->output->y:0);
 	bool done=0;
 	NONS_EventQueue queue;
 	const long delayadvance=25;
@@ -428,7 +428,7 @@ bool NONS_Cursor::callLookback(NONS_EventQueue *queue){
 	{
 		NONS_MutexLocker ml(screenMutex);
 		manualBlit(screen->screenBuffer,0,screen->screen->screens[VIRTUAL],0);
-		multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->screens[VIRTUAL],&(screen->output->shadeLayer->clip_rect));
+		multiplyBlend(screen->output->shadeLayer->data,0,screen->screen->screens[VIRTUAL],&screen->output->shadeLayer->clip_rect.to_SDL_Rect());
 	}
 	if (screen->lookback->display(screen->screen)==INT_MIN || queue->emptify())
 		return 0;
@@ -885,7 +885,7 @@ int NONS_ButtonLayer::getUserInput(int x,int y){
 				NONS_MutexLocker ml(screenMutex);
 				multiplyBlend(
 					this->screen->output->shadeLayer->data,
-					&(this->screen->output->shadeLayer->clip_rect),
+					&this->screen->output->shadeLayer->clip_rect.to_SDL_Rect(),
 					this->screen->screen->screens[VIRTUAL],
 					0);
 				if (this->screen->lookback->display(this->screen->screen)==INT_MIN || queue.emptify()){
@@ -1559,7 +1559,7 @@ int NONS_Menu::call(const std::wstring &string){
 		manualBlit(scr->screenBuffer,0,scr->screen->screens[VIRTUAL],0);
 		multiplyBlend(
 			scr->output->shadeLayer->data,
-			&(scr->output->shadeLayer->clip_rect),
+			&scr->output->shadeLayer->clip_rect.to_SDL_Rect(),
 			scr->screen->screens[VIRTUAL],
 			0);
 		ret=scr->lookback->display(scr->screen);

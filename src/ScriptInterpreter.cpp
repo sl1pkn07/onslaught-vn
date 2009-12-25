@@ -159,8 +159,6 @@ void NONS_ScriptInterpreter::init(){
 		this->current_speed_setting=1;
 
 	srand((unsigned int)time(0));
-	this->defaultx=640;
-	this->defaulty=480;
 	this->defaultfs=18;
 	this->legacy_set_window=1;
 	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->screen);
@@ -198,6 +196,8 @@ void NONS_ScriptInterpreter::init(){
 	this->useWheel=0;
 	this->useEscapeSpace=0;
 	this->screenshot=0;
+	this->base_size[0]=this->virtual_size[0]=CLOptions.virtualWidth;
+	this->base_size[1]=this->virtual_size[1]=CLOptions.virtualHeight;
 }
 
 void NONS_ScriptInterpreter::uninit(){
@@ -305,7 +305,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 				}
 			}
 			labellog.init(L"NScrllog.dat",L"nonsllog.dat");
-			ImageLoader=new NONS_ImageLoader(this->archive,CLOptions.cacheSize);
+			ImageLoader=new NONS_ImageLoader(this->archive);
 			o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
 			o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
 			this->audio=new NONS_Audio(CLOptions.musicDirectory);
@@ -322,6 +322,91 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 		this->init();
 	}
 
+/*
+	define-only commands:
+	game
+	btnnowindowerase
+	noteraseman
+	windowchip
+	defaultfont
+	setkinsoku
+	addkinsoku
+	english
+	clickstr
+	linepage
+	clickvoice
+	clickskippage
+	transmode
+	underline
+	bgalia
+	humanz
+	windowback
+	effect
+	effectblank
+	effectcut
+	cdfadeout
+	chkcdfile
+	chkcdfile_ex
+	dsound
+	selectcolor
+	selectvoice
+	stralias
+	numalias
+	intlimit
+	dim
+	rmenu
+	menusetwindow
+	savename
+	menuselectcolor
+	menuselectvoice
+	rlookback
+	rgosub
+	roff
+	lookbackbutton
+	lookbackcolor
+	lookbackvoice
+	lookbacksp
+	maxkaisoupage
+	kidokuskip
+	mode_wave_demo
+	filelog
+	globalon
+	labellog
+	savenumber
+	savedir
+	loadgosub
+	errorsave
+	noloaderror
+	defsub
+	automode
+	automode_time
+	defvoicevol
+	defsevol
+	defmp3vol
+	mode_saya
+	mode_ext
+	mode800
+	mode400
+	mode320
+	gameid
+	soundpressplgin
+	spi
+	arc
+	nsa
+	nsadir
+	setlayer
+	versionstr
+	killmenu
+	resetmenu
+	insertmenu
+	deletemenu
+	defaultspeed
+	textgosub
+	usewheel
+	useescspc
+	pretextgosub
+	createdummy
+*/
 	this->commandList[L"abssetcursor"]=&NONS_ScriptInterpreter::command_setcursor;
 	this->commandList[L"add"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"allsphide"]=&NONS_ScriptInterpreter::command_allsphide;
@@ -634,11 +719,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"async_effect"]=&NONS_ScriptInterpreter::command_async_effect;
 	this->commandList[L"add_overall_filter"]=&NONS_ScriptInterpreter::command_add_filter;
 	this->commandList[L"add_filter"]=&NONS_ScriptInterpreter::command_add_filter;
+	this->commandList[L"base_resolution"]=&NONS_ScriptInterpreter::command_base_resolution;
+	this->commandList[L"use_nice_svg"]=&NONS_ScriptInterpreter::command_use_nice_svg;
 	/*
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
-	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	*/
 	this->allowedCommandList.insert(L"add");
@@ -2013,7 +2096,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		//window
 		NONS_ScreenSpace *scr=this->screen;
 		NONS_StandardOutput *out=scr->output;
-		this->saveGame->textWindow=out->shadeLayer->clip_rect;
+		this->saveGame->textWindow=out->shadeLayer->clip_rect.to_SDL_Rect();
 		this->saveGame->windowFrame.x=out->x0;
 		this->saveGame->windowFrame.y=out->y0;
 		this->saveGame->windowFrame.w=out->w;
@@ -2072,8 +2155,8 @@ bool NONS_ScriptInterpreter::save(int file){
 		for (int a=0;a<3;a++){
 			if (!!*characters[a] && !!(*characters[a])->data){
 				this->saveGame->characters[a].string=(*characters[a])->animation.getString();
-				this->saveGame->characters[a].x=(*characters[a])->position.x;
-				this->saveGame->characters[a].y=(*characters[a])->position.y;
+				this->saveGame->characters[a].x=long((*characters[a])->position.x);
+				this->saveGame->characters[a].y=long((*characters[a])->position.y);
 				this->saveGame->characters[a].visibility=(*characters[a])->visible;
 				this->saveGame->characters[a].alpha=(*characters[a])->alpha;
 			}else
@@ -2105,8 +2188,8 @@ bool NONS_ScriptInterpreter::save(int file){
 						delete spr;
 				}
 				if (b){
-					b->x=c->position.x;
-					b->y=c->position.y;
+					b->x=(long)c->position.x;
+					b->y=(long)c->position.y;
 					b->visibility=c->visible;
 					b->alpha=c->alpha;
 				}else
@@ -2325,6 +2408,18 @@ ErrorCode NONS_ScriptInterpreter::command_avi(NONS_Statement &stmt){
 	return this->play_video(filename,!!skippable);
 }
 
+ErrorCode NONS_ScriptInterpreter::command_base_resolution(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	long w,h;
+	GET_INT_VALUE(w,0);
+	GET_INT_VALUE(h,1);
+	this->base_size[0]=w;
+	this->base_size[1]=h;
+	for (int a=0;a<2;a++)
+		ImageLoader->base_scale[a]=double(this->virtual_size[a])/double(this->base_size[a]);
+	return NONS_NO_ERROR;
+}
+
 ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	NONS_ScreenSpace *scr=this->screen;
@@ -2376,43 +2471,44 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(8);
 	if (!this->imageButtons)
 		return NONS_NO_BUTTON_IMAGE;
-	long screenX,screenY,screenW,screenH,
+	float screenX,screenY,screenW,screenH,
 		imgX,imgY,imgW,imgH;
-	GET_INT_VALUE(screenX,0);
-	GET_INT_VALUE(screenY,1);
-	GET_INT_VALUE(screenW,2);
-	GET_INT_VALUE(screenH,3);
-	GET_INT_VALUE(imgX,4);
-	GET_INT_VALUE(imgY,5);
-	GET_INT_VALUE(imgW,6);
-	GET_INT_VALUE(imgH,7);
-	SDL_Rect dstRect={
-			(Sint16)screenX,
-			(Sint16)screenY,
-			(Uint16)screenW,
-			(Uint16)screenH
-		},srcRect={
-			(Sint16)imgX,
-			(Sint16)imgY,
-			(Uint16)imgW,
-			(Uint16)imgH
+	GET_COORDINATE(screenX,0,0);
+	GET_COORDINATE(screenY,1,1);
+	GET_COORDINATE(screenW,0,2);
+	GET_COORDINATE(screenH,1,3);
+	GET_COORDINATE(imgX,0,4);
+	GET_COORDINATE(imgY,1,5);
+	GET_COORDINATE(imgW,0,6);
+	GET_COORDINATE(imgH,1,7);
+	NONS_Rect dstRect={
+			screenX,
+			screenY,
+			screenW,
+			screenH
+		},
+		srcRect={
+			imgX,
+			imgY,
+			imgW,
+			imgH
 	};
 	void (*interpolationFunction)(SDL_Surface *,SDL_Rect *,SDL_Surface *,SDL_Rect *,ulong,ulong)=&nearestNeighborInterpolation;
 	ulong x_multiplier=1,y_multiplier=1;
 	if (imgW==screenW && imgH==screenH){
 		NONS_MutexLocker ml(screenMutex);
-		manualBlit(this->imageButtons->loadedGraphic,&srcRect,this->screen->screen->screens[VIRTUAL],&dstRect);
+		manualBlit(this->imageButtons->loadedGraphic,&srcRect.to_SDL_Rect(),this->screen->screen->screens[VIRTUAL],&dstRect.to_SDL_Rect());
 	}else{
-		x_multiplier=(screenW<<8)/imgW;
-		y_multiplier=(screenH<<8)/imgH;
+		x_multiplier=(ulong(screenW)<<8)/ulong(imgW);
+		y_multiplier=(ulong(screenH)<<8)/ulong(imgH);
 		NONS_MutexLocker ml(screenMutex);
 		interpolationFunction(
-			this->imageButtons->loadedGraphic,&srcRect,
+			this->imageButtons->loadedGraphic,&srcRect.to_SDL_Rect(),
 			this->screen->screen->screens[VIRTUAL],
-			&dstRect,x_multiplier,y_multiplier
+			&dstRect.to_SDL_Rect(),x_multiplier,y_multiplier
 		);
 	}
-	this->screen->screen->updateScreen(dstRect.x,dstRect.y,dstRect.w,dstRect.h);
+	this->screen->screen->updateScreen((ulong)dstRect.x,(ulong)dstRect.y,(ulong)dstRect.w,(ulong)dstRect.h);
 	return NONS_NO_ERROR;
 }
 
@@ -2451,18 +2547,19 @@ ErrorCode NONS_ScriptInterpreter::command_btn(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(7);
 	if (!this->imageButtons)
 		return NONS_NO_BUTTON_IMAGE;
-	long index,butX,butY,width,height,srcX,srcY;
+	long index;
+	float butX,butY,width,height,srcX,srcY;
 	GET_INT_VALUE(index,0);
-	GET_INT_VALUE(butX,1);
-	GET_INT_VALUE(butY,2);
-	GET_INT_VALUE(width,3);
-	GET_INT_VALUE(height,4);
-	GET_INT_VALUE(srcX,5);
-	GET_INT_VALUE(srcY,6);
+	GET_COORDINATE(butX,0,1);
+	GET_COORDINATE(butY,1,2);
+	GET_COORDINATE(width,0,3);
+	GET_COORDINATE(height,1,4);
+	GET_COORDINATE(srcX,0,5);
+	GET_COORDINATE(srcY,1,6);
 	if (index<=0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	index--;
-	this->imageButtons->addImageButton(index,butX,butY,width,height,srcX,srcY);
+	this->imageButtons->addImageButton(index,(int)butX,(int)butY,(int)width,(int)height,(int)srcX,(int)srcY);
 	return NONS_NO_ERROR;
 }
 
@@ -2591,7 +2688,7 @@ ErrorCode NONS_ScriptInterpreter::command_checkpage(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_cl(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
-	switch (stmt.parameters[0][0]){
+	switch (NONS_tolower(stmt.parameters[0][0])){
 		case UNICODE_l:
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
@@ -2759,14 +2856,13 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			this->screen->Background->data,
 			0,
 			this->screen->screenBuffer,
-			&this->screen->Background->position);
+			&this->screen->Background->position.to_SDL_Rect());
 	else{
 		MINIMUM_PARAMETERS(5);
-		long x,y,
-			xscale,yscale,
-			angle;
-		GET_INT_VALUE(x,0);
-		GET_INT_VALUE(y,1);
+		float x,y;
+		long xscale,yscale,angle;
+		GET_COORDINATE(x,0,0);
+		GET_COORDINATE(y,1,1);
 		GET_INT_VALUE(xscale,2);
 		GET_INT_VALUE(yscale,3);
 		GET_INT_VALUE(angle,4);
@@ -2799,6 +2895,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			if (img->svg_source){
 				ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
 				ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(angle));
+				ImageLoader->svg_functions.SVG_add_scale(img->svg_source,ImageLoader->base_scale[0],ImageLoader->base_scale[1]);
 				SDL_Surface *dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
 				if (freeSrc)
 					SDL_FreeSurface(src);
@@ -2861,17 +2958,17 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(5);
 	long spriteno,
 		cell,
-		alpha,
-		x,y,
-		xscale=0,yscale=0,
+		alpha;
+	float x,y;
+	long xscale=0,yscale=0,
 		rotation,
 		matrix_00=0,matrix_01=0,
 		matrix_10=0,matrix_11=0;
 	GET_INT_VALUE(spriteno,0);
 	GET_INT_VALUE(cell,1);
 	GET_INT_VALUE(alpha,2);
-	GET_INT_VALUE(x,3);
-	GET_INT_VALUE(y,4);
+	GET_COORDINATE(x,0,3);
+	GET_COORDINATE(y,1,4);
 	ulong functionVersion=1;
 	if (!stdStrCmpCI(stmt.commandName,L"drawsp2"))
 		functionVersion=2;
@@ -2908,12 +3005,9 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 		return NONS_NO_ERROR;
 
 
-	SDL_Rect srcRect={
-		Sint16(src->w/sprite->animation.animation_length*cell),
-		0,
-		sprite->clip_rect.w,
-		sprite->clip_rect.h
-	};
+	SDL_Rect srcRect=sprite->clip_rect.to_SDL_Rect();
+	srcRect.x=Sint16(src->w/sprite->animation.animation_length*cell);
+	srcRect.y=0;
 	SDL_Rect dstRect={(Sint16)x,(Sint16)y,0,0};
 
 
@@ -2944,12 +3038,15 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 				if (img->svg_source){
 					ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
 					ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(rotation));
+					ImageLoader->svg_functions.SVG_add_scale(img->svg_source,ImageLoader->base_scale[0],ImageLoader->base_scale[1]);
 					dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
 					SDL_FreeSurface(src);
 					src=dst;
 				}else{
-					if (xscale!=100 || yscale!=100){
-						dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
+					if (xscale!=100 || yscale!=100 || this->virtual_size[0]!=this->base_size[0] || this->virtual_size[1]!=this->base_size[1]){
+						int x=src->w*xscale/100,
+							y=src->h*yscale/100;
+						dst=resizeFunction(src,x,y);
 						SDL_FreeSurface(src);
 						src=dst;
 					}
@@ -3014,22 +3111,22 @@ ErrorCode NONS_ScriptInterpreter::command_drawtext(NONS_Statement &stmt){
 		multiplyBlend(
 			scr->output->shadeLayer->data,0,
 			scr->screenBuffer,
-			&scr->output->shadeLayer->clip_rect);
+			&scr->output->shadeLayer->clip_rect.to_SDL_Rect());
 	else
 		manualBlit(
 			scr->output->shadeLayer->data,0,
 			scr->screenBuffer,
-			&scr->output->shadeLayer->clip_rect);
+			&scr->output->shadeLayer->clip_rect.to_SDL_Rect());
 	if (scr->output->shadowLayer)
 		manualBlit(
 			scr->output->shadowLayer->data,0,
 			scr->screenBuffer,
-			&scr->output->shadowLayer->clip_rect,
+			&scr->output->shadowLayer->clip_rect.to_SDL_Rect(),
 			scr->output->shadowLayer->alpha);
 	manualBlit(
 		scr->output->foregroundLayer->data,0,
 		scr->screenBuffer,
-		&scr->output->foregroundLayer->clip_rect,
+		&scr->output->foregroundLayer->clip_rect.to_SDL_Rect(),
 		scr->output->foregroundLayer->alpha);
 	return NONS_NO_ERROR;
 }
@@ -3729,12 +3826,12 @@ ErrorCode NONS_ScriptInterpreter::command_loadgosub(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_locate(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
-	long x,y;
-	GET_INT_VALUE(x,0);
-	GET_INT_VALUE(y,1);
+	float x,y;
+	GET_COORDINATE(x,0,0);
+	GET_COORDINATE(y,1,1);
 	if (x<0 || y<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
-	this->screen->output->setPosition(x,y);
+	this->screen->output->setPosition((int)x,(int)y);
 	return NONS_NO_ERROR;
 }
 
@@ -3778,11 +3875,13 @@ ErrorCode NONS_ScriptInterpreter::command_lookbackflush(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
-	long spriten,x,y,alpha=255;
+	long spriten;
+	float x,y;
+	long alpha=255;
 	std::wstring str;
 	GET_INT_VALUE(spriten,0);
-	GET_INT_VALUE(x,2);
-	GET_INT_VALUE(y,3);
+	GET_COORDINATE(x,0,2);
+	GET_COORDINATE(y,1,3);
 	if (stmt.parameters.size()>4)
 		GET_INT_VALUE(alpha,4);
 	GET_STR_VALUE(str,1);
@@ -3790,7 +3889,7 @@ ErrorCode NONS_ScriptInterpreter::command_lsp(NONS_Statement &stmt){
 		alpha=255;
 	if (alpha<0)
 		alpha=0;
-	HANDLE_POSSIBLE_ERRORS(this->screen->loadSprite(spriten,str,x,y,(uchar)alpha,!stdStrCmpCI(stmt.commandName,L"lsp")));
+	HANDLE_POSSIBLE_ERRORS(this->screen->loadSprite(spriten,str,(long)x,(long)y,(uchar)alpha,!stdStrCmpCI(stmt.commandName,L"lsp")));
 	return NONS_NO_ERROR;
 }
 
@@ -3850,14 +3949,12 @@ ErrorCode NONS_ScriptInterpreter::command_menuselectvoice(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(7);
-	//bold is unused
-	long fontX,fontY,spacingX,spacingY,
-		//bold,
-		shadow,hexcolor;
-	GET_INT_VALUE(fontX,0);
-	GET_INT_VALUE(fontY,1);
-	GET_INT_VALUE(spacingX,2);
-	GET_INT_VALUE(spacingY,3);
+	float fontX,fontY,spacingX,spacingY;
+	long shadow,hexcolor;
+	GET_COORDINATE(fontX,0,0);
+	GET_COORDINATE(fontY,1,1);
+	GET_COORDINATE(spacingX,0,2);
+	GET_COORDINATE(spacingY,1,3);
 	GET_INT_VALUE(shadow,5);
 	GET_INT_VALUE(hexcolor,6);
 	SDL_Color color={
@@ -3866,9 +3963,9 @@ ErrorCode NONS_ScriptInterpreter::command_menusetwindow(NONS_Statement &stmt){
 		hexcolor&0xFF,
 		0
 	};
-	this->menu->fontsize=fontX;
-	this->menu->lineskip=fontY+spacingY;
-	this->menu->spacing=spacingX;
+	this->menu->fontsize=(long)fontX;
+	this->menu->lineskip=long(fontY+spacingY);
+	this->menu->spacing=(long)spacingX;
 	this->menu->shadow=!!shadow;
 	this->menu->shadeColor=color;
 	this->menu->reset();
@@ -4024,10 +4121,11 @@ ErrorCode NONS_ScriptInterpreter::command_mp3vol(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
-	long spriten,x,y,alpha;
+	long spriten,alpha;
+	float x,y;
 	GET_INT_VALUE(spriten,0);
-	GET_INT_VALUE(x,1);
-	GET_INT_VALUE(y,2);
+	GET_COORDINATE(x,0,1);
+	GET_COORDINATE(y,1,2);
 	GET_INT_VALUE(alpha,3);
 	if (ulong(spriten)>this->screen->layerStack.size())
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
@@ -4035,8 +4133,8 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 	if (!l)
 		return NONS_NO_SPRITE_LOADED_THERE;
 	if (stdStrCmpCI(stmt.commandName,L"amsp")){
-		l->position.x+=(Sint16)x;
-		l->position.y+=(Sint16)y;
+		l->position.x+=x;
+		l->position.y+=y;
 		if (long(l->alpha)+alpha>255)
 			l->alpha=255;
 		else if (long(l->alpha)+alpha<0)
@@ -4044,8 +4142,8 @@ ErrorCode NONS_ScriptInterpreter::command_msp(NONS_Statement &stmt){
 		else
 			l->alpha+=(uchar)alpha;
 	}else{
-		l->position.x=(Sint16)x;
-		l->position.y=(Sint16)y;
+		l->position.x=x;
+		l->position.y=y;
 		if (alpha>255)
 			alpha=255;
 		else if (alpha<0)
@@ -4230,8 +4328,9 @@ void shake(SDL_Surface *dst,long amplitude,ulong duration){
 
 ErrorCode NONS_ScriptInterpreter::command_quake(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
-	long amplitude,duration;
-	GET_INT_VALUE(amplitude,0);
+	long amplitude;
+	long duration;
+	GET_INT_COORDINATE(amplitude,0,0);
 	GET_INT_VALUE(duration,1);
 	if (amplitude<0 || duration<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
@@ -4610,39 +4709,35 @@ ErrorCode NONS_ScriptInterpreter::command_set_default_font_size(NONS_Statement &
 
 ErrorCode NONS_ScriptInterpreter::command_setcursor(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(4);
-	long which,
-		x,y;
+	long which;
+	float x,y;
 	std::wstring string;
 	GET_INT_VALUE(which,0);
-	GET_INT_VALUE(x,2);
-	GET_INT_VALUE(y,3);
+	GET_COORDINATE(x,0,2);
+	GET_COORDINATE(y,1,3);
 	GET_STR_VALUE(string,1);
 	bool absolute=stdStrCmpCI(stmt.commandName,L"abssetcursor")==0;
-	if (!which){
-		if (this->arrowCursor)
-			delete this->arrowCursor;
-		this->arrowCursor=new NONS_Cursor(string,x,y,absolute,this->screen);
-	}else{
-		if (this->pageCursor)
-			delete this->pageCursor;
-		this->pageCursor=new NONS_Cursor(string,x,y,absolute,this->screen);
-	}
+	NONS_Cursor *new_cursor=new NONS_Cursor(string,(long)x,(long)y,absolute,this->screen),
+		**dst=&((!which)?this->arrowCursor:this->pageCursor);
+	if (*dst)
+		delete *dst;
+	*dst=new_cursor;
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
-	long frameXstart,
-		frameYstart,
-		frameXend,
-		frameYend,
-		fontsize,
+	float frameXstart,
+		frameYstart;
+	long frameXend,
+		frameYend;
+	float fontsize,
 		spacingX,
-		spacingY,
-		speed,
+		spacingY;
+	long speed,
 		bold,
 		shadow,
-		color,
-		windowXstart,
+		color;
+	float windowXstart,
 		windowYstart,
 		windowXend,
 		windowYend;
@@ -4650,52 +4745,60 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 	bool syntax=0;
 	int forceLineSkip=0;
 	if (this->legacy_set_window){
-		long fontsizeY;
+		float fontsizeY;
 		MINIMUM_PARAMETERS(14);
-		GET_INT_VALUE(frameXstart,0);
-		GET_INT_VALUE(frameYstart,1);
+		GET_COORDINATE(frameXstart,	0,0);
+		GET_COORDINATE(frameYstart,	1,1);
 		GET_INT_VALUE(frameXend,2);
 		GET_INT_VALUE(frameYend,3);
-		GET_INT_VALUE(fontsize,4);
-		GET_INT_VALUE(fontsizeY,5);
-		GET_INT_VALUE(spacingX,6);
-		GET_INT_VALUE(spacingY,7);
+		GET_COORDINATE(fontsize,	0,4);
+		GET_COORDINATE(fontsizeY,	1,5);
+		GET_COORDINATE(spacingX,	0,6);
+		GET_COORDINATE(spacingY,	1,7);
 		GET_INT_VALUE(speed,8);
 		GET_INT_VALUE(bold,9);
 		GET_INT_VALUE(shadow,10);
-		GET_INT_VALUE(windowXstart,12);
-		GET_INT_VALUE(windowYstart,13);
+		GET_COORDINATE(windowXstart,0,12);
+		GET_COORDINATE(windowYstart,1,13);
 		if (this->store->getIntValue(stmt.parameters[11],color)!=NONS_NO_ERROR){
 			syntax=1;
 			GET_STR_VALUE(filename,11);
 			windowXend=windowXstart+1;
 			windowYend=windowYstart+1;
 		}else{
-			GET_INT_VALUE(windowXend,14);
-			GET_INT_VALUE(windowYend,15);
+			GET_COORDINATE(windowXend,0,14);
+			GET_COORDINATE(windowYend,1,15);
 		}
-		frameXend*=fontsize+spacingX;
-		frameXend+=frameXstart;
-		fontsize=this->defaultfs;
-		forceLineSkip=fontsizeY+spacingY;
-		frameYend*=fontsizeY+spacingY;
-		frameYend+=frameYstart;
+		frameXend*=long(fontsize+spacingX);
+		frameXend+=(long)frameXstart;
+		fontsize=float(this->defaultfs*this->virtual_size[1]/this->base_size[1]);
+		forceLineSkip=int(fontsizeY+spacingY);
+		frameYend*=long(fontsizeY+spacingY);
+		frameYend+=(long)frameYstart;
 	}else{
 		MINIMUM_PARAMETERS(15);
-		GET_INT_VALUE(frameXstart,0);
-		GET_INT_VALUE(frameYstart,1);
-		GET_INT_VALUE(frameXend,2);
-		GET_INT_VALUE(frameYend,3);
-		GET_INT_VALUE(fontsize,4);
-		GET_INT_VALUE(spacingX,5);
-		GET_INT_VALUE(spacingY,6);
+		GET_COORDINATE(frameXstart	,0,0);
+		GET_COORDINATE(frameYstart	,1,1);
+		{
+			float temp;
+			GET_COORDINATE(temp,0,2);	
+			frameXend=(long)temp;
+		}
+		{
+			float temp;
+			GET_COORDINATE(temp,1,3);
+			frameYend=(long)temp;
+		}
+		GET_COORDINATE(fontsize		,0,4);
+		GET_COORDINATE(spacingX		,0,5);
+		GET_COORDINATE(spacingY		,1,6);
 		GET_INT_VALUE(speed,7);
 		GET_INT_VALUE(bold,8);
 		GET_INT_VALUE(shadow,9);
-		GET_INT_VALUE(windowXstart,11);
-		GET_INT_VALUE(windowYstart,12);
-		GET_INT_VALUE(windowXend,13);
-		GET_INT_VALUE(windowYend,14);
+		GET_COORDINATE(windowXstart,0,11);
+		GET_COORDINATE(windowYstart,1,12);
+		GET_COORDINATE(windowXend,0,13);
+		GET_COORDINATE(windowYend,1,14);
 		if (this->store->getIntValue(stmt.parameters[10],color)!=NONS_NO_ERROR){
 			syntax=1;
 			GET_STR_VALUE(filename,10);
@@ -4711,17 +4814,17 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 			fontsize<1){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	SDL_Rect windowRect={
-		(Sint16)windowXstart,
-		(Sint16)windowYstart,
-		Uint16(windowXend-windowXstart+1),
-		Uint16(windowYend-windowYstart+1)
-	};
-	SDL_Rect frameRect={
-		(Sint16)frameXstart,
-		(Sint16)frameYstart,
-		Uint16(frameXend-frameXstart),
-		Uint16(frameYend-frameYstart)
+	NONS_Rect windowRect={
+		windowXstart,
+		windowYstart,
+		windowXend-windowXstart+1,
+		windowYend-windowYstart+1
+	},
+	frameRect={
+		frameXstart,
+		frameYstart,
+		frameXend-frameXstart,
+		frameYend-frameYstart
 	};
 	{
 		SDL_Surface *scr=this->screen->screen->screens[VIRTUAL];
@@ -4733,28 +4836,27 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		}
 		if (fontsize!=this->main_font->getsize()){
 			delete this->main_font;
-			this->main_font=init_font(fontsize,this->archive,getDefaultFontFilename().c_str());
-			this->main_font->spacing=spacingX;
+			this->main_font=init_font((ulong)fontsize,this->archive,getDefaultFontFilename().c_str());
+			this->main_font->spacing=(int)spacingX;
 			this->screen->output->foregroundLayer->fontCache->font=this->main_font;
 			this->screen->output->foregroundLayer->fontCache->refreshCache();
 			this->screen->output->shadowLayer->fontCache->font=this->main_font;
 			this->screen->output->shadowLayer->fontCache->refreshCache();
-		}/*else
-			this->main_font->setStyle(bold!=0?TTF_STYLE_BOLD:TTF_STYLE_NORMAL);*/
+		}
 		SDL_Surface *pic;
 		if (!syntax){
-			this->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
+			this->screen->resetParameters(&windowRect.to_SDL_Rect(),&frameRect.to_SDL_Rect(),this->main_font,shadow!=0);
 			this->screen->output->shadeLayer->setShade(uchar((color&0xFF0000)>>16),(color&0xFF00)>>8,color&0xFF);
 			this->screen->output->shadeLayer->Clear();
 		}else{
 			pic=ImageLoader->fetchSprite(filename);
-			windowRect.w=pic->w;
-			windowRect.h=pic->h;
-			this->screen->resetParameters(&windowRect,&frameRect,this->main_font,shadow!=0);
+			windowRect.w=(float)pic->w;
+			windowRect.h=(float)pic->h;
+			this->screen->resetParameters(&windowRect.to_SDL_Rect(),&frameRect.to_SDL_Rect(),this->main_font,shadow!=0);
 			this->screen->output->shadeLayer->usePicAsDefaultShade(pic);
 		}
 	}
-	this->screen->output->extraAdvance=spacingX;
+	this->screen->output->extraAdvance=(int)spacingX;
 	//this->screen->output->extraLineSkip=0;
 	if (forceLineSkip)
 		this->main_font->lineSkip=forceLineSkip;
@@ -4779,8 +4881,8 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_shadedistance(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long x,y;
-	GET_INT_VALUE(x,0);
-	GET_INT_VALUE(y,1);
+	GET_INT_COORDINATE(x,0,0);
+	GET_INT_COORDINATE(y,1,1);
 	this->screen->output->shadowPosX=x;
 	this->screen->output->shadowPosY=y;
 	return NONS_NO_ERROR;
@@ -4812,8 +4914,9 @@ void quake(SDL_Surface *dst,char axis,ulong amplitude,ulong duration){
 
 ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
-	long amplitude,duration;
-	GET_INT_VALUE(amplitude,0);
+	long amplitude;
+	long duration;
+	GET_INT_COORDINATE(amplitude,0,0);
 	GET_INT_VALUE(duration,1);
 	if (amplitude<0 || duration<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
@@ -5042,7 +5145,7 @@ ErrorCode NONS_ScriptInterpreter::command_underline(NONS_Statement &stmt){
 	if (!stmt.parameters.size())
 		return 0;
 	long a;
-	GET_INT_VALUE(a,0);
+	GET_INT_COORDINATE(a,1,0);
 	this->screen->char_baseline=a;
 	return NONS_NO_ERROR;
 }
@@ -5057,6 +5160,14 @@ ErrorCode NONS_ScriptInterpreter::command_unimplemented(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_use_new_if(NONS_Statement &stmt){
 	this->new_if=1;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_use_nice_svg(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long a;
+	GET_INT_VALUE(a,0);
+	ImageLoader->fast_svg=!a;
 	return NONS_NO_ERROR;
 }
 
@@ -5092,13 +5203,11 @@ ErrorCode NONS_ScriptInterpreter::command_vsp(NONS_Statement &stmt){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	if (this->screen->layerStack[n] && this->screen->layerStack[n]->data)
 		this->screen->layerStack[n]->visible=!!visibility;
-	//this->screen->BlendAll();
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_wait(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
-	//if( skip_flag || draw_one_page_flag || ctrl_pressed_status || skip_to_wait ) return RET_CONTINUE;
 	long ms;
 	GET_INT_VALUE(ms,0);
 	waitNonCancellable(ms);
@@ -5167,46 +5276,3 @@ ErrorCode NONS_ScriptInterpreter::command_windoweffect(NONS_Statement &stmt){
 	}
 	return NONS_NO_ERROR;
 }
-
-/*
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-ErrorCode NONS_ScriptInterpreter::command_(NONS_Statement &stmt){
-	return NONS_NO_ERROR;
-}
-
-*/

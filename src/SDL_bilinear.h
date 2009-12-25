@@ -10,6 +10,9 @@ extern "C" {
 #endif
 
 #define PI 3.14159265f
+#ifdef ABS
+#undef ABS
+#endif
 #define ABS(X) ((X < 0)? -X : X)
 
 typedef struct tRGBA {

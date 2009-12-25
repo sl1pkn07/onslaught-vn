@@ -117,7 +117,7 @@ void NONS_Layer::Clear(){
 
 void NONS_Layer::setShade(uchar r,uchar g,uchar b){
 	if (!this->data)
-		this->data=makeSurface(this->clip_rect.w,this->clip_rect.h,32);
+		this->data=makeSurface((ulong)this->clip_rect.w,(ulong)this->clip_rect.h,32);
 	SDL_PixelFormat *format=this->data->format;
 	unsigned r0=r,
 		g0=g,
@@ -441,8 +441,8 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			if (glyph2){
 				glyph2->putGlyph(
 					this->shadowLayer->data,
-					x0+this->shadowPosX-this->shadowLayer->clip_rect.x,
-					y0+this->shadowPosY-this->shadowLayer->clip_rect.y,
+					x0+this->shadowPosX-(int)this->shadowLayer->clip_rect.x,
+					y0+this->shadowPosY-(int)this->shadowLayer->clip_rect.y,
 					&this->shadowLayer->fontCache->foreground,
 					1
 				);
@@ -455,8 +455,8 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			}
 			glyph->putGlyph(
 				this->foregroundLayer->data,
-				x0-this->foregroundLayer->clip_rect.x,
-				y0-this->foregroundLayer->clip_rect.y,
+				x0-(int)this->foregroundLayer->clip_rect.x,
+				y0-(int)this->foregroundLayer->clip_rect.y,
 				&this->foregroundLayer->fontCache->foreground,
 				1
 			);
@@ -776,20 +776,20 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 #define BLEND_OPTIM(p,function) {\
 	if ((p) && (p)->data && (p)->visible){\
 		SDL_Rect src={\
-			refresh_area.x-(p)->position.x+(p)->clip_rect.x,\
-			refresh_area.y-(p)->position.y+(p)->clip_rect.y,\
-			refresh_area.w>(p)->clip_rect.w?(p)->clip_rect.w:refresh_area.w,\
-			refresh_area.h>(p)->clip_rect.h?(p)->clip_rect.h:refresh_area.h\
+			refresh_area.x-Sint16((p)->position.x+(p)->clip_rect.x),\
+			refresh_area.y-Sint16((p)->position.y+(p)->clip_rect.y),\
+			Uint16(refresh_area.w>(p)->clip_rect.w?(p)->clip_rect.w:refresh_area.w),\
+			Uint16(refresh_area.h>(p)->clip_rect.h?(p)->clip_rect.h:refresh_area.h)\
 		};\
 		if (src.x<(p)->clip_rect.x)\
-			src.x=(p)->clip_rect.x;\
+			src.x=(Sint16)(p)->clip_rect.x;\
 		if (src.y<(p)->clip_rect.y)\
-			src.y=(p)->clip_rect.y;\
+			src.y=(Sint16)(p)->clip_rect.y;\
 		SDL_Rect dst=refresh_area;\
 		if (dst.x<(p)->position.x)\
-			dst.x=(p)->position.x;\
+			dst.x=(Sint16)(p)->position.x;\
 		if (dst.y<(p)->position.y)\
-			dst.y=(p)->position.y;\
+			dst.y=(Sint16)(p)->position.y;\
 		function((p)->data,&src,this->screenBuffer,&dst);\
 	}\
 }
@@ -858,7 +858,12 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 ErrorCode NONS_ScreenSpace::BlendAll(ulong effect){
 	this->BlendNoCursor(0);
 	if (this->cursor && this->cursor->data)
-		manualBlit(this->cursor->data,&this->cursor->clip_rect,this->screenBuffer,&this->cursor->position);
+		manualBlit(
+			this->cursor->data,
+			&this->cursor->clip_rect.to_SDL_Rect(),
+			this->screenBuffer,
+			&this->cursor->position.to_SDL_Rect()
+		);
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
 		if (!e)
@@ -877,12 +882,34 @@ ErrorCode NONS_ScreenSpace::BlendNoCursor(ulong effect){
 	this->BlendNoText(0);
 	if (this->output->visible){
 		if (!this->output->shadeLayer->useDataAsDefaultShade)
-			multiplyBlend(this->output->shadeLayer->data,0,this->screenBuffer,&(this->output->shadeLayer->clip_rect));
+			multiplyBlend(
+				this->output->shadeLayer->data,
+				0,
+				this->screenBuffer,
+				&this->output->shadeLayer->clip_rect.to_SDL_Rect()
+			);
 		else
-			manualBlit(this->output->shadeLayer->data,0,this->screenBuffer,&(this->output->shadeLayer->clip_rect));
+			manualBlit(
+				this->output->shadeLayer->data,
+				0,
+				this->screenBuffer,
+				&this->output->shadeLayer->clip_rect.to_SDL_Rect()
+			);
 		if (this->output->shadowLayer)
-			manualBlit(this->output->shadowLayer->data,0,this->screenBuffer,&(this->output->shadowLayer->clip_rect),this->output->shadowLayer->alpha);
-		manualBlit(this->output->foregroundLayer->data,0,this->screenBuffer,&(this->output->foregroundLayer->clip_rect),this->output->foregroundLayer->alpha);
+			manualBlit(
+				this->output->shadowLayer->data,
+				0,
+				this->screenBuffer,
+				&this->output->shadowLayer->clip_rect.to_SDL_Rect(),
+				this->output->shadowLayer->alpha
+			);
+		manualBlit(
+			this->output->foregroundLayer->data,
+			0,
+			this->screenBuffer,
+			&this->output->foregroundLayer->clip_rect.to_SDL_Rect(),
+			this->output->foregroundLayer->alpha
+		);
 	}
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
@@ -905,25 +932,33 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect){
 			if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
 				manualBlit(
 					this->layerStack[a]->data,
-					&this->layerStack[a]->clip_rect,
+					&this->layerStack[a]->clip_rect.to_SDL_Rect(),
 					this->screenBuffer,
-					&this->layerStack[a]->position,
-					this->layerStack[a]->alpha);
+					&this->layerStack[a]->position.to_SDL_Rect(),
+					this->layerStack[a]->alpha
+				);
 	}
 	for (ulong a=0;a<this->charactersBlendOrder.size();a++){
 		NONS_Layer *lay=*this->characters[charactersBlendOrder[a]];
 		if (lay && lay->data)
-			manualBlit(lay->data,&lay->clip_rect,this->screenBuffer,&lay->position,lay->alpha);
+			manualBlit(
+				lay->data,
+				&lay->clip_rect.to_SDL_Rect(),
+				this->screenBuffer,
+				&lay->position.to_SDL_Rect(),
+				lay->alpha
+			);
 	}
 	if (this->blendSprites){
 		for (long a=this->sprite_priority;a>=0;a--)
 			if (this->layerStack[a] && this->layerStack[a]->visible && this->layerStack[a]->data)
 				manualBlit(
 					this->layerStack[a]->data,
-					&this->layerStack[a]->clip_rect,
+					&this->layerStack[a]->clip_rect.to_SDL_Rect(),
 					this->screenBuffer,
-					&this->layerStack[a]->position,
-					this->layerStack[a]->alpha);
+					&this->layerStack[a]->position.to_SDL_Rect(),
+					this->layerStack[a]->alpha
+				);
 	}
 	for (ulong a=0;a<this->filterPipeline.size();a++){
 		pipelineElement &el=this->filterPipeline[a];
@@ -946,7 +981,12 @@ ErrorCode NONS_ScreenSpace::BlendNoText(ulong effect,long timing,const std::wstr
 ErrorCode NONS_ScreenSpace::BlendOnlyBG(ulong effect){
 	SDL_FillRect(this->screenBuffer,0,amask);
 	if (!!this->Background && !!this->Background->data)
-		manualBlit(this->Background->data,&this->Background->clip_rect,this->screenBuffer,&this->Background->position);
+		manualBlit(
+			this->Background->data,
+			&this->Background->clip_rect.to_SDL_Rect(),
+			this->screenBuffer,
+			&this->Background->position.to_SDL_Rect()
+		);
 	if (effect){
 		NONS_GFX *e=this->gfx_store->retrieve(effect);
 		if (!e)
@@ -1051,8 +1091,8 @@ bool NONS_ScreenSpace::advanceAnimations(ulong msecs,std::vector<SDL_Rect> &rect
 			if (b){
 				ulong second=p->animation.getCurrentAnimationFrame();
 				SDL_Rect push=p->optimized_updates[std::pair<ulong,ulong>(first,second)];
-				push.x+=p->position.x;
-				push.y+=p->position.y;
+				push.x+=(Sint16)p->position.x;
+				push.y+=(Sint16)p->position.y;
 				rects.push_back(push);
 			}
 		}

@@ -41,7 +41,7 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 	this->animation_direction=1;
 	this->frame_ends.clear();
 	size_t p=0;
-	static const std::wstring slash_semi=UniFromISO88591("/;");
+	static const std::wstring slash_semi=L"/;";
 	if (image_string[p]==UNICODE_COLON){
 		p++;
 		size_t semicolon=image_string.find(UNICODE_SEMICOLON,p);
@@ -207,14 +207,14 @@ long NONS_AnimationInfo::getCurrentAnimationFrame(){
 SVG_Functions *NONS_Image::svg_functions=0;
 
 NONS_Image::NONS_Image(){
-	this->age=0;
 	this->image=0;
 	this->refCount=0;
 	this->svg_source=0;
 }
 
-NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects){
-	this->age=0;
+#include "SDL_bilinear.h"
+
+NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,double base_scale[2],optim_t *rects){
 	this->image=0;
 	this->refCount=0;
 	this->svg_source=primary->svg_source;
@@ -372,6 +372,13 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 			}
 			break;
 	}
+	if (!this->svg_source && (base_scale[0]!=1 || base_scale[1]!=1)){
+		SDL_Surface *temp=SDL_ResizeSmooth(this->image,int(this->image->w*base_scale[0]),int(this->image->h*base_scale[1]));
+		if (temp){
+			SDL_FreeSurface(this->image);
+			this->image=temp;
+		}
+	}
 	this->image->clip_rect.w/=(Uint16)this->animation.animation_length;
 	for (ulong a=0;a<this->animation.animation_length-1;a++){
 		for (ulong b=a+1;a<this->animation.animation_length;a++){
@@ -411,7 +418,7 @@ SDL_Surface *generateEmptySurface(ulong w,ulong h){
 
 #undef LoadImage
 
-SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize){
+SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize,NONS_DiskCache *dcache,double base_scale[2]){
 	if (!buffer || !bufferSize || this->image && this->refCount)
 		return 0;
 	if (this->image)
@@ -427,8 +434,15 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		SDL_FreeSurface(surface);
 		SDL_FreeRW(rwops);
 	}else if (svg_functions && svg_functions->valid){
-		this->svg_source=svg_functions->SVG_load((void *)buffer,bufferSize);
-		this->image=(!this->svg_source)?0:svg_functions->SVG_render(this->svg_source);
+		if (!dcache || !(this->image=dcache->get(string))){
+			this->svg_source=svg_functions->SVG_load((void *)buffer,bufferSize);
+			if (!this->svg_source)
+				this->image=0;
+			else{
+				svg_functions->SVG_set_scale(this->svg_source,base_scale[0],base_scale[1]);
+				this->image=svg_functions->SVG_render(this->svg_source);
+			}
+		}
 	}else
 		this->image=0;
 	if (!this->image)
@@ -490,20 +504,119 @@ SDL_Rect NONS_Image::getUpdateRect(ulong from,ulong to){
 	return ret;
 }
 
+NONS_DiskCache::~NONS_DiskCache(){
+	for (map_t::iterator i=this->cache_list.begin(),end=this->cache_list.end();i!=end;i++)
+		NONS_File::delete_file(i->second);
+}
+
+void NONS_DiskCache::add(const std::wstring &filename,SDL_Surface *surface){
+	std::wstring src=filename;
+	toforwardslash(src);
+	map_t::iterator i=this->cache_list.find(src);
+	std::wstring dst;
+	if (i==this->cache_list.end()){
+		dst=L"__ONSlaught_cache_"+itoa<wchar_t>(this->state++)+L".raw";
+		this->cache_list[src]=dst;
+	}else
+		dst=i->second;
+	std::string buffer;
+	surfaceData sd=surface;
+	writeDWord(sd.w,buffer);
+	writeDWord(sd.h,buffer);
+	buffer.append(4,0);
+	buffer[8+sd.Roffset]=UNICODE_R;
+	buffer[8+sd.Goffset]=UNICODE_G;
+	buffer[8+sd.Boffset]=UNICODE_B;
+	if (sd.alpha)
+		buffer[8+sd.Aoffset]=UNICODE_A;
+	buffer.append(sd.w*sd.h*sd.advance,0);
+	char *p=&buffer[0];
+	p+=12;
+	{
+		SDL_LockSurface(surface);
+		for (ulong y=0;y<sd.h;y++)
+			memcpy(p+y*sd.w*sd.advance,sd.pixels+y*sd.pitch,sd.w*sd.advance);
+		SDL_UnlockSurface(surface);
+	}
+	NONS_File::write(dst,&buffer[0],buffer.size());
+}
+
+void NONS_DiskCache::remove(const std::wstring &filename){
+	map_t::iterator i=this->cache_list.find(filename);
+	if (i==this->cache_list.end())
+		return;
+	NONS_File::delete_file(i->second);
+	this->cache_list.erase(i);
+}
+
+SDL_Surface *NONS_DiskCache::get(const std::wstring &filename){
+	map_t::iterator i=this->cache_list.find(filename);
+	if (i==this->cache_list.end())
+		return 0;
+	ulong size;
+	uchar *buffer=NONS_File::read(i->second,size);
+	if (!buffer)
+		return 0;
+	if (size<12){
+		delete[] buffer;
+		return 0;
+	}
+	ulong offset=0,
+		width=readDWord(buffer,offset),
+		height=readDWord(buffer,offset);
+	char RGBA[]={
+		readByte(buffer,offset),
+		readByte(buffer,offset),
+		readByte(buffer,offset),
+		readByte(buffer,offset)
+	};
+	ulong masks[4]={0};
+	for (ulong a=0;a<4;a++){
+		ulong mask=0xFF<<(a*8),
+			off=0;
+		switch (RGBA[a]){
+			case UNICODE_R:
+				off=0;
+				break;
+			case UNICODE_G:
+				off=1;
+				break;
+			case UNICODE_B:
+				off=2;
+				break;
+			case UNICODE_A:
+				off=3;
+				break;
+		}
+		masks[off]=mask;
+	}
+	ulong channels=(masks[3])?4:3;
+	if (size<12+width*height*channels){
+		delete[] buffer;
+		return 0;
+	}
+	SDL_Surface *ret=makeSurface(width,height,channels*8,masks[0],masks[1],masks[2],masks[3]);
+	{
+		SDL_LockSurface(ret);
+		surfaceData sd=ret;
+		for (ulong y=0;y<sd.h;y++)
+			memcpy(sd.pixels+y*sd.pitch,buffer+12+y*width*channels,width*channels);
+		SDL_UnlockSurface(ret);
+	}
+	delete[] buffer;
+	return ret;
+}
+
 #define LOG_FILENAME_OLD L"NScrflog.dat"
 #define LOG_FILENAME_NEW L"nonsflog.dat"
 
 NONS_ImageLoader *ImageLoader=0;
 
-NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize)
+NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive)
 		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW),
 		svg_library("svg_loader",0){
 	this->archive=archive;
-	this->maxCacheSize=maxCacheSize;
-	if (maxCacheSize<0)
-		this->imageCache.reserve(50);
-	else
-		this->imageCache.reserve(maxCacheSize);
+	this->imageCache.reserve(50);
 	this->svg_functions.valid=1;
 #define NONS_ImageLoader_INIT_MEMBER(id) if (this->svg_functions.valid && !(this->svg_functions.id=(id##_f)this->svg_library.getFunction(#id)))\
 	this->svg_functions.valid=0
@@ -515,21 +628,18 @@ NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSiz
 	NONS_ImageLoader_INIT_MEMBER(SVG_set_rotation);
 	NONS_ImageLoader_INIT_MEMBER(SVG_set_matrix);
 	NONS_ImageLoader_INIT_MEMBER(SVG_transform_coordinates);
+	NONS_ImageLoader_INIT_MEMBER(SVG_add_scale);
 	NONS_ImageLoader_INIT_MEMBER(SVG_render);
 	NONS_ImageLoader_INIT_MEMBER(SVG_render2);
 	NONS_Image::svg_functions=&this->svg_functions;
+	this->fast_svg=1;
+	this->base_scale[0]=this->base_scale[1]=1;
 }
 
 NONS_ImageLoader::~NONS_ImageLoader(){
-	this->clearCache();
-}
-
-ulong NONS_ImageLoader::getCacheSize(){
-	ulong res=0;
 	for (ulong a=0;a<this->imageCache.size();a++)
-		if (this->imageCache[a] && this->imageCache[a]->age)
-			res++;
-	return res;
+		if (this->imageCache[a])
+			delete this->imageCache[a];
 }
 
 SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *rects){
@@ -557,28 +667,22 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *r
 	}
 	if (bestFit>=0){
 		NONS_Image *el=this->imageCache[bestFit];
-		el->age=0;
 		el->refCount++;
-		for (ulong a=0;a<this->imageCache.size();a++)
-			if (this->imageCache[a] && this->imageCache[a]->age)
-				this->imageCache[a]->age++;
 		if (!!rects)
 			*rects=el->optimized_updates;
 		return el->image;
 	}
 	NONS_Image *primary=0;
 	bool freePrimary=0;
-	if (fileMatch>=0){
+	if (fileMatch>=0)
 		primary=this->imageCache[fileMatch];
-		if (primary->age)
-			primary->age=1;
-	}else{
+	else{
 		ulong l;
 		uchar *buffer=this->archive->getFileBuffer(anim.getFilename(),l);
 		if (!buffer)
 			return 0;
 		primary=new NONS_Image;
-		if (!primary->LoadImage(anim.getFilename(),buffer,l)){
+		if (!primary->LoadImage(anim.getFilename(),buffer,l,(this->fast_svg)?&this->disk_cache:0,this->base_scale)){
 			delete[] buffer;
 			return 0;
 		}
@@ -588,46 +692,41 @@ SDL_Surface *NONS_ImageLoader::fetchSprite(const std::wstring &string,optim_t *r
 	}
 	NONS_Image *secondary=0;
 	bool freeSecondary=0;
-	if (maskMatch>=0){
+	if (maskMatch>=0)
 		secondary=this->imageCache[maskMatch];
-		if (secondary->age)
-			secondary->age=1;
-	}else if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
+	else if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
 		ulong l;
 		uchar *buffer=this->archive->getFileBuffer(anim.getMaskFilename(),l);
 		if (!buffer)
 			return 0;
 		secondary=new NONS_Image;
-		secondary->LoadImage(anim.getMaskFilename(),buffer,l);
+		secondary->LoadImage(anim.getMaskFilename(),buffer,l,(this->fast_svg)?&this->disk_cache:0,this->base_scale);
 		this->filelog.addString(anim.getMaskFilename());
 		delete[] buffer;
 		freeSecondary=1;
 	}
-	NONS_Image *image=new NONS_Image(&anim,primary,secondary,rects);
+	NONS_Image *image=new NONS_Image(&anim,primary,secondary,this->base_scale,rects);
 	image->refCount++;
-	this->addElementToCache(image,1);
-	if (freePrimary && !this->addElementToCache(primary,0))
+	this->addElementToCache(image);
+	if (image->svg_source && this->fast_svg){
+		this->disk_cache.add(image->animation.getFilename(),image->image);
+		this->svg_functions.SVG_unload(image->svg_source);
+		image->svg_source=0;
+	}
+	if (freePrimary)
 		delete primary;
-	if (freeSecondary && !this->addElementToCache(secondary,0))
+	if (freeSecondary)
 		delete secondary;
-	for (ulong a=0;a<this->imageCache.size();a++)
-		if (this->imageCache[a] && this->imageCache[a]->age)
-			this->imageCache[a]->age++;
 	return image->image;
 }
 
-bool NONS_ImageLoader::addElementToCache(NONS_Image *img,bool force){
-	if (!force && !this->maxCacheSize)
-		return 0;
+bool NONS_ImageLoader::addElementToCache(NONS_Image *img){
 	ulong append=0;
 	for (;append<this->imageCache.size() && !!this->imageCache[append];append++);
 	if (append>=this->imageCache.size())
 		this->imageCache.push_back(img);
 	else
 		this->imageCache[append]=img;
-	ulong cachesize=this->getCacheSize();
-	if (this->maxCacheSize>0 && cachesize>(ulong)this->maxCacheSize)
-		this->freeOldest(cachesize-(ulong)this->maxCacheSize);
 	return 1;
 }
 
@@ -639,48 +738,15 @@ bool NONS_ImageLoader::unfetchImage(SDL_Surface *which){
 		if (temp && temp->image==which){
 			temp->refCount--;
 			if (!temp->refCount){
-				if (!this->maxCacheSize){
+				if (temp->svg_source)
 					this->svg_functions.SVG_unload(temp->svg_source);
-					delete temp;
-					this->imageCache[a]=0;
-				}else
-					temp->age++;
+				delete temp;
+				this->imageCache[a]=0;
 			}
 			return 1;
 		}
 	}
 	return 0;
-}
-
-long NONS_ImageLoader::freeOldest(long howMany){
-	long res=0;
-	for (long a=0;a<howMany;a++){
-		ulong max=0,maxp=0;
-		for (ulong b=0;b<this->imageCache.size();b++){
-			if (this->imageCache[b] && this->imageCache[b]->age>max){
-				max=this->imageCache[b]->age;
-				maxp=b;
-			}
-		}
-		if (!max)
-			break;
-		delete this->imageCache[maxp];
-		this->imageCache[maxp]=0;
-		res++;
-	}
-	return res;
-}
-
-ulong NONS_ImageLoader::clearCache(){
-	ulong res=0;
-	for (ulong a=0;a<this->imageCache.size();a++){
-		if (this->imageCache[a] && this->imageCache[a]->age){
-			delete this->imageCache[a];
-			this->imageCache[a]=0;
-		}else
-			res++;
-	}
-	return res;
 }
 
 NONS_Image *NONS_ImageLoader::elementFromSurface(SDL_Surface *srf){

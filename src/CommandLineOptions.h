@@ -40,7 +40,6 @@ struct NONS_CommandLineOptions{
 	std::wstring musicFormat;
 	std::wstring musicDirectory;
 	std::wstring archiveDirectory;
-	long cacheSize;
 	std::wstring scriptPath;
 	ENCRYPTION scriptEncryption;
 	bool override_stdout;

@@ -116,11 +116,6 @@ it, xm, s3m, and then mod.
 Selects where to look for the music. Defaults to "./CD"
 
 
--image-cache-size <size>
-Sets the size for the image cache. -1 is infinite, 0 disables the cache
-(default).
-
-
 -redirect
 Redirects stdout to "stdout.txt", stderr to "stderr.txt", and stdlog to
 "stdlog.txt".

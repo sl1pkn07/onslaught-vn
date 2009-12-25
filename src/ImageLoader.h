@@ -103,9 +103,22 @@ struct SVG_Functions{
 	SVG_Functions_DECLARE_MEMBER(SVG_set_rotation);
 	SVG_Functions_DECLARE_MEMBER(SVG_set_matrix);
 	SVG_Functions_DECLARE_MEMBER(SVG_transform_coordinates);
+	SVG_Functions_DECLARE_MEMBER(SVG_add_scale);
 	SVG_Functions_DECLARE_MEMBER(SVG_render);
 	SVG_Functions_DECLARE_MEMBER(SVG_render2);
 	bool valid;
+};
+
+class NONS_DiskCache{
+	typedef std::map<std::wstring,std::wstring,stdStringCmpCI<wchar_t> > map_t;
+	map_t cache_list;
+	ulong state;
+public:
+	NONS_DiskCache():state(0){}
+	~NONS_DiskCache();
+	void add(const std::wstring &filename,SDL_Surface *surface);
+	void remove(const std::wstring &filename);
+	SDL_Surface *get(const std::wstring &filename);
 };
 
 typedef std::map<std::pair<ulong,ulong>,SDL_Rect> optim_t;
@@ -113,14 +126,6 @@ typedef std::map<std::pair<ulong,ulong>,SDL_Rect> optim_t;
 struct NONS_Image{
 	SDL_Surface *image;
 	NONS_AnimationInfo animation;
-	/*
-	How many fetches have passed since this image was last fetched. Zero if it's
-	curretly being used. This variable is used to limit the size of the cache.
-	All images are loaded as 32-bit surfaces, so for a 640x480 surface, each
-	cache element uses ~1.2 MiB, not counting the name. Therefore, limiting the
-	size of the cache can be important on certain systems.
-	*/
-	ulong age;
 	ulong refCount;
 	optim_t optimized_updates;
 	/*
@@ -132,9 +137,9 @@ struct NONS_Image{
 	static SVG_Functions *svg_functions;
 
 	NONS_Image();
-	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,optim_t *rects=0);
+	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,double base_scale[2],optim_t *rects);
 	~NONS_Image();
-	SDL_Surface *LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize);
+	SDL_Surface *LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize,NONS_DiskCache *dcache,double base_scale[2]);
 private:
 	SDL_Rect getUpdateRect(ulong from,ulong to);
 };
@@ -142,24 +147,23 @@ private:
 struct NONS_ImageLoader{
 	NONS_GeneralArchive *archive;
 	std::vector<NONS_Image *> imageCache;
-	//<0: infinite (until memory is exhausted)
-	long maxCacheSize;
 	NONS_LibraryLoader svg_library;
 	SVG_Functions svg_functions;
-
 	NONS_FileLog filelog;
-	NONS_ImageLoader(NONS_GeneralArchive *archive,long maxCacheSize=-1);
+	bool fast_svg;
+	double base_scale[2];
+	NONS_DiskCache disk_cache;
+
+	NONS_ImageLoader(NONS_GeneralArchive *archive);
 	~NONS_ImageLoader();
 	ulong getCacheSize();
 	SDL_Surface *fetchSprite(const std::wstring &string,optim_t *rects=0);
 	bool unfetchImage(SDL_Surface *which);
 	NONS_Image *elementFromSurface(SDL_Surface *srf);
-	long freeOldest(long howMany=1);
-	ulong clearCache();
 	void printCurrent();
 private:
 	//1 if the image was added, 0 otherwise
-	bool addElementToCache(NONS_Image *img,bool force);
+	bool addElementToCache(NONS_Image *img);
 };
 
 extern NONS_ImageLoader *ImageLoader;
