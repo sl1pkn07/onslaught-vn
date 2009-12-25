@@ -507,7 +507,7 @@ An example of text printed to the center of the screen:<p/>
 <font face="monospace" color="#ff0000">savetime2 c%fileno, %year, %month, %day, %hour, %minute, %second</font><br/>
 The same as savetime, but also gives the year and the second the savegame was generated.<p/>
 
-<font face="monospace" color="#ff0000">async_effect {0|c%effectno, c%frequency</font><br/>
+<font face="monospace" color="#ff0000">async_effect {0|c%effectno, c%frequency}</font><br/>
 Starts an ansynchronous effect that's applied to the entire screen <font face="monospace">c$frequency</font> times per second.<br/>
 If 0 is passed, the effect is turned off.<br/>
 There are no built-in effects. They must be programmed using the plug-in API.<p/>
@@ -529,6 +529,10 @@ New filters can be added using the plug-in API.<p/>
 
 <font face="monospace" color="#ff0000">add_overall_filter {0|c%effectno, c%color, c$rule}</font><br/>
 Same as <font face="monospace">add_filter</font> in every way, except the filter is applied to the entire screen over everything else, including the text window.<p/>
+
+<font face="monospace" color="#ff0000">base_resolution c%width, c%height</font><br/>
+Used to write resolution-independent scripts. The resolution passed to this command is taken to be the resolution used for geometric coordinates and sizes in the script and used by graphical resources. When the physical resolution used is different, all geometric parameters are adjusted automatically, and graphical resources are resized.<p/>
+The default base resolution is the same as the physical resolution.<p/>
 
 <h1><a name="5">5. Undocumented commands</a></h1>
 These are commands that, while existing in ONScripter, their documentation is either lacking or missing.<p/>

@@ -52,6 +52,28 @@ extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
 #define GET_INT_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)))
+#define GET_COORDINATE(dst,axis,src) {\
+	long GET_COORDINATE_temp;\
+	float GET_COORDINATE_temp_f;\
+	GET_INT_VALUE(GET_COORDINATE_temp,(src));\
+	GET_COORDINATE_temp_f=float(GET_COORDINATE_temp)*float(this->virtual_size[(axis)])/float(this->base_size[(axis)]);\
+	if (GET_COORDINATE_temp_f>=0)\
+		GET_COORDINATE_temp_f=(float)floor(GET_COORDINATE_temp_f+.5f);\
+	else\
+		GET_COORDINATE_temp_f=(float)ceil(GET_COORDINATE_temp_f-.5f);\
+	(dst)=GET_COORDINATE_temp_f;\
+}
+#define GET_INT_COORDINATE(dst,axis,src) {\
+	long GET_COORDINATE_temp;\
+	float GET_COORDINATE_temp_f;\
+	GET_INT_VALUE(GET_COORDINATE_temp,(src));\
+	GET_COORDINATE_temp_f=float(GET_COORDINATE_temp)*float(this->virtual_size[(axis)])/float(this->base_size[(axis)]);\
+	if (GET_COORDINATE_temp_f>=0)\
+		GET_COORDINATE_temp_f=(float)floor(GET_COORDINATE_temp_f+.5f);\
+	else\
+		GET_COORDINATE_temp_f=(float)ceil(GET_COORDINATE_temp_f-.5f);\
+	(dst)=(long)GET_COORDINATE_temp_f;\
+}
 #define GET_STR_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)))
 #define GET_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getVar((varName),stmt.parameters[(src)],this->store))
 #define GET_INT_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getIntVar((varName),stmt.parameters[(src)],this->store))
@@ -146,8 +168,6 @@ class NONS_ScriptInterpreter{
 	long default_speed_med;
 	long default_speed_fast;
 	char current_speed_setting;
-	int defaultx;
-	int defaulty;
 	int defaultfs;
 	bool legacy_set_window;
 	INIcacheType INIcache;
@@ -178,6 +198,8 @@ class NONS_ScriptInterpreter{
 		useEscapeSpace;
 	SDL_Surface *screenshot;
 	std::queue<NONS_ScriptLine *> commandQueue;
+	ulong base_size[2],
+		virtual_size[2];
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);
@@ -345,8 +367,9 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_async_effect(NONS_Statement &stmt);
 	ErrorCode command_add_filter(NONS_Statement &stmt);
 	ErrorCode command_avi(NONS_Statement &stmt);
+	ErrorCode command_base_resolution(NONS_Statement &stmt);
+	ErrorCode command_use_nice_svg(NONS_Statement &stmt);
 	/*
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);

@@ -58,6 +58,7 @@ SVG_DECLARE_FUNCTION(bool,SVG_best_fit,(ulong index,ulong max_x,ulong max_y));
 SVG_DECLARE_FUNCTION(bool,SVG_set_rotation,(ulong index,double angle));
 SVG_DECLARE_FUNCTION(bool,SVG_set_matrix,(ulong index,double matrix[4]));
 SVG_DECLARE_FUNCTION(bool,SVG_transform_coordinates,(ulong index,double x,double y,double *dst_x,double *dst_y));
+SVG_DECLARE_FUNCTION(bool,SVG_add_scale,(ulong index,double scale_x,double scale_y));
 SVG_DECLARE_FUNCTION(SDL_Surface *,SVG_render,(ulong index));
 SVG_DECLARE_FUNCTION(bool,SVG_render2,(ulong index,SDL_Surface *dst,double offset_x,double offset_y,uchar alpha));
 EXTERN_C_BLOCK_C

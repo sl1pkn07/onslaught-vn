@@ -514,7 +514,10 @@ void usage(){
 		"See the documentation for details.\n";
 }
 
+void initialize_conversion_tables();
+
 int main(int,char **argv){
+	initialize_conversion_tables();
 	Options options(argv);
 	if (!options.good)
 		return 1;

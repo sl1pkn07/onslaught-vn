@@ -87,6 +87,7 @@ struct SVG{
 	void rotate(double alpha);
 	bool set_matrix(double matrix[4]);
 	void transform_coordinates(double x,double y,double *dst_x,double *dst_y);
+	bool add_scale(double x,double y);
 	SDL_Surface *render();
 	SDL_Surface *render(SDL_Surface *dst,double offset_x,double offset_y,uchar alpha);
 private:
@@ -97,9 +98,11 @@ static struct SVG_Manager{
 	int temp;
 	QApplication a; //We need this to render fonts.
 	std::vector<SVG *> array;
-	SVG_Manager():temp(0),a(temp,0){}
+	SVG_Manager():temp(0),a(temp,0){
+		this->array.push_back(0);
+	}
 	~SVG_Manager(){
-		for (ulong a=0;a<this->array.size();a++)
+		for (ulong a=1;a<this->array.size();a++)
 			if (this->array[a])
 				delete this->array[a];
 	}
@@ -111,6 +114,7 @@ static struct SVG_Manager{
 	bool rotate(ulong index,double alpha);
 	bool set_matrix(ulong index,double matrix[4]);
 	bool transform_coordinates(ulong index,double x,double y,double *dst_x,double *dst_y);
+	bool add_scale(ulong index,double scale_x,double scale_y);
 	SDL_Surface *render(ulong index);
 	bool render(ulong index,SDL_Surface *dst,double offset_x,double offset_y,uchar alpha);
 } manager;
@@ -283,6 +287,24 @@ void SVG::transform_coordinates(double x,double y,double *dst_x,double *dst_y){
 	*dst_y=rect[4].y;
 }
 
+bool SVG::add_scale(double x,double y){
+	if (!x || !y)
+		return 0;
+	if (!this->use_matrix){
+		this->scale_x*=x;
+		this->scale_y*=y;
+	}else{
+		double matrix[]={x,0,0,y},
+			res_matrix[4];
+		res_matrix[0]=this->matrix[0]*matrix[0]+this->matrix[1]*matrix[2];
+		res_matrix[1]=this->matrix[0]*matrix[1]+this->matrix[1]*matrix[3];
+		res_matrix[2]=this->matrix[2]*matrix[0]+this->matrix[3]*matrix[2];
+		res_matrix[3]=this->matrix[2]*matrix[1]+this->matrix[3]*matrix[3];
+		memcpy(this->matrix,res_matrix,sizeof(double)*4);
+	}
+	return 1;
+}
+
 SDL_Surface *SVG::render(){
 	return this->render(0,0,0,255);
 }
@@ -392,14 +414,14 @@ ulong SVG_Manager::load(void *buffer,size_t size){
 		delete s;
 		return 0;
 	}
-	for (ulong a=0;a<this->array.size();a++){
+	for (ulong a=1;a<this->array.size();a++){
 		if (!this->array[a]){
 			this->array[a]=s;
-			return a+1;
+			return a;
 		}
 	}
 	this->array.push_back(s);
-	return this->array.size();
+	return this->array.size()-1;
 }
 
 bool SVG_Manager::unload(ulong index){
@@ -450,6 +472,12 @@ bool SVG_Manager::transform_coordinates(ulong index,double x,double y,double *ds
 	return 1;
 }
 
+bool SVG_Manager::add_scale(ulong index,double scale_x,double scale_y){
+	if (index>=this->array.size() || !this->array[index])
+		return 0;
+	return this->array[index]->add_scale(scale_x,scale_y);
+}
+
 SDL_Surface *SVG_Manager::render(ulong index){
 	if (index>=this->array.size() || !this->array[index])
 		return 0;
@@ -469,37 +497,41 @@ DECLSPEC ulong SVG_load(void *buffer,size_t size){
 }
 
 DECLSPEC bool SVG_unload(ulong index){
-	return manager.unload(index-1);
+	return manager.unload(index);
 }
 
 DECLSPEC bool SVG_get_dimensions(ulong index,double *w,double *h){
-	return manager.get_dim(index-1,w,h);
+	return manager.get_dim(index,w,h);
 }
 
 DECLSPEC bool SVG_set_scale(ulong index,double scale_x,double scale_y){
-	return manager.scale(index-1,scale_x,scale_y);
+	return manager.scale(index,scale_x,scale_y);
 }
 
 DECLSPEC bool SVG_best_fit(ulong index,ulong max_x,ulong max_y){
-	return manager.best_fit(index-1,max_x,max_y);
+	return manager.best_fit(index,max_x,max_y);
 }
 
 DECLSPEC bool SVG_set_rotation(ulong index,double angle){
-	return manager.rotate(index-1,angle);
+	return manager.rotate(index,angle);
 }
 
 DECLSPEC bool SVG_set_matrix(ulong index,double matrix[4]){
-	return manager.set_matrix(index-1,matrix);
+	return manager.set_matrix(index,matrix);
 }
 
 DECLSPEC bool SVG_transform_coordinates(ulong index,double x,double y,double *dst_x,double *dst_y){
-	return manager.transform_coordinates(index-1,x,y,dst_x,dst_y);
+	return manager.transform_coordinates(index,x,y,dst_x,dst_y);
+}
+
+DECLSPEC bool SVG_add_scale(ulong index,double scale_x,double scale_y){
+	return manager.add_scale(index,scale_x,scale_y);
 }
 
 DECLSPEC SDL_Surface *SVG_render(ulong index){
-	return manager.render(index-1);
+	return manager.render(index);
 }
 
 DECLSPEC bool SVG_render2(ulong index,SDL_Surface *dst,double offset_x,double offset_y,uchar alpha){
-	return manager.render(index-1,dst,offset_x,offset_y,alpha);
+	return manager.render(index,dst,offset_x,offset_y,alpha);
 }

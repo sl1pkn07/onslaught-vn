@@ -260,8 +260,8 @@ private:
 struct NONS_Lookback{
 	SDL_Color foreground;
 	NONS_StandardOutput *output;
-	void *up;
-	void *down;
+	NONS_Button *up,
+		*down;
 	SDL_Surface *sUpon;
 	SDL_Surface *sUpoff;
 	SDL_Surface *sDownon;

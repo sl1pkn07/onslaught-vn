@@ -257,6 +257,11 @@ std::vector<std::wstring> getArgumentsVector(wchar_t **argv){
 	return ret;
 }
 
+extern wchar_t SJIS2Unicode[0x10000],
+	Unicode2SJIS[0x10000],
+	SJIS2Unicode_compact[];
+void initialize_conversion_tables();
+
 #ifdef main
 #undef main
 #endif
@@ -274,6 +279,7 @@ int main(int argc,char **argv){
 
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
+	initialize_conversion_tables();
 
 	std::vector<std::wstring> cmdl_arg=getArgumentsVector(argv);
 	if (!useArgumentsFile("arguments.txt",cmdl_arg))

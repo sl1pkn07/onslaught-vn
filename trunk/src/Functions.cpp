@@ -1209,8 +1209,8 @@ SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 	return res;
 }
 
-Uint8 readByte(char *buffer,ulong &offset){
-	return buffer[offset++];
+Uint8 readByte(void *buffer,ulong &offset){
+	return ((uchar *)buffer)[offset++];
 }
 
 Sint16 readSignedWord(char *buffer,ulong &offset){
@@ -1416,8 +1416,8 @@ void findMainWindow(const wchar_t *caption){
 }
 #endif
 
-extern wchar_t SJIS2Unicode[];
-extern wchar_t Unicode2SJIS[];
+extern wchar_t SJIS2Unicode[0x10000],
+	Unicode2SJIS[0x10000];
 
 /*
 Note: All sizes are powers of two, and wchar_t is guaranteed to be at least as

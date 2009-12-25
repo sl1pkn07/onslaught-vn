@@ -383,7 +383,7 @@ std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
 //binary parsing functions
 bool getbit(void *arr,ulong *byteoffset,uchar *bitoffset);
 ulong getbits(void *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
-Uint8 readByte(char *buffer,ulong &offset);
+Uint8 readByte(void *buffer,ulong &offset);
 Sint16 readSignedWord(char *buffer,ulong &offset);
 Uint16 readWord(void *buffer,ulong &offset);
 Sint32 readSignedDWord(char *buffer,ulong &offset);
@@ -421,7 +421,7 @@ extern const int amask;
 #define USE_HARDWARE_SURFACES 0
 
 inline SDL_Surface *makeSurface(ulong w,ulong h,ulong bits,Uint32 r=rmask,Uint32 g=gmask,Uint32 b=bmask,Uint32 a=amask){
-	return SDL_CreateRGBSurface(USE_HARDWARE_SURFACES|SDL_SRCALPHA,w,h,bits,r,g,b,a);
+	return SDL_CreateRGBSurface(USE_HARDWARE_SURFACES|SDL_SRCALPHA,(int)w,(int)h,bits,r,g,b,a);
 }
 
 //bitmap processing functions
@@ -741,6 +741,21 @@ struct surfaceData{
 		this->w=surface->w;
 		this->h=surface->h;
 		this->alpha=(this->Aoffset!=this->Roffset && this->Aoffset!=this->Goffset && this->Aoffset!=this->Boffset);
+		return *this;
+	}
+};
+
+struct NONS_Rect{
+	float x,y,w,h;
+	SDL_Rect to_SDL_Rect(){
+		SDL_Rect ret={(Sint16)x,(Sint16)y,(Uint16)w,(Uint16)h};
+		return ret;
+	}
+	NONS_Rect &operator=(const SDL_Rect &s){
+		this->x=(float)s.x;
+		this->y=(float)s.y;
+		this->w=(float)s.w;
+		this->h=(float)s.h;
 		return *this;
 	}
 };

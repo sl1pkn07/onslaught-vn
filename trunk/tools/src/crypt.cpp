@@ -107,6 +107,8 @@ void version(){
 	exit(0);
 }
 
+void initialize_conversion_tables();
+
 int main(int argc,char **argv){
 	if (argc<2)
 		usage();
@@ -114,6 +116,7 @@ int main(int argc,char **argv){
 		version();
 	if (argc<4 ||!strcmp(argv[1],"-h") || !strcmp(argv[1],"-?") || !strcmp(argv[1],"--help"))
 		usage();
+	initialize_conversion_tables();
 	std::string meth=argv[2];
 	std::wstring ifile=UniFromUTF8(std::string(argv[1])),
 		ofile=UniFromUTF8(std::string(argv[3]));

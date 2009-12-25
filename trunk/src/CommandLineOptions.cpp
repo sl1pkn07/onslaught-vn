@@ -52,7 +52,6 @@ extern std::ofstream textDumpFile;
 
 NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->scriptencoding=DETECT_ENCODING;
-	this->cacheSize=0;
 	this->scriptEncryption=NO_ENCRYPTION;
 	this->override_stdout=1;
 	this->reset_redirection_files=1;
@@ -118,9 +117,6 @@ void usage(){
 		"  -music-directory <directory>\n"
 		"      Set where to look for music files.\n"
 		"      Default is \"./CD\"\n"
-		"  -image-cache-size <size>\n"
-		"      Set the size for the image cache. -1 is infinite, 0 is do not use.\n"
-		"      Default to 0.\n"
 		"  -debug\n"
 		"      Enable debug mode.\n"
 		"      See the documentation for more information.\n"
@@ -167,7 +163,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-music-directory",        //4
 		L"",                        //5
 		L"",                        //6
-		L"-image-cache-size",       //7
+		L"",                        //7
 		L"-debug",                  //8
 		L"-redirect",               //9
 		L"--version",               //10
@@ -293,13 +289,6 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				break;
 			case 6: //-transparency-method-anim
 				break;
-			case 7: //-image-cache-size
-				if (a+1>=size){
-					std::cerr <<"Invalid argument syntax: \""<<arguments[a]<<"\""<<std::endl;
-					break;
-				}
-				this->cacheSize=atoi(arguments[++a]);
-				break;
 			case 8: //-debug
 				this->debugMode=1;
 				this->noconsole=0;
@@ -413,6 +402,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 					toforwardslash(this->play);
 				}
 				break;
+			case 7: //-image-cache-size
 			case 17://-sdebug
 			default:
 				std::cerr <<"Unrecognized command line option: \""<<arguments[a]<<"\""<<std::endl;

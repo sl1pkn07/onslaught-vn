@@ -893,7 +893,10 @@ bool isNSA(const std::wstring &filename){
 	return 1;
 }
 
+void initialize_conversion_tables();
+
 int main(int argc,char **argv){
+	initialize_conversion_tables();
 	Options options(argv);
 	if (!options.good)
 		return 1;

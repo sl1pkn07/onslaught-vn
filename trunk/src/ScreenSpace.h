@@ -50,7 +50,7 @@ struct NONS_Layer{
 	//Determines whether this layer will be included in the blend.
 	bool visible;
 	bool useDataAsDefaultShade;
-	SDL_Rect clip_rect,
+	NONS_Rect clip_rect,
 		position;
 	uchar alpha;
 	optim_t optimized_updates;

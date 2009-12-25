@@ -94,11 +94,12 @@ public:
 	bool operator!();
 	type *read(ulong read_bytes,ulong &bytes_read,ulong offset);
 	type *read(ulong &bytes_read);
-	bool write(void *buffer,ulong size);
+	bool write(void *buffer,ulong size,bool write_at_end=1);
 	ulong filesize();
 	static type *read(const std::wstring &path,ulong read_bytes,ulong &bytes_read,ulong offset);
 	static type *read(const std::wstring &path,ulong &bytes_read);
 	static bool write(const std::wstring &path,void *buffer,ulong size);
+	static bool delete_file(const std::wstring &path);
 };
 bool fileExists(const std::wstring &name);
 
