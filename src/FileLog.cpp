@@ -150,7 +150,9 @@ bool NONS_LabelLog::addString(const std::wstring &string){
 	if (this->check(string))
 		return 0;
 	size_t a=0;
+	for (;iswhitespace(string[a]);a++);
 	for (;string[a]==UNICODE_ASTERISK;a++);
+	for (;iswhitespace(string[a]);a++);
 	std::wstring copy(string,a);
 	tolower(copy);
 	this->log.insert(copy);
@@ -159,7 +161,9 @@ bool NONS_LabelLog::addString(const std::wstring &string){
 
 bool NONS_LabelLog::check(const std::wstring &string){
 	size_t a=0;
+	for (;iswhitespace(string[a]);a++);
 	for (;string[a]==UNICODE_ASTERISK;a++);
+	for (;iswhitespace(string[a]);a++);
 	std::wstring copy(string,a);
 	bool ret=(this->log.find(copy)!=this->log.end());
 	return ret;

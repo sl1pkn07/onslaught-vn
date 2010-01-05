@@ -46,7 +46,6 @@ add_executable(ONSlaught
 	src/ThreadManager.cpp
 	src/VariableStore.cpp
 	src/VirtualScreen.cpp
-	src/commandPreParser.tab.cpp
 	src/puff.c
 	src/sha1.cpp
 	src/Plugin/LibraryLoader.cpp

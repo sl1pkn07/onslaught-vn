@@ -31,7 +31,8 @@
 #include "IOFunctions.h"
 #include "SaveFile.h"
 #include "sha1.h"
-#include "commandPreParser.tab.hpp"
+#include "ScriptInterpreter.h"
+#include "ExpressionParser.tab.hpp"
 
 //Returns then position of the ending quote, of npos if couldn't be found before
 //the end of the string or if there isn't a string beginning at 'start'.
@@ -171,32 +172,29 @@ void NONS_Statement::parse(NONS_Script *script){
 
 void NONS_Statement::preparseIf(NONS_Script *script){
 	std::wstringstream stream(this->stringParameters);
-	ulong start[3];
-	if (!commandPreParser_yyparse(&stream,script,start)){
-		this->parameters.push_back(this->stringParameters.substr(0,*start));
-		this->parameters.push_back(this->stringParameters.substr(*start));
+	PreParserData ppd;
+	ppd.mode=1;
+	ppd.trigger=1;
+	NONS_Expression::Expression *p;
+	if (!expressionParser_yyparse(&stream,gScriptInterpreter->store,p,&ppd)){
+		NONS_Expression::ExpressionCompiler c(ppd.res[0]);
+		this->parameters.push_back(c.unparse());
+		this->parameters.push_back(this->stringParameters.substr(ppd.then_position));
 	}else
 		this->error=NONS_UNDEFINED_SYNTAX_ERROR;
 }
 
 void NONS_Statement::preparseFor(NONS_Script *script){
 	std::wstringstream stream(this->stringParameters);
-	//Note: In reality, ifParser_yyparse() will write at most 3 elements. The
-	//fourth is there for additional processing.
-	ulong end[3];
-	if (!commandPreParser_yyparse(&stream,script,end)){
-		ulong start=0;
-		this->parameters.push_back(this->stringParameters.substr(start,end[0]-start));
-		start=end[0]+1;
-		this->parameters.push_back(this->stringParameters.substr(start,end[1]-start));
-		start=end[1]+2;
-		if (end[2]!=ULONG_MAX){
-			this->parameters.push_back(this->stringParameters.substr(start,end[2]-start));
-			start=end[2]+4;
+	PreParserData ppd;
+	ppd.mode=2;
+	ppd.trigger=1;
+	NONS_Expression::Expression *p;
+	if (!expressionParser_yyparse(&stream,gScriptInterpreter->store,p,&ppd)){
+		for (size_t a=0;a<ppd.res.size();a++){
+			NONS_Expression::ExpressionCompiler c(ppd.res[a]);
+			this->parameters.push_back(c.unparse());
 		}
-		this->parameters.push_back(this->stringParameters.substr(start));
-		for (ulong a=0;a<this->parameters.size();a++)
-			trim_string(this->parameters[a]);
 	}else
 		this->error=NONS_UNDEFINED_SYNTAX_ERROR;
 }

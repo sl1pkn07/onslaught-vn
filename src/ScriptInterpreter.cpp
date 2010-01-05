@@ -856,9 +856,9 @@ void NONS_ScriptInterpreter::getSymbolListing(std::vector<std::wstring> &vector)
 
 std::wstring NONS_ScriptInterpreter::getValue(const std::wstring &str){
 	long l;
-	if (this->store->getIntValue(str,l)!=NONS_NO_ERROR){
+	if (this->store->getIntValue(str,l,0)!=NONS_NO_ERROR){
 		std::wstring str2;
-		if (this->store->getWcsValue(str,str2)!=NONS_NO_ERROR){
+		if (this->store->getWcsValue(str,str2,0)!=NONS_NO_ERROR){
 			handleErrors(NONS_NO_ERROR,0,"",0);
 			return L"Interpreter said: \"Could not make sense of argument\"";
 		}
@@ -1179,6 +1179,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	switch (stmt->type){
 		case NONS_Statement::STATEMENT_BLOCK:
 			this->saveGame->currentLabel=stmt->commandName;
+			labellog.addString(stmt->commandName);
 			/*if (!stdStrCmpCI(stmt->commandName,L"define"))
 				this->interpreter_mode=DEFINE;*/
 			break;
@@ -1328,7 +1329,7 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 				if (!!stmt.lineOfOrigin)
 					this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
 			}
-			this->Printer(stmt.commandName);
+			this->Printer(stmt.stmt);
 			break;
 		case NONS_Statement::STATEMENT_COMMAND:
 			{
@@ -1734,17 +1735,13 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 std::wstring NONS_ScriptInterpreter::convertParametersToString(NONS_Statement &stmt){
 	std::wstring string;
 	for (ulong a=0;a<stmt.parameters.size();a++){
-		long res;
 		std::wstring &str=stmt.parameters[a];
-		if (CHECK_FLAG(this->store->getIntValue(str,res),NONS_NO_ERROR_FLAG)){
-			string.append(itoa<wchar_t>(res));
-		}else{
-			std::wstring resString;
-			if (CHECK_FLAG(this->store->getWcsValue(str,resString),NONS_NO_ERROR_FLAG))
-				string.append(resString);
-			else
-				continue;
+		NONS_Expression::Value *val=this->store->evaluate(str,0);
+		if (val->is_err()){
+			delete val;
+			continue;
 		}
+		string.append((val->is_int())?itoa<wchar_t>(val->integer):val->string);
 	}
 	return string;
 }
@@ -2431,7 +2428,7 @@ ErrorCode NONS_ScriptInterpreter::command_bg(NONS_Statement &stmt){
 	}else if (!stdStrCmpCI(stmt.parameters[0],L"black")){
 		scr->Background->setShade(0,0,0);
 		scr->Background->Clear();
-	}else if (this->store->getIntValue(stmt.parameters[0],color)==NONS_NO_ERROR){
+	}else if (this->store->getIntValue(stmt.parameters[0],color,0)==NONS_NO_ERROR){
 		char r=char((color&0xFF0000)>>16),
 			g=(color&0xFF00)>>8,
 			b=(color&0xFF);
@@ -2831,13 +2828,13 @@ ErrorCode NONS_ScriptInterpreter::command_deletescreenshot(NONS_Statement &stmt)
 ErrorCode NONS_ScriptInterpreter::command_dim(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::vector<long> indices;
-	this->store->evaluate(stmt.parameters[0],0,0,&indices,0,0);
+	this->store->array_declaration(indices,stmt.parameters[0]);
 	if (indices[0]>1)
 		return NONS_UNDEFINED_ARRAY;
-	for (size_t a=2;a<indices.size();a++)
+	for (size_t a=1;a<indices.size();a++)
 		if (indices[a]<0)
 			return NONS_NEGATIVE_INDEX_IN_ARRAY_DECLARATION;
-	this->store->arrays[indices[1]]=new NONS_VariableMember(indices,2);
+	this->store->arrays[indices[0]]=new NONS_VariableMember(indices,1);
 	return NONS_NO_ERROR;
 }
 
@@ -3421,13 +3418,13 @@ ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
 				return NONS_EXPECTED_SCALAR;
 			if (dst->getType()==INTEGER){
 				long val;
-				HANDLE_POSSIBLE_ERRORS(this->store->getIntValue((*parameters)[a],val));
+				HANDLE_POSSIBLE_ERRORS(this->store->getIntValue((*parameters)[a],val,0));
 				actions.resize(actions.size()+1);
 				actions.back().first=dst;
 				actions.back().second.first=val;
 			}else{
 				std::wstring val;
-				HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue((*parameters)[a],val));
+				HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue((*parameters)[a],val,0));
 				actions.resize(actions.size()+1);
 				actions.back().first=dst;
 				actions.back().second.second=val;
@@ -3601,15 +3598,13 @@ ErrorCode NONS_ScriptInterpreter::command_humanz(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_if(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	long res=0;
-	bool notif=(stmt.commandName==L"notif");
-	ErrorCode ret=this->store->evaluate(stmt.parameters[0],&res,notif && !this->new_if,0,0,0);
-	if (!CHECK_FLAG(ret,NONS_NO_ERROR_FLAG))
-		return ret;
+	bool notif=!stdStrCmpCI(stmt.commandName,L"notif");
+	HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[0],res,notif && !this->new_if));
 	if (notif && this->new_if)
 		res=!res;
 	if (!res)
 		return NONS_NO_ERROR;
-	ret=NONS_NO_ERROR;
+	ErrorCode ret=NONS_NO_ERROR;
 	NONS_ScriptLine line(0,stmt.parameters[1],0,1);
 	for (ulong a=0;a<line.statements.size();a++){
 		ErrorCode error=this->interpretString(*line.statements[a],stmt.lineOfOrigin,stmt.fileOffset);
@@ -4760,7 +4755,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		GET_INT_VALUE(shadow,10);
 		GET_COORDINATE(windowXstart,0,12);
 		GET_COORDINATE(windowYstart,1,13);
-		if (this->store->getIntValue(stmt.parameters[11],color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(stmt.parameters[11],color,0)!=NONS_NO_ERROR){
 			syntax=1;
 			GET_STR_VALUE(filename,11);
 			windowXend=windowXstart+1;
@@ -4799,7 +4794,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		GET_COORDINATE(windowYstart,1,12);
 		GET_COORDINATE(windowXend,0,13);
 		GET_COORDINATE(windowYend,1,14);
-		if (this->store->getIntValue(stmt.parameters[10],color)!=NONS_NO_ERROR){
+		if (this->store->getIntValue(stmt.parameters[10],color,0)!=NONS_NO_ERROR){
 			syntax=1;
 			GET_STR_VALUE(filename,10);
 		}

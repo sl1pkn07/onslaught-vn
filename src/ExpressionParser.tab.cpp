@@ -76,17 +76,16 @@
 /* Copy the first part of user declarations.  */
 
 
-#include "VariableStore.h"
+#include "ExpressionParser.tab.hpp"
 #include "ScriptInterpreter.h"
+#include "VariableStore.h"
 #include "IOFunctions.h"
-
-void freeVM(NONS_VariableMember *p);
 
 
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 
 /* Enabling verbose error messages.  */
@@ -105,13 +104,18 @@ void freeVM(NONS_VariableMember *p);
 /* "%code requires" blocks.  */
 
 
-#include <set>
-#include <vector>
-#include "FileLog.h"
-class NONS_VariableMember;
-struct NONS_VariableStore;
-struct wstrCmp;
-#undef ERROR
+	#include <set>
+	#include <vector>
+	#include "Common.h"
+	struct NONS_VariableStore;
+	namespace NONS_Expression{
+		struct Expression;
+	}
+	struct wstrCmp;
+	struct PreParserData;
+	#ifdef ERROR
+	#undef ERROR
+	#endif
 
 
 
@@ -122,25 +126,31 @@ struct wstrCmp;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     INTEGER = 258,
-     STRING = 259,
-     INTEGER_ARRAY = 260,
-     ERROR = 261,
-     OR = 262,
-     AND = 263,
-     GREATEREQ = 264,
-     GREATER = 265,
-     LOWEREQ = 266,
-     LOWER = 267,
-     NEQ = 268,
-     EQUALS = 269,
-     POS = 270,
-     NEG = 271,
-     ITOA = 272,
-     ATOI = 273,
-     LCHK = 274,
-     FCHK = 275,
-     EVAL = 276
+     FOR = 258,
+     FOR_TO = 259,
+     IF = 260,
+     FOR_STEP = 261,
+     INTEGER = 262,
+     STRING = 263,
+     INTEGER_ARRAY = 264,
+     ERROR = 265,
+     IF_THEN = 266,
+     OR = 267,
+     AND = 268,
+     GREATEREQ = 269,
+     GREATER = 270,
+     LOWEREQ = 271,
+     LOWER = 272,
+     NEQ = 273,
+     EQUALS = 274,
+     LCHK = 275,
+     FCHK = 276,
+     POS = 277,
+     NEG = 278,
+     ITOA = 279,
+     ATOI = 280,
+     EVAL = 281,
+     STRING_CONCATENATION = 282
    };
 #endif
 
@@ -151,7 +161,8 @@ typedef union YYSTYPE
 {
 
 
-	NONS_VariableMember *obj;
+	NONS_Expression::Expression *obj;
+	ulong position;
 
 
 
@@ -165,31 +176,24 @@ typedef union YYSTYPE
 
 
 	#include <sstream>
+	extern int expressionParser_yydebug;
 	int expressionParser_yyparse(
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
-		NONS_FileLog *filelog,
-		long *result,
-		bool invert_terms,
-		std::vector<long> *array_decl,
-		NONS_VariableMember **retrievedVar,
-		std::wstring *string
+		NONS_Expression::Expression *&res,
+		PreParserData *ppd
 	);
 	int expressionParser_yylex(
 		YYSTYPE *yylval,
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
-		NONS_VariableMember **retrievedVar
+		PreParserData *ppd
 	);
 	void expressionParser_yyerror(
 		std::wstringstream *,
 		NONS_VariableStore *,
-		NONS_FileLog *,
-		long *,
-		bool,
-		std::vector<long> *,
-		NONS_VariableMember **,
-		std::wstring *string,
+		NONS_Expression::Expression *&,
+		PreParserData *ppd,
 		char const *
 	);
 
@@ -411,22 +415,22 @@ union yyalloc
 #endif
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  43
+#define YYFINAL  45
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   245
+#define YYLAST   290
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  33
+#define YYNTOKENS  39
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  11
+#define YYNNTS  10
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  48
+#define YYNRULES  44
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  99
+#define YYNSTATES  94
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   276
+#define YYMAXUTOK   282
 
 #define YYTRANSLATE(YYX)						\
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -437,13 +441,13 @@ static const yytype_uint8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,    29,    28,     2,     2,
-      31,    32,    17,    15,     2,    16,     2,    18,     2,     2,
+       2,     2,     2,     2,     2,     2,    35,    34,     2,     2,
+      37,    38,    24,    22,     2,    23,     2,    25,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    30,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    36,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    21,     2,    22,     2,     2,     2,     2,     2,     2,
+       2,    28,     2,    29,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -461,7 +465,8 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      19,    20,    23,    24,    25,    26,    27
+      15,    16,    17,    18,    19,    20,    21,    26,    27,    30,
+      31,    32,    33
 };
 
 #if YYDEBUG
@@ -469,44 +474,42 @@ static const yytype_uint8 yytranslate[] =
    YYRHS.  */
 static const yytype_uint8 yyprhs[] =
 {
-       0,     0,     3,     5,     7,     9,    11,    13,    15,    17,
-      19,    24,    29,    34,    39,    41,    43,    45,    50,    54,
-      58,    63,    66,    71,    75,    79,    83,    87,    91,    93,
-      97,   101,   104,   107,   111,   114,   119,   122,   127,   131,
-     135,   139,   143,   147,   151,   154,   159,   162,   166
+       0,     0,     3,     5,     7,     9,    11,    13,    15,    19,
+      26,    35,    37,    42,    47,    50,    53,    58,    62,    64,
+      67,    72,    76,    80,    82,    84,    88,    92,    96,   100,
+     104,   108,   112,   116,   120,   124,   127,   131,   134,   138,
+     142,   145,   148,   152,   154
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      34,     0,    -1,    35,    -1,    37,    -1,    38,    -1,     6,
-      -1,    36,    -1,    39,    -1,    40,    -1,     3,    -1,    27,
-      31,    37,    32,    -1,    27,    31,    38,    32,    -1,    24,
-      31,    37,    32,    -1,    24,    31,    38,    32,    -1,    41,
-      -1,     4,    -1,    42,    -1,    23,    31,    35,    32,    -1,
-      37,    15,    37,    -1,    38,    15,    37,    -1,    39,    21,
-      35,    22,    -1,    30,    36,    -1,    30,    31,    35,    32,
-      -1,    30,     1,    21,    -1,    35,    15,    35,    -1,    35,
-      16,    35,    -1,    35,    17,    35,    -1,    35,    18,    35,
-      -1,    43,    -1,    35,     7,    35,    -1,    35,     8,    35,
-      -1,    15,    35,    -1,    16,    35,    -1,    31,    35,    32,
-      -1,    28,    36,    -1,    28,    31,    35,    32,    -1,    29,
-      36,    -1,    29,    31,    35,    32,    -1,    35,    14,    35,
-      -1,    35,    13,    35,    -1,    35,    12,    35,    -1,    35,
-       9,    35,    -1,    35,    10,    35,    -1,    35,    11,    35,
-      -1,    26,    37,    -1,    26,    31,    38,    32,    -1,    25,
-      37,    -1,    25,    17,     3,    -1,    25,    31,    38,    32,
-      -1
+      40,     0,    -1,    41,    -1,    42,    -1,    43,    -1,    47,
+      -1,    46,    -1,    10,    -1,     5,    47,    11,    -1,     3,
+      47,    19,    47,     4,    47,    -1,     3,    47,    19,    47,
+       4,    47,     6,    47,    -1,     7,    -1,    32,    37,    46,
+      38,    -1,    31,    37,    46,    38,    -1,    34,    48,    -1,
+      36,    48,    -1,    45,    28,    47,    29,    -1,    36,     1,
+      28,    -1,     8,    -1,    35,    48,    -1,    30,    37,    47,
+      38,    -1,    37,    46,    38,    -1,    46,    22,    46,    -1,
+      44,    -1,    45,    -1,    47,    22,    47,    -1,    47,    23,
+      47,    -1,    47,    24,    47,    -1,    47,    25,    47,    -1,
+      47,    19,    47,    -1,    47,    18,    47,    -1,    47,    17,
+      47,    -1,    47,    14,    47,    -1,    47,    15,    47,    -1,
+      47,    16,    47,    -1,    21,    46,    -1,    20,    24,     7,
+      -1,    20,    46,    -1,    47,    12,    47,    -1,    47,    13,
+      47,    -1,    22,    47,    -1,    23,    47,    -1,    37,    47,
+      38,    -1,    44,    -1,    37,    47,    38,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   113,   113,   124,   135,   146,   151,   154,   170,   175,
-     178,   189,   200,   212,   224,   231,   234,   237,   246,   251,
-     258,   276,   288,   300,   308,   314,   320,   326,   338,   347,
-     363,   379,   384,   389,   394,   403,   414,   423,   434,   441,
-     448,   455,   462,   469,   476,   482,   488,   494,   501
+       0,   112,   112,   113,   114,   117,   120,   123,   128,   135,
+     141,   150,   153,   156,   159,   164,   167,   171,   177,   180,
+     183,   186,   189,   194,   197,   200,   203,   206,   209,   212,
+     215,   218,   221,   224,   227,   230,   234,   237,   240,   243,
+     246,   249,   252,   256,   259
 };
 #endif
 
@@ -515,13 +518,13 @@ static const yytype_uint16 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "INTEGER", "STRING", "INTEGER_ARRAY",
-  "ERROR", "OR", "AND", "GREATEREQ", "GREATER", "LOWEREQ", "LOWER", "NEQ",
-  "EQUALS", "'+'", "'-'", "'*'", "'/'", "POS", "NEG", "'['", "']'", "ITOA",
-  "ATOI", "LCHK", "FCHK", "EVAL", "'%'", "'$'", "'?'", "'('", "')'",
-  "$accept", "eval", "expr", "integer", "string", "string_concatenation",
-  "integer_array", "operation", "integer_dereference",
-  "string_dereference", "boolean_operation", 0
+  "$end", "error", "$undefined", "FOR", "FOR_TO", "IF", "FOR_STEP",
+  "INTEGER", "STRING", "INTEGER_ARRAY", "ERROR", "IF_THEN", "OR", "AND",
+  "GREATEREQ", "GREATER", "LOWEREQ", "LOWER", "NEQ", "EQUALS", "LCHK",
+  "FCHK", "'+'", "'-'", "'*'", "'/'", "POS", "NEG", "'['", "']'", "ITOA",
+  "ATOI", "EVAL", "STRING_CONCATENATION", "'%'", "'$'", "'?'", "'('",
+  "')'", "$accept", "begin", "eval", "parse_if", "parse_for", "integer",
+  "integer_array", "string", "expr", "dereference_parameter", 0
 };
 #endif
 
@@ -531,30 +534,30 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,   269,    43,    45,    42,    47,   270,
-     271,    91,    93,   272,   273,   274,   275,   276,    37,    36,
-      63,    40,    41
+     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
+     275,   276,    43,    45,    42,    47,   277,   278,    91,    93,
+     279,   280,   281,   282,    37,    36,    63,    40,    41
 };
 # endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    33,    34,    34,    34,    34,    35,    35,    35,    36,
-      36,    36,    36,    36,    36,    37,    37,    37,    38,    38,
-      39,    39,    39,    39,    40,    40,    40,    40,    40,    40,
-      40,    40,    40,    40,    41,    41,    42,    42,    43,    43,
-      43,    43,    43,    43,    43,    43,    43,    43,    43
+       0,    39,    40,    40,    40,    41,    41,    41,    42,    43,
+      43,    44,    44,    44,    44,    45,    45,    45,    46,    46,
+      46,    46,    46,    47,    47,    47,    47,    47,    47,    47,
+      47,    47,    47,    47,    47,    47,    47,    47,    47,    47,
+      47,    47,    47,    48,    48
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     1,     1,     1,     1,     1,     1,     1,     1,
-       4,     4,     4,     4,     1,     1,     1,     4,     3,     3,
-       4,     2,     4,     3,     3,     3,     3,     3,     1,     3,
-       3,     2,     2,     3,     2,     4,     2,     4,     3,     3,
-       3,     3,     3,     3,     2,     4,     2,     3,     4
+       0,     2,     1,     1,     1,     1,     1,     1,     3,     6,
+       8,     1,     4,     4,     2,     2,     4,     3,     1,     2,
+       4,     3,     3,     1,     1,     3,     3,     3,     3,     3,
+       3,     3,     3,     3,     3,     2,     3,     2,     3,     3,
+       2,     2,     3,     1,     3
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -562,47 +565,45 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,     9,    15,     5,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     2,     6,     3,     4,
-       7,     8,    14,    16,    28,    31,    32,     0,     0,     0,
-       0,    46,     0,    44,     0,     0,    34,     0,    36,     0,
-       0,    21,     0,     1,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    11,    18,     7,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     2,     3,
+       4,    23,    24,     6,     5,     0,     0,     0,     0,     0,
+      37,    35,    40,    41,     0,     0,     0,     0,    43,    14,
+      19,     0,    15,     0,     0,     1,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,    47,     0,     0,     0,     0,     0,     0,     0,
-      23,     0,    33,    29,    30,    41,    42,    43,    40,    39,
-      38,    24,    25,    26,    27,    18,    19,     0,    17,    12,
-      13,    48,    45,    10,    11,    35,    37,    22,    20
+       0,     8,    36,     0,     0,     0,     0,    17,    21,    42,
+       0,    22,    38,    39,    32,    33,    34,    31,    30,    29,
+      25,    26,    27,    28,    29,    20,    13,    12,    44,    16,
+       0,     9,     0,    10
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,    15,    16,    17,    63,    19,    20,    21,    22,    23,
-      24
+      -1,    17,    18,    19,    20,    21,    22,    43,    44,    39
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -29
+#define YYPACT_NINF -28
 static const yytype_int16 yypact[] =
 {
-      68,   -29,   -29,   -29,    85,    85,   -28,   -26,    18,    98,
-     -15,    -1,    51,     9,    85,    14,   227,   -29,    17,    33,
-      30,   -29,   -29,   -29,   -29,   -29,   -29,    85,     2,    50,
-       2,   -29,     2,   -29,     2,    85,   -29,    85,   -29,    37,
-      85,   -29,   123,   -29,    85,    85,    85,    85,    85,    85,
-      85,    85,    85,    85,    85,    85,     2,     2,    85,   135,
-     -14,   -11,   -29,    17,    -8,    71,    72,    74,   161,   173,
-     -29,   199,   -29,   148,   185,    28,    28,    28,    28,    28,
-      28,    21,    21,   -29,   -29,   -29,   -29,   211,   -29,   -29,
-     -29,   -29,   -29,   -29,   -29,   -29,   -29,   -29,   -29
+      64,     8,     8,   -28,   -28,   -28,    98,   104,     8,     8,
+     -27,   -23,    31,    73,    73,     4,    95,    70,   -28,   -28,
+     -28,   -28,    -3,    53,   238,     8,   252,   224,    69,   104,
+      53,    53,   -28,   -28,     8,   104,   104,     8,   -28,   -28,
+     -28,    49,   -28,   -18,   130,   -28,     8,   104,     8,     8,
+       8,     8,     8,     8,     8,     8,     8,     8,     8,     8,
+       8,   -28,   -28,   147,     5,    25,   164,   -28,   -28,   -28,
+     205,   -28,   265,   176,    -6,    -6,    -6,    -6,    -6,    -6,
+     -12,   -12,   -28,   -28,    -1,   -28,   -28,   -28,   -28,   -28,
+       8,   191,     8,   238
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -29,   -29,    15,   106,     0,   -17,   -29,   -29,   -29,   -29,
-     -29
+     -28,   -28,   -28,   -28,   -28,    51,   -28,    26,     0,    -8
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -612,76 +613,86 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      18,    56,     1,    27,    57,    28,     2,    57,    31,    33,
-      39,    61,     1,    64,    43,    65,    34,    67,    89,    25,
-      26,    90,     2,     7,    91,     6,    10,    11,    60,    42,
-      35,    12,    56,     7,    66,    29,    10,    11,    54,    55,
-      40,     6,    59,    52,    53,    54,    55,    12,    57,    30,
-      68,    58,    69,    62,     1,    71,    85,    86,    70,    73,
+      24,    26,    27,    90,    47,    41,    40,    42,    32,    33,
+      34,     3,    58,    59,    35,     3,    56,    57,    58,    59,
+      68,    56,    57,    58,    59,    46,    23,    47,     6,     7,
+       8,     9,    30,    31,    63,    11,    12,    66,    13,    11,
+      12,    37,    13,    86,    15,    25,    70,    47,    72,    73,
       74,    75,    76,    77,    78,    79,    80,    81,    82,    83,
-      84,     1,     2,    87,     3,     7,     0,     0,    10,    11,
-       0,     0,    37,     4,     5,     0,    57,    56,     1,    57,
-       0,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-       4,     5,     2,    92,    93,     0,    94,     0,     0,     7,
-       8,     9,    10,    11,     0,    13,    14,    36,    38,    41,
-       0,     6,     0,     0,     0,     0,     0,    12,     0,    32,
-      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,    44,    45,    46,    47,    48,    49,    50,    51,
-      52,    53,    54,    55,     0,    72,    45,    46,    47,    48,
-      49,    50,    51,    52,    53,    54,    55,    88,    44,    45,
-      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
-      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,     0,    95,    46,    47,    48,    49,    50,    51,
-      52,    53,    54,    55,     0,    96,    44,    45,    46,    47,
-      48,    49,    50,    51,    52,    53,    54,    55,    44,    45,
-      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
-       0,    97,     0,    98,    44,    45,    46,    47,    48,    49,
-      50,    51,    52,    53,    54,    55
+      84,    64,    65,    87,    38,    38,    38,     1,    36,     2,
+      45,     3,     4,    71,     5,    47,    62,    67,     0,     0,
+       3,     0,     0,     0,     6,     7,     8,     9,     0,     0,
+      91,     0,    93,     0,    10,    11,    12,     0,    13,    14,
+      15,    16,     3,     4,    11,    12,     4,    13,     0,     0,
+      37,     0,     4,     0,     0,     6,     7,     8,     9,     0,
+       0,     0,    28,     0,     0,    10,    11,    12,    10,    13,
+      14,    15,    16,    14,    10,    29,     0,     0,     0,    14,
+       0,    29,    48,    49,    50,    51,    52,    53,    54,    55,
+       0,     0,    56,    57,    58,    59,     0,     0,     0,    48,
+      49,    50,    51,    52,    53,    54,    55,     0,    69,    56,
+      57,    58,    59,     0,     0,     0,    48,    49,    50,    51,
+      52,    53,    54,    55,     0,    85,    56,    57,    58,    59,
+      50,    51,    52,    53,    54,    55,     0,    92,    56,    57,
+      58,    59,    88,    48,    49,    50,    51,    52,    53,    54,
+      55,     0,     0,    56,    57,    58,    59,    48,    49,    50,
+      51,    52,    53,    54,    55,     0,     0,    56,    57,    58,
+      59,     0,     0,     0,    89,    61,    48,    49,    50,    51,
+      52,    53,    54,    55,     0,     0,    56,    57,    58,    59,
+      48,    49,    50,    51,    52,    53,    54,    55,     0,     0,
+      56,    57,    58,    59,    48,    49,    50,    51,    52,    53,
+      54,    60,     0,     0,    56,    57,    58,    59,    49,    50,
+      51,    52,    53,    54,    55,     0,     0,    56,    57,    58,
+      59
 };
 
 static const yytype_int8 yycheck[] =
 {
-       0,    15,     3,    31,    15,    31,     4,    15,     8,     9,
-       1,    28,     3,    30,     0,    32,    31,    34,    32,     4,
-       5,    32,     4,    24,    32,    23,    27,    28,    28,    14,
-      31,    29,    15,    24,    34,    17,    27,    28,    17,    18,
-      31,    23,    27,    15,    16,    17,    18,    29,    15,    31,
-      35,    21,    37,     3,     3,    40,    56,    57,    21,    44,
-      45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
-      55,     3,     4,    58,     6,    24,    -1,    -1,    27,    28,
-      -1,    -1,    31,    15,    16,    -1,    15,    15,     3,    15,
-      -1,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      15,    16,     4,    32,    32,    -1,    32,    -1,    -1,    24,
-      25,    26,    27,    28,    -1,    30,    31,    11,    12,    13,
-      -1,    23,    -1,    -1,    -1,    -1,    -1,    29,    -1,    31,
-       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    -1,    32,     8,     9,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    32,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    -1,    32,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    -1,    32,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      -1,    32,    -1,    22,     7,     8,     9,    10,    11,    12,
-      13,    14,    15,    16,    17,    18
+       0,     1,     2,     4,    22,     1,    14,    15,     8,     9,
+      37,     7,    24,    25,    37,     7,    22,    23,    24,    25,
+      38,    22,    23,    24,    25,    28,     0,    22,    20,    21,
+      22,    23,     6,     7,    34,    31,    32,    37,    34,    31,
+      32,    37,    34,    38,    36,    37,    46,    22,    48,    49,
+      50,    51,    52,    53,    54,    55,    56,    57,    58,    59,
+      60,    35,    36,    38,    13,    14,    15,     3,    37,     5,
+       0,     7,     8,    47,    10,    22,     7,    28,    -1,    -1,
+       7,    -1,    -1,    -1,    20,    21,    22,    23,    -1,    -1,
+      90,    -1,    92,    -1,    30,    31,    32,    -1,    34,    35,
+      36,    37,     7,     8,    31,    32,     8,    34,    -1,    -1,
+      37,    -1,     8,    -1,    -1,    20,    21,    22,    23,    -1,
+      -1,    -1,    24,    -1,    -1,    30,    31,    32,    30,    34,
+      35,    36,    37,    35,    30,    37,    -1,    -1,    -1,    35,
+      -1,    37,    12,    13,    14,    15,    16,    17,    18,    19,
+      -1,    -1,    22,    23,    24,    25,    -1,    -1,    -1,    12,
+      13,    14,    15,    16,    17,    18,    19,    -1,    38,    22,
+      23,    24,    25,    -1,    -1,    -1,    12,    13,    14,    15,
+      16,    17,    18,    19,    -1,    38,    22,    23,    24,    25,
+      14,    15,    16,    17,    18,    19,    -1,     6,    22,    23,
+      24,    25,    38,    12,    13,    14,    15,    16,    17,    18,
+      19,    -1,    -1,    22,    23,    24,    25,    12,    13,    14,
+      15,    16,    17,    18,    19,    -1,    -1,    22,    23,    24,
+      25,    -1,    -1,    -1,    29,    11,    12,    13,    14,    15,
+      16,    17,    18,    19,    -1,    -1,    22,    23,    24,    25,
+      12,    13,    14,    15,    16,    17,    18,    19,    -1,    -1,
+      22,    23,    24,    25,    12,    13,    14,    15,    16,    17,
+      18,    19,    -1,    -1,    22,    23,    24,    25,    13,    14,
+      15,    16,    17,    18,    19,    -1,    -1,    22,    23,    24,
+      25
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,     4,     6,    15,    16,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,    34,    35,    36,    37,    38,
-      39,    40,    41,    42,    43,    35,    35,    31,    31,    17,
-      31,    37,    31,    37,    31,    31,    36,    31,    36,     1,
-      31,    36,    35,     0,     7,     8,     9,    10,    11,    12,
-      13,    14,    15,    16,    17,    18,    15,    15,    21,    35,
-      37,    38,     3,    37,    38,    38,    37,    38,    35,    35,
-      21,    35,    32,    35,    35,    35,    35,    35,    35,    35,
-      35,    35,    35,    35,    35,    37,    37,    35,    32,    32,
-      32,    32,    32,    32,    32,    32,    32,    32,    22
+       0,     3,     5,     7,     8,    10,    20,    21,    22,    23,
+      30,    31,    32,    34,    35,    36,    37,    40,    41,    42,
+      43,    44,    45,    46,    47,    37,    47,    47,    24,    37,
+      46,    46,    47,    47,    37,    37,    37,    37,    44,    48,
+      48,     1,    48,    46,    47,     0,    28,    22,    12,    13,
+      14,    15,    16,    17,    18,    19,    22,    23,    24,    25,
+      19,    11,     7,    47,    46,    46,    47,    28,    38,    38,
+      47,    46,    47,    47,    47,    47,    47,    47,    47,    47,
+      47,    47,    47,    47,    47,    38,    38,    38,    38,    29,
+       4,    47,     6,    47
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -714,7 +725,7 @@ do								\
     }								\
   else								\
     {								\
-      yyerror (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string, YY_("syntax error: cannot back up")); \
+      yyerror (stream, store, res, ppd, YY_("syntax error: cannot back up")); \
       YYERROR;							\
     }								\
 while (YYID (0))
@@ -771,7 +782,7 @@ while (YYID (0))
 #ifdef YYLEX_PARAM
 # define YYLEX yylex (&yylval, YYLEX_PARAM)
 #else
-# define YYLEX yylex (&yylval, stream, store, retrievedVar)
+# define YYLEX yylex (&yylval, stream, store, ppd)
 #endif
 
 /* Enable debugging if requested.  */
@@ -794,7 +805,7 @@ do {									  \
     {									  \
       YYFPRINTF (stderr, "%s ", Title);					  \
       yy_symbol_print (stderr,						  \
-		  Type, Value, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string); \
+		  Type, Value, stream, store, res, ppd); \
       YYFPRINTF (stderr, "\n");						  \
     }									  \
 } while (YYID (0))
@@ -808,33 +819,25 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd)
 #else
 static void
-yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
+yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, res, ppd)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
     std::wstringstream *stream;
     NONS_VariableStore *store;
-    NONS_FileLog *filelog;
-    long *result;
-    bool invert_terms;
-    std::vector<long> *array_decl;
-    NONS_VariableMember **retrievedVar;
-    std::wstring *string;
+    NONS_Expression::Expression *&res;
+    PreParserData *ppd;
 #endif
 {
   if (!yyvaluep)
     return;
   YYUSE (stream);
   YYUSE (store);
-  YYUSE (filelog);
-  YYUSE (result);
-  YYUSE (invert_terms);
-  YYUSE (array_decl);
-  YYUSE (retrievedVar);
-  YYUSE (string);
+  YYUSE (res);
+  YYUSE (ppd);
 # ifdef YYPRINT
   if (yytype < YYNTOKENS)
     YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
@@ -856,21 +859,17 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, resul
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd)
 #else
 static void
-yy_symbol_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
+yy_symbol_print (yyoutput, yytype, yyvaluep, stream, store, res, ppd)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
     std::wstringstream *stream;
     NONS_VariableStore *store;
-    NONS_FileLog *filelog;
-    long *result;
-    bool invert_terms;
-    std::vector<long> *array_decl;
-    NONS_VariableMember **retrievedVar;
-    std::wstring *string;
+    NONS_Expression::Expression *&res;
+    PreParserData *ppd;
 #endif
 {
   if (yytype < YYNTOKENS)
@@ -878,7 +877,7 @@ yy_symbol_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, inv
   else
     YYFPRINTF (yyoutput, "nterm %s (", yytname[yytype]);
 
-  yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+  yy_symbol_value_print (yyoutput, yytype, yyvaluep, stream, store, res, ppd);
   YYFPRINTF (yyoutput, ")");
 }
 
@@ -921,20 +920,16 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
+yy_reduce_print (YYSTYPE *yyvsp, int yyrule, std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd)
 #else
 static void
-yy_reduce_print (yyvsp, yyrule, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
+yy_reduce_print (yyvsp, yyrule, stream, store, res, ppd)
     YYSTYPE *yyvsp;
     int yyrule;
     std::wstringstream *stream;
     NONS_VariableStore *store;
-    NONS_FileLog *filelog;
-    long *result;
-    bool invert_terms;
-    std::vector<long> *array_decl;
-    NONS_VariableMember **retrievedVar;
-    std::wstring *string;
+    NONS_Expression::Expression *&res;
+    PreParserData *ppd;
 #endif
 {
   int yynrhs = yyr2[yyrule];
@@ -948,7 +943,7 @@ yy_reduce_print (yyvsp, yyrule, stream, store, filelog, result, invert_terms, ar
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr, yyrhs[yyprhs[yyrule] + yyi],
 		       &(yyvsp[(yyi + 1) - (yynrhs)])
-		       		       , stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+		       		       , stream, store, res, ppd);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -956,7 +951,7 @@ yy_reduce_print (yyvsp, yyrule, stream, store, filelog, result, invert_terms, ar
 # define YY_REDUCE_PRINT(Rule)		\
 do {					\
   if (yydebug)				\
-    yy_reduce_print (yyvsp, Rule, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string); \
+    yy_reduce_print (yyvsp, Rule, stream, store, res, ppd); \
 } while (YYID (0))
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
@@ -1207,32 +1202,24 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd)
 #else
 static void
-yydestruct (yymsg, yytype, yyvaluep, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
+yydestruct (yymsg, yytype, yyvaluep, stream, store, res, ppd)
     const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
     std::wstringstream *stream;
     NONS_VariableStore *store;
-    NONS_FileLog *filelog;
-    long *result;
-    bool invert_terms;
-    std::vector<long> *array_decl;
-    NONS_VariableMember **retrievedVar;
-    std::wstring *string;
+    NONS_Expression::Expression *&res;
+    PreParserData *ppd;
 #endif
 {
   YYUSE (yyvaluep);
   YYUSE (stream);
   YYUSE (store);
-  YYUSE (filelog);
-  YYUSE (result);
-  YYUSE (invert_terms);
-  YYUSE (array_decl);
-  YYUSE (retrievedVar);
-  YYUSE (string);
+  YYUSE (res);
+  YYUSE (ppd);
 
   if (!yymsg)
     yymsg = "Deleting";
@@ -1240,80 +1227,67 @@ yydestruct (yymsg, yytype, yyvaluep, stream, store, filelog, result, invert_term
 
   switch (yytype)
     {
-      case 3: /* "INTEGER" */
+      case 7: /* "INTEGER" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 4: /* "STRING" */
+      case 8: /* "STRING" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 5: /* "INTEGER_ARRAY" */
+      case 9: /* "INTEGER_ARRAY" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 35: /* "expr" */
+      case 44: /* "integer" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 36: /* "integer" */
+      case 45: /* "integer_array" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 37: /* "string" */
+      case 46: /* "string" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 39: /* "integer_array" */
+      case 47: /* "expr" */
 
 	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
-      case 40: /* "operation" */
+      case 48: /* "dereference_parameter" */
 
 	{
-	freeVM((yyvaluep->obj));
-};
-
-	break;
-      case 41: /* "integer_dereference" */
-
-	{
-	freeVM((yyvaluep->obj));
-};
-
-	break;
-      case 42: /* "string_dereference" */
-
-	{
-	freeVM((yyvaluep->obj));
-};
-
-	break;
-      case 43: /* "boolean_operation" */
-
-	{
-	freeVM((yyvaluep->obj));
+	if ((yyvaluep->obj))
+		delete (yyvaluep->obj);
 };
 
 	break;
@@ -1332,7 +1306,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string);
+int yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd);
 #else
 int yyparse ();
 #endif
@@ -1360,18 +1334,14 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_FileLog *filelog, long *result, bool invert_terms, std::vector<long> *array_decl, NONS_VariableMember **retrievedVar, std::wstring *string)
+yyparse (std::wstringstream *stream, NONS_VariableStore *store, NONS_Expression::Expression *&res, PreParserData *ppd)
 #else
 int
-yyparse (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string)
+yyparse (stream, store, res, ppd)
     std::wstringstream *stream;
     NONS_VariableStore *store;
-    NONS_FileLog *filelog;
-    long *result;
-    bool invert_terms;
-    std::vector<long> *array_decl;
-    NONS_VariableMember **retrievedVar;
-    std::wstring *string;
+    NONS_Expression::Expression *&res;
+    PreParserData *ppd;
 #endif
 #endif
 {
@@ -1623,565 +1593,294 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 2:
+        case 5:
 
     {
-		(yyvsp[(1) - (1)].obj)->negate(invert_terms);
-		if (!!result)
-			*result=(yyvsp[(1) - (1)].obj)->getInt();
-		if (!!retrievedVar && !(yyvsp[(1) - (1)].obj)->temporary)
-			*retrievedVar=(yyvsp[(1) - (1)].obj);
-		if (!!string){
-			*string=(yyvsp[(1) - (1)].obj)->getWcs();
-		}
-		freeVM((yyvsp[(1) - (1)].obj));
-	}
-    break;
-
-  case 3:
-
-    {
-		if (!!string){
-			*string=(yyvsp[(1) - (1)].obj)->getWcs();
-			freeVM((yyvsp[(1) - (1)].obj));
-		}else if (!!retrievedVar && !(yyvsp[(1) - (1)].obj)->temporary)
-			*retrievedVar=(yyvsp[(1) - (1)].obj);
-		else{
-			freeVM((yyvsp[(1) - (1)].obj));
-			YYABORT;
-		}
-	}
-    break;
-
-  case 4:
-
-    {
-		if (!!string){
-			*string=(yyvsp[(1) - (1)].obj)->getWcs();
-			freeVM((yyvsp[(1) - (1)].obj));
-		}else if (!!retrievedVar && !(yyvsp[(1) - (1)].obj)->temporary)
-			*retrievedVar=(yyvsp[(1) - (1)].obj);
-		else{
-			freeVM((yyvsp[(1) - (1)].obj));
-			YYABORT;
-		}
-	}
-    break;
-
-  case 5:
-
-    {
-		YYABORT;
+		res=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 6:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
+		res=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 7:
 
     {
-		if (!(yyvsp[(1) - (1)].obj)){
-			if (!array_decl){
-				handleErrors(NONS_UNDEFINED_ARRAY,0,"yyparse",1);
-				YYABORT;
-			}
-			(yyval.obj)=new NONS_VariableMember((long)0);
-			(yyval.obj)->temporary=1;
-		}else{
-			if ((yyvsp[(1) - (1)].obj)->getType()==INTEGER_ARRAY && !retrievedVar){
-				handleErrors(NONS_INSUFFICIENT_DIMENSIONS,0,"yyparse",1);
-				YYABORT;
-			}else
-				(yyval.obj)=(yyvsp[(1) - (1)].obj);
-		}
+		YYABORT;
 	}
     break;
 
   case 8:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
+		ppd->res.push_back((yyvsp[(2) - (3)].obj));
+		ppd->then_position=(yyvsp[(3) - (3)].position);
+		YYACCEPT;
 	}
     break;
 
   case 9:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
+		ppd->res.push_back((yyvsp[(2) - (6)].obj));
+		ppd->res.push_back((yyvsp[(4) - (6)].obj));
+		ppd->res.push_back((yyvsp[(6) - (6)].obj));
+		YYACCEPT;
 	}
     break;
 
   case 10:
 
     {
-		long temp;
-		ErrorCode error=store->evaluate((yyvsp[(3) - (4)].obj)->getWcs(),&temp,0,0,0,0);
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-			handleErrors(error,0,"yyparse",1);
-			YYABORT;
-		}
-		(yyval.obj)=new NONS_VariableMember(temp);
-		(yyval.obj)->temporary=1;
+		ppd->res.push_back((yyvsp[(2) - (8)].obj));
+		ppd->res.push_back((yyvsp[(4) - (8)].obj));
+		ppd->res.push_back((yyvsp[(6) - (8)].obj));
+		ppd->res.push_back((yyvsp[(8) - (8)].obj));
+		YYACCEPT;
 	}
     break;
 
   case 11:
 
     {
-		long temp;
-		ErrorCode error=store->evaluate((yyvsp[(3) - (4)].obj)->getWcs(),&temp,0,0,0,0);
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG)){
-			handleErrors(error,0,"yyparse",1);
-			YYABORT;
-		}
-		(yyval.obj)=new NONS_VariableMember(temp);
-		(yyval.obj)->temporary=1;
+		(yyval.obj)=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 12:
 
     {
-		long temp;
-		std::wstringstream stream;
-		stream <<(yyvsp[(3) - (4)].obj)->getWcs();
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!(stream >>temp)){
-			handleErrors(NONS_LEXICALLY_UNCASTABLE,0,"yyparse",1);
-			YYABORT;
-		}
-		(yyval.obj)=new NONS_VariableMember(temp);
-		(yyval.obj)->temporary=1;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::eval,(yyvsp[(3) - (4)].obj),0);
 	}
     break;
 
   case 13:
 
     {
-		long temp;
-		std::wstringstream stream;
-		stream <<(yyvsp[(3) - (4)].obj)->getWcs();
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!(stream >>temp)){
-			handleErrors(NONS_LEXICALLY_UNCASTABLE,0,"yyparse",1);
-			YYABORT;
-		}
-		(yyval.obj)=new NONS_VariableMember(temp);
-		(yyval.obj)->temporary=1;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::atoi,(yyvsp[(3) - (4)].obj),0);
 	}
     break;
 
   case 14:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
-		if (!(yyval.obj))
-			YYABORT;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::integer_dereference,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 15:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::array_indexing,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 16:
 
     {
-		(yyval.obj)=(yyvsp[(1) - (1)].obj);
+		(yyval.obj)=(yyvsp[(1) - (4)].obj);
+		(yyval.obj)->operands.push_back((yyvsp[(3) - (4)].obj));
 	}
     break;
 
   case 17:
 
     {
-		std::wstringstream stream;
-		stream <<(yyvsp[(3) - (4)].obj)->getInt();
-		freeVM((yyvsp[(3) - (4)].obj));
-		(yyval.obj)=new NONS_VariableMember(stream.str());
-		(yyval.obj)->temporary=1;
+		(yyval.obj)=0;
+		YYABORT;
 	}
     break;
 
   case 18:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getWcs()+(yyvsp[(3) - (3)].obj)->getWcs());
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 19:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getWcs()+(yyvsp[(3) - (3)].obj)->getWcs());
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::string_dereference,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 20:
 
     {
-		long a=(yyvsp[(3) - (4)].obj)->getInt();
-		if (!!(yyvsp[(1) - (4)].obj) && (yyvsp[(1) - (4)].obj)->getType()==INTEGER_ARRAY){
-			if (!((yyval.obj)=(yyvsp[(1) - (4)].obj)->getIndex(a))){
-				std::wstringstream stream;
-				stream <<L"The index is: "<<a;
-				handleErrors(NONS_ARRAY_INDEX_OUT_OF_BOUNDS,0,"yyparse",1,stream.str());
-				(yyval.obj)=(yyvsp[(1) - (4)].obj)->getIndex(0);
-			}
-		}else{
-			if (!array_decl){
-				handleErrors(NONS_TOO_MANY_DIMENSIONS,0,"yyparse",1);
-			}else
-				array_decl->push_back(a);
-			(yyval.obj)=0;
-		}
-		freeVM((yyvsp[(3) - (4)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::itoa,(yyvsp[(3) - (4)].obj),0);
 	}
     break;
 
   case 21:
 
     {
-		long a=(yyvsp[(2) - (2)].obj)->getInt();
-		freeVM((yyvsp[(2) - (2)].obj));
-		(yyval.obj)=store->getArray(a);
-		if (!!array_decl && !(yyval.obj)){
-			if (!array_decl->size())
-				array_decl->push_back(1);
-			else
-				(*array_decl)[0]++;
-			array_decl->push_back(a);
-		}
+		(yyval.obj)=(yyvsp[(2) - (3)].obj);
 	}
     break;
 
   case 22:
 
     {
-		long a=(yyvsp[(3) - (4)].obj)->getInt();
-		freeVM((yyvsp[(3) - (4)].obj));
-		(yyval.obj)=store->getArray(a);
-		if (!!array_decl && !(yyval.obj)){
-			if (!array_decl->size())
-				array_decl->push_back(1);
-			else
-				(*array_decl)[0]++;
-			array_decl->push_back(a);
-		}
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::concat,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 23:
 
     {
-		handleErrors(NONS_ILLEGAL_ARRAY_SPECIFICATION,0,"yyparse",1);
-		if (!!array_decl)
-			array_decl->clear();
-		(yyval.obj)=0;
+		(yyval.obj)=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 24:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()+(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 25:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()-(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::add,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 26:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()*(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::sub,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 27:
 
     {
-		long a=(yyvsp[(1) - (3)].obj)->getInt(),
-			b=(yyvsp[(3) - (3)].obj)->getInt();
-		if (!b){
-			handleErrors(NONS_DIVISION_BY_ZERO,0,"yyparse",1);
-			YYABORT;
-		}
-		(yyval.obj)=new NONS_VariableMember(a/b);
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::mul,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 28:
 
     {
-		if (!(yyvsp[(1) - (1)].obj)->temporary){
-			(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (1)].obj)->getInt());
-			(yyval.obj)->temporary=1;
-			(yyval.obj)->negated=0;
-		}else
-			(yyval.obj)=(yyvsp[(1) - (1)].obj);
-		(yyval.obj)->negate(invert_terms);
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::div,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 29:
 
     {
-		if (!(yyvsp[(1) - (3)].obj)->temporary){
-			(yyvsp[(1) - (3)].obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt());
-			(yyvsp[(1) - (3)].obj)->temporary=1;
-		}
-		if (!(yyvsp[(3) - (3)].obj)->temporary){
-			(yyvsp[(3) - (3)].obj)=new NONS_VariableMember((yyvsp[(3) - (3)].obj)->getInt());
-			(yyvsp[(3) - (3)].obj)->temporary=1;
-		}
-		(yyvsp[(1) - (3)].obj)->negate(invert_terms);
-		(yyvsp[(3) - (3)].obj)->negate(invert_terms);
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt() || (yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::equals,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 30:
 
     {
-		if (!(yyvsp[(1) - (3)].obj)->temporary){
-			(yyvsp[(1) - (3)].obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt());
-			(yyvsp[(1) - (3)].obj)->temporary=1;
-		}
-		if (!(yyvsp[(3) - (3)].obj)->temporary){
-			(yyvsp[(3) - (3)].obj)=new NONS_VariableMember((yyvsp[(3) - (3)].obj)->getInt());
-			(yyvsp[(3) - (3)].obj)->temporary=1;
-		}
-		(yyvsp[(1) - (3)].obj)->negate(invert_terms);
-		(yyvsp[(3) - (3)].obj)->negate(invert_terms);
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt() && (yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::nequals,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 31:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(2) - (2)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(2) - (2)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::lower,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 32:
 
     {
-		(yyval.obj)=new NONS_VariableMember(-((yyvsp[(2) - (2)].obj)->getInt()));
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(2) - (2)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::greatereq,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 33:
 
     {
-		(yyval.obj)=(yyvsp[(2) - (3)].obj);
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::greater,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 34:
 
     {
-		NONS_Variable *v=store->retrieve((yyvsp[(2) - (2)].obj)->getInt(),0);
-		freeVM((yyvsp[(2) - (2)].obj));
-		if (!v){
-			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
-			(yyval.obj)=0;
-		}else
-			(yyval.obj)=v->intValue;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::lowereq,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 35:
 
     {
-		NONS_Variable *v=store->retrieve((yyvsp[(3) - (4)].obj)->getInt(),0);
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!v){
-			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
-			(yyval.obj)=0;
-		}else
-			(yyval.obj)=v->intValue;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::lchk,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 36:
 
     {
-		NONS_Variable *v=store->retrieve((yyvsp[(2) - (2)].obj)->getInt(),0);
-		freeVM((yyvsp[(2) - (2)].obj));
-		if (!v){
-			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
-			(yyval.obj)=0;
-		}else
-			(yyval.obj)=v->wcsValue;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::lchk,(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 37:
 
     {
-		NONS_Variable *v=store->retrieve((yyvsp[(3) - (4)].obj)->getInt(),0);
-		freeVM((yyvsp[(3) - (4)].obj));
-		if (!v){
-			handleErrors(NONS_VARIABLE_OUT_OF_RANGE,0,"yyparse",1);
-			(yyval.obj)=0;
-		}else
-			(yyval.obj)=v->wcsValue;
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::lchk,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 38:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()==(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::or_operator,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 39:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()!=(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::and_operator,(yyvsp[(1) - (3)].obj),(yyvsp[(3) - (3)].obj),0);
 	}
     break;
 
   case 40:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()<(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=(yyvsp[(2) - (2)].obj);
 	}
     break;
 
   case 41:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()>=(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=new NONS_Expression::Expression(NONS_Expression::neg,(yyvsp[(2) - (2)].obj),0);
 	}
     break;
 
   case 42:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()>(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=(yyvsp[(2) - (3)].obj);
 	}
     break;
 
   case 43:
 
     {
-		(yyval.obj)=new NONS_VariableMember((yyvsp[(1) - (3)].obj)->getInt()<=(yyvsp[(3) - (3)].obj)->getInt());
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(1) - (3)].obj));
-		freeVM((yyvsp[(3) - (3)].obj));
+		(yyval.obj)=(yyvsp[(1) - (1)].obj);
 	}
     break;
 
   case 44:
 
     {
-		(yyval.obj)=new NONS_VariableMember(filelog->check((yyvsp[(2) - (2)].obj)->getWcs()));
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(2) - (2)].obj));
-	}
-    break;
-
-  case 45:
-
-    {
-		(yyval.obj)=new NONS_VariableMember(filelog->check((yyvsp[(3) - (4)].obj)->getWcs()));
-		(yyval.obj)->temporary=1;
-		(yyval.obj)->negated=0;
-		freeVM((yyvsp[(3) - (4)].obj));
-	}
-    break;
-
-  case 46:
-
-    {
-		(yyval.obj)=new NONS_VariableMember(labellog.check((yyvsp[(2) - (2)].obj)->getWcs()));
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(2) - (2)].obj));
-	}
-    break;
-
-  case 47:
-
-    {
-		std::wstringstream stream;
-		stream <<(yyvsp[(3) - (3)].obj)->getInt();
-		(yyval.obj)=new NONS_VariableMember(labellog.check(stream.str()));
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(3) - (3)].obj));
-	}
-    break;
-
-  case 48:
-
-    {
-		(yyval.obj)=new NONS_VariableMember(labellog.check((yyvsp[(3) - (4)].obj)->getWcs()));
-		(yyval.obj)->temporary=1;
-		freeVM((yyvsp[(3) - (4)].obj));
+		(yyval.obj)=(yyvsp[(2) - (3)].obj);
 	}
     break;
 
@@ -2221,7 +1920,7 @@ yyerrlab:
     {
       ++yynerrs;
 #if ! YYERROR_VERBOSE
-      yyerror (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string, YY_("syntax error"));
+      yyerror (stream, store, res, ppd, YY_("syntax error"));
 #else
       {
 	YYSIZE_T yysize = yysyntax_error (0, yystate, yychar);
@@ -2245,11 +1944,11 @@ yyerrlab:
 	if (0 < yysize && yysize <= yymsg_alloc)
 	  {
 	    (void) yysyntax_error (yymsg, yystate, yychar);
-	    yyerror (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string, yymsg);
+	    yyerror (stream, store, res, ppd, yymsg);
 	  }
 	else
 	  {
-	    yyerror (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string, YY_("syntax error"));
+	    yyerror (stream, store, res, ppd, YY_("syntax error"));
 	    if (yysize != 0)
 	      goto yyexhaustedlab;
 	  }
@@ -2273,7 +1972,7 @@ yyerrlab:
       else
 	{
 	  yydestruct ("Error: discarding",
-		      yytoken, &yylval, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+		      yytoken, &yylval, stream, store, res, ppd);
 	  yychar = YYEMPTY;
 	}
     }
@@ -2329,7 +2028,7 @@ yyerrlab1:
 
 
       yydestruct ("Error: popping",
-		  yystos[yystate], yyvsp, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+		  yystos[yystate], yyvsp, stream, store, res, ppd);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -2364,7 +2063,7 @@ yyabortlab:
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
 yyexhaustedlab:
-  yyerror (stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string, YY_("memory exhausted"));
+  yyerror (stream, store, res, ppd, YY_("memory exhausted"));
   yyresult = 2;
   /* Fall through.  */
 #endif
@@ -2372,7 +2071,7 @@ yyexhaustedlab:
 yyreturn:
   if (yychar != YYEMPTY)
      yydestruct ("Cleanup: discarding lookahead",
-		 yytoken, &yylval, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+		 yytoken, &yylval, stream, store, res, ppd);
   /* Do not reclaim the symbols of the rule which action triggered
      this YYABORT or YYACCEPT.  */
   YYPOPSTACK (yylen);
@@ -2380,7 +2079,7 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-		  yystos[*yyssp], yyvsp, stream, store, filelog, result, invert_terms, array_decl, retrievedVar, string);
+		  yystos[*yyssp], yyvsp, stream, store, res, ppd);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -2399,11 +2098,6 @@ yyreturn:
 
 
 
-void freeVM(NONS_VariableMember *p){
-	if (!!p && p->temporary)
-		delete p;
-}
-
 #define DOUBLEOP(character,ret_value) if (c==(character)){\
 	stream->get();\
 	if (stream->peek()==(character)){\
@@ -2413,30 +2107,50 @@ void freeVM(NONS_VariableMember *p){
 	return (ret_value);\
 }
 
-int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,NONS_VariableMember **retrievedVar){
+template <typename T>
+NONS_Expression::Expression *makeValue(const T &a){
+	return new NONS_Expression::Expression(new NONS_Expression::Value(a));
+}
+
+int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_VariableStore *store,PreParserData *ppd){
+	if (ppd && ppd->trigger){
+		ppd->trigger=0;
+		if (ppd->mode==1)
+			return IF;
+		if (ppd->mode==2)
+			return FOR;
+	}
 	int c;
-	while (!stream->eof() && iswhitespace((wchar_t)stream->peek()))
+	while (!stream->eof() && iswhitespace(wchar_t(c=stream->peek())) && c<0x80)
 		stream->get();
 	if (stream->eof())
 		return 0;
 	c=stream->peek();
+	if (ppd && ppd->mode==1){
+		if (multicomparison((wchar_t)c,L"\\@!#%$?") || c>0x7F){
+			yylval->position=stream->tellg();
+			stream->get();
+			return IF_THEN;
+		}
+		if (c=='`'){
+			
+		}
+	}
 	if (NONS_isdigit(c)){
 		std::wstring temp;
 		while (NONS_isdigit(c=stream->peek()))
 			temp.push_back(stream->get());
-		//Handles the case "* 134label". This is the kind of thing that gives me
-		//omnicidal rages. Note: under no other circumstance makes sense that an
-		//integer be followed immediately by an alphabetic character or an
-		//underscore.
+		//Handles the case "\*[ \t]*[_A-Za-z0-9]*". This is the kind of thing
+		//that gives me omnicidal rages. Note: under no other circumstance does
+		//it make sense that an integer be followed immediately by an alphabetic
+		//character or an underscore.
 		if (NONS_isid1char(c)){
 			while (NONS_isidnchar(stream->peek()))
 				temp.push_back(stream->get());
-			yylval->obj=new NONS_VariableMember(temp);
-			yylval->obj->temporary=1;
+			yylval->obj=makeValue(temp);
 			return STRING;
 		}
-		yylval->obj=new NONS_VariableMember(atoi(temp));
-		yylval->obj->temporary=1;
+		yylval->obj=makeValue(atoi(temp));
 		return INTEGER;
 	}
 	if (c=='#'){
@@ -2449,11 +2163,11 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 		long a=0;
 		for (size_t b=0;b<temp.size();b++)
 			a=(a<<4)+HEX2DEC(temp[b]);
-		yylval->obj=new NONS_VariableMember(a);
-		yylval->obj->temporary=1;
+		yylval->obj=makeValue(a);
 		return INTEGER;
 	}
 	if (c=='\"' || c=='`' || NONS_tolower(c)=='e'){
+		yylval->position=stream->tellg();
 		c=stream->get();
 		bool cont=0,
 			useEscapes=0;
@@ -2500,40 +2214,45 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 				}else
 					temp.push_back(character);
 			}
-			if ((wchar_t)stream->peek()!=c)
-				handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
-			else
+			if ((wchar_t)stream->peek()!=c){
+				if (!ppd || ppd->mode!=1 || c!='`')
+					handleErrors(NONS_UNMATCHED_QUOTES,0,"yylex",1);
+				else
+					return IF_THEN;
+			}else
 				stream->get();
-			yylval->obj=new NONS_VariableMember(temp);
-			yylval->obj->temporary=1;
+			yylval->obj=makeValue(temp);
 			return STRING;
 		}
 	}
 	if (c=='*'){
-		std::wstring backup;
+		std::vector<wchar_t> backup;
 		backup.push_back(stream->get());
 		while (iswhitespace((wchar_t)stream->peek()))
 			stream->get();
 		std::wstring identifier;
 		c=stream->peek();
-		if (NONS_isid1char(c)){
-			identifier.push_back(c);
-			backup.push_back(stream->get());
+		if (NONS_isidnchar(c)){
 			while (NONS_isidnchar(c=stream->peek())){
 				identifier.push_back(c);
 				backup.push_back(stream->get());
 			}
-			if (!!gScriptInterpreter->script->blockFromLabel(identifier)){
-				yylval->obj=new NONS_VariableMember(identifier);
-				yylval->obj->temporary=1;
+			if (gScriptInterpreter->script->blockFromLabel(identifier)){
+				yylval->obj=makeValue(identifier);
 				return STRING;
 			}
 		}
-		for (std::wstring::reverse_iterator i=backup.rbegin();i!=backup.rend();i++)
-			stream->putback(*i);
+		if (stream->eof())
+			stream->clear();
+		while (backup.size()){
+			stream->putback(backup.back());
+			backup.pop_back();
+		}
+		c=stream->peek();
 	}
 	if (NONS_isid1char(c)){
 		std::wstring temp;
+		yylval->position=stream->tellg();
 		temp.push_back(stream->get());
 		while (NONS_isidnchar(stream->peek()))
 			temp.push_back(stream->get());
@@ -2547,17 +2266,27 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 			return ITOA;
 		if (!stdStrCmpCI(temp,L"_atoi"))
 			return ATOI;
-		
-		if (!(yylval->obj=store->getConstant(temp.c_str()))){
-			yylval->obj=new NONS_VariableMember((long)0);
-			yylval->obj->temporary=1;
-			if (!retrievedVar)
-				handleErrors(NONS_UNDEFINED_CONSTANT,0,"yylex",1);
-		}else{
-			yylval->obj=new NONS_VariableMember(*yylval->obj);
-			yylval->obj->temporary=1;
+		if (!stdStrCmpCI(temp,L"then")){
+			while (iswhitespace(wchar_t(c=stream->peek())) && c<0x80)
+				stream->get();
+			yylval->position=stream->tellg();
+			return IF_THEN;
 		}
-		return yylval->obj->getType();
+		if (!stdStrCmpCI(temp,L"to"))
+			return FOR_TO;
+		if (!stdStrCmpCI(temp,L"step"))
+			return FOR_STEP;
+		
+		NONS_VariableMember *member=store->getConstant(temp);
+		if (!member)
+			return IF_THEN;
+		if (member->getType()==INTEGER){
+			yylval->obj=makeValue(member->getInt());
+			return INTEGER;
+		}else{
+			yylval->obj=makeValue(member->getWcs());
+			return STRING;
+		}
 	}
 	DOUBLEOP('=',EQUALS)
 	DOUBLEOP('&',AND)
@@ -2597,17 +2326,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 	return stream->get();
 }
 
-void expressionParser_yyerror(
-		std::wstringstream *,
-		NONS_VariableStore *,
-		NONS_FileLog *,
-		long *,
-		bool,
-		std::vector<long> *,
-		NONS_VariableMember **retrievedVar,
-		std::wstring *string,
-		char const *s){
-	if (!retrievedVar)
-		handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,UniFromISO88591(s));
+void expressionParser_yyerror(std::wstringstream *,NONS_VariableStore *,NONS_Expression::Expression *&,PreParserData *,char const *s){
+	handleErrors(NONS_UNDEFINED_ERROR,0,"yyparse",1,UniFromISO88591(s));
 }
 

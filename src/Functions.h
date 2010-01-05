@@ -759,4 +759,12 @@ struct NONS_Rect{
 		return *this;
 	}
 };
+
+template <typename T>
+void freePointerVector(std::vector<T *> &v){
+	for (size_t a=0;a<v.size();a++)
+		if (v[a])
+			delete v[a];
+	v.clear();
+}
 #endif

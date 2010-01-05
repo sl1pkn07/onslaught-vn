@@ -35,13 +35,18 @@
 /* "%code requires" blocks.  */
 
 
-#include <set>
-#include <vector>
-#include "FileLog.h"
-class NONS_VariableMember;
-struct NONS_VariableStore;
-struct wstrCmp;
-#undef ERROR
+	#include <set>
+	#include <vector>
+	#include "Common.h"
+	struct NONS_VariableStore;
+	namespace NONS_Expression{
+		struct Expression;
+	}
+	struct wstrCmp;
+	struct PreParserData;
+	#ifdef ERROR
+	#undef ERROR
+	#endif
 
 
 
@@ -52,25 +57,31 @@ struct wstrCmp;
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     INTEGER = 258,
-     STRING = 259,
-     INTEGER_ARRAY = 260,
-     ERROR = 261,
-     OR = 262,
-     AND = 263,
-     GREATEREQ = 264,
-     GREATER = 265,
-     LOWEREQ = 266,
-     LOWER = 267,
-     NEQ = 268,
-     EQUALS = 269,
-     POS = 270,
-     NEG = 271,
-     ITOA = 272,
-     ATOI = 273,
-     LCHK = 274,
-     FCHK = 275,
-     EVAL = 276
+     FOR = 258,
+     FOR_TO = 259,
+     IF = 260,
+     FOR_STEP = 261,
+     INTEGER = 262,
+     STRING = 263,
+     INTEGER_ARRAY = 264,
+     ERROR = 265,
+     IF_THEN = 266,
+     OR = 267,
+     AND = 268,
+     GREATEREQ = 269,
+     GREATER = 270,
+     LOWEREQ = 271,
+     LOWER = 272,
+     NEQ = 273,
+     EQUALS = 274,
+     LCHK = 275,
+     FCHK = 276,
+     POS = 277,
+     NEG = 278,
+     ITOA = 279,
+     ATOI = 280,
+     EVAL = 281,
+     STRING_CONCATENATION = 282
    };
 #endif
 
@@ -81,7 +92,8 @@ typedef union YYSTYPE
 {
 
 
-	NONS_VariableMember *obj;
+	NONS_Expression::Expression *obj;
+	ulong position;
 
 
 
@@ -98,31 +110,24 @@ typedef union YYSTYPE
 
 
 	#include <sstream>
+	extern int expressionParser_yydebug;
 	int expressionParser_yyparse(
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
-		NONS_FileLog *filelog,
-		long *result,
-		bool invert_terms,
-		std::vector<long> *array_decl,
-		NONS_VariableMember **retrievedVar,
-		std::wstring *string
+		NONS_Expression::Expression *&res,
+		PreParserData *ppd
 	);
 	int expressionParser_yylex(
 		YYSTYPE *yylval,
 		std::wstringstream *stream,
 		NONS_VariableStore *store,
-		NONS_VariableMember **retrievedVar
+		PreParserData *ppd
 	);
 	void expressionParser_yyerror(
 		std::wstringstream *,
 		NONS_VariableStore *,
-		NONS_FileLog *,
-		long *,
-		bool,
-		std::vector<long> *,
-		NONS_VariableMember **,
-		std::wstring *string,
+		NONS_Expression::Expression *&,
+		PreParserData *ppd,
 		char const *
 	);
 
