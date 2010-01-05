@@ -147,18 +147,19 @@ parameter2<p/>
 <h2><a name="1.7">1.7. Expressions</a></h2>
 An expression is a formula. Whenever a command asks for a constant, an expression may be used instead (e.g. <font face="monospace"><b>mov</b> %0, 10*10</font>). Note that decimal numerical literals are expressions.<p/>
 An expression that evaluates to a string (e.g. <font face="monospace">$0</font>, <font face="monospace">_itoa(10)</font>) is invalid unless the command asks for a string.<br/>
-Likewise, when a string is required, it's illegal to provide an expression.<p/>
+Likewise, when a string is required, it's illegal to provide a numerical expression.<p/>
 The following operators are supported (ordered from lower to higher precedence):<br/>
 <ol>
 	<li>||, |: boolean NOT.<br/>
 	<li>&amp;&amp;, &amp;: boolean AND.<br/>
 	<li>==, =, !=, &lt;&gt;, &lt;, &gt;=, &gt;, &lt;=: relational operators.<br/>
-	<li>+, -: addition, subtraction, and string concatenation.<br/>
+	<li>+, -: addition and subtraction.<br/>
 	<li>*, /: multiplication and division.<br/>
 	<li>+, -: unary NOP and sign inversion.<br/>
 	<li>[]: offset operator.<br/>
 	<li>%, $, ?: dereference operators.<br/>
-	<li>lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion operators, and recursive evaluation operator.<p/>
+	<li>lchk, fchk, _itoa, _atoi, _eval: label and file check operators, conversion operators, and recursive evaluation operator.<br/>
+	<li>+: string concatenation<p/>
 </ol>
 
 Note: In the following subsections, an {expression} can be any of the following:<br/>
@@ -169,7 +170,12 @@ Note: In the following subsections, an {expression} can be any of the following:
 	<li>An integer dereference<p/>
 </ul>
 
-<h3>1.7.1. 9th order operators</h3>
+<h3>1.7.1. 10th order operators</h3>
+{string}+{string}[+{string}[...]] (String concatenation operator)<br/>
+Combines two strings and gives back the result.<br/>
+Because of the way Bison works, the grammar used by the language is irredeemably ambiguous. '+' can mean two different things depending on the context, and how to tell the contexts apart is beyond the scope of Bison. For example, the expression <font face="monospace">lchk "*la"+"bel"+1</font> produces a syntax error, because by the time the parser reaches the 1, it has already decided and a string should follow and it's too late to change. The correct way to write such an expression would be <font face="monospace">(lchk "*la"+"bel")+1</font>. This exception applies only to the + operator due to its ambiguity, and to both lchk and fchk. Using <em>any</em> other arithmetical operator gives the expected result.
+
+<h3>1.7.2. 9th order operators</h3>
 <font face="monospace">lchk{string}</font> (Label check operator)<br/>
 See the original documentation.<p/>
 
@@ -206,7 +212,7 @@ Examples:
 <font color="#808080">;%0=7<p/></font>
 </font>
 
-<h3>1.7.2. 8th order operators</h3>
+<h3>1.7.3. 8th order operators</h3>
 % and $ (Integer dereference and string dereference operators)<br/>
 <font face="monospace">
 %{integer}<br/>
@@ -239,7 +245,7 @@ Examples:
 <font face="monospace">?_atoi($0)</font>,
 <font face="monospace">?(_atoi($%0)+1)</font>.<p/>
 
-<h3>1.7.3. 7th order operators</h3>
+<h3>1.7.4. 7th order operators</h3>
 [] (Offset operator)<br/>
 <font face="monospace">
 {array dereference}[{expression}]<br/>
@@ -257,7 +263,7 @@ For an array declared as <font face="monospace">?array[10][10]</font><br/>.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;overflow.<p/>
 </font>
 
-<h3>1.7.4. 6th order operators</h3>
+<h3>1.7.5. 6th order operators</h3>
 + (unary NOP operator)<br/>
 <font face="monospace">+{expression}<br/></font>
 Evaluates to the value of the operand.<p/>
@@ -265,19 +271,6 @@ Evaluates to the value of the operand.<p/>
 - (unary sign inversion)<br/>
 <font face="monospace">-{expression}</font><br/>
 Evaluates to the value of the operand with its sign inverted.<p/>
-
-<h3>1.7.5. 4th order operators</h3>
-{string}+{string}[+{string}[...]] (String concatenation operator)<br/>
-A special note needs to be made on this operator.<br/>
-In reality, this should be an eleventh order operator, so that <font face="monospace">(lchk $0+$0+$0)</font> produced the expected result. Because of some weird behavior on the part of Bison, I'm unable to do that, so please follow this simple rule: if the expression consists at the top level of a string concatenation, use the legacy rules; if the string concatenation is used as an operand for an operator that accepts a string, surround the concatenation with parentheses.<br/>
-Examples:<br/>
-<font face="monospace">
-<b>mov</b> $0,$0+&quot;string&quot;+&quot;string&quot; ;&lt;- ok<br/>
-<b>if</b> fchk &quot;directory/&quot;+&quot;file&quot; command ;&lt;- NOT OK! It's parsed as equivalent to<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;(fchk &quot;directory&quot;)+&quot;file&quot;, which results in<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;in a syntax error<br/>
-<b>if</b> fchk(&quot;directory/&quot;+&quot;file&quot;) command ;&lt;- ok<p/>
-</font>
 
 <h3>1.7.6. 3rd order operators</h3>
 All operators in this subsection take two {expressions} as their operands. All operands compare their operands and evaluate to non-zero if the
@@ -353,7 +346,11 @@ Reason: Related to kidokumode.<p/>
 <font face="monospace" color="#ff0000">if</font><br/>
 Expression
 syntax has changed. See <a href="#1.7">section 1.7</a>.<br/>
-Also see use_new_if in <a href="#4">section 4</a>.<p/>
+Also see use_new_if in <a href="#4">section 4</a>.<br/>
+Special note: It's possible to use any command as the if body, including printing lines (<font face="monospace">`this is a printing line</font>). However, the parsing mechanism will fail if a printing line contains a ` in its body (<font face="monospace">`like this ->`<-</font>). For those cases, it's necessary to use a <font face="monospace">then</font> clause:<p/>
+<font face="monospace">
+<b>if</b> condition <b>then</b> `print `this<p/>
+</font>
 
 <font face="monospace" color="#ff0000">arc</font><br/>
 Does nothing.<p/>
@@ -413,7 +410,7 @@ The parameters are:<br/>
 }<p/>
 
 <font face="monospace" color="#ff0000">/</font><br/>
-When a slash is the last character in a line (that is, the next character has to be either carriage return [U+000D] or line feed [U+000A]), both the slash and the newline are ignored. <s>This processing is done before <i>anything</i> else.</s> (See update below.)<p/>
+When a slash is the last character in a line (that is, the next character has to be either carriage return [U+000D] or line feed [U+000A]), both the slash and the newline are ignored. <s>This processing is done before <em>anything</em> else.</s> (See update below.)<p/>
 Example:<br/>
 <font face="monospace">
 <b>mov</b> $0,&quot;stri/<br/>

@@ -63,7 +63,7 @@ const char *errorMessages[]={
 	//NONS_UNRECOGNIZED_COMMAND
 	"Unrecognized command.",
 	//NONS_UNMATCHING_OPERANDS
-	"Operands do not match.",
+	"The operands do not match.",
 	//NONS_INVALID_ID_NAME
 	"Invalid identifier name. Only [A-Za-z_][A-Za-z_0-9]*. For constants, names that collide with commands are restricted.",
 	//NONS_INSUFFICIENT_PARAMETERS
@@ -211,5 +211,11 @@ const char *errorMessages[]={
 #endif
 	//NONS_FUNCTION_NOT_FOUND
 	"Function not found. Invalid dynamic library.",
+	//NONS_NOT_A_DEREFERENCE
+	"Expected a variable dereference at the top level of the expression, but found an operation.",
+	//NONS_EXPECTED_INTEGRAL_VALUE
+	"Expected integral value.",
+	//NONS_EXPECTED_STRING_VALUE
+	"Expected string value.",
 	0
 };

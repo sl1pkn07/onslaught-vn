@@ -38,6 +38,96 @@
 #include <map>
 #include <set>
 
+struct PreParserData{
+	ulong mode;
+	bool trigger;
+	std::vector<NONS_Expression::Expression *> res;
+	ulong then_position;
+};
+
+struct NONS_VariableStore;
+class NONS_VariableMember;
+
+namespace NONS_Expression{
+	struct Value{
+		enum{
+			INVALID,
+			INTEGER,
+			STRING
+		} type;
+		long integer;
+		std::wstring string;
+		bool negated;
+		ErrorCode error;
+
+		Value();
+		Value(long i);
+		Value(const std::wstring &s);
+		Value(NONS_VariableMember *member);
+		void negate(){
+			if (!this->type==INTEGER || this->negated)
+				return;
+			this->integer=!this->integer;
+			this->negated=1;
+		}
+		bool is_err(){ return this->type==INVALID; }
+		bool is_int(){ return this->type==INTEGER; }
+		bool is_str(){ return this->type==STRING; }
+	};
+
+#define NONS_Expression_operator_params std::vector<Value *> &operands,NONS_VariableStore *store,bool invert_terms
+	typedef Value *(*operator_f)(NONS_Expression_operator_params);
+
+#define NONS_Expression_DECLARE_OPERATOR(id) Value *id(NONS_Expression_operator_params)
+	NONS_Expression_DECLARE_OPERATOR(eval);
+	NONS_Expression_DECLARE_OPERATOR(atoi);
+	NONS_Expression_DECLARE_OPERATOR(itoa);
+	NONS_Expression_DECLARE_OPERATOR(concat);
+	NONS_Expression_DECLARE_OPERATOR(array_indexing);
+	NONS_Expression_DECLARE_OPERATOR(add);
+	NONS_Expression_DECLARE_OPERATOR(sub);
+	NONS_Expression_DECLARE_OPERATOR(mul);
+	NONS_Expression_DECLARE_OPERATOR(div);
+	NONS_Expression_DECLARE_OPERATOR(and_operator);
+	NONS_Expression_DECLARE_OPERATOR(or_operator);
+	NONS_Expression_DECLARE_OPERATOR(neg);
+	NONS_Expression_DECLARE_OPERATOR(integer_dereference);
+	NONS_Expression_DECLARE_OPERATOR(string_dereference);
+	NONS_Expression_DECLARE_OPERATOR(equals);
+	NONS_Expression_DECLARE_OPERATOR(nequals);
+	NONS_Expression_DECLARE_OPERATOR(lower);
+	NONS_Expression_DECLARE_OPERATOR(greatereq);
+	NONS_Expression_DECLARE_OPERATOR(greater);
+	NONS_Expression_DECLARE_OPERATOR(lowereq);
+	NONS_Expression_DECLARE_OPERATOR(fchk);
+	NONS_Expression_DECLARE_OPERATOR(lchk);
+
+	struct Expression{
+		std::vector<Expression *> operands;
+		operator_f op;
+		Value *val;
+		Expression(operator_f op,...);
+		Expression(Value *val);
+		~Expression();
+		void vectorize(std::vector<Expression *> &dst);
+	};
+
+	class ExpressionCompiler{
+		ErrorCode error;
+		Expression *expr;
+		ErrorCode run(NONS_VariableStore *,bool,const std::vector<Expression *> &,std::vector<Value *> &,size_t);
+	public:
+		ExpressionCompiler(const std::wstring &exp,NONS_VariableStore *store);
+		ExpressionCompiler(Expression *expr);
+		~ExpressionCompiler();
+		Value *evaluate(NONS_VariableStore *store,bool invert_terms);
+		NONS_VariableMember *retrieve(NONS_VariableStore *store);
+		ErrorCode getArrayDeclaration(std::vector<long> &dst,NONS_VariableStore *store);
+		ErrorCode getError(){ return this->error; }
+		std::wstring unparse();
+	};
+};
+
 class NONS_VariableMember{
 	long intValue;
 	std::wstring wcsValue;
@@ -49,8 +139,6 @@ class NONS_VariableMember{
 public:
 	NONS_VariableMember **dimension;
 	ulong dimensionSize;
-	bool temporary;
-	bool negated;
 	NONS_VariableMember(yytokentype type);
 	NONS_VariableMember(long value);
 	NONS_VariableMember(const std::wstring &a);
@@ -75,7 +163,6 @@ public:
 	void div(long a);
 	void mod(long a);
 	void setlimits(long lower,long upper);
-	void negate(bool a);
 private:
 	void fixint();
 };
@@ -98,8 +185,8 @@ typedef std::map<Sint32,NONS_Variable *> variables_map_T;
 typedef std::map<Sint32,NONS_VariableMember *> arrays_map_T;
 
 struct NONS_VariableStore{
-	static const Sint32 indexLowerLimit,
-		indexUpperLimit;
+	static const Sint32 indexLowerLimit=-0x40000000,
+		indexUpperLimit=0x3FFFFFFF;
 
 	constants_map_T constants;
 	variables_map_T variables;
@@ -112,53 +199,32 @@ struct NONS_VariableStore{
 	void saveData();
 	/*
 	exp: (IN) The expression to be evaluated.
-	result: (OUT) Where the result of evaluation will go to. Pass 0 if the
-		result is not needed.
 	invert_terms: (IN) Pass 1 if the expression comes from command_notif and
 		we're using the old style evaluator. This parameter is designed to be
 		used with simple expressions (e.g. * [&& * [&& * [&& ...]]], * being
 		comparisons). Using it with more complex expressions will have weirder
 		and weirder results as the expression gets more complex.
-	array_decl: (OUT) Use to have the evaluator figure out the number and sizes
-		of the dimensions a declared array should have. In order for it to both
-		work and be simple, the evaluator makes the assumption that one and only
-		one array in the expression doesn't exist. The contents of the resulting
-		vector are: Element 0: How many arrays that didn't exist were referenced
-		in the expression. Any value other than 1 makes elements 1 and above
-		invalid and the caller should throw an error. Element 1: The array
-		identifier. Element 2+n: The size of dimension n.
-		If the resulting vector is of size zero, either no valid array syntaxes
-		were found, or all the valid ones that were found referred to array that
-		already existed.
-	retrievedVar: (OUT) Use to have the evaluator figure out what variable
-		member is the expression referencing. The method is stronger than
-		array_decl's, and it will figure out the variable even if it's not the
-		only variable referenced in the expression. The only limitation is that
-		I can't predict which of the two variables will be the result if
-		there's a binary operator at the top level of the expression and both
-		operands are variables (e.g. %0+%1). This restriction does not apply to
-		the [] operator.
-	string: (OUT) Use to get the string the expression evaluates to, if any. It
-		works with both literals and string variables.
+	Returns: A complex object that includes every possible type of the
+		expression. That is, integer, string, or invalid.
 	*/
-	ErrorCode evaluate(
-		const std::wstring &exp,
-		long *result,
-		bool invert_terms,
-		std::vector<long> *array_decl,
-		NONS_VariableMember **retrievedVar,
-		std::wstring *string);
-	//ErrorCode resolveIndexing(const wchar_t *expression,NONS_VariableMember **res);
+	NONS_Expression::Value *evaluate(const std::wstring &exp,bool invert_terms);
+	/*
+	dst: (OUT) dst[0] is the "name" the new array should have, dst[ [1;n) ] are
+		the sizes of each of the dimensions.
+	exp: (IN) The expression to be evaluated.
+	*/
+	ErrorCode array_declaration(std::vector<long> &dst,const std::wstring &exp);
 	void push(Sint32 pos,NONS_Variable *var);
 	NONS_VariableMember *retrieve(const std::wstring &name,ErrorCode *error);
 	NONS_Variable *retrieve(Sint32 position,ErrorCode *error);
-	//NONS_VariableMember *retrieve(const wchar_t *name,const std::vector<ulong> *index,ErrorCode *error);
-	//NONS_VariableMember *retrieve(const wchar_t *name,ulong *index,ulong size,ErrorCode *error);
 	NONS_VariableMember *getConstant(const std::wstring &name);
 	NONS_VariableMember *getArray(Sint32 arrayNo);
+	NONS_VariableMember *retrieveFromArray(Sint32 array,const std::vector<Sint32> &v,ErrorCode *error,ulong *erroredIndex=0);
 	Sint32 getVariableIndex(NONS_VariableMember *var);
 
-	ErrorCode getWcsValue(const std::wstring &str,std::wstring &value);
-	ErrorCode getIntValue(const std::wstring &str,long &value);
+	ErrorCode getWcsValue(const std::wstring &str,std::wstring &value,bool invert_terms);
+	ErrorCode getWcsValue(NONS_Expression::ExpressionCompiler *ec,std::wstring &value,bool invert_terms);
+	ErrorCode getIntValue(const std::wstring &str,long &value,bool invert_terms);
+	ErrorCode getIntValue(NONS_Expression::ExpressionCompiler *ec,long &value,bool invert_terms);
 };
 #endif

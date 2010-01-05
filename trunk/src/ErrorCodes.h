@@ -131,6 +131,9 @@ typedef Uint32 ErrorCode;
 #define NONS_NOT_ENOUGH_LOG_PAGES					85
 #define NONS_LIBRARY_NOT_FOUND						86
 #define NONS_FUNCTION_NOT_FOUND						87
+#define NONS_NOT_A_DEREFERENCE						88
+#define NONS_EXPECTED_INTEGRAL_VALUE				89
+#define NONS_EXPECTED_STRING_VALUE					90
 
 extern const char *errorMessages[];
 #endif

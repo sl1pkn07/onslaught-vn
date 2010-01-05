@@ -100,8 +100,6 @@
 		<Unit filename="..\src\Audio.h" />
 		<Unit filename="..\src\CommandLineOptions.cpp" />
 		<Unit filename="..\src\CommandLineOptions.h" />
-		<Unit filename="..\src\commandPreParser.tab.cpp" />
-		<Unit filename="..\src\commandPreParser.tab.hpp" />
 		<Unit filename="..\src\Common.h" />
 		<Unit filename="..\src\ConfigFile.cpp" />
 		<Unit filename="..\src\ConfigFile.h" />

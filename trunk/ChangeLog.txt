@@ -2,6 +2,9 @@
     * Added SVG support.
     * Fixed bug in division operator (!).
     * Fixed bug in fullscreen switch.
+    * Updated expression parsing mechanism.
+    * Minor bug in label checking fixed.
+    * Minor bug in string interpretation fixed.
 
 20091212
     * Implemented: avi, mpegplay.

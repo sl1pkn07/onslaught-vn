@@ -209,7 +209,6 @@
 <File RelativePath="..\..\src\ThreadManager.cpp"></File>
 <File RelativePath="..\..\src\VariableStore.cpp"></File>
 <File RelativePath="..\..\src\VirtualScreen.cpp"></File>
-<File RelativePath="..\..\src\commandPreParser.tab.cpp"></File>
 <File RelativePath="..\..\src\puff.c"></File>
 <File RelativePath="..\..\src\sha1.cpp"></File>
 <File RelativePath="..\..\src\Archive.h"></File>
@@ -239,7 +238,6 @@
 <File RelativePath="..\..\src\ThreadManager.h"></File>
 <File RelativePath="..\..\src\VariableStore.h"></File>
 <File RelativePath="..\..\src\VirtualScreen.h"></File>
-<File RelativePath="..\..\src\commandPreParser.tab.hpp"></File>
 <File RelativePath="..\..\src\enums.h"></File>
 <File RelativePath="..\..\src\puff.h"></File>
 <File RelativePath="..\..\src\sha1.h"></File>

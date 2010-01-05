@@ -51,7 +51,7 @@ extern SDL_Surface *(*rotationFunction)(SDL_Surface *,double);
 extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
-#define GET_INT_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst)))
+#define GET_INT_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst),0))
 #define GET_COORDINATE(dst,axis,src) {\
 	long GET_COORDINATE_temp;\
 	float GET_COORDINATE_temp_f;\
@@ -74,7 +74,7 @@ extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 		GET_COORDINATE_temp_f=(float)ceil(GET_COORDINATE_temp_f-.5f);\
 	(dst)=(long)GET_COORDINATE_temp_f;\
 }
-#define GET_STR_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst)))
+#define GET_STR_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getWcsValue(stmt.parameters[(src)],(dst),0))
 #define GET_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getVar((varName),stmt.parameters[(src)],this->store))
 #define GET_INT_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getIntVar((varName),stmt.parameters[(src)],this->store))
 #define GET_STR_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getStrVar((varName),stmt.parameters[(src)],this->store))
