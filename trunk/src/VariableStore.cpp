@@ -290,9 +290,11 @@ namespace NONS_Expression{
 	ExpressionCompiler::ExpressionCompiler(const std::wstring &exp,NONS_VariableStore *store){
 		std::wstringstream stream(exp);
 		this->expr=0;
+#ifdef _DEBUG
 		std::cout <<"--------------------------------------------------------------------------------"
 			<<'['<<exp<<']'<<std::endl
 			<<"--------------------------------------------------------------------------------";
+#endif
 		switch (expressionParser_yyparse(&stream,store,this->expr,0)){
 			case 0:
 				this->error=NONS_NO_ERROR;
