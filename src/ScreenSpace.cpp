@@ -776,8 +776,8 @@ void NONS_ScreenSpace::BlendOptimized(std::vector<SDL_Rect> &rects){
 #define BLEND_OPTIM(p,function) {\
 	if ((p) && (p)->data && (p)->visible){\
 		SDL_Rect src={\
-			refresh_area.x-Sint16((p)->position.x+(p)->clip_rect.x),\
-			refresh_area.y-Sint16((p)->position.y+(p)->clip_rect.y),\
+			refresh_area.x-Sint16((p)->position.x)+Sint16((p)->clip_rect.x),\
+			refresh_area.y-Sint16((p)->position.y)+Sint16((p)->clip_rect.y),\
 			Uint16(refresh_area.w>(p)->clip_rect.w?(p)->clip_rect.w:refresh_area.w),\
 			Uint16(refresh_area.h>(p)->clip_rect.h?(p)->clip_rect.h:refresh_area.h)\
 		};\

@@ -381,7 +381,7 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 	}
 	this->image->clip_rect.w/=(Uint16)this->animation.animation_length;
 	for (ulong a=0;a<this->animation.animation_length-1;a++){
-		for (ulong b=a+1;a<this->animation.animation_length;a++){
+		for (ulong b=a+1;b<this->animation.animation_length;b++){
 			std::pair<ulong,ulong> p(a,b);
 			if (this->optimized_updates.find(p)!=this->optimized_updates.end())
 				continue;
