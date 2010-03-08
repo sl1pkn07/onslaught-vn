@@ -374,7 +374,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(const std::string &a){
 		if (this->addIndentationNext)
 			for (ulong d=0;d<this->indentation;d++)
 				stream <<INDENTATION_STRING;
-		if (c==UNICODE_LINE_FEED)
+		if (c=='\n')
 			this->addIndentationNext=1;
 		else
 			this->addIndentationNext=0;

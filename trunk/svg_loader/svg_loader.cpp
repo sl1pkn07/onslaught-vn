@@ -241,7 +241,7 @@ void SVG::compute_coordinates(point bounding_box[2],point *rect,size_t size){
 		if (rect[a].y>bounding_box[1].y)
 			bounding_box[1].y=rect[a].y;
 	}
-	for (int a=0;a<size;a++){
+	for (size_t a=0;a<size;a++){
 		rect[a].x-=bounding_box[0].x;
 		rect[a].y-=bounding_box[0].y;
 	}

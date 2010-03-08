@@ -189,7 +189,7 @@ void NONS_ScriptInterpreter::init(){
 	this->btnTimer=0;
 	this->imageButtonExpiration=0;
 	this->saveGame=new NONS_SaveFile();
-	this->saveGame->format=UNICODE_N;
+	this->saveGame->format='N';
 	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	this->printed_lines.clear();
 	this->screen->char_baseline=this->screen->screen->inRect.h-1;
@@ -893,7 +893,7 @@ std::wstring NONS_ScriptInterpreter::interpretFromConsole(const std::wstring &st
 	for (ulong a=0;a<l->statements.size();a++){
 		if (!CHECK_FLAG(this->interpretString(*l->statements[a],l,0),NONS_NO_ERROR_FLAG)){
 			if (ret.size())
-				ret.push_back(UNICODE_LINE_FEED);
+				ret.push_back('\n');
 			ret.append(L"Call [");
 			ret.append(l->statements[a]->stmt);
 			ret.append(L"] failed.");
@@ -1176,6 +1176,12 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	}
 	this->saveGame->textX=this->screen->output->x;
 	this->saveGame->textY=this->screen->output->y;
+#ifdef _DEBUG
+	//Reserved for debugging:
+	bool break_at_this_line=0;
+	if (stmt->lineOfOrigin->lineNumber==572)
+		break_at_this_line=1;
+#endif
 	switch (stmt->type){
 		case NONS_Statement::STATEMENT_BLOCK:
 			this->saveGame->currentLabel=stmt->commandName;
@@ -1225,9 +1231,13 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					std::wstring commandName=stmt->commandName;
 					std::vector<std::wstring> parameters=stmt->parameters;
 
-					if (CHECK_FLAG(stmt->error,NONS_NO_ERROR_FLAG))
+					if (CHECK_FLAG(stmt->error,NONS_NO_ERROR_FLAG)){
+#ifdef _DEBUG
+						if (break_at_this_line)
+							std::cout <<"TRIGGERED!"<<std::endl;
+#endif
 						error=(this->*function)(*stmt);
-					else
+					}else
 						error=stmt->error;
 					bool there_was_an_error=!CHECK_FLAG(error,NONS_NO_ERROR_FLAG);
 					if (there_was_an_error){
@@ -1371,7 +1381,7 @@ std::wstring insertIntoString(const std::wstring &dst,ulong from,ulong l,long sr
 std::wstring getInlineExpression(const std::wstring &string,ulong off,ulong *len){
 	ulong l=off;
 	while (multicomparison(string[l],"_+-*/|&%$?<>=()[]\"`") || NONS_isalnum(string[l])){
-		if (string[l]==UNICODE_QUOTE || string[l]==UNICODE_GRAVE_ACCENT){
+		if (string[l]=='\"' || string[l]=='`'){
 			wchar_t quote=string[l];
 			ulong l2=l+1;
 			for (;l2<string.size() && string[l2]!=quote;l2++);
@@ -1394,15 +1404,15 @@ void NONS_ScriptInterpreter::reduceString(
 		std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack){
 	for (ulong off=0;off<src.size();){
 		switch (src[off]){
-			case UNICODE_EXCLAMATION_MARK:
+			case '!':
 				if (src.find(L"!nl",off)==off){
-					dst.push_back(UNICODE_LINE_FEED);
+					dst.push_back('\n');
 					off+=3;
 					break;
 				}
-			case UNICODE_PERCENT:
-			case UNICODE_DOLLAR_SIGN:
-			case UNICODE_QUESTION_MARK:
+			case '%':
+			case '$':
+			case '?':
 				{
 					ulong l;
 					std::wstring expr=getInlineExpression(src,off,&l);
@@ -1462,14 +1472,14 @@ void findStops(const std::wstring &src,std::vector<std::pair<ulong,ulong> > &sto
 	dst.clear();
 	for (ulong a=0,size=src.size();a<size;a++){
 		switch (src[a]){
-			case UNICODE_BACKSLASH:
-			case UNICODE_AT:
+			case '\\':
+			case '@':
 				{
 					std::pair<ulong,ulong> push(dst.size(),a);
 					stopping_points.push_back(push);
 					continue;
 				}
-			case UNICODE_EXCLAMATION_MARK:
+			case '!':
 				if (firstcharsCI(src,a,L"!sd")){
 					std::pair<ulong,ulong> push(dst.size(),a);
 					stopping_points.push_back(push);
@@ -1483,8 +1493,8 @@ void findStops(const std::wstring &src,std::vector<std::pair<ulong,ulong> > &sto
 					a+=l-1;
 					continue;
 				}
-			case UNICODE_NUMBER_SIGN:
-				if (src[a]==UNICODE_NUMBER_SIGN){
+			case '#':
+				if (src[a]=='#'){
 					if (src.size()-a-1>=6){
 						a++;
 						short b;
@@ -1502,7 +1512,7 @@ void findStops(const std::wstring &src,std::vector<std::pair<ulong,ulong> > &sto
 			default:
 				dst.push_back(src[a]);
 		}
-		if (src[a]==UNICODE_BACKSLASH)
+		if (src[a]=='\\')
 			break;
 	}
 	std::pair<ulong,ulong> push(dst.size(),src.size());
@@ -1545,7 +1555,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 			}
 			reduced=i->stops[stop].second;
 			switch ((*str)[reduced]){
-				case UNICODE_BACKSLASH:
+				case '\\':
 					if (this->textgosub.size() && (this->textgosubRecurses || !this->insideTextgosub())){
 						std::vector<printingPage>::iterator i2=i;
 						std::vector<printingPage> temp;
@@ -1563,7 +1573,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						temp.push_back(temp2);
 						for (i2++;i2!=pages.end();i2++)
 							temp.push_back(*i2);
-						NONS_StackElement *pusher=new NONS_StackElement(temp,UNICODE_BACKSLASH,this->insideTextgosub()+1);
+						NONS_StackElement *pusher=new NONS_StackElement(temp,'\\',this->insideTextgosub()+1);
 						this->callStack.push_back(pusher);
 						this->goto_label(this->textgosub);
 						out->endPrinting();
@@ -1581,7 +1591,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 					if (!!justTurnedPage)
 						*justTurnedPage=1;
 					break;
-				case UNICODE_AT:
+				case '@':
 					if (this->textgosub.size() && (this->textgosubRecurses || !this->insideTextgosub())){
 						std::vector<printingPage>::iterator i2=i;
 						std::vector<printingPage> temp;
@@ -1599,7 +1609,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						temp.push_back(temp2);
 						for (i2++;i2!=pages.end();i2++)
 							temp.push_back(*i2);
-						NONS_StackElement *pusher=new NONS_StackElement(temp,UNICODE_AT,this->insideTextgosub()+1);
+						NONS_StackElement *pusher=new NONS_StackElement(temp,'@',this->insideTextgosub()+1);
 						this->callStack.push_back(pusher);
 						this->goto_label(this->textgosub);
 						out->endPrinting();
@@ -1613,7 +1623,7 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 					}
 					reduced++;
 					break;
-				case UNICODE_EXCLAMATION_MARK:
+				case '!':
 					if (firstcharsCI(*str,reduced,L"!sd")){
 						out->display_speed=this->default_speed;
 						reduced+=3;
@@ -1653,8 +1663,8 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 								reduced-=2;
 						}
 					}
-				case UNICODE_NUMBER_SIGN:
-					if ((*str)[reduced]==UNICODE_NUMBER_SIGN){
+				case '#':
+					if ((*str)[reduced]=='#'){
 						ulong len=str->size()-reduced-1;
 						if (len>=6){
 							reduced++;
@@ -1701,7 +1711,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 		}
 		return NONS_NO_ERROR;
 	}
-	bool skip=line[0]==UNICODE_GRAVE_ACCENT;
+	bool skip=line[0]=='`';
 	std::wstring str=line.substr(skip);
 	bool justTurnedPage=0;
 	std::wstring reducedString;
@@ -1709,7 +1719,7 @@ ErrorCode NONS_ScriptInterpreter::Printer(const std::wstring &line){
 	std::vector<printingPage> pages;
 	ulong totalprintedchars=0;
 	for (ulong a=0;a<reducedString.size();){
-		ulong p=reducedString.find(UNICODE_BACKSLASH,a);
+		ulong p=reducedString.find('\\',a);
 		if (p==reducedString.npos)
 			p=reducedString.size();
 		else
@@ -2659,7 +2669,7 @@ ErrorCode NONS_ScriptInterpreter::command_centerh(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long fraction;
 	GET_INT_VALUE(fraction,0);
-	this->screen->output->setCenterPolicy(UNICODE_h,fraction);
+	this->screen->output->setCenterPolicy('h',fraction);
 	return NONS_NO_ERROR;
 }
 
@@ -2667,7 +2677,7 @@ ErrorCode NONS_ScriptInterpreter::command_centerv(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long fraction;
 	GET_INT_VALUE(fraction,0);
-	this->screen->output->setCenterPolicy(UNICODE_v,fraction);
+	this->screen->output->setCenterPolicy('v',fraction);
 	return NONS_NO_ERROR;
 }
 
@@ -2686,22 +2696,22 @@ ErrorCode NONS_ScriptInterpreter::command_checkpage(NONS_Statement &stmt){
 ErrorCode NONS_ScriptInterpreter::command_cl(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	switch (NONS_tolower(stmt.parameters[0][0])){
-		case UNICODE_l:
+		case 'l':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->leftChar->unload();
 			break;
-		case UNICODE_r:
+		case 'r':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->rightChar->unload();
 			break;
-		case UNICODE_c:
+		case 'c':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->centerChar->unload();
 			break;
-		case UNICODE_a:
+		case 'a':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->leftChar->unload();
@@ -2766,8 +2776,8 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
 	NONS_VariableMember *year,*month,*day;
 	GET_INT_VARIABLE(year,0);
-	GET_INT_VARIABLE(month,0);
-	GET_INT_VARIABLE(day,0);
+	GET_INT_VARIABLE(month,1);
+	GET_INT_VARIABLE(day,2);
 	time_t t=time(0);
 	tm *time=localtime(&t);
 	if (stdStrCmpCI(stmt.commandName,L"date2"))
@@ -2775,7 +2785,7 @@ ErrorCode NONS_ScriptInterpreter::command_date(NONS_Statement &stmt){
 	else
 		year->set(time->tm_year+1900);
 	month->set(time->tm_mon+1);
-	month->set(time->tm_mday);
+	day->set(time->tm_mday);
 	return NONS_NO_ERROR;
 }
 
@@ -2797,8 +2807,8 @@ ErrorCode NONS_ScriptInterpreter::command_defsub(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	std::wstring name=stmt.parameters[0];
 	trim_string(name);
-	if (name[0]==UNICODE_ASTERISK)
-		name=name.substr(name.find_first_not_of(UNICODE_ASTERISK));
+	if (name[0]=='*')
+		name=name.substr(name.find_first_not_of('*'));
 	if (!isValidIdentifier(name))
 		return NONS_INVALID_COMMAND_NAME;
 	if (this->commandList.find(name)!=this->commandList.end())
@@ -3382,7 +3392,7 @@ ErrorCode NONS_ScriptInterpreter::command_getparam(NONS_Statement &stmt){
 	std::vector<std::pair<NONS_VariableMember *,std::pair<long,std::wstring> > > actions;
 	for (ulong a=0;a<parameters->size() && a<stmt.parameters.size();a++){
 		wchar_t c=NONS_tolower(stmt.parameters[a][0]);
-		if (c==UNICODE_i || c==UNICODE_s){
+		if (c=='i' || c=='s'){
 			NONS_VariableMember *src=this->store->retrieve((*parameters)[a],&error),
 				*dst;
 
@@ -3542,19 +3552,19 @@ ErrorCode NONS_ScriptInterpreter::command_humanorder(NONS_Statement &stmt){
 	std::vector<ulong> porder;
 	bool found[3]={0};
 	ulong offsets[26];
-	offsets[UNICODE_l-UNICODE_a]=0;
-	offsets[UNICODE_c-UNICODE_a]=1;
-	offsets[UNICODE_r-UNICODE_a]=2;
+	offsets['l'-'a']=0;
+	offsets['c'-'a']=1;
+	offsets['r'-'a']=2;
 	for (ulong a=0;a<order.size();a++){
 		wchar_t c=NONS_tolower(order[a]);
 		switch (c){
-			case UNICODE_l:
-			case UNICODE_c:
-			case UNICODE_r:
-				if (found[offsets[c-UNICODE_a]])
+			case 'l':
+			case 'c':
+			case 'r':
+				if (found[offsets[c-'a']])
 					break;
-				porder.push_back(offsets[c-UNICODE_a]);
-				found[offsets[c-UNICODE_a]]=1;
+				porder.push_back(offsets[c-'a']);
+				found[offsets[c-'a']]=1;
 				break;
 			default:;
 		}
@@ -3680,7 +3690,7 @@ ErrorCode NONS_ScriptInterpreter::command_ispage(NONS_Statement &stmt){
 	else{
 		std::vector<NONS_StackElement *>::reverse_iterator i=this->callStack.rbegin();
 		for (;i!=this->callStack.rend() && (*i)->type!=TEXTGOSUB_CALL;i++);
-		dst->set((*i)->textgosubTriggeredBy==UNICODE_BACKSLASH);
+		dst->set((*i)->textgosubTriggeredBy=='\\');
 	}
 	return NONS_NO_ERROR;
 }
@@ -3727,15 +3737,15 @@ ErrorCode NONS_ScriptInterpreter::command_ld(NONS_Statement &stmt){
 	NONS_Layer **l=0;
 	long off;
 	switch (stmt.parameters[0][0]){
-		case UNICODE_l:
+		case 'l':
 			l=&this->screen->leftChar;
 			off=this->screen->screen->screens[VIRTUAL]->w/4;
 			break;
-		case UNICODE_c:
+		case 'c':
 			l=&this->screen->centerChar;
 			off=this->screen->screen->screens[VIRTUAL]->w/2;
 			break;
-		case UNICODE_r:
+		case 'r':
 			l=&this->screen->rightChar;
 			off=this->screen->screen->screens[VIRTUAL]->w/4*3;
 			break;
@@ -4229,8 +4239,8 @@ ErrorCode NONS_ScriptInterpreter::command_nsadir(NONS_Statement &stmt){
 	this->nsadir=UniToUTF8(temp);
 	tolower(this->nsadir);
 	toforwardslash(this->nsadir);
-	if (this->nsadir[this->nsadir.size()-1]!=UNICODE_SLASH)
-		this->nsadir.push_back(UNICODE_SLASH);
+	if (this->nsadir[this->nsadir.size()-1]!='/')
+		this->nsadir.push_back('/');
 	return NONS_NO_ERROR;
 }
 
@@ -4249,7 +4259,7 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 		this->mp3_loop=1;
 		this->mp3_save=1;
 	}
-	if (name[0]==UNICODE_ASTERISK){
+	if (name[0]=='*'){
 		int track=atoi(UniToISO88591(name.substr(1)).c_str());
 		std::wstring temp=L"track";
 		temp+=itoa<wchar_t>(track,2);
@@ -4897,7 +4907,7 @@ void quake(SDL_Surface *dst,char axis,ulong amplitude,ulong duration){
 			break;
 		float y=(float)sin(x*(20/length)*M_PI)*((amp/-length)*x+amplitude);
 		SDL_FillRect(dst,&srcrect,0);
-		if (axis==UNICODE_x)
+		if (axis=='x')
 			dstrect.x=(Sint16)y;
 		else
 			dstrect.y=(Sint16)y;
@@ -4916,7 +4926,7 @@ ErrorCode NONS_ScriptInterpreter::command_sinusoidal_quake(NONS_Statement &stmt)
 	if (amplitude<0 || duration<0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	amplitude*=10;
-	if (stmt.commandName[5]==UNICODE_x)
+	if (stmt.commandName[5]=='x')
 		amplitude=this->screen->screen->convertW(amplitude);
 	else
 		amplitude=this->screen->screen->convertH(amplitude);
@@ -5012,22 +5022,22 @@ ErrorCode NONS_ScriptInterpreter::command_tal(NONS_Statement &stmt){
 	long newalpha;
 	GET_INT_VALUE(newalpha,1);
 	switch (stmt.parameters[0][0]){
-		case UNICODE_l:
+		case 'l':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->leftChar->alpha=(uchar)newalpha;
 			break;
-		case UNICODE_r:
+		case 'r':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->rightChar->alpha=(uchar)newalpha;
 			break;
-		case UNICODE_c:
+		case 'c':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->centerChar->alpha=(uchar)newalpha;
 			break;
-		case UNICODE_a:
+		case 'a':
 			if (this->hideTextDuringEffect)
 				this->screen->hideText();
 			this->screen->leftChar->alpha=(uchar)newalpha;

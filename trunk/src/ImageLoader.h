@@ -43,11 +43,11 @@
 
 struct NONS_AnimationInfo{	
 	enum TRANSPARENCY_METHODS{
-		LEFT_UP=UNICODE_l,
-		RIGHT_UP=UNICODE_r,
-		COPY_TRANS=UNICODE_c,
-		PARALLEL_MASK=UNICODE_a,
-		SEPARATE_MASK=UNICODE_m
+		LEFT_UP='l',
+		RIGHT_UP='r',
+		COPY_TRANS='c',
+		PARALLEL_MASK='a',
+		SEPARATE_MASK='m'
 	} method;
 	ulong animation_length;
 	/*
@@ -78,13 +78,13 @@ struct NONS_AnimationInfo{
 	void resetAnimation();
 	long advanceAnimation(ulong msecs);
 	long getCurrentAnimationFrame();
-	const std::wstring &getFilename(){
+	const std::wstring &getFilename() const{
 		return this->filename;
 	}
-	const std::wstring &getString(){
+	const std::wstring &getString() const{
 		return this->string;
 	}
-	const std::wstring &getMaskFilename(){
+	const std::wstring &getMaskFilename() const{
 		return this->mask_filename;
 	}
 private:

@@ -80,7 +80,7 @@ extern SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int);
 #define GET_STR_VARIABLE(varName,src) HANDLE_POSSIBLE_ERRORS(getStrVar((varName),stmt.parameters[(src)],this->store))
 #define GET_LABEL(dst,src){\
 	std::wstring &GET_LABEL_temp=stmt.parameters[(src)];\
-	if (GET_LABEL_temp[0]==UNICODE_ASTERISK)\
+	if (GET_LABEL_temp[0]=='*')\
 		(dst)=GET_LABEL_temp;\
 	else{\
 		GET_STR_VALUE((dst),(src));\

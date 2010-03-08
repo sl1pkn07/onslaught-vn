@@ -42,17 +42,17 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 	this->frame_ends.clear();
 	size_t p=0;
 	static const std::wstring slash_semi=L"/;";
-	if (image_string[p]==UNICODE_COLON){
+	if (image_string[p]==':'){
 		p++;
-		size_t semicolon=image_string.find(UNICODE_SEMICOLON,p);
+		size_t semicolon=image_string.find(';',p);
 		if (semicolon==image_string.npos)
 			return;
 		switch (wchar_t c=NONS_tolower(image_string[p++])){
-			case UNICODE_l:
-			case UNICODE_r:
-			case UNICODE_c:
-			case UNICODE_a:
-			case UNICODE_m:
+			case 'l':
+			case 'r':
+			case 'c':
+			case 'a':
+			case 'm':
 				this->method=(TRANSPARENCY_METHODS)c;
 				break;
 			default:
@@ -67,15 +67,15 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			toforwardslash(this->mask_filename);
 		}
 		p=p2;
-		if (image_string[p]==UNICODE_SLASH){
+		if (image_string[p]=='/'){
 			std::wstringstream stream;
-			while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
+			while (image_string[++p]!=',' && image_string[p]!=';')
 				stream <<image_string[p];
-			if (!(stream >>this->animation_length) || image_string[p]!=UNICODE_COMMA)
+			if (!(stream >>this->animation_length) || image_string[p]!=',')
 				return;
 			stream.clear();
-			if (image_string[p+1]!=UNICODE_LT_SIGN){
-				while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
+			if (image_string[p+1]!='<'){
+				while (image_string[++p]!=',' && image_string[p]!=';')
 					stream <<image_string[p];
 				ulong delay;
 				if (!(stream >>delay))
@@ -86,11 +86,11 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 				this->frame_ends.push_back(delay);
 			}else{
 				p++;
-				size_t gt=image_string.find(UNICODE_GT_SIGN,p);
+				size_t gt=image_string.find('>',p);
 				if (gt==image_string.npos || gt>semicolon)
 					return;
-				while (image_string[p]!=UNICODE_GT_SIGN && image_string[++p]!=UNICODE_GT_SIGN){
-					while (image_string[p]!=UNICODE_COMMA && image_string[p]!=UNICODE_GT_SIGN)
+				while (image_string[p]!='>' && image_string[++p]!='>'){
+					while (image_string[p]!=',' && image_string[p]!='>')
 						stream <<image_string[p++];
 					ulong delay;
 					if (!(stream >>delay))
@@ -102,9 +102,9 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			}
 			if (!this->frame_ends.size() || this->frame_ends.size()>1 && this->animation_length!=this->frame_ends.size())
 				return;
-			if (image_string[p]!=UNICODE_COMMA)
+			if (image_string[p]!=',')
 				return;
-			while (image_string[++p]!=UNICODE_COMMA && image_string[p]!=UNICODE_SEMICOLON)
+			while (image_string[++p]!=',' && image_string[p]!=';')
 				stream <<image_string[p];
 			ulong type;
 			if (!(stream >>type))
@@ -113,7 +113,7 @@ void NONS_AnimationInfo::parse(const std::wstring &image_string){
 			p++;
 		}
 	}
-	if (image_string[p]==UNICODE_SEMICOLON)
+	if (image_string[p]==';')
 		p++;
 	this->filename=image_string.substr(p);
 	tolower(this->filename);
@@ -267,13 +267,17 @@ NONS_Image::NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,
 						uchar r=pos1[Roffset1],
 							g=pos1[Goffset1],
 							b=pos1[Boffset1];
-						pos0[Roffset0]=r;
-						pos0[Goffset0]=g;
-						pos0[Boffset0]=b;
-						if (r==chromaR && g==chromaG && b==chromaB)
+						if (r==chromaR && g==chromaG && b==chromaB){
+							pos0[Roffset0]=0;
+							pos0[Goffset0]=0;
+							pos0[Boffset0]=0;
 							pos0[Aoffset0]=0;
-						else
+						}else{
+							pos0[Roffset0]=r;
+							pos0[Goffset0]=g;
+							pos0[Boffset0]=b;
 							pos0[Aoffset0]=255;
+						}
 						pos0+=advance0;
 						pos1+=advance1;
 					}
@@ -524,11 +528,11 @@ void NONS_DiskCache::add(const std::wstring &filename,SDL_Surface *surface){
 	writeDWord(sd.w,buffer);
 	writeDWord(sd.h,buffer);
 	buffer.append(4,0);
-	buffer[8+sd.Roffset]=UNICODE_R;
-	buffer[8+sd.Goffset]=UNICODE_G;
-	buffer[8+sd.Boffset]=UNICODE_B;
+	buffer[8+sd.Roffset]='R';
+	buffer[8+sd.Goffset]='G';
+	buffer[8+sd.Boffset]='B';
 	if (sd.alpha)
-		buffer[8+sd.Aoffset]=UNICODE_A;
+		buffer[8+sd.Aoffset]='A';
 	buffer.append(sd.w*sd.h*sd.advance,0);
 	char *p=&buffer[0];
 	p+=12;
@@ -575,16 +579,16 @@ SDL_Surface *NONS_DiskCache::get(const std::wstring &filename){
 		ulong mask=0xFF<<(a*8),
 			off=0;
 		switch (RGBA[a]){
-			case UNICODE_R:
+			case 'R':
 				off=0;
 				break;
-			case UNICODE_G:
+			case 'G':
 				off=1;
 				break;
-			case UNICODE_B:
+			case 'B':
 				off=2;
 				break;
-			case UNICODE_A:
+			case 'A':
 				off=3;
 				break;
 		}

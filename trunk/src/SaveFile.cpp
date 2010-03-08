@@ -84,8 +84,8 @@ std::vector<tm *> existing_files(const std::wstring &location){
 	res.reserve(20);
 	std::wstring path=location;
 	toforwardslash(path);
-	if (path[path.size()-1]!=UNICODE_SLASH)
-		path.push_back(UNICODE_SLASH);
+	if (path[path.size()-1]!='/')
+		path.push_back('/');
 	for (short a=1;a<21;a++){
 		std::wstring filename=path+L"save"+itoa<wchar_t>(a)+L".dat";
 		if (!fileExists(filename))
@@ -133,13 +133,13 @@ WINDOWS_VERSION getWindowsVersion(){
 		RegQueryValueEx(k,TEXT("CurrentVersion"),0,&type,(LPBYTE)str,&size);
 		RegCloseKey(k);
 		switch (*str){
-			case UNICODE_5:
+			case '5':
 				ret=VXP;
 				break;
-			case UNICODE_6:
+			case '6':
 				ret=VVI;
 				break;
-			case UNICODE_7:
+			case '7':
 				ret=VW7;
 				break;
 			default:
@@ -151,13 +151,13 @@ WINDOWS_VERSION getWindowsVersion(){
 		RegQueryValueEx(k,(LPCTSTR)"VersionNumber",0,&type,(LPBYTE)str,&size);
 		RegCloseKey(k);
 		switch (str[2]){
-			case UNICODE_0:
+			case '0':
 				ret=V95;
 				break;
-			case UNICODE_1:
+			case '1':
 				ret=V98;
 				break;
-			case UNICODE_9:
+			case '9':
 				ret=VME;
 				break;
 			default:
@@ -197,7 +197,7 @@ std::wstring getConfigLocation(){
 	pathStr.resize(size);
 	std::copy(path,path+size,pathStr.begin());
 	toforwardslash(pathStr);
-	if (pathStr[pathStr.size()-1]!=UNICODE_SLASH)
+	if (pathStr[pathStr.size()-1]!='/')
 		pathStr.append(L"/.ONSlaught");
 	else
 		pathStr.append(L".ONSlaught");
@@ -205,21 +205,21 @@ std::wstring getConfigLocation(){
 		delete[] path;
 		return L"./";
 	}
-	pathStr.push_back(UNICODE_SLASH);
+	pathStr.push_back('/');
 	return pathStr;
 #elif NONS_SYS_UNIX
 	passwd* pwd=getpwuid(getuid());
 	if (!pwd)
 		return L"./";
 	std::string res=pwd->pw_dir;
-	if (res[res.size()-1]!=UNICODE_SLASH)
+	if (res[res.size()-1]!='/')
 		res.append("/.ONSlaught");
 	else
 		res.append(".ONSlaught");
 	if (mkdir(res.c_str(),~0) && errno!=EEXIST){
 		return L"./";
 	}
-	res.push_back(UNICODE_SLASH);
+	res.push_back('/');
 	return UniFromUTF8(res);
 #else
 	return L"./";
@@ -245,7 +245,7 @@ std::wstring getSaveLocation(unsigned hash[5]){
 #endif
 	if (!CLOptions.savedir.size()){
 		std::wstringstream stream;
-		stream.fill(UNICODE_0);
+		stream.fill('0');
 		stream.width(8);
 		stream <<std::hex<<hash[0]<<" "<<hash[1];
 		path.append(stream.str());
@@ -254,12 +254,12 @@ std::wstring getSaveLocation(unsigned hash[5]){
 #if NONS_SYS_WINDOWS
 	if (!CreateDirectory((LPCTSTR)path.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS)
 		return root;
-	path.push_back(UNICODE_SLASH);
+	path.push_back('/');
 	return path;
 #elif NONS_SYS_UNIX
 	if (mkdir(UniToUTF8(path).c_str(),~0) && errno!=EEXIST)
 		return root;
-	path.push_back(UNICODE_SLASH);
+	path.push_back('/');
 	return path;
 #endif
 }
@@ -288,7 +288,7 @@ void NONS_SaveFile::load(std::wstring filename){
 	ulong offset=0;
 	if (firstcharsCI(std::string(buffer),0,"NONS") || firstcharsCI(std::string(buffer),0,"BZh")){
 		this->error=NONS_NO_ERROR;
-		this->format=UNICODE_N;
+		this->format='N';
 		if (firstcharsCI(std::string(buffer),0,"BZh")){
 			char *temp=decompressBuffer_BZ2(buffer,l,(unsigned long *)&l);
 			delete[] buffer;
@@ -626,7 +626,7 @@ void writeArray(NONS_VariableMember *var,std::string &buffer){
 }
 
 bool NONS_SaveFile::save(std::wstring filename){
-	if (this->format!=UNICODE_N)
+	if (this->format!='N')
 		return 0;
 	std::string buffer("NONS");
 	buffer.push_back(0);

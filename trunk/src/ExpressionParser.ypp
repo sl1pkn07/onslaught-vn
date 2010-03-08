@@ -290,7 +290,18 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 		return 0;
 	c=stream->peek();
 	if (ppd && ppd->mode==1){
-		if (multicomparison((wchar_t)c,L"\\@!#%$?") || c>0x7F){
+		if (multicomparison((wchar_t)c,L"\\@!#") || c>0x7F){
+			if (c=='!'){
+				stream->get();
+				c=stream->peek();
+				if (stream->eof())
+					stream->clear();
+				stream->putback('!');
+				if (c=='='){
+					c='!';
+					goto expressionParser_yylex_000;
+				}
+			}
 			yylval->position=stream->tellg();
 			stream->get();
 			return IF_THEN;
@@ -299,6 +310,7 @@ int expressionParser_yylex(YYSTYPE *yylval,std::wstringstream *stream,NONS_Varia
 			
 		}
 	}
+expressionParser_yylex_000:
 	if (NONS_isdigit(c)){
 		std::wstring temp;
 		while (NONS_isdigit(c=stream->peek()))

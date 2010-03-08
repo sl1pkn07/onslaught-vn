@@ -6,6 +6,7 @@
     * Minor bug in label checking fixed.
     * Minor bug in string interpretation fixed.
     * Minor bug in animation fixed.
+    * Bug in date command fixed.
 
 20091212
     * Implemented: avi, mpegplay.
