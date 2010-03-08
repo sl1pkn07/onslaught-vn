@@ -80,8 +80,8 @@ void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newNa
 		for (ulong a=0;offset<l && a<entries;a++){
 			offset++;
 			ulong filel;
-			for (filel=0;filel+offset<l && buffer[filel+offset]!=UNICODE_QUOTE;filel++);
-			if (buffer[filel+offset]!=UNICODE_QUOTE)
+			for (filel=0;filel+offset<l && buffer[filel+offset]!='\"';filel++);
+			if (buffer[filel+offset]!='\"')
 				break;
 			inPlaceDecryption(buffer+offset,filel,XOR84_ENCRYPTION);
 			std::wstring newElement=UniFromSJIS(std::string(buffer+offset,filel));
@@ -151,7 +151,7 @@ bool NONS_LabelLog::addString(const std::wstring &string){
 		return 0;
 	size_t a=0;
 	for (;iswhitespace(string[a]);a++);
-	for (;string[a]==UNICODE_ASTERISK;a++);
+	for (;string[a]=='*';a++);
 	for (;iswhitespace(string[a]);a++);
 	std::wstring copy(string,a);
 	tolower(copy);
@@ -162,7 +162,7 @@ bool NONS_LabelLog::addString(const std::wstring &string){
 bool NONS_LabelLog::check(const std::wstring &string){
 	size_t a=0;
 	for (;iswhitespace(string[a]);a++);
-	for (;string[a]==UNICODE_ASTERISK;a++);
+	for (;string[a]=='*';a++);
 	for (;iswhitespace(string[a]);a++);
 	std::wstring copy(string,a);
 	bool ret=(this->log.find(copy)!=this->log.end());

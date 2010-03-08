@@ -1485,15 +1485,15 @@ void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			c|=src[1]&0x3F;
 		}else if ((byte&0xF8)==0xF0){
 #if WCHAR_MAX==0xFFFF
-			c=UNICODE_QUESTION_MARK;
+			c='?';
 #else
 			c=byte&0x07;
+			c<<=6;
+			c|=*src&0x3F;
 			c<<=6;
 			c|=src[1]&0x3F;
 			c<<=6;
 			c|=src[2]&0x3F;
-			c<<=6;
-			c|=src[3]&0x3F;
 #endif
 		}
 		*dst++=c;
@@ -1512,7 +1512,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 			a++;
 		}else
 			c1=c0;
-		if (SJIS2Unicode[c1]==UNICODE_QUESTION_MARK && c1!=UNICODE_QUESTION_MARK){
+		if (SJIS2Unicode[c1]=='?' && c1!='?'){
 			(o_stderr <<"ENCODING ERROR: Character SJIS+").outputHex(c1,4)
 				<<" is unsupported by this Shift JIS->Unicode implementation. Replacing with '?'.\n";
 		}
@@ -1523,7 +1523,7 @@ ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl){
 
 void WC_88591(uchar *dst,const wchar_t *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++,src++,dst++)
-		*dst=(*src>0xFF)?UNICODE_QUESTION_MARK:*src;
+		*dst=(*src>0xFF)?'?':*src;
 }
 
 ulong getUTF8size(const wchar_t *buffer,ulong size){
@@ -1604,7 +1604,7 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 	for (ulong a=0;a<srcl;a++){
 		wchar_t srcc=*src++,
 			character=Unicode2SJIS[srcc];
-		if (character==UNICODE_QUESTION_MARK && srcc!=UNICODE_QUESTION_MARK){
+		if (character=='?' && srcc!='?'){
 			(o_stderr <<"ENCODING ERROR: Character U+").outputHex(srcc,4)
 				<<" is unsupported by this Unicode->Shift JIS implementation. Replacing with '?'.\n";
 		}

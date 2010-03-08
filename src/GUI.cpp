@@ -507,7 +507,7 @@ SDL_Rect NONS_Button::GetBoundingBox(const std::wstring &str,NONS_FontCache *cac
 	SDL_Rect frame={0,0,this->limitX,this->limitY};
 	for (std::wstring::const_iterator i=str.begin(),end=str.end();i!=end;i++){
 		NONS_Glyph *glyph=cache->getGlyph(*i);
-		if (*i==UNICODE_LINE_FEED){
+		if (*i=='\n'){
 			outputBuffer.push_back(0);
 			if (x0+wordL>=frame.w && lastSpace>=0){
 				if (isbreakspace(outputBuffer[lastSpace]->getcodePoint()))
@@ -595,7 +595,7 @@ void NONS_Button::write(const std::wstring &str,float center){
 			glyph3=this->shadowLayer->fontCache->getGlyph(*i);
 		else
 			glyph3=0;
-		if (*i==UNICODE_LINE_FEED){
+		if (*i=='\n'){
 			outputBuffer.push_back(0);
 			outputBuffer2.push_back(0);
 			outputBuffer3.push_back(0);
@@ -1712,9 +1712,9 @@ std::vector<NONS_Glyph *> *NONS_FontCache::getglyphCache(){
 NONS_Glyph *NONS_FontCache::getGlyph(wchar_t codePoint){
 	switch (codePoint){
 		case 0:
-		case UNICODE_TAB:
-		case UNICODE_LINE_FEED:
-		case UNICODE_CARRIAGE_RETURN:
+		case '\t':
+		case '\n':
+		case '\r':
 			return 0;
 		default:
 			break;
@@ -1753,7 +1753,7 @@ NONS_DebuggingConsole::~NONS_DebuggingConsole(){
 
 ulong getGlyphWidth(NONS_FontCache *cache){
 	ulong res=0;
-	for (wchar_t a=UNICODE_A;a<=UNICODE_Z;a++){
+	for (wchar_t a='A';a<='Z';a++){
 		ulong w=cache->getGlyph(a)->advance;
 		if (w>res)
 			res=w;
@@ -1843,11 +1843,11 @@ void NONS_DebuggingConsole::output(const std::wstring &str,NONS_ScreenSpace *dst
 	ulong lastY=this->cursorY;
 	for (ulong a=0;a<str.size();a++){
 		switch (str[a]){
-			case UNICODE_LINE_FEED:
+			case '\n':
 				this->cursorX=0;
 				this->cursorY++;
 				break;
-			case UNICODE_TAB:
+			case '\t':
 				this->cursorX+=4-this->cursorX%4;
 				if (this->cursorX>=this->screenW){
 					this->cursorX=0;

@@ -287,10 +287,10 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	for (ulong a=0;a<str.size();a++){
 		wchar_t character=str[a];
 		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
-		if (character==UNICODE_LINE_FEED){
+		if (character=='\n'){
 			this->cachedText.push_back(character);
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0){
-				this->cachedText[lastSpace]=UNICODE_CARRIAGE_RETURN;
+				this->cachedText[lastSpace]='\r';
 				y0+=lineSkip;
 			}
 			lastSpace=-1;
@@ -299,7 +299,7 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 			wordL=0;
 		}else if (isbreakspace(character)){
 			if (x0+wordL>this->w+this->x0 && lastSpace>=0){
-				this->cachedText[lastSpace]=UNICODE_CARRIAGE_RETURN;
+				this->cachedText[lastSpace]='\r';
 				lastSpace=-1;
 				x0=indentationMargin;
 				y0+=lineSkip;
@@ -313,13 +313,13 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 			this->cachedText.push_back(character);
 		}else{
 			if (x0+wordL>=this->w+this->x0 && lastSpace>=0)
-				this->cachedText[lastSpace]=UNICODE_CARRIAGE_RETURN;
+				this->cachedText[lastSpace]='\r';
 			check_at_end=0;
 			break;
 		}
 	}
 	if (check_at_end && x0+wordL>=this->w+this->x0 && lastSpace>=0)
-		this->cachedText[lastSpace]=UNICODE_CARRIAGE_RETURN;
+		this->cachedText[lastSpace]='\r';
 	this->printingStarted=1;
 	this->indent_next=0;
 	if (this->verticalCenterPolicy>0 && this->currentBuffer.size()>0)
@@ -331,7 +331,7 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 		this->y=this->y0;
 	this->prebufferedText.append(L"<y=");
 	this->prebufferedText.append(itoa<wchar_t>(this->y));
-	this->prebufferedText.push_back(UNICODE_GT_SIGN);
+	this->prebufferedText.push_back('>');
 	return 0;
 }
 
@@ -351,7 +351,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		if (x0!=this->lastStart){
 			this->prebufferedText.append(L"<x=");
 			this->prebufferedText.append(itoa<wchar_t>(x0));
-			this->prebufferedText.push_back(UNICODE_GT_SIGN);
+			this->prebufferedText.push_back('>');
 			this->lastStart=x0;
 		}
 	}else
@@ -378,23 +378,23 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				this->resumePrintingWhere=a+1;
 				this->currentBuffer.append(this->prebufferedText);
 				this->prebufferedText.clear();
-				this->indent_next=(character==UNICODE_CARRIAGE_RETURN);
+				this->indent_next=(character=='\r');
 				return 1;
 			}
 			if (a<this->cachedText.size()-1){
 				x0=this->setLineStart(&this->cachedText,a+1,&frame,this->horizontalCenterPolicy);
-				if (character==UNICODE_CARRIAGE_RETURN && !this->horizontalCenterPolicy)
+				if (character=='\r' && !this->horizontalCenterPolicy)
 					x0=indentationMargin;
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
 					this->prebufferedText.append(itoa<wchar_t>(x0));
-					this->prebufferedText.push_back(UNICODE_GT_SIGN);
+					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
 			}else
 				x0=this->x0;
 			y0+=lineSkip;
-			this->prebufferedText.push_back(UNICODE_LINE_FEED);
+			this->prebufferedText.push_back('\n');
 			continue;
 		}
 		int advance=glyph->getadvance()+this->extraAdvance;
@@ -416,21 +416,21 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
 					this->prebufferedText.append(itoa<wchar_t>(x0));
-					this->prebufferedText.push_back(UNICODE_GT_SIGN);
+					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
 				y0+=lineSkip;
-				this->prebufferedText.push_back(UNICODE_LINE_FEED);
+				this->prebufferedText.push_back('\n');
 			}
 		}
 		switch (glyph->codePoint){
-			case UNICODE_BACKSLASH:
+			case '\\':
 				this->prebufferedText.append(L"\\\\");
 				break;
-			case UNICODE_LT_SIGN:
+			case '<':
 				this->prebufferedText.append(L"\\<");
 				break;
-			case UNICODE_GT_SIGN:
+			case '>':
 				this->prebufferedText.append(L"\\>");
 				break;
 			default:
@@ -507,7 +507,7 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 	long lastStart=this->x0;
 	for (ulong a=0;a<str->size();a++){
 		wchar_t character=(*str)[a];
-		if (character==UNICODE_LT_SIGN){
+		if (character=='<'){
 			std::wstring tagname=tagName(*str,a);
 			if (tagname.size()){
 				if (tagname==L"x"){
@@ -519,17 +519,17 @@ void NONS_StandardOutput::ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst
 					if (tagvalue.size())
 						y=atoi(tagvalue);
 				}
-				a=str->find(UNICODE_GT_SIGN,a);
+				a=str->find('>',a);
 			}
 			continue;
 		}
-		if (character==UNICODE_BACKSLASH)
+		if (character=='\\')
 			character=(*str)[++a];
 		NONS_Glyph *glyph=this->foregroundLayer->fontCache->getGlyph(character);
 		NONS_Glyph *glyph2=0;
 		if (this->shadowLayer)
 			glyph2=this->shadowLayer->fontCache->getGlyph(character);
-		if (character==UNICODE_LINE_FEED){
+		if (character=='\n'){
 			x=lastStart;
 			y+=lineSkip;
 		}else{
@@ -627,7 +627,7 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 		this->y=this->setTextStart(&this->cachedText,&frame,this->verticalCenterPolicy);
 		this->prebufferedText.append(L"<y=");
 		this->prebufferedText.append(itoa<wchar_t>(this->y));
-		this->prebufferedText.push_back(UNICODE_GT_SIGN);
+		this->prebufferedText.push_back('>');
 	}
 }
 
@@ -638,12 +638,12 @@ void NONS_StandardOutput::setPosition(int x,int y){
 	this->currentBuffer.append(itoa<wchar_t>(this->x));
 	this->currentBuffer.append(L"><y=");
 	this->currentBuffer.append(itoa<wchar_t>(this->y));
-	this->currentBuffer.push_back(UNICODE_GT_SIGN);
+	this->currentBuffer.push_back('>');
 }
 
 float NONS_StandardOutput::getCenterPolicy(char which){
 	which=tolower(which);
-	return (which==UNICODE_v)?this->verticalCenterPolicy:this->horizontalCenterPolicy;
+	return (which=='v')?this->verticalCenterPolicy:this->horizontalCenterPolicy;
 }
 
 void NONS_StandardOutput::setCenterPolicy(char which,float val){
@@ -654,7 +654,7 @@ void NONS_StandardOutput::setCenterPolicy(char which,float val){
 		ulong val2=(ulong)val;
 		val-=val2;
 	}
-	if (which==UNICODE_v)
+	if (which=='v')
 		this->verticalCenterPolicy=val;
 	else
 		this->horizontalCenterPolicy=val;
@@ -682,11 +682,11 @@ std::wstring removeTags(const std::wstring &str){
 	res.reserve(str.size());
 	for (ulong a=0;a<str.size();a++){
 		switch (str[a]){
-			case UNICODE_LT_SIGN:
-				while (str[a]!=UNICODE_GT_SIGN)
+			case '<':
+				while (str[a]!='>')
 					a++;
 				break;
-			case UNICODE_BACKSLASH:
+			case '\\':
 				a++;
 			default:
 				res.push_back(str[a]);

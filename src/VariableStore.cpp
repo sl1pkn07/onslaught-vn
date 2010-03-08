@@ -173,8 +173,8 @@ namespace NONS_Expression{
 		CHECK_OPERANDS(2);
 		EXPECT_INTEGER(0);
 		EXPECT_INTEGER(1);
-		OPERAND(0)->negate();
-		OPERAND(1)->negate();
+		OPERAND(0)->negate(invert_terms);
+		OPERAND(1)->negate(invert_terms);
 		OPERAND(0)->integer=OPERAND(0)->integer && OPERAND(1)->integer;
 		deleteTop(operands);
 		return 0;
@@ -291,9 +291,10 @@ namespace NONS_Expression{
 		std::wstringstream stream(exp);
 		this->expr=0;
 #ifdef _DEBUG
-		std::cout <<"--------------------------------------------------------------------------------"
-			<<'['<<exp<<']'<<std::endl
-			<<"--------------------------------------------------------------------------------";
+		if (expressionParser_yydebug)
+			std::cout <<"--------------------------------------------------------------------------------"
+				<<'['<<exp<<']'<<std::endl
+				<<"--------------------------------------------------------------------------------";
 #endif
 		switch (expressionParser_yyparse(&stream,store,this->expr,0)){
 			case 0:
@@ -353,6 +354,7 @@ namespace NONS_Expression{
 		ErrorCode e=this->run(store,invert_terms,full_expression,evaluation_stack,full_expression.size());
 		if (e!=NONS_NO_ERROR)
 			return makeError(e);
+		evaluation_stack[0]->negate(invert_terms);
 		return evaluation_stack[0];
 	}
 
@@ -791,7 +793,7 @@ NONS_VariableStore::NONS_VariableStore(){
 	ulong l;
 	this->commitGlobals=0;
 #ifdef _DEBUG
-	expressionParser_yydebug=1;
+	//expressionParser_yydebug=1;
 #endif
 	std::wstring dir=save_directory+L"global.sav";
 	uchar *buffer=NONS_File::read(dir.c_str(),l);

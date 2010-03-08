@@ -388,8 +388,8 @@ std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
 		t=*localtime(&t2);
 	}
 	std::string filename=(!name.size())?
-			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+UNICODE_T+
-			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+UNICODE_UNDERSCORE+
+			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
+			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
 			itoa<char>(c,10)+".bmp"
 		:name;
 	const char *s=filename.c_str();
@@ -407,8 +407,8 @@ void NONS_VirtualScreen::takeScreenshotFromVideo(void){
 		t=*localtime(&t2);
 	}
 	std::string filename=
-		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+UNICODE_T+
-		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+UNICODE_UNDERSCORE+
+		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
+		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
 		itoa<char>(c,10)+".bmp";
 	const char *s=filename.c_str();
 	SDL_SaveBMP(this->screens[REAL],s);

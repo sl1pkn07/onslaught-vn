@@ -32,11 +32,11 @@
 
 template <typename T>
 T DEC2HEX(T x){
-	return x<10?UNICODE_0+x:UNICODE_A+x-10;
+	return x<10?'0'+x:'A'+x-10;
 }
 
 void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
-	size_t equals=src.find(UNICODE_EQ_SIGN);
+	size_t equals=src.find('=');
 	if (equals==src.npos)
 		return;
 	var=src.substr(0,equals);
@@ -51,11 +51,11 @@ void getMembers(const std::wstring &src,std::wstring &var,std::wstring &val){
 
 //0=str, 1=dec, 2=hex, 3=bin
 char getDataType(const std::wstring &string){
-	if (string[0]==UNICODE_QUOTE)
+	if (string[0]=='\"')
 		return 0;
-	if (string[0]==UNICODE_0 && string[1]==UNICODE_x)
+	if (string[0]=='0' && string[1]=='x')
 		return 2;
-	if (string[string.size()-1]==UNICODE_b)
+	if (string[string.size()-1]=='b')
 		return 3;
 	return 1;
 }
@@ -132,9 +132,9 @@ long ConfigFile::getInt(const std::wstring &index,ulong subindex){
 			}
 			break;
 		case 3:
-			for (std::wstring::iterator i=str.begin()+2;*i!=UNICODE_b;i++){
+			for (std::wstring::iterator i=str.begin()+2;*i!='b';i++){
 				ret<<=1;
-				ret|=*i-UNICODE_0;
+				ret|=*i-'0';
 			}
 			break;
 		default:
@@ -147,7 +147,7 @@ void ConfigFile::assignWString(const std::wstring &var,const std::wstring &val,u
 	config_map_t::iterator i=this->entries.find(var);
 	std::wstring str=UniFromISO88591("\"");
 	str+=val;
-	str.push_back(UNICODE_QUOTE);
+	str.push_back('\"');
 	if (i!=this->entries.end()){
 		if (subindex>=i->second.size())
 			i->second.push_back(str);
@@ -183,11 +183,11 @@ std::string ConfigFile::writeOut(ENCODINGS encoding){
 	std::wstring buffer;
 	for(config_map_t::iterator i=this->entries.begin(),end=this->entries.end();i!=end;i++){
 		buffer.append(i->first);
-		buffer.push_back(UNICODE_EQ_SIGN);
+		buffer.push_back('=');
 		for (ulong a=0;;){
 			buffer.append(i->second[a++]);
 			if (a<i->second.size())
-				buffer.push_back(UNICODE_SPACE);
+				buffer.push_back(' ');
 			else{
 				buffer.push_back(13);
 				buffer.push_back(10);
