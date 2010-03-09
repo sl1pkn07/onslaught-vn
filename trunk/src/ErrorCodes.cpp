@@ -41,7 +41,7 @@ const char *errorMessages[]={
 	//NONS_NOT_IMPLEMENTED
 	"Command not implemented.",
 	//NONS_NOT_IN_DEFINE_MODE
-	"Attempted variable declaration while not in Define Mode.",
+	"The command is illegal ouside of the *define block.",
 	//NONS_DUPLICATE_CONSTANT_DEFINITION
 	"Constant redefinition.",
 	//NONS_ALREADY_INITIALIZED
@@ -217,5 +217,7 @@ const char *errorMessages[]={
 	"Expected integral value.",
 	//NONS_EXPECTED_STRING_VALUE
 	"Expected string value.",
+	//NONS_NOT_IN_RUN_MODE
+	"The command is illegal before or in the *define block.",
 	0
 };

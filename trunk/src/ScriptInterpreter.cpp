@@ -55,6 +55,9 @@ SDL_Surface *(*rotationFunction)(SDL_Surface *,double)=SDL_Rotate;
 SDL_Surface *(*resizeFunction)(SDL_Surface *,int,int)=SDL_Resize;
 #endif
 
+NONS_DefineFlag ALLOW_IN_DEFINE;
+NONS_RunFlag ALLOW_IN_RUN;
+
 ErrorCode getVar(NONS_VariableMember *&var,const std::wstring &str,NONS_VariableStore *store){
 	ErrorCode error;
 	var=store->retrieve(str,&error);
@@ -146,7 +149,7 @@ void NONS_ScriptInterpreter::init(){
 	//this->interpreter_position=0;
 	this->thread=new NONS_ScriptThread(this->script);
 	this->store=new NONS_VariableStore();
-	//this->interpreter_mode=DEFINE;
+	this->interpreter_mode=UNDEFINED_MODE;
 	this->nsadir="./";
 	this->default_speed=0;
 	this->default_speed_slow=0;
@@ -322,119 +325,34 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 		this->init();
 	}
 
-/*
-	define-only commands:
-	game
-	btnnowindowerase
-	noteraseman
-	windowchip
-	defaultfont
-	setkinsoku
-	addkinsoku
-	english
-	clickstr
-	linepage
-	clickvoice
-	clickskippage
-	transmode
-	underline
-	bgalia
-	humanz
-	windowback
-	effect
-	effectblank
-	effectcut
-	cdfadeout
-	chkcdfile
-	chkcdfile_ex
-	dsound
-	selectcolor
-	selectvoice
-	stralias
-	numalias
-	intlimit
-	dim
-	rmenu
-	menusetwindow
-	savename
-	menuselectcolor
-	menuselectvoice
-	rlookback
-	rgosub
-	roff
-	lookbackbutton
-	lookbackcolor
-	lookbackvoice
-	lookbacksp
-	maxkaisoupage
-	kidokuskip
-	mode_wave_demo
-	filelog
-	globalon
-	labellog
-	savenumber
-	savedir
-	loadgosub
-	errorsave
-	noloaderror
-	defsub
-	automode
-	automode_time
-	defvoicevol
-	defsevol
-	defmp3vol
-	mode_saya
-	mode_ext
-	mode800
-	mode400
-	mode320
-	gameid
-	soundpressplgin
-	spi
-	arc
-	nsa
-	nsadir
-	setlayer
-	versionstr
-	killmenu
-	resetmenu
-	insertmenu
-	deletemenu
-	defaultspeed
-	textgosub
-	usewheel
-	useescspc
-	pretextgosub
-	createdummy
-*/
-	this->commandList[L"abssetcursor"]=&NONS_ScriptInterpreter::command_setcursor;
-	this->commandList[L"add"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"allsphide"]=&NONS_ScriptInterpreter::command_allsphide;
-	this->commandList[L"allspresume"]=&NONS_ScriptInterpreter::command_allsphide;
-	this->commandList[L"amsp"]=&NONS_ScriptInterpreter::command_msp;
-	this->commandList[L"arc"]=&NONS_ScriptInterpreter::command_nsa;
-	this->commandList[L"atoi"]=&NONS_ScriptInterpreter::command_atoi;
-	this->commandList[L"autoclick"]=&NONS_ScriptInterpreter::command_autoclick;
-	this->commandList[L"automode_time"]=0;
-	this->commandList[L"automode"]=0;
-	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_avi;
-	this->commandList[L"bar"]=0;
-	this->commandList[L"barclear"]=0;
-	this->commandList[L"bg"]=&NONS_ScriptInterpreter::command_bg;
-	this->commandList[L"bgcopy"]=&NONS_ScriptInterpreter::command_bgcopy;
-	this->commandList[L"bgcpy"]=&NONS_ScriptInterpreter::command_bgcopy;
-	this->commandList[L"bgm"]=&NONS_ScriptInterpreter::command_play;
-	this->commandList[L"bgmonce"]=&NONS_ScriptInterpreter::command_play;
-	this->commandList[L"bgmstop"]=&NONS_ScriptInterpreter::command_playstop;
-	this->commandList[L"bgmvol"]=&NONS_ScriptInterpreter::command_mp3vol;
-	this->commandList[L"blt"]=&NONS_ScriptInterpreter::command_blt;
-	this->commandList[L"br"]=&NONS_ScriptInterpreter::command_br;
-	this->commandList[L"break"]=&NONS_ScriptInterpreter::command_break;
-	this->commandList[L"btn"]=&NONS_ScriptInterpreter::command_btn;
-	this->commandList[L"btndef"]=&NONS_ScriptInterpreter::command_btndef;
-	this->commandList[L"btndown"]=0;
-	this->commandList[L"btntime"]=&NONS_ScriptInterpreter::command_btntime;
-	this->commandList[L"btntime2"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"abssetcursor"]=&NONS_ScriptInterpreter::command_setcursor|ALLOW_IN_RUN;
+	this->commandList[L"add"]=&NONS_ScriptInterpreter::command_add|ALLOW_IN_RUN;
+	this->commandList[L"allsphide"]=&NONS_ScriptInterpreter::command_allsphide|ALLOW_IN_RUN;
+	this->commandList[L"allspresume"]=&NONS_ScriptInterpreter::command_allsphide|ALLOW_IN_RUN;
+	this->commandList[L"amsp"]=&NONS_ScriptInterpreter::command_msp|ALLOW_IN_RUN;
+	this->commandList[L"arc"]=&NONS_ScriptInterpreter::command_nsa|ALLOW_IN_DEFINE;
+	this->commandList[L"atoi"]=&NONS_ScriptInterpreter::command_atoi|ALLOW_IN_RUN;
+	this->commandList[L"autoclick"]=&NONS_ScriptInterpreter::command_autoclick|ALLOW_IN_RUN;
+	this->commandList[L"automode_time"]=0|ALLOW_IN_DEFINE;
+	this->commandList[L"automode"]=0|ALLOW_IN_DEFINE;
+	this->commandList[L"avi"]=&NONS_ScriptInterpreter::command_avi|ALLOW_IN_RUN;
+	this->commandList[L"bar"]=0|ALLOW_IN_RUN;
+	this->commandList[L"barclear"]=0|ALLOW_IN_RUN;
+	this->commandList[L"bg"]=&NONS_ScriptInterpreter::command_bg|ALLOW_IN_RUN;
+	this->commandList[L"bgcopy"]=&NONS_ScriptInterpreter::command_bgcopy|ALLOW_IN_RUN;
+	this->commandList[L"bgcpy"]=&NONS_ScriptInterpreter::command_bgcopy|ALLOW_IN_RUN;
+	this->commandList[L"bgm"]=&NONS_ScriptInterpreter::command_play|ALLOW_IN_RUN;
+	this->commandList[L"bgmonce"]=&NONS_ScriptInterpreter::command_play|ALLOW_IN_RUN;
+	this->commandList[L"bgmstop"]=&NONS_ScriptInterpreter::command_playstop|ALLOW_IN_RUN;
+	this->commandList[L"bgmvol"]=&NONS_ScriptInterpreter::command_mp3vol|ALLOW_IN_RUN;
+	this->commandList[L"blt"]=&NONS_ScriptInterpreter::command_blt|ALLOW_IN_RUN;
+	this->commandList[L"br"]=&NONS_ScriptInterpreter::command_br|ALLOW_IN_RUN;
+	this->commandList[L"break"]=&NONS_ScriptInterpreter::command_break|ALLOW_IN_RUN;
+	this->commandList[L"btn"]=&NONS_ScriptInterpreter::command_btn|ALLOW_IN_RUN;
+	this->commandList[L"btndef"]=&NONS_ScriptInterpreter::command_btndef|ALLOW_IN_RUN;
+	this->commandList[L"btndown"]=0|ALLOW_IN_RUN;
+	this->commandList[L"btntime"]=&NONS_ScriptInterpreter::command_btntime|ALLOW_IN_RUN;
+	this->commandList[L"btntime2"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_RUN;
 	this->commandList[L"btnwait"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"btnwait2"]=&NONS_ScriptInterpreter::command_btnwait;
 	this->commandList[L"caption"]=&NONS_ScriptInterpreter::command_caption;
@@ -445,8 +363,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"chvol"]=0;
 	this->commandList[L"cl"]=&NONS_ScriptInterpreter::command_cl;
 	this->commandList[L"click"]=&NONS_ScriptInterpreter::command_click;
-	this->commandList[L"clickstr"]=&NONS_ScriptInterpreter::command_clickstr;
-	this->commandList[L"clickvoice"]=0;
+	this->commandList[L"clickstr"]=&NONS_ScriptInterpreter::command_clickstr|ALLOW_IN_DEFINE;
+	this->commandList[L"clickvoice"]=0|ALLOW_IN_DEFINE;
 	this->commandList[L"cmp"]=&NONS_ScriptInterpreter::command_cmp;
 	this->commandList[L"cos"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"csel"]=0;
@@ -455,16 +373,16 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"csp"]=&NONS_ScriptInterpreter::command_csp;
 	this->commandList[L"date"]=&NONS_ScriptInterpreter::command_date;
 	this->commandList[L"dec"]=&NONS_ScriptInterpreter::command_inc;
-	this->commandList[L"defaultfont"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"defaultspeed"]=&NONS_ScriptInterpreter::command_defaultspeed;
+	this->commandList[L"defaultfont"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
+	this->commandList[L"defaultspeed"]=&NONS_ScriptInterpreter::command_defaultspeed|ALLOW_IN_DEFINE;
 	this->commandList[L"definereset"]=&NONS_ScriptInterpreter::command_reset;
-	this->commandList[L"defmp3vol"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"defsevol"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"defsub"]=&NONS_ScriptInterpreter::command_defsub;
-	this->commandList[L"defvoicevol"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"defmp3vol"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
+	this->commandList[L"defsevol"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
+	this->commandList[L"defsub"]=&NONS_ScriptInterpreter::command_defsub|ALLOW_IN_DEFINE;
+	this->commandList[L"defvoicevol"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"delay"]=&NONS_ScriptInterpreter::command_delay;
 	this->commandList[L"deletescreenshot"]=&NONS_ScriptInterpreter::command_deletescreenshot;
-	this->commandList[L"dim"]=&NONS_ScriptInterpreter::command_dim;
+	this->commandList[L"dim"]=&NONS_ScriptInterpreter::command_dim|ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"div"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"draw"]=&NONS_ScriptInterpreter::command_draw;
 	this->commandList[L"drawbg"]=&NONS_ScriptInterpreter::command_drawbg;
@@ -481,9 +399,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"dwaveplay"]=0;
 	this->commandList[L"dwaveplayloop"]=0;
 	this->commandList[L"dwavestop"]=0;
-	this->commandList[L"effect"]=&NONS_ScriptInterpreter::command_effect;
-	this->commandList[L"effectblank"]=&NONS_ScriptInterpreter::command_effectblank;
-	this->commandList[L"effectcut"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"effect"]=&NONS_ScriptInterpreter::command_effect|ALLOW_IN_DEFINE;
+	this->commandList[L"effectblank"]=&NONS_ScriptInterpreter::command_effectblank|ALLOW_IN_DEFINE;
+	this->commandList[L"effectcut"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"end"]=&NONS_ScriptInterpreter::command_end;
 	this->commandList[L"erasetextwindow"]=&NONS_ScriptInterpreter::command_erasetextwindow;
 	this->commandList[L"exbtn_d"]=0;
@@ -491,9 +409,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"exec_dll"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"existspbtn"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"fileexist"]=&NONS_ScriptInterpreter::command_fileexist;
-	this->commandList[L"filelog"]=&NONS_ScriptInterpreter::command_filelog;
+	this->commandList[L"filelog"]=&NONS_ScriptInterpreter::command_filelog|ALLOW_IN_DEFINE;
 	this->commandList[L"for"]=&NONS_ScriptInterpreter::command_for;
-	this->commandList[L"game"]=&NONS_ScriptInterpreter::command_game;
+	this->commandList[L"game"]=&NONS_ScriptInterpreter::command_game|ALLOW_IN_DEFINE;
 	this->commandList[L"getbgmvol"]=&NONS_ScriptInterpreter::command_getmp3vol;
 	this->commandList[L"getbtntimer"]=&NONS_ScriptInterpreter::command_getbtntimer;
 	this->commandList[L"getcselnum"]=0;
@@ -522,17 +440,17 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"getversion"]=&NONS_ScriptInterpreter::command_getversion;
 	this->commandList[L"getvoicevol"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"getzxc"]=&NONS_ScriptInterpreter::command_getzxc;
-	this->commandList[L"globalon"]=&NONS_ScriptInterpreter::command_globalon;
+	this->commandList[L"globalon"]=&NONS_ScriptInterpreter::command_globalon|ALLOW_IN_DEFINE;
 	this->commandList[L"gosub"]=&NONS_ScriptInterpreter::command_gosub;
 	this->commandList[L"goto"]=&NONS_ScriptInterpreter::command_goto;
 	this->commandList[L"humanorder"]=&NONS_ScriptInterpreter::command_humanorder;
-	this->commandList[L"humanz"]=&NONS_ScriptInterpreter::command_humanz;
+	this->commandList[L"humanz"]=&NONS_ScriptInterpreter::command_humanz|ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"if"]=&NONS_ScriptInterpreter::command_if;
 	this->commandList[L"inc"]=&NONS_ScriptInterpreter::command_inc;
 	this->commandList[L"indent"]=&NONS_ScriptInterpreter::command_indent;
 	this->commandList[L"input"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit;
+	this->commandList[L"insertmenu"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
+	this->commandList[L"intlimit"]=&NONS_ScriptInterpreter::command_intlimit|ALLOW_IN_DEFINE;
 	this->commandList[L"isdown"]=&NONS_ScriptInterpreter::command_isdown;
 	this->commandList[L"isfull"]=&NONS_ScriptInterpreter::command_isfull;
 	this->commandList[L"ispage"]=&NONS_ScriptInterpreter::command_ispage;
@@ -542,22 +460,22 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"jumpb"]=&NONS_ScriptInterpreter::command_jumpf;
 	this->commandList[L"jumpf"]=&NONS_ScriptInterpreter::command_jumpf;
 	this->commandList[L"kidokumode"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"labellog"]=&NONS_ScriptInterpreter::command_labellog;
+	this->commandList[L"kidokuskip"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
+	this->commandList[L"labellog"]=&NONS_ScriptInterpreter::command_labellog|ALLOW_IN_DEFINE;
 	this->commandList[L"layermessage"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"ld"]=&NONS_ScriptInterpreter::command_ld;
 	this->commandList[L"len"]=&NONS_ScriptInterpreter::command_len;
-	this->commandList[L"linepage"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"linepage"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"linepage2"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"loadgame"]=&NONS_ScriptInterpreter::command_loadgame;
-	this->commandList[L"loadgosub"]=&NONS_ScriptInterpreter::command_loadgosub;
+	this->commandList[L"loadgosub"]=&NONS_ScriptInterpreter::command_loadgosub|ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"locate"]=&NONS_ScriptInterpreter::command_locate;
 	this->commandList[L"logsp"]=0;
 	this->commandList[L"logsp2"]=0;
-	this->commandList[L"lookbackbutton"]=&NONS_ScriptInterpreter::command_lookbackbutton;
-	this->commandList[L"lookbackcolor"]=&NONS_ScriptInterpreter::command_lookbackcolor;
+	this->commandList[L"lookbackbutton"]=&NONS_ScriptInterpreter::command_lookbackbutton|ALLOW_IN_DEFINE;
+	this->commandList[L"lookbackcolor"]=&NONS_ScriptInterpreter::command_lookbackcolor|ALLOW_IN_DEFINE;
 	this->commandList[L"lookbackflush"]=&NONS_ScriptInterpreter::command_lookbackflush;
-	this->commandList[L"lookbacksp"]=0;
+	this->commandList[L"lookbacksp"]=0|ALLOW_IN_DEFINE;
 	this->commandList[L"loopbgm"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"loopbgmstop"]=&NONS_ScriptInterpreter::command_playstop;
 	this->commandList[L"lr_trap"]=&NONS_ScriptInterpreter::command_trap;
@@ -565,17 +483,17 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"lsp"]=&NONS_ScriptInterpreter::command_lsp;
 	//this->commandList[L"lsp2"]=&NONS_ScriptInterpreter::command_lsp2;
 	this->commandList[L"lsph"]=&NONS_ScriptInterpreter::command_lsp;
-	this->commandList[L"maxkaisoupage"]=&NONS_ScriptInterpreter::command_maxkaisoupage;
+	this->commandList[L"maxkaisoupage"]=&NONS_ScriptInterpreter::command_maxkaisoupage|ALLOW_IN_DEFINE;
 	this->commandList[L"menu_automode"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"menu_full"]=&NONS_ScriptInterpreter::command_menu_full;
 	this->commandList[L"menu_window"]=&NONS_ScriptInterpreter::command_menu_full;
-	this->commandList[L"menuselectcolor"]=&NONS_ScriptInterpreter::command_menuselectcolor;
-	this->commandList[L"menuselectvoice"]=&NONS_ScriptInterpreter::command_menuselectvoice;
-	this->commandList[L"menusetwindow"]=&NONS_ScriptInterpreter::command_menusetwindow;
+	this->commandList[L"menuselectcolor"]=&NONS_ScriptInterpreter::command_menuselectcolor|ALLOW_IN_DEFINE;
+	this->commandList[L"menuselectvoice"]=&NONS_ScriptInterpreter::command_menuselectvoice|ALLOW_IN_DEFINE;
+	this->commandList[L"menusetwindow"]=&NONS_ScriptInterpreter::command_menusetwindow|ALLOW_IN_DEFINE;
 	this->commandList[L"mid"]=&NONS_ScriptInterpreter::command_mid;
 	this->commandList[L"mod"]=&NONS_ScriptInterpreter::command_add;
-	this->commandList[L"mode_ext"]=0;
-	this->commandList[L"mode_saya"]=0;
+	this->commandList[L"mode_ext"]=0|ALLOW_IN_DEFINE;
+	this->commandList[L"mode_saya"]=0|ALLOW_IN_DEFINE;
 	this->commandList[L"monocro"]=&NONS_ScriptInterpreter::command_monocro;
 	this->commandList[L"mov"]=&NONS_ScriptInterpreter::command_mov;
 	this->commandList[L"mov3"]=&NONS_ScriptInterpreter::command_movN;
@@ -600,17 +518,17 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"nega"]=&NONS_ScriptInterpreter::command_nega;
 	this->commandList[L"next"]=&NONS_ScriptInterpreter::command_next;
 	this->commandList[L"notif"]=&NONS_ScriptInterpreter::command_if;
-	this->commandList[L"nsa"]=&NONS_ScriptInterpreter::command_nsa;
-	this->commandList[L"ns2"]=&NONS_ScriptInterpreter::command_nsa;
-	this->commandList[L"ns3"]=&NONS_ScriptInterpreter::command_nsa;
-	this->commandList[L"nsadir"]=&NONS_ScriptInterpreter::command_nsadir;
-	this->commandList[L"numalias"]=&NONS_ScriptInterpreter::command_alias;
+	this->commandList[L"nsa"]=&NONS_ScriptInterpreter::command_nsa|ALLOW_IN_DEFINE;
+	this->commandList[L"ns2"]=&NONS_ScriptInterpreter::command_nsa|ALLOW_IN_DEFINE;
+	this->commandList[L"ns3"]=&NONS_ScriptInterpreter::command_nsa|ALLOW_IN_DEFINE;
+	this->commandList[L"nsadir"]=&NONS_ScriptInterpreter::command_nsadir|ALLOW_IN_DEFINE;
+	this->commandList[L"numalias"]=&NONS_ScriptInterpreter::command_alias|ALLOW_IN_DEFINE;
 	this->commandList[L"ofscopy"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"ofscpy"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"play"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playonce"]=&NONS_ScriptInterpreter::command_play;
 	this->commandList[L"playstop"]=&NONS_ScriptInterpreter::command_playstop;
-	this->commandList[L"pretextgosub"]=0;
+	this->commandList[L"pretextgosub"]=0|ALLOW_IN_DEFINE;
 	this->commandList[L"print"]=&NONS_ScriptInterpreter::command_print;
 	this->commandList[L"prnum"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"prnumclear"]=&NONS_ScriptInterpreter::command_unimplemented;
@@ -620,21 +538,21 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"quakey"]=&NONS_ScriptInterpreter::command_sinusoidal_quake;
 	this->commandList[L"repaint"]=&NONS_ScriptInterpreter::command_repaint;
 	this->commandList[L"reset"]=&NONS_ScriptInterpreter::command_reset;
-	this->commandList[L"resetmenu"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"resetmenu"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"resettimer"]=&NONS_ScriptInterpreter::command_resettimer;
 	this->commandList[L"return"]=&NONS_ScriptInterpreter::command_return;
-	this->commandList[L"rmenu"]=&NONS_ScriptInterpreter::command_rmenu;
+	this->commandList[L"rmenu"]=&NONS_ScriptInterpreter::command_rmenu|ALLOW_IN_DEFINE;
 	this->commandList[L"rmode"]=&NONS_ScriptInterpreter::command_rmode;
 	this->commandList[L"rnd"]=&NONS_ScriptInterpreter::command_rnd;
 	this->commandList[L"rnd2"]=&NONS_ScriptInterpreter::command_rnd;
-	this->commandList[L"roff"]=&NONS_ScriptInterpreter::command_rmode;
+	this->commandList[L"roff"]=&NONS_ScriptInterpreter::command_rmode|ALLOW_IN_DEFINE;
 	this->commandList[L"rubyoff"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"rubyon"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"sar"]=&NONS_ScriptInterpreter::command_nsa;
 	this->commandList[L"savefileexist"]=&NONS_ScriptInterpreter::command_savefileexist;
 	this->commandList[L"savegame"]=&NONS_ScriptInterpreter::command_savegame;
-	this->commandList[L"savename"]=&NONS_ScriptInterpreter::command_savename;
-	this->commandList[L"savenumber"]=&NONS_ScriptInterpreter::command_savenumber;
+	this->commandList[L"savename"]=&NONS_ScriptInterpreter::command_savename|ALLOW_IN_DEFINE;
+	this->commandList[L"savenumber"]=&NONS_ScriptInterpreter::command_savenumber|ALLOW_IN_DEFINE;
 	this->commandList[L"saveoff"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"saveon"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"savescreenshot"]=&NONS_ScriptInterpreter::command_savescreenshot;
@@ -643,12 +561,12 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"savetime2"]=&NONS_ScriptInterpreter::command_savetime2;
 	this->commandList[L"select"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"selectbtnwait"]=0;
-	this->commandList[L"selectcolor"]=&NONS_ScriptInterpreter::command_selectcolor;
-	this->commandList[L"selectvoice"]=&NONS_ScriptInterpreter::command_selectvoice;
+	this->commandList[L"selectcolor"]=&NONS_ScriptInterpreter::command_selectcolor|ALLOW_IN_DEFINE;
+	this->commandList[L"selectvoice"]=&NONS_ScriptInterpreter::command_selectvoice|ALLOW_IN_DEFINE;
 	this->commandList[L"selgosub"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"selnum"]=&NONS_ScriptInterpreter::command_select;
 	this->commandList[L"setcursor"]=&NONS_ScriptInterpreter::command_setcursor;
-	this->commandList[L"setlayer"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"setlayer"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"setwindow"]=&NONS_ScriptInterpreter::command_setwindow;
 	this->commandList[L"setwindow2"]=0;
 	this->commandList[L"setwindow3"]=0;
@@ -657,17 +575,17 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"sin"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"skip"]=&NONS_ScriptInterpreter::command_skip;
 	this->commandList[L"skipoff"]=&NONS_ScriptInterpreter::command_unimplemented;
-	this->commandList[L"soundpressplgin"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"soundpressplgin"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"sp_rgb_gradation"]=&NONS_ScriptInterpreter::command_undocumented;
 	this->commandList[L"spbtn"]=0;
 	this->commandList[L"spclclk"]=0;
-	this->commandList[L"spi"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"spi"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"split"]=&NONS_ScriptInterpreter::command_split;
 	this->commandList[L"splitstring"]=0;
 	this->commandList[L"spreload"]=0;
 	this->commandList[L"spstr"]=0;
 	this->commandList[L"stop"]=&NONS_ScriptInterpreter::command_stop;
-	this->commandList[L"stralias"]=&NONS_ScriptInterpreter::command_alias;
+	this->commandList[L"stralias"]=&NONS_ScriptInterpreter::command_alias|ALLOW_IN_DEFINE;
 	this->commandList[L"strsp"]=0;
 	this->commandList[L"sub"]=&NONS_ScriptInterpreter::command_add;
 	this->commandList[L"systemcall"]=&NONS_ScriptInterpreter::command_systemcall;
@@ -678,20 +596,20 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"texec"]=0;
 	this->commandList[L"textbtnwait"]=0;
 	this->commandList[L"textclear"]=&NONS_ScriptInterpreter::command_textclear;
-	this->commandList[L"textgosub"]=&NONS_ScriptInterpreter::command_textgosub;
+	this->commandList[L"textgosub"]=&NONS_ScriptInterpreter::command_textgosub|ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"texthide"]=0;
 	this->commandList[L"textoff"]=&NONS_ScriptInterpreter::command_textonoff;
 	this->commandList[L"texton"]=&NONS_ScriptInterpreter::command_textonoff;
 	this->commandList[L"textshow"]=0;
 	this->commandList[L"textspeed"]=&NONS_ScriptInterpreter::command_textspeed;
 	this->commandList[L"time"]=&NONS_ScriptInterpreter::command_time;
-	this->commandList[L"transmode"]=0;
+	this->commandList[L"transmode"]=&NONS_ScriptInterpreter::command_transmode|ALLOW_IN_DEFINE;
 	this->commandList[L"trap"]=&NONS_ScriptInterpreter::command_trap;
 	this->commandList[L"trap2"]=&NONS_ScriptInterpreter::command_trap;
-	this->commandList[L"underline"]=&NONS_ScriptInterpreter::command_underline;
-	this->commandList[L"useescspc"]=&NONS_ScriptInterpreter::command_useescspc;
-	this->commandList[L"usewheel"]=&NONS_ScriptInterpreter::command_usewheel;
-	this->commandList[L"versionstr"]=&NONS_ScriptInterpreter::command_versionstr;
+	this->commandList[L"underline"]=&NONS_ScriptInterpreter::command_underline|ALLOW_IN_DEFINE|ALLOW_IN_RUN;
+	this->commandList[L"useescspc"]=&NONS_ScriptInterpreter::command_useescspc|ALLOW_IN_DEFINE;
+	this->commandList[L"usewheel"]=&NONS_ScriptInterpreter::command_usewheel|ALLOW_IN_DEFINE;
+	this->commandList[L"versionstr"]=&NONS_ScriptInterpreter::command_versionstr|ALLOW_IN_DEFINE;
 	this->commandList[L"voicevol"]=0;
 	this->commandList[L"vsp"]=&NONS_ScriptInterpreter::command_vsp;
 	this->commandList[L"wait"]=&NONS_ScriptInterpreter::command_wait;
@@ -699,7 +617,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"wave"]=&NONS_ScriptInterpreter::command_wave;
 	this->commandList[L"waveloop"]=&NONS_ScriptInterpreter::command_wave;
 	this->commandList[L"wavestop"]=&NONS_ScriptInterpreter::command_wavestop;
-	this->commandList[L"windowback"]=&NONS_ScriptInterpreter::command_unimplemented;
+	this->commandList[L"windowback"]=&NONS_ScriptInterpreter::command_unimplemented|ALLOW_IN_DEFINE;
 	this->commandList[L"windoweffect"]=&NONS_ScriptInterpreter::command_windoweffect;
 	this->commandList[L"zenkakko"]=&NONS_ScriptInterpreter::command_unimplemented;
 	this->commandList[L"date2"]=&NONS_ScriptInterpreter::command_date;
@@ -724,6 +642,89 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	/*
 	this->commandList[L""]=&NONS_ScriptInterpreter::command_;
 	*/
+	this->defineModeCommandList.insert(L"game");
+	this->defineModeCommandList.insert(L"btnnowindowerase");
+	this->defineModeCommandList.insert(L"noteraseman");
+	this->defineModeCommandList.insert(L"windowchip");
+	this->defineModeCommandList.insert(L"defaultfont");
+	this->defineModeCommandList.insert(L"setkinsoku");
+	this->defineModeCommandList.insert(L"addkinsoku");
+	this->defineModeCommandList.insert(L"english");
+	this->defineModeCommandList.insert(L"clickstr");
+	this->defineModeCommandList.insert(L"linepage");
+	this->defineModeCommandList.insert(L"clickvoice");
+	this->defineModeCommandList.insert(L"clickskippage");
+	this->defineModeCommandList.insert(L"transmode");
+	this->defineModeCommandList.insert(L"underline");
+	this->defineModeCommandList.insert(L"bgalia");
+	this->defineModeCommandList.insert(L"humanz");
+	this->defineModeCommandList.insert(L"windowback");
+	this->defineModeCommandList.insert(L"effect");
+	this->defineModeCommandList.insert(L"effectblank");
+	this->defineModeCommandList.insert(L"effectcut");
+	this->defineModeCommandList.insert(L"cdfadeout");
+	this->defineModeCommandList.insert(L"chkcdfile");
+	this->defineModeCommandList.insert(L"chkcdfile_ex");
+	this->defineModeCommandList.insert(L"dsound");
+	this->defineModeCommandList.insert(L"selectcolor");
+	this->defineModeCommandList.insert(L"selectvoice");
+	this->defineModeCommandList.insert(L"stralias");
+	this->defineModeCommandList.insert(L"numalias");
+	this->defineModeCommandList.insert(L"intlimit");
+	this->defineModeCommandList.insert(L"dim");
+	this->defineModeCommandList.insert(L"rmenu");
+	this->defineModeCommandList.insert(L"menusetwindow");
+	this->defineModeCommandList.insert(L"savename");
+	this->defineModeCommandList.insert(L"menuselectcolor");
+	this->defineModeCommandList.insert(L"menuselectvoice");
+	this->defineModeCommandList.insert(L"rlookback");
+	this->defineModeCommandList.insert(L"rgosub");
+	this->defineModeCommandList.insert(L"roff");
+	this->defineModeCommandList.insert(L"lookbackbutton");
+	this->defineModeCommandList.insert(L"lookbackcolor");
+	this->defineModeCommandList.insert(L"lookbackvoice");
+	this->defineModeCommandList.insert(L"lookbacksp");
+	this->defineModeCommandList.insert(L"maxkaisoupage");
+	this->defineModeCommandList.insert(L"kidokuskip");
+	this->defineModeCommandList.insert(L"mode_wave_demo");
+	this->defineModeCommandList.insert(L"filelog");
+	this->defineModeCommandList.insert(L"globalon");
+	this->defineModeCommandList.insert(L"labellog");
+	this->defineModeCommandList.insert(L"savenumber");
+	this->defineModeCommandList.insert(L"savedir");
+	this->defineModeCommandList.insert(L"loadgosub");
+	this->defineModeCommandList.insert(L"errorsave");
+	this->defineModeCommandList.insert(L"noloaderror");
+	this->defineModeCommandList.insert(L"defsub");
+	this->defineModeCommandList.insert(L"automode");
+	this->defineModeCommandList.insert(L"automode_time");
+	this->defineModeCommandList.insert(L"defvoicevol");
+	this->defineModeCommandList.insert(L"defsevol");
+	this->defineModeCommandList.insert(L"defmp3vol");
+	this->defineModeCommandList.insert(L"mode_saya");
+	this->defineModeCommandList.insert(L"mode_ext");
+	this->defineModeCommandList.insert(L"mode800");
+	this->defineModeCommandList.insert(L"mode400");
+	this->defineModeCommandList.insert(L"mode320");
+	this->defineModeCommandList.insert(L"gameid");
+	this->defineModeCommandList.insert(L"soundpressplgin");
+	this->defineModeCommandList.insert(L"spi");
+	this->defineModeCommandList.insert(L"arc");
+	this->defineModeCommandList.insert(L"nsa");
+	this->defineModeCommandList.insert(L"nsadir");
+	this->defineModeCommandList.insert(L"setlayer");
+	this->defineModeCommandList.insert(L"versionstr");
+	this->defineModeCommandList.insert(L"killmenu");
+	this->defineModeCommandList.insert(L"resetmenu");
+	this->defineModeCommandList.insert(L"insertmenu");
+	this->defineModeCommandList.insert(L"deletemenu");
+	this->defineModeCommandList.insert(L"defaultspeed");
+	this->defineModeCommandList.insert(L"textgosub");
+	this->defineModeCommandList.insert(L"usewheel");
+	this->defineModeCommandList.insert(L"useescspc");
+	this->defineModeCommandList.insert(L"pretextgosub");
+	this->defineModeCommandList.insert(L"createdummy");
+
 	this->allowedCommandList.insert(L"add");
 	this->allowedCommandList.insert(L"atoi");
 	this->allowedCommandList.insert(L"cmp");
@@ -782,14 +783,14 @@ void NONS_ScriptInterpreter::listImplementation(){
 		notyetimplemented,
 		undocumented,
 		unimplemented;
-	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++){
-		if (!i->second)
+	for (commandMapType::iterator i=this->commandList.begin();i!=this->commandList.end();i++){
+		if (!i->second.function)
 			notyetimplemented.push_back(i->first);
-		else if (i->second==&NONS_ScriptInterpreter::command_undocumented)
+		else if (i->second.function==&NONS_ScriptInterpreter::command_undocumented)
 			undocumented.push_back(i->first);
-		else if (i->second==&NONS_ScriptInterpreter::command_unimplemented)
+		else if (i->second.function==&NONS_ScriptInterpreter::command_unimplemented)
 			unimplemented.push_back(i->first);
-		else if (i->second==&NONS_ScriptInterpreter::command___userCommandCall__)
+		else if (i->second.function==&NONS_ScriptInterpreter::command___userCommandCall__)
 			implemented.push_back(L"<user commands>");
 		else
 			implemented.push_back(i->first);
@@ -843,7 +844,7 @@ void NONS_ScriptInterpreter::stop(){
 }
 
 void NONS_ScriptInterpreter::getCommandListing(std::vector<std::wstring> &vector){
-	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
+	for (commandMapType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
 		if (i->first.size())
 			vector.push_back(i->first);
 }
@@ -1096,8 +1097,8 @@ ulong NONS_ScriptInterpreter::totalCommands(){
 
 ulong NONS_ScriptInterpreter::implementedCommands(){
 	ulong res=0;
-	for (commandListType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
-		if (i->first!=L"" && i->second)
+	for (commandMapType::iterator i=this->commandList.begin();i!=this->commandList.end();i++)
+		if (i->first!=L"" && i->second.function)
 			res++;
 	return res;
 }
@@ -1119,6 +1120,35 @@ void NONS_ScriptInterpreter::handleKeys(SDL_Event &event){
 			this->current_speed_setting=2;
 			this->screen->output->display_speed=ulong(cur/def*float(this->default_speed));
 		}
+	}
+}
+
+void print_command(NONS_RedirectedOutput &ro,ulong current_line,const std::wstring &commandName,const std::vector<std::wstring> &parameters,ulong mode){
+	if (mode<2){
+		ro <<"{\n";
+		ro.indent(1);
+		if (!current_line)
+			ro <<"Line "<<current_line<<":\n";
+		ro <<"["<<commandName<<"] ";
+		if (parameters.size()){
+			ro <<"(\n";
+			ro.indent(1);
+			for (ulong a=0;;a++){
+				ro <<"["<<parameters[a]<<"]";
+				if (a==parameters.size()-1){
+					ro <<"\n";
+					break;
+				}
+				ro <<",\n";
+			}
+			ro.indent(-1);
+			ro <<")\n";
+		}else
+			ro <<"{NO PARAMETERS}\n";
+	}
+	if (mode!=1){
+		o_stderr.indent(-1);
+		o_stderr <<"}\n";
 	}
 }
 
@@ -1156,24 +1186,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	ulong current_line=stmt->lineOfOrigin->lineNumber;
 	if (CLOptions.verbosity>=1 && CLOptions.verbosity<255)
 		o_stderr <<"Interpreting line "<<current_line<<"\n";
-	if (CLOptions.verbosity>=3 && CLOptions.verbosity<255 && stmt->type==NONS_Statement::STATEMENT_COMMAND){
-		o_stderr <<"["<<stmt->commandName<<"] ";
-		if (stmt->parameters.size()){
-			o_stderr <<"(\n";
-			o_stderr.indent(1);
-			for (ulong a=0;;a++){
-				o_stderr <<"["<<stmt->parameters[a]<<"]";
-				if (a==stmt->parameters.size()-1){
-					o_stderr <<"\n";
-					break;
-				}
-				o_stderr <<",\n";
-			}
-			o_stderr.indent(-1);
-			o_stderr <<")\n";
-		}else
-			o_stderr <<"{NO PARAMETERS}\n";
-	}
+	if (CLOptions.verbosity>=3 && CLOptions.verbosity<255 && stmt->type==NONS_Statement::STATEMENT_COMMAND)
+		print_command(o_stderr,0,stmt->commandName,stmt->parameters,0);
 	this->saveGame->textX=this->screen->output->x;
 	this->saveGame->textY=this->screen->output->y;
 #ifdef _DEBUG
@@ -1186,29 +1200,43 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		case NONS_Statement::STATEMENT_BLOCK:
 			this->saveGame->currentLabel=stmt->commandName;
 			labellog.addString(stmt->commandName);
-			/*if (!stdStrCmpCI(stmt->commandName,L"define"))
-				this->interpreter_mode=DEFINE;*/
+			if (!stdStrCmpCI(stmt->commandName,L"define"))
+				this->interpreter_mode=DEFINE_MODE;
+			else if (!stdStrCmpCI(stmt->commandName,L"start"))
+				this->interpreter_mode=RUN_MODE;
 			break;
 		case NONS_Statement::STATEMENT_JUMP:
 		case NONS_Statement::STATEMENT_COMMENT:
 			break;
 		case NONS_Statement::STATEMENT_PRINTER:
-			if (this->printed_lines.find(current_line)==this->printed_lines.end()){
-				//softwareCtrlIsPressed=0;
-				this->printed_lines.insert(current_line);
+			if (this->interpreter_mode!=RUN_MODE){
+				handleErrors(NONS_NOT_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+			}else{
+				if (this->printed_lines.find(current_line)==this->printed_lines.end()){
+					//softwareCtrlIsPressed=0;
+					this->printed_lines.insert(current_line);
+				}
+				this->Printer(stmt->stmt);
 			}
-			this->Printer(stmt->stmt);
 			break;
 		case NONS_Statement::STATEMENT_COMMAND:
 			{
-				commandListType::iterator i=this->commandList.find(stmt->commandName);
+				bool only_for_define=this->defineModeCommandList.find(stmt->commandName)!=this->defineModeCommandList.end();
+				if (only_for_define && this->interpreter_mode!=DEFINE_MODE){
+					handleErrors(NONS_NOT_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+					break;
+				}else if (only_for_define && this->interpreter_mode!=RUN_MODE){
+					handleErrors(NONS_NOT_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+					break;
+				}
+				commandMapType::iterator i=this->commandList.find(stmt->commandName);
 				//bool is_user_command=0;
 				if (i==this->commandList.end()){
 					if (this->userCommandList.find(stmt->commandName)!=this->userCommandList.end())
 						i=this->commandList.find(L"");
 				}
 				if (i!=this->commandList.end()){
-					commandFunctionPointer function=i->second;
+					commandFunctionPointer function=i->second.function;
 					if (!function){
 						if (this->implementationErrors.find(i->first)==this->implementationErrors.end()){
 							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): ";
@@ -1240,32 +1268,11 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 					}else
 						error=stmt->error;
 					bool there_was_an_error=!CHECK_FLAG(error,NONS_NO_ERROR_FLAG);
-					if (there_was_an_error){
-						o_stderr <<"{\n";
-						o_stderr.indent(1);
-						o_stderr <<"Line "<<current_line<<": \n"
-							"["<<commandName<<"] ";
-						if (parameters.size()){
-							o_stderr <<"(\n";
-							o_stderr.indent(1);
-							for (ulong a=0;;a++){
-								o_stderr <<"["<<parameters[a]<<"]";
-								if (a==parameters.size()-1){
-									o_stderr <<"\n";
-									break;
-								}
-								o_stderr <<",\n";
-							}
-							o_stderr.indent(-1);
-							o_stderr <<")\n";
-						}else
-							o_stderr <<"{NO PARAMETERS}\n";
-					}
+					if (there_was_an_error)
+						print_command(o_stderr,current_line,commandName,parameters,1);
 					handleErrors(error,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
-					if (there_was_an_error){
-						o_stderr.indent(-1);
-						o_stderr <<"}\n";
-					}
+					if (there_was_an_error)
+						print_command(o_stderr,current_line,commandName,parameters,2);
 					if (CLOptions.stopOnFirstError && error!=NONS_UNIMPLEMENTED_COMMAND || error==NONS_END)
 						return 0;
 				}else{
@@ -1313,39 +1320,29 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 	stmt.lineOfOrigin=line;
 	stmt.fileOffset=offset;
 	if (CLOptions.verbosity>=3 && CLOptions.verbosity<255 && stmt.type==NONS_Statement::STATEMENT_COMMAND){
-		o_stderr <<"String: ["<<stmt.commandName<<"] ";
-		if (stmt.parameters.size()){
-			o_stderr <<"{\n";
-			o_stderr.indent(1);
-			for (ulong a=0;;a++){
-				o_stderr <<"["<<stmt.parameters[a]<<"]";
-				if (a==stmt.parameters.size()-1){
-					o_stderr <<"\n";
-					break;
-				}
-				o_stderr <<",\n";
-			}
-			o_stderr.indent(-1);
-			o_stderr <<"}\n";
-		}else
-			o_stderr <<"{NO PARAMETERS}\n";
+		o_stderr <<"String: ";
+		print_command(o_stderr,0,stmt.commandName,stmt.parameters,0);
 	}
 	switch (stmt.type){
 		case NONS_Statement::STATEMENT_COMMENT:
 			break;
 		case NONS_Statement::STATEMENT_PRINTER:
-			if (!stmt.lineOfOrigin || this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
-				//softwareCtrlIsPressed=0;
-				if (!!stmt.lineOfOrigin)
-					this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
+			if (this->interpreter_mode!=RUN_MODE){
+				handleErrors(NONS_NOT_IN_RUN_MODE,0,"NONS_ScriptInterpreter::interpretString",0);
+			}else{
+				if (!stmt.lineOfOrigin || this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
+					//softwareCtrlIsPressed=0;
+					if (!!stmt.lineOfOrigin)
+						this->printed_lines.insert(stmt.lineOfOrigin->lineNumber);
+				}
+				this->Printer(stmt.stmt);
 			}
-			this->Printer(stmt.stmt);
 			break;
 		case NONS_Statement::STATEMENT_COMMAND:
 			{
-				commandListType::iterator i=this->commandList.find(stmt.commandName);
+				commandMapType::iterator i=this->commandList.find(stmt.commandName);
 				if (i!=(this->commandList.end())){
-					commandFunctionPointer function=i->second;
+					commandFunctionPointer function=i->second.function;
 					if (!function){
 						if (this->implementationErrors.find(i->first)!=this->implementationErrors.end()){
 							o_stderr <<"NONS_ScriptInterpreter::interpretNextLine(): "
@@ -2333,8 +2330,6 @@ ErrorCode NONS_ScriptInterpreter::command_add_filter(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_alias(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
-	/*if (this->interpreter_mode!=DEFINE)
-		return NONS_NOT_IN_DEFINE_MODE;*/
 	NONS_VariableMember *var=this->store->retrieve(stmt.parameters[0],0);
 	if (!var){
 		if (!isValidIdentifier(stmt.parameters[0]))
@@ -3519,8 +3514,6 @@ ErrorCode NONS_ScriptInterpreter::command_getzxc(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_globalon(NONS_Statement &stmt){
-	/*if (this->interpreter_mode!=DEFINE)
-		return NONS_NOT_IN_DEFINE_MODE;*/
 	this->store->commitGlobals=1;
 	return NONS_NO_ERROR;
 }
@@ -5103,6 +5096,21 @@ ErrorCode NONS_ScriptInterpreter::command_time(NONS_Statement &stmt){
 	h->set(time->tm_hour);
 	m->set(time->tm_min);
 	s->set(time->tm_sec);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_transmode(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	std::wstring param=stmt.parameters[0];
+	tolower(param);
+	if (param==L"leftup"){
+		NONS_AnimationInfo::default_trans=NONS_AnimationInfo::LEFT_UP;
+	}else if (param==L"copy"){
+		NONS_AnimationInfo::default_trans=NONS_AnimationInfo::COPY_TRANS;
+	}else if (param==L"alpha"){
+		NONS_AnimationInfo::default_trans=NONS_AnimationInfo::PARALLEL_MASK;
+	}else
+		return NONS_INVALID_PARAMETER;
 	return NONS_NO_ERROR;
 }
 
