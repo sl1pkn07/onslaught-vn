@@ -138,11 +138,38 @@ struct NONS_StackElement{
 	NONS_StackElement(NONS_StackElement *copy,const std::vector<std::wstring> &vector);
 };
 
+class NONS_ScriptInterpreter;
+typedef ErrorCode(NONS_ScriptInterpreter::*commandFunctionPointer)(NONS_Statement &);
+
+struct NONS_DefineFlag{};
+struct NONS_RunFlag{};
+struct NONS_CommandObject{
+	commandFunctionPointer function;
+	bool allow_define,allow_run;
+	NONS_CommandObject(commandFunctionPointer f):function(f),allow_define(0),allow_run(0){}
+	NONS_CommandObject():function(0),allow_define(0),allow_run(0){}
+};
+
+extern NONS_DefineFlag ALLOW_IN_DEFINE;
+extern NONS_RunFlag ALLOW_IN_RUN;
+
+inline NONS_CommandObject operator|(NONS_CommandObject co,NONS_DefineFlag){
+	co.allow_define=1;
+	return co;
+}
+
+inline NONS_CommandObject operator|(NONS_CommandObject co,NONS_RunFlag){
+	co.allow_run=1;
+	return co;
+}
+
+typedef std::map<std::wstring,NONS_CommandObject,stdStringCmpCI<wchar_t> > commandMapType;
+typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > commandListType;
+typedef commandListType defineModeCommandListType;
+typedef commandListType userCommandListType;
+typedef commandListType allowedCommandListType;
+
 class NONS_ScriptInterpreter{
-	typedef ErrorCode(NONS_ScriptInterpreter::*commandFunctionPointer)(NONS_Statement &);
-	typedef std::map<std::wstring,commandFunctionPointer,stdStringCmpCI<wchar_t> > commandListType;
-	typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > userCommandListType;
-	typedef std::set<std::wstring,stdStringCmpCI<wchar_t> > allowedCommandListType;
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
@@ -151,13 +178,18 @@ class NONS_ScriptInterpreter{
 	void init();
 
 	bool stop_interpreting;
-	commandListType commandList;
+	commandMapType commandList;
+	defineModeCommandListType defineModeCommandList;
 	userCommandListType userCommandList;
 	allowedCommandListType allowedCommandList;
 	NONS_ScriptThread *thread;
 	std::set<ulong> printed_lines;
 	std::set<std::wstring> implementationErrors;
-	ulong interpreter_mode;
+	enum{
+		UNDEFINED_MODE,
+		DEFINE_MODE,
+		RUN_MODE
+	} interpreter_mode;
 	std::string nsadir;
 	std::vector<NONS_StackElement *> callStack;
 	bool mp3_save;
@@ -369,8 +401,8 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_avi(NONS_Statement &stmt);
 	ErrorCode command_base_resolution(NONS_Statement &stmt);
 	ErrorCode command_use_nice_svg(NONS_Statement &stmt);
+	ErrorCode command_transmode(NONS_Statement &stmt);
 	/*
-	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);
 	ErrorCode command_(NONS_Statement &stmt);

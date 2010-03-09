@@ -1,4 +1,5 @@
 ????????
+    * Implemented: transmode.
     * Added SVG support.
     * Fixed bug in division operator (!).
     * Fixed bug in fullscreen switch.

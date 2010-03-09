@@ -134,6 +134,7 @@ typedef Uint32 ErrorCode;
 #define NONS_NOT_A_DEREFERENCE						88
 #define NONS_EXPECTED_INTEGRAL_VALUE				89
 #define NONS_EXPECTED_STRING_VALUE					90
+#define NONS_NOT_IN_RUN_MODE						91
 
 extern const char *errorMessages[];
 #endif
