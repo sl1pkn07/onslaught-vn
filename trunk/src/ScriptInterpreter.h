@@ -179,7 +179,6 @@ class NONS_ScriptInterpreter{
 
 	bool stop_interpreting;
 	commandMapType commandList;
-	defineModeCommandListType defineModeCommandList;
 	userCommandListType userCommandList;
 	allowedCommandListType allowedCommandList;
 	NONS_ScriptThread *thread;

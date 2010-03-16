@@ -380,38 +380,14 @@ SDL_Surface *NONS_VirtualScreen::toggleFullscreenFromVideo(){
 }
 
 std::string NONS_VirtualScreen::takeScreenshot(const std::string &name){
-	tm t;
-	ulong c;
-	{
-		time_t t2=time(0);
-		c=SDL_GetTicks();
-		t=*localtime(&t2);
-	}
-	std::string filename=(!name.size())?
-			itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
-			itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
-			itoa<char>(c,10)+".bmp"
-		:name;
-	const char *s=filename.c_str();
+	std::string filename=(!name.size())?getTimeString<char>((bool)0)+'_'+itoac(SDL_GetTicks(),10)+".bmp":name;
 	NONS_MutexLocker ml(screenMutex);
-	SDL_SaveBMP(this->screens[REAL],s);
+	SDL_SaveBMP(this->screens[REAL],filename.c_str());
 	return filename;
 }
 
 void NONS_VirtualScreen::takeScreenshotFromVideo(void){
-	tm t;
-	ulong c;
-	{
-		time_t t2=time(0);
-		c=SDL_GetTicks();
-		t=*localtime(&t2);
-	}
-	std::string filename=
-		itoa<char>(t.tm_year+1900,4)+itoa<char>(t.tm_mon+1,2)+itoa<char>(t.tm_mday,2)+'T'+
-		itoa<char>(t.tm_hour,2)+itoa<char>(t.tm_min,2)+itoa<char>(t.tm_sec,2)+'_'+
-		itoa<char>(c,10)+".bmp";
-	const char *s=filename.c_str();
-	SDL_SaveBMP(this->screens[REAL],s);
+	SDL_SaveBMP(this->screens[REAL],(getTimeString<char>((bool)0)+'_'+itoac(SDL_GetTicks(),10)+".bmp").c_str());
 }
 
 void NONS_VirtualScreen::initEffectList(){

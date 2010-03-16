@@ -72,11 +72,13 @@ bool multicomparison(T character,const T2 *characters){
 			return 1;
 	return 0;
 }
+
 template <typename T>
 void toforwardslash(std::basic_string<T> &s){
 	for (ulong a=0,size=s.size();a<size;a++)
 		s[a]=(s[a]==0x5C)?0x2F:s[a];
 }
+
 template <typename T>
 void tobackslash(std::basic_string<T> &s){
 	for (ulong a=0,size=s.size();a<size;a++)
@@ -105,6 +107,7 @@ std::vector<std::basic_string<T> > getParameterList(const std::basic_string<T> &
 	}
 	return res;
 }
+
 /*bool filenames_are_equal(const wchar_t *str0,const wchar_t *str1);
 bool filenames_are_equal(const char *str0,const char *str1);*/
 template <typename T>
@@ -117,6 +120,7 @@ bool isValidIdentifier(const std::basic_string<T> &str){
 			return 0;
 	return 1;
 }
+
 template <typename T>
 bool isValidLabel(const std::basic_string<T> &str){
 	const T *s=&str[0];
@@ -125,16 +129,19 @@ bool isValidLabel(const std::basic_string<T> &str){
 			return 0;
 	return 1;
 }
+
 template <typename T>
 inline T HEX2DEC(T x){
 	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
 }
+
 template <typename T>
 long atoi(const std::basic_string<T> &str){
 	std::basic_stringstream<T> stream(str);
 	long res;
 	return !(stream >>res)?0:res;
 }
+
 template <typename T,typename T2>
 std::basic_string<T> itoa(T2 n,unsigned w=0){
 	std::basic_stringstream<T> stream;
@@ -145,6 +152,9 @@ std::basic_string<T> itoa(T2 n,unsigned w=0){
 	stream <<n;
 	return stream.str();
 }
+template <typename T> inline std::string  itoac(T n,unsigned w=0){ return itoa<char>   (n,w); }
+template <typename T> inline std::wstring itoaw(T n,unsigned w=0){ return itoa<wchar_t>(n,w); }
+
 //1 if the s1 begins with s2 at off
 template <typename T>
 bool firstchars(const std::basic_string<T> &s1,size_t off,const std::basic_string<T> &s2){
@@ -236,6 +246,7 @@ std::basic_string<T> tagName(const std::basic_string<T> &string,size_t off){
 	trim_string(temp);
 	return temp;
 }
+
 template <typename T>
 std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
 	if (string[off]!='<')
@@ -267,6 +278,7 @@ void writeDWord(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
 void writeWordBig(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
 void writeDWordBig(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
 void writeString(const std::wstring &a,std::string &str);
+
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
 	std::vector<Sint32> intervals;
@@ -300,10 +312,12 @@ inline SDL_Surface *makeSurface(ulong w,ulong h,ulong bits,Uint32 r=rmask,Uint32
 inline ulong SDLcolor2rgb(const SDL_Color &color){
 	return (color.r<<16)|(color.g<<8)|color.b;
 }
+
 inline SDL_Color rgb2SDLcolor(ulong rgb){
 	SDL_Color c={(rgb>>16)&0xFF,(rgb>>8)&0xFF,rgb&0xFF,0};
 	return c;
 }
+
 typedef long manualBlitAlpha_t;
 DECLSPEC void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha=255);
 DECLSPEC void manualBlit_unthreaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha=255);
@@ -343,6 +357,7 @@ srcl: length of the input buffer in bytes.
 dstl: the length of the decompressed buffer will be written here.
 */
 char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl);
+
 template <typename T1,typename T2>
 bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t &at_offset,int (*comp_f)(const T2 &,const T1 &)){
 	if (begin<=end){
@@ -485,6 +500,7 @@ std::string UniToISO88591(const std::wstring &str);
 std::string UniToUTF8(const std::wstring &str,bool addBOM=0);
 std::string UniToUCS2(const std::wstring &str,char end=UNDEFINED_ENDIANNESS);
 std::string UniToSJIS(const std::wstring &str);
+
 template <typename T>
 inline void toupper(std::basic_string<T> &str){
 	std::transform<
@@ -492,6 +508,7 @@ inline void toupper(std::basic_string<T> &str){
 		typename std::basic_string<T>::iterator,
 		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_toupper);
 }
+
 template <typename T>
 inline void tolower(std::basic_string<T> &str){
 	std::transform<
@@ -499,11 +516,13 @@ inline void tolower(std::basic_string<T> &str){
 		typename std::basic_string<T>::iterator,
 		unsigned(*)(unsigned)>(str.begin(),str.end(),str.begin(),NONS_tolower);
 }
+
 template <typename T>
 inline std::basic_string<T> toupperCopy(std::basic_string<T> str){
 	toupper(str);
 	return str;
 }
+
 template <typename T>
 inline std::basic_string<T> tolowerCopy(std::basic_string<T> str){
 	tolower(str);
@@ -586,6 +605,29 @@ void trim_string(std::basic_string<T> &str){
 	for (;second>first && iswhitespace(str[second]);second--);
 	second++;
 	str=str.substr(first,second-first);
+}
+
+template <typename T>
+std::basic_string<T> getTimeString(tm *time,bool useISO=0){
+	const char *strings[]={
+		"%Y-%m-%d %H:%M:%S",
+		"%Y%m%dT%H%M%S"
+	};
+	char buffer[]="0000-00-00 00:00:00";
+	strftime(buffer,sizeof(buffer),strings[(int)useISO],time);
+	std::string temp=buffer;
+	return std::basic_string<T>(temp.begin(),temp.end());
+}
+
+template <typename T>
+std::basic_string<T> getTimeString(bool useISO=0,bool useLocalTime=1){
+	typedef tm *(*time_f)(const time_t *);
+	time_f functions[]={
+		gmtime,
+		localtime
+	};
+	time_t secs=time(0);
+	return getTimeString<T>(functions[(int)useLocalTime](&secs),useISO);
 }
 
 struct surfaceData{

@@ -1386,14 +1386,9 @@ int NONS_Menu::save(){
 				pusher=this->stringSlot;
 			else
 				pusher=L"Slot";
-			pusher+=L" "+itoa<wchar_t>(a+1,2)+L"    ";
+			pusher+=L" "+itoaw(a+1,2)+L"    ";
 			if (t)
-				pusher+=itoa<wchar_t>(t->tm_year+1900,4)+L"-"+
-					itoa<wchar_t>(t->tm_mon+1,2)+L"-"+
-					itoa<wchar_t>(t->tm_mday,2)+L" "+
-					itoa<wchar_t>(t->tm_hour,2)+L":"+
-					itoa<wchar_t>(t->tm_min,2)+L":"+
-					itoa<wchar_t>(t->tm_sec,2);
+				pusher.append(getTimeString<wchar_t>(t));
 			else
 				pusher+=L"-------------------";
 			strings.push_back(pusher);
@@ -1460,14 +1455,9 @@ int NONS_Menu::load(){
 				pusher=this->stringSlot;
 			else
 				pusher=L"Slot";
-			pusher+=L" "+itoa<wchar_t>(a+1,2)+L"    ";
+			pusher+=L" "+itoaw(a+1,2)+L"    ";
 			if (t)
-				pusher+=itoa<wchar_t>(t->tm_year+1900,4)+L"-"+
-					itoa<wchar_t>(t->tm_mon+1,2)+L"-"+
-					itoa<wchar_t>(t->tm_mday,2)+L" "+
-					itoa<wchar_t>(t->tm_hour,2)+L":"+
-					itoa<wchar_t>(t->tm_min,2)+L":"+
-					itoa<wchar_t>(t->tm_sec,2);
+				pusher.append(getTimeString<wchar_t>(t));
 			else
 				pusher+=L"-------------------";
 			strings.push_back(pusher);

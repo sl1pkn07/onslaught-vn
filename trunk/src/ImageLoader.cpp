@@ -519,7 +519,7 @@ void NONS_DiskCache::add(const std::wstring &filename,SDL_Surface *surface){
 	map_t::iterator i=this->cache_list.find(src);
 	std::wstring dst;
 	if (i==this->cache_list.end()){
-		dst=L"__ONSlaught_cache_"+itoa<wchar_t>(this->state++)+L".raw";
+		dst=L"__ONSlaught_cache_"+itoaw(this->state++)+L".raw";
 		this->cache_list[src]=dst;
 	}else
 		dst=i->second;

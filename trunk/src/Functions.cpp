@@ -1419,12 +1419,6 @@ void findMainWindow(const wchar_t *caption){
 extern wchar_t SJIS2Unicode[0x10000],
 	Unicode2SJIS[0x10000];
 
-/*
-Note: All sizes are powers of two, and wchar_t is guaranteed to be at least as
-big as char, so this division will always give 1, 2, 4, etc.
-*/
-ulong sizeRatio=sizeof(wchar_t)/sizeof(char);
-
 char checkEnd(wchar_t a){
 	if (a==BOM16B)
 		return NONS_BIG_ENDIAN;
@@ -1454,7 +1448,7 @@ inline wchar_t invertWC(wchar_t val){
 
 void UCS2_WC(wchar_t *dst,const uchar *src,ulong srcl,uchar end){
 	memcpy(dst,src,srcl);
-	srcl/=sizeRatio;
+	srcl/=sizeof(wchar_t);
 	if ((uchar)nativeEndianness!=end)
 		for (ulong a=0;a<srcl;a++)
 			dst[a]=invertWC(dst[a]);
@@ -1587,7 +1581,7 @@ void WC_UCS2(uchar *dst,const wchar_t *src,ulong srcl,char end){
 		dst[0]=BOM16LA;
 		dst[1]=BOM16LB;
 	}
-	srcl*=sizeRatio;
+	srcl*=sizeof(wchar_t);
 	memcpy(dst+sizeof(uchar)*useBOM,src,srcl);
 	srcl+=sizeof(uchar)*useBOM;
 	if (nativeEndianness!=end){
@@ -1657,7 +1651,7 @@ std::wstring UniFromUCS2(const std::string &str,char end){
 	if (end==UNDEFINED_ENDIANNESS)
 		end=realEnd;
 	size-=start;
-	res.resize(str.size()/sizeRatio);
+	res.resize(str.size()/sizeof(wchar_t));
 	UCS2_WC(&res[0],(const uchar *)&str[0]+start,size,end);
 	return res;
 }
@@ -1697,7 +1691,7 @@ std::string UniToUCS2(const std::wstring &str,char end){
 
 std::string UniToSJIS(const std::wstring &str){
 	std::string res;
-	res.resize(str.size()*sizeRatio);
+	res.resize(str.size()*sizeof(wchar_t));
 	res.resize(WC_SJIS((uchar *)&res[0],&str[0],str.size()));
 	return res;
 }

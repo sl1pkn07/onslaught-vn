@@ -32,7 +32,7 @@
 #include "IOFunctions.h"
 
 /*void INIvalue::setIntValue(long a){
-	this->value=itoa<wchar_t>(a);
+	this->value=itoaw(a);
 }*/
 
 INIsection::INIsection(const std::map<std::wstring,std::wstring> &vars){

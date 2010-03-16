@@ -149,7 +149,7 @@ void Symbol::set(long n){
 		case MACRO:
 			break;
 		case STRING:
-			this->str_val=itoa<wchar_t>(n);
+			this->str_val=itoaw(n);
 			break;
 		case INTEGER:
 			this->int_val=n;
@@ -188,7 +188,7 @@ std::wstring Symbol::getStr(){
 		case STRING:
 			return this->str_val;
 		case INTEGER:
-			return itoa<wchar_t>(this->int_val);
+			return itoaw(this->int_val);
 	}
 	return L"";
 }
@@ -319,7 +319,7 @@ bool SymbolTable::checkIntersection(const SymbolTable &st) const{
 }
 
 std::wstring ConstantExpression::evaluateToStr(const SymbolTable *st,ulong *error){
-	return itoa<wchar_t>(this->evaluateToInt(st,error));
+	return itoaw(this->evaluateToInt(st,error));
 }
 
 long ConstantExpression::evaluateToInt(const SymbolTable *st,ulong *error){
@@ -388,7 +388,7 @@ Expression *simplifyExpression(Expression *e){
 }
 
 std::wstring FullExpression::evaluateToStr(const SymbolTable *st,ulong *error){
-	return itoa<wchar_t>(this->evaluateToInt(st,error));
+	return itoaw(this->evaluateToInt(st,error));
 }
 
 #define EVALUATETOINT_EVAL(i) {\
@@ -628,7 +628,7 @@ std::wstring DataBlock::replace(const std::wstring &src,const SymbolTable &symbo
 					a+=symbols[b]->Identifier.size()-1;
 					_continue=1;
 				}else if (symbols[b]->type==Symbol::INTEGER){
-					std::wstring temp=itoa<wchar_t>(symbols[b]->int_val);
+					std::wstring temp=itoaw(symbols[b]->int_val);
 					res.append(temp);
 					a+=symbols[b]->Identifier.size()-1;
 					_continue=1;
