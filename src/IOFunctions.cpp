@@ -341,7 +341,7 @@ void NONS_RedirectedOutput::write_to_stream(const std::stringstream &str){
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(ulong a){
-	return *this <<itoa<char>(a);
+	return *this <<itoac(a);
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
@@ -354,7 +354,7 @@ NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(long a){
-	return *this <<itoa<char>(a);
+	return *this <<itoac(a);
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(wchar_t a){
@@ -418,21 +418,11 @@ void NONS_RedirectedOutput::redirect(){
 		delete this->file;
 		this->file=0;
 	}
-	else if (!CLOptions.reset_redirection_files){
-		time_t secs=time(0);
-		tm *t=localtime(&secs);
-		std::string str=
-			itoa<char>(t->tm_year+1900,4)+"-"+
-			itoa<char>(t->tm_mon+1,4)+"-"+
-			itoa<char>(t->tm_mday,4)+" "+
-			itoa<char>(t->tm_hour,4)+":"+
-			itoa<char>(t->tm_min,4)+":"+
-			itoa<char>(t->tm_sec,4);
+	else if (!CLOptions.reset_redirection_files)
 		*this->file <<"\n\n"
 			"--------------------------------------------------------------------------------\n"
-			"Session "<<str<<"\n"
+			"Session "<<getTimeString<char>()<<"\n"
 			"--------------------------------------------------------------------------------"<<std::endl;
-	}
 }
 
 void NONS_RedirectedOutput::indent(long a){

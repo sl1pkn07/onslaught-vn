@@ -47,7 +47,7 @@ public:
 		this->setStrValue(a);
 	}
 	void setIntValue(long a){
-		this->value=itoa<wchar_t>(a);
+		this->value=itoaw(a);
 	}
 	void setStrValue(const std::wstring &a){
 		this->value=a;

@@ -87,7 +87,7 @@ std::vector<tm *> existing_files(const std::wstring &location){
 	if (path[path.size()-1]!='/')
 		path.push_back('/');
 	for (short a=1;a<21;a++){
-		std::wstring filename=path+L"save"+itoa<wchar_t>(a)+L".dat";
+		std::wstring filename=path+L"save"+itoaw(a)+L".dat";
 		if (!fileExists(filename))
 			res.push_back(0);
 		else
@@ -194,8 +194,7 @@ std::wstring getConfigLocation(){
 	size/=sizeof(TCHAR);
 	size--;
 	std::wstring pathStr;
-	pathStr.resize(size);
-	std::copy(path,path+size,pathStr.begin());
+	pathStr.assign(path,path+size);
 	toforwardslash(pathStr);
 	if (pathStr[pathStr.size()-1]!='/')
 		pathStr.append(L"/.ONSlaught");

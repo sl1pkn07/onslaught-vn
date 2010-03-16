@@ -581,7 +581,7 @@ ZIParchive::ZIParchive(const std::wstring &path)
 		name=name.substr(0,dot+1);
 		name.push_back('z');
 		for (ulong a=0;a<eocdr.disk_number;a++)
-			this->disks.push_back(name+itoa<wchar_t>(a+1,2));
+			this->disks.push_back(name+itoaw(a+1,2));
 	}
 	this->disks.push_back(path);
 	file.close();
@@ -769,7 +769,7 @@ NONS_GeneralArchive::NONS_GeneralArchive(){
 		if (a!=ULONG_MAX){
 			std::wstring name=base;
 			if (a)
-				name.append(itoa<wchar_t>(a));
+				name.append(itoaw(a));
 			bool found=0;
 			//!a: if a==0, ".sar" should not be tested
 			for (ulong b=!a;formats[b] && !found;b++){

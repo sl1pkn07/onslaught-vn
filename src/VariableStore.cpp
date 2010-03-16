@@ -110,7 +110,7 @@ namespace NONS_Expression{
 	NONS_Expression_DECLARE_OPERATOR(itoa){
 		CHECK_OPERANDS(1);
 		EXPECT_INTEGER(0);
-		Value *ret=new Value(::itoa<wchar_t>(OPERAND(0)->integer));
+		Value *ret=new Value(::itoaw(OPERAND(0)->integer));
 		deleteTop(operands);
 		return ret;
 	}
@@ -427,7 +427,7 @@ namespace NONS_Expression{
 					handleErrors(
 						this->error,
 						0,"ExpressionCompiler::retrieve",1,
-						L"The index is: "+::itoa<wchar_t>(errored)+L" (contains "+::itoa<wchar_t>(v[errored])+L")"
+						L"The index is: "+::itoaw(errored)+L" (contains "+::itoaw(v[errored])+L")"
 					);
 					break;
 				case NONS_TOO_MANY_DIMENSIONS:
@@ -482,7 +482,7 @@ namespace NONS_Expression{
 			std::wstring push;
 			if (!expr->op){
 				if (expr->val->type==Value::INTEGER)
-					push=::itoa<wchar_t>(expr->val->integer);
+					push=::itoaw(expr->val->integer);
 				else{
 					push=L"e\"";
 					std::wstring &s=expr->val->string;

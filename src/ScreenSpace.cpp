@@ -330,7 +330,7 @@ bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
 	else if (!this->currentBuffer.size())
 		this->y=this->y0;
 	this->prebufferedText.append(L"<y=");
-	this->prebufferedText.append(itoa<wchar_t>(this->y));
+	this->prebufferedText.append(itoaw(this->y));
 	this->prebufferedText.push_back('>');
 	return 0;
 }
@@ -350,7 +350,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			x0=indentationMargin;
 		if (x0!=this->lastStart){
 			this->prebufferedText.append(L"<x=");
-			this->prebufferedText.append(itoa<wchar_t>(x0));
+			this->prebufferedText.append(itoaw(x0));
 			this->prebufferedText.push_back('>');
 			this->lastStart=x0;
 		}
@@ -387,7 +387,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 					x0=indentationMargin;
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
-					this->prebufferedText.append(itoa<wchar_t>(x0));
+					this->prebufferedText.append(itoaw(x0));
 					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
@@ -415,7 +415,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 					x0=indentationMargin;
 				if (x0!=this->lastStart){
 					this->prebufferedText.append(L"<x=");
-					this->prebufferedText.append(itoa<wchar_t>(x0));
+					this->prebufferedText.append(itoaw(x0));
 					this->prebufferedText.push_back('>');
 					this->lastStart=x0;
 				}
@@ -626,7 +626,7 @@ void NONS_StandardOutput::Clear(bool eraseBuffer){
 		SDL_Rect frame={this->x0,this->y0,this->w,this->h};
 		this->y=this->setTextStart(&this->cachedText,&frame,this->verticalCenterPolicy);
 		this->prebufferedText.append(L"<y=");
-		this->prebufferedText.append(itoa<wchar_t>(this->y));
+		this->prebufferedText.append(itoaw(this->y));
 		this->prebufferedText.push_back('>');
 	}
 }
@@ -635,9 +635,9 @@ void NONS_StandardOutput::setPosition(int x,int y){
 	this->x=this->x0+x;
 	this->y=this->y0+y;
 	this->currentBuffer.append(L"<x=");
-	this->currentBuffer.append(itoa<wchar_t>(this->x));
+	this->currentBuffer.append(itoaw(this->x));
 	this->currentBuffer.append(L"><y=");
-	this->currentBuffer.append(itoa<wchar_t>(this->y));
+	this->currentBuffer.append(itoaw(this->y));
 	this->currentBuffer.push_back('>');
 }
 

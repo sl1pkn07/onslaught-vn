@@ -437,17 +437,15 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,NONS_GeneralArchive *
 		start_of_block_line,
 		currentLine));
 	wtemp.clear();
-	this->blocksByName.resize(this->blocksByLine.size());
-	std::copy(this->blocksByLine.begin(),this->blocksByLine.end(),this->blocksByName.begin());
+	this->blocksByName.assign(this->blocksByLine.begin(),this->blocksByLine.end());
 	std::sort(this->blocksByName.begin(),this->blocksByName.end(),sortBlocksByName);
 	if (!this->blockFromLabel(L"define"))
 		return NONS_NO_DEFINE_LABEL;
 	SHA1 hash;
 	for (ulong a=0;a<this->blocksByLine.size();a++){
 		std::wstring &b=this->blocksByLine[a]->name;
-		std::vector<char> temp(b.size());
-		std::copy(b.begin(),b.end(),temp.begin());
-		hash.Input(&temp[0],temp.size()*sizeof(char));
+		std::vector<char> temp(b.begin(),b.end());
+		hash.Input(&temp[0],temp.size());
 	}
 	hash.Result(this->hash);
 	save_directory=getSaveLocation(this->hash);

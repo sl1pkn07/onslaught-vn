@@ -1,6 +1,8 @@
 ????????
     * Implemented: transmode.
     * Added SVG support.
+    * Implemented enforcement of command execution to the *define and *start
+        blocks.
     * Fixed bug in division operator (!).
     * Fixed bug in fullscreen switch.
     * Updated expression parsing mechanism.
