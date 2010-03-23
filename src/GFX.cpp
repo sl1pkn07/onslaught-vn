@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,7 @@ ErrorCode NONS_GFX::call(SDL_Surface *src,SDL_Surface *dst0,NONS_VirtualScreen *
 	//ulong t0=SDL_GetTicks();
 	SDL_Surface *ruleFile=0;
 	if (this->rule.size())
-		ruleFile=ImageLoader->fetchSprite(this->rule);
+		ImageLoader->fetchSprite(ruleFile,this->rule);
 	if (this->type==TRANSITION){
 		if (this->effect<=18){
 			(this->*(builtInTransitions[this->effect]))(src,ruleFile,dst);

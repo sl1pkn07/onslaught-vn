@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -114,11 +114,22 @@ class DLLexport NONS_Mutex{
 #elif NONS_SYS_UNIX
 	pthread_mutex_t mutex;
 #endif
+#ifdef DEBUG_SCREEN_MUTEX
+	NONS_Mutex *mutex_for_self;
+	void *last_locker;
+#endif
 public:
+#ifndef DEBUG_SCREEN_MUTEX
 	NONS_Mutex();
+#else
+	NONS_Mutex(bool track_self=0);
+#endif
 	~NONS_Mutex();
 	void lock();
 	void unlock();
+#ifdef DEBUG_SCREEN_MUTEX
+	bool is_locked();
+#endif
 };
 
 class NONS_MutexLocker{

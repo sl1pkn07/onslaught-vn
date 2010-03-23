@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -137,6 +137,7 @@ struct NONS_Image{
 	static SVG_Functions *svg_functions;
 
 	NONS_Image();
+	NONS_Image(SDL_Surface *image);
 	NONS_Image(const NONS_AnimationInfo *anim,const NONS_Image *primary,const NONS_Image *secondary,double base_scale[2],optim_t *rects);
 	~NONS_Image();
 	SDL_Surface *LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize,NONS_DiskCache *dcache,double base_scale[2]);
@@ -157,7 +158,7 @@ struct NONS_ImageLoader{
 	NONS_ImageLoader(NONS_GeneralArchive *archive);
 	~NONS_ImageLoader();
 	ulong getCacheSize();
-	SDL_Surface *fetchSprite(const std::wstring &string,optim_t *rects=0);
+	bool fetchSprite(SDL_Surface *&dst,const std::wstring &string,optim_t *rects=0);
 	bool unfetchImage(SDL_Surface *which);
 	NONS_Image *elementFromSurface(SDL_Surface *srf);
 	void printCurrent();

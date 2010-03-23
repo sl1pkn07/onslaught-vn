@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -268,7 +268,7 @@ NONS_Audio::NONS_Audio(const std::wstring &musicDir){
 		this->svol=0;
 		return;
 	}
-	Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,512);
+	Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,1024);
 	if (!musicDir.size())
 		this->musicDir=L"./CD";
 	else

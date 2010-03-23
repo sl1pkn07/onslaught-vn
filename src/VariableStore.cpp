@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -184,7 +184,7 @@ namespace NONS_Expression{
 	NONS_Expression_DECLARE_OPERATOR(neg){
 		CHECK_OPERANDS(1);
 		EXPECT_INTEGER(0);
-		OPERAND(0)->integer=!OPERAND(0)->integer;
+		OPERAND(0)->integer=-OPERAND(0)->integer;
 		return 0;
 	}
 	NONS_Expression_DECLARE_OPERATOR(integer_dereference){

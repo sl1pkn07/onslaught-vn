@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -103,7 +103,7 @@ struct printingPage{
 };
 
 struct NONS_StackElement{
-	StackFrameType type;
+	StackFrameType::StackFrameType type;
 	struct statementPair{
 		ulong line,statement;
 		bool operator==(const statementPair &opB){
@@ -174,6 +174,7 @@ class NONS_ScriptInterpreter{
 	ErrorCode Printer(const std::wstring &line);
 	void reduceString(const std::wstring &src,std::wstring &dst,std::set<NONS_VariableMember *> *visited=0,std::vector<std::pair<std::wstring,NONS_VariableMember *> > *stack=0);
 	void handleKeys(SDL_Event &event);
+	bool was_initialized;
 	void uninit();
 	void init();
 
@@ -464,6 +465,7 @@ public:
 	~NONS_ScriptInterpreter();
 	bool interpretNextLine();
 	NONS_Font *main_font;
+	NONS_FontCache *font_cache;
 	ErrorCode interpretString(NONS_Statement &stmt,NONS_ScriptLine *lineNo,ulong offset);
 	ErrorCode interpretString(const std::wstring &str,NONS_ScriptLine *lineNo,ulong offset);
 	ulong totalCommands();
