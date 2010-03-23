@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -342,15 +342,6 @@ void NONS_RedirectedOutput::write_to_stream(const std::stringstream &str){
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(ulong a){
 	return *this <<itoac(a);
-}
-
-NONS_RedirectedOutput &NONS_RedirectedOutput::outputHex(ulong a,ulong w){
-	std::stringstream s;
-	s.width(w);
-	s <<s.hex<<a;
-	std::ostream &stream=(CLOptions.override_stdout && this->file)?*this->file:this->cout;
-	stream <<s.str();
-	return *this;
 }
 
 NONS_RedirectedOutput &NONS_RedirectedOutput::operator<<(long a){

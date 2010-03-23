@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -280,6 +280,7 @@ int main(int argc,char **argv){
 	signal(SIGTERM,handle_SIGTERM);
 	signal(SIGINT,handle_SIGINT);
 	initialize_conversion_tables();
+	config_directory=getConfigLocation();
 
 	std::vector<std::wstring> cmdl_arg=getArgumentsVector(argv);
 	if (!useArgumentsFile("arguments.txt",cmdl_arg))
@@ -297,8 +298,7 @@ int main(int argc,char **argv){
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_EnableUNICODE(1);
 	SDL_EnableKeyRepeat(250,20);
-	config_directory=getConfigLocation();
-	settings.init(config_directory+settings_filename,UTF8_ENCODING);
+	settings.init(config_directory+settings_filename,ENCODING::UTF8);
 
 	
 #if NONS_SYS_WINDOWS && defined _CONSOLE

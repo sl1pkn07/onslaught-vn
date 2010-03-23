@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -74,11 +74,11 @@ public:
 
 class INIfile{
 	std::map<std::wstring,INIsection> sections;
-	void readFile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	void readFile(const char *buffer,ulong size,ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
 public:
 	INIfile();
-	INIfile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	INIfile(const char *buffer,ulong size,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	INIfile(const std::wstring &filename,ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
+	INIfile(const char *buffer,ulong size,ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
 	INIsection *getSection(const std::wstring &index);
 };
 #endif

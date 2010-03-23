@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -40,15 +40,15 @@ typedef std::map<std::wstring,std::vector<std::wstring>,stdStringCmpCI<wchar_t> 
 
 struct ConfigFile{
 	ConfigFile(){}
-	ConfigFile(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
+	ConfigFile(const std::wstring &filename,ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
 	~ConfigFile(){}
-	void init(const std::wstring &filename,ENCODINGS encoding);
+	void init(const std::wstring &filename,ENCODING::ENCODING encoding);
 	std::wstring getWString(const std::wstring &index,ulong subindex=0);
 	long getInt(const std::wstring &index,ulong subindex=0);
 	void assignWString(const std::wstring &var,const std::wstring &val,ulong subindex=0);
 	void assignInt(const std::wstring &var,long val,ulong subindex=0);
-	void writeOut(const std::wstring &filename,ENCODINGS encoding=ISO_8859_1_ENCODING);
-	std::string writeOut(ENCODINGS encoding=ISO_8859_1_ENCODING);
+	void writeOut(const std::wstring &filename,ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
+	std::string writeOut(ENCODING::ENCODING encoding=ENCODING::ISO_8859_1);
 	bool exists(const std::wstring &var);
 private:
 	config_map_t entries;

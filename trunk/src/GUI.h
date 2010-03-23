@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -32,92 +32,121 @@
 
 #include "Common.h"
 #include "VirtualScreen.h"
-#include "SDL_ttf.h"
 #include "Audio.h"
 #include "Archive.h"
 #include "ConfigFile.h"
 #include <SDL/SDL.h>
 #include <string>
+#include <set>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
-class NONS_Font{
-	TTF_Font *font;
-	int size;
-	int style;
-	int ascent;
-	/*uchar *fontbuffer;
-	SDL_RWops *fontRWop;*/
+class NONS_FreeType_Lib{
+	FT_Library library;
+	NONS_FreeType_Lib();
+	NONS_FreeType_Lib(const NONS_FreeType_Lib &){}
+	~NONS_FreeType_Lib();
 public:
-	int lineSkip;
-	int fontLineSkip;
-	int spacing;
-	NONS_Font();
-	NONS_Font(const char *fontname,int size,int style);
-	NONS_Font(SDL_RWops *rwop,int size,int style);
-	~NONS_Font();
-	TTF_Font *getfont(){
-		return this->font;
-	}
-	int getsize(){
-		return this->size;
-	}
-	int getstyle(){
-		return this->style;
-	}
-	int getascent(){
-		return this->ascent;
-	}
-	void setStyle(int style){
-		TTF_SetFontStyle(this->font,style);
-	}
-	bool valid(){
-		return this->font!=0;
-	}
+	static NONS_FreeType_Lib instance;
+	FT_Library get_lib() const{ return this->library; }
 };
 
-struct NONS_Glyph{
-	//The font structure.
-	NONS_Font *font;
-	TTF_Font *ttf_font;
-	//Surface storing the rendered glyph.
-	SDL_Surface *glyph;
-	//Unicode code point for the glyph.
-	wchar_t codePoint;
-	//SDL_Rect storing glyph size information
-	SDL_Rect box;
-	//Glyph advance
-	int advance;
-	//The color the glyph was rendered with.
-	SDL_Color foreground;
-	//The style the glyph was rendered with.
-	int style;
-	//Check if two SDL_Colors have the same values.
-	bool equalColors(SDL_Color *a,SDL_Color *b);
-	NONS_Glyph(NONS_Font *font,wchar_t character,int ascent,SDL_Color *foreground,bool shadow);
+class NONS_Font{
+	FT_Face ft_font;
+	FT_Error error;
+	ulong size;
+	uchar *buffer;
+
+	NONS_Font(const NONS_Font &){}
+	void operator=(const NONS_Font &){}
+public:
+	ulong ascent,
+		line_skip;
+
+	NONS_Font(const std::string &filename);
+	NONS_Font(uchar *buffer,size_t size);
+	~NONS_Font();
+	bool good() const{ return !this->error; }
+	FT_Error get_error() const{ return this->error; }
+	bool check_flag(unsigned flag) const{ return (this->ft_font->face_flags&flag)==flag; }
+	bool NONS_Font::is_monospace() const;
+	void set_size(ulong size);
+	FT_GlyphSlot render_glyph(wchar_t codepoint,bool italic,bool bold) const;
+};
+
+class NONS_FontCache;
+
+class NONS_Glyph{
+	NONS_FontCache &fc;
+	wchar_t codepoint;
+	//style properties:
+	ulong size;
+	SDL_Color color;
+	bool italic,
+		bold;
+	//~style properties
+	uchar *base_bitmap;
+	SDL_Surface *colored_bitmap;
+	SDL_Rect bounding_box;
+	ulong advance;
+public:
+	ulong refCount;
+	NONS_Glyph(NONS_FontCache &fc,wchar_t codepoint,ulong size,const SDL_Color &color,bool italic,bool bold);
 	~NONS_Glyph();
-	wchar_t getcodePoint();
-	SDL_Rect getbox();
-	int getadvance();
-	void putGlyph(SDL_Surface *dst,int x,int y,SDL_Color *foreground,bool method=0);
-	SDL_Color getforeground();
+	bool operator<(const NONS_Glyph &b) const{ return this->codepoint<b.codepoint; }
+	void colorize(const SDL_Color &color);
+	ulong get_advance_fixed() const{ return this->advance; }
+	const SDL_Rect &get_bounding_box() const{ return this->bounding_box; }
+	wchar_t get_codepoint() const{ return this->codepoint; }
+	/*
+	0: perfect match
+	1: differs in color
+	2: needs glyph re-rendering
+	*/
+	int compare_properties(ulong size,const SDL_Color &color,bool italic,bool bold) const;
+	SDL_Surface *get_surface(){ return this->colored_bitmap; }
+	long get_advance();
+	void put(SDL_Surface *dst,int x,int y,uchar alpha=255);
+	const NONS_FontCache &get_cache() const{ return this->fc; }
+	NONS_FontCache &get_cache(){ return this->fc; }
+	void done();
 };
 
 class NONS_FontCache{
-	bool shadow;
-	std::vector<NONS_Glyph *> glyphCache;
+	std::map<wchar_t,NONS_Glyph *> glyphs;
+	NONS_Font &font;
+	ulong size;
+	SDL_Color color;
+	bool italic,
+		bold;
+	std::set<NONS_Glyph *> garbage;
 public:
-	//Foreground color. This is not guaranteed to be the color of the individual
-	//glyphs, but it is guaranteed to be the color of the glyphs returned by
-	//getGlyph().
-	SDL_Color foreground;
-	NONS_FontCache(NONS_Font *font,SDL_Color *foreground,bool shadow);
+	long spacing;
+	ulong line_skip;
+	NONS_FontCache(NONS_Font &font,ulong size,const SDL_Color &color,bool italic,bool bold);
+	NONS_FontCache(const NONS_FontCache &fc);
 	~NONS_FontCache();
-	NONS_Font *font;
-	std::vector<NONS_Glyph *> *getglyphCache();
-	NONS_Glyph *getGlyph(wchar_t codePoint);
-	void refreshCache();
+	void resetStyle(ulong size,bool italic,bool bold);
+	void setColor(const SDL_Color &color){ this->color=color; }
+	NONS_Glyph *getGlyph(wchar_t c);
+	void done(NONS_Glyph *g);
+	const NONS_Font &get_font() const{ return this->font; }
+	NONS_Font &get_font(){ return this->font; }
+	ulong get_size() const{ return this->size; }
+	const SDL_Color &get_color() const{ return this->color; }
+	bool get_italic() const{ return this->italic; }
+	bool get_bold() const{ return this->bold; }
 };
 
-NONS_Font *init_font(ulong size,NONS_GeneralArchive *archive,const char *filename);
+class NONS_AutoGlyph{
+	NONS_FontCache &cache;
+	NONS_Glyph &glyph;
+public:
+	NONS_AutoGlyph(NONS_FontCache &fc,NONS_Glyph &g):cache(fc),glyph(g){}
+	~NONS_AutoGlyph(){ this->cache.done(&this->glyph); }
+};
+
+NONS_Font *init_font(NONS_GeneralArchive *archive,const std::string &filename);
 
 struct NONS_StandardOutput;
 struct NONS_ScreenSpace;
@@ -132,14 +161,14 @@ struct NONS_Button{
 	NONS_Layer *shadowLayer;
 	SDL_Rect box;
 	NONS_ScreenSpace *screen;
-	NONS_Font *font;
+	NONS_FontCache *font_cache;
 	bool status;
 	int posx,posy;
 	int limitX,limitY;
 	NONS_Button();
-	NONS_Button(NONS_Font *font);
+	NONS_Button(const NONS_FontCache &fc);
 	~NONS_Button();
-	void makeTextButton(const std::wstring &text,float center,SDL_Color *on,SDL_Color *off,bool shadow,int limitX,int limitY);
+	void makeTextButton(const std::wstring &text,NONS_FontCache fc,float center,const SDL_Color &on,const SDL_Color &off,bool shadow,int limitX,int limitY);
 	void makeGraphicButton(SDL_Surface *src,int posx,int posy,int width,int height,int originX,int originY);
 	void mergeWithoutUpdate(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force=0);
 	void merge(NONS_VirtualScreen *dst,SDL_Surface *original,bool status,bool force=0);
@@ -154,7 +183,7 @@ private:
 
 struct NONS_ButtonLayer{
 	std::vector<NONS_Button *> buttons;
-	NONS_Font *font;
+	NONS_FontCache *font_cache;
 	NONS_ScreenSpace *screen;
 	std::wstring voiceEntry;
 	std::wstring voiceMouseOver;
@@ -178,11 +207,11 @@ struct NONS_ButtonLayer{
 			ZXC;
 	} inputOptions;
 	NONS_ButtonLayer(SDL_Surface *img,NONS_ScreenSpace *screen);
-	NONS_ButtonLayer(NONS_Font *font,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu);
+	NONS_ButtonLayer(const NONS_FontCache &fc,NONS_ScreenSpace *screen,bool exitable,NONS_Menu *menu);
 	~NONS_ButtonLayer();
 	void makeTextButtons(const std::vector<std::wstring> &arr,
-		SDL_Color *on,
-		SDL_Color *off,
+		const SDL_Color &on,
+		const SDL_Color &off,
 		bool shadow,
 		std::wstring *entry,
 		std::wstring *mouseover,
@@ -224,8 +253,8 @@ struct NONS_Menu{
 	NONS_ScriptInterpreter *interpreter;
 	int x,y;
 	NONS_Layer *shade;
-	NONS_Font *font;
-	NONS_Font *defaultFont;
+	NONS_FontCache *font_cache,
+		*default_font_cache;
 	long fontsize,spacing,lineskip;
 	SDL_Color shadeColor;
 	std::wstring stringSave;
@@ -253,6 +282,7 @@ struct NONS_Menu{
 	int windowerase();
 	int skip();
 	int call(const std::wstring &string);
+	NONS_FontCache &get_font_cache(){ return *(this->font_cache?this->font_cache:this->default_font_cache); }
 private:
 	int write(const std::wstring &txt,int y);
 };

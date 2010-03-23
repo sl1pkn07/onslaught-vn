@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -36,12 +36,12 @@
 #include <vector>
 
 struct NONS_CommandLineOptions{
-	ENCODINGS scriptencoding;
+	ENCODING::ENCODING scriptencoding;
 	std::wstring musicFormat;
 	std::wstring musicDirectory;
 	std::wstring archiveDirectory;
 	std::wstring scriptPath;
-	ENCRYPTION scriptEncryption;
+	ENCRYPTION::ENCRYPTION scriptEncryption;
 	bool override_stdout;
 	bool reset_redirection_files;
 	bool debugMode;

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008, 2009, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,7 @@ struct NONS_SaveFile{
 	arrays_map_T arrays;
 	ushort fontSize;
 	struct stackEl{
-		StackFrameType type;
+		StackFrameType::StackFrameType type;
 		std::wstring label;
 		ulong linesBelow,
 			statementNo,
