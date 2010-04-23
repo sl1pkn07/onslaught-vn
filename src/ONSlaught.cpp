@@ -262,6 +262,11 @@ extern wchar_t SJIS2Unicode[0x10000],
 	SJIS2Unicode_compact[];
 void initialize_conversion_tables();
 
+#if NONS_SYS_PSP
+#include <pspkernel.h>
+PSP_MODULE_INFO("ONSlaught", 0, 1, 1);
+#endif
+
 #ifdef main
 #undef main
 #endif
@@ -273,7 +278,11 @@ int main(int argc,char **argv){
 #if ONSLAUGHT_BUILD_VERSION<99999999
 		std::cout <<"Build "<<ONSLAUGHT_BUILD_VERSION<<", ";
 #endif
-	std::cout <<ONSLAUGHT_BUILD_VERSION_STR"\n\n"
+	std::cout <<ONSLAUGHT_BUILD_VERSION_STR"\n"
+#ifdef NONS_LOW_MEMORY_ENVIRONMENT
+		"Low memory usage build.\n"
+#endif
+		"\n"
 		"Copyright (c) "ONSLAUGHT_COPYRIGHT_YEAR_STR", Helios (helios.vmg@gmail.com)\n"
 		"All rights reserved.\n\n"<<std::endl;
 

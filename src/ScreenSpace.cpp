@@ -134,6 +134,8 @@ void NONS_Layer::usePicAsDefaultShade(SDL_Surface *pic){
 	this->useDataAsDefaultShade=1;
 }
 
+#include <iostream>
+
 bool NONS_Layer::load(const std::wstring *string){
 	if (!string){
 		int w=this->data->w,
@@ -277,7 +279,7 @@ ulong NONS_StandardOutput::getIndentationSize(){
 	return this->indentationLevel*(advance+this->extraAdvance);
 }
 
-bool NONS_StandardOutput::prepareForPrinting(const std::wstring str){
+bool NONS_StandardOutput::prepareForPrinting(std::wstring str){
 	long lastSpace=-1;
 	int x0=this->x,y0=this->y;
 	int wordL=0;
@@ -360,6 +362,12 @@ void NONS_StandardOutput::set_bold(bool b){
 		this->prebufferedText.append(L"</bold>");
 }
 
+void NONS_StandardOutput::set_size(ulong size){
+	this->foregroundLayer->fontCache->set_size(size);
+	if (this->shadowLayer)
+		this->shadowLayer->fontCache->set_size(size);
+}
+
 bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ulong *printedChars){
 	if (start>=this->cachedText.size())
 		return 0;
@@ -383,7 +391,7 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 		x0=this->x;
 	y0=this->y;
 	int lineSkip=this->foregroundLayer->fontCache->line_skip;
-	int fontLineSkip=this->foregroundLayer->fontCache->get_font().line_skip;
+	int fontLineSkip=this->foregroundLayer->fontCache->font_line_skip;
 	ulong t0,t1;
 	if (this->resumePrinting)
 		start=this->resumePrintingWhere;
@@ -484,12 +492,14 @@ bool NONS_StandardOutput::print(ulong start,ulong end,NONS_VirtualScreen *dst,ul
 			glyph->put(dst->screens[VIRTUAL],x0,y0);
 			glyph->done();
 		}
+		SDL_Rect r=glyph->get_put_bounding_box((Sint16)x0,(Sint16)y0);
 		if (glyph2){
 			long tempX=(this->shadowPosX<=0)?0:this->shadowPosX,
 				tempY=(this->shadowPosY<=0)?0:this->shadowPosY;
-			dst->updateScreen(x0,y0,advance+tempX,fontLineSkip+tempY);
-		}else
-			dst->updateScreen(x0,y0,advance,fontLineSkip);
+			r.w+=(Uint16)tempX;
+			r.h+=(Uint16)tempY;
+		}
+		dst->updateScreen(r.x,r.y,r.w,r.h);
 		if (printedChars)
 			(*printedChars)++;
 		x0+=advance;

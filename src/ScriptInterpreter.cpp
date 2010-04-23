@@ -145,89 +145,6 @@ NONS_StackElement::NONS_StackElement(NONS_StackElement *copy,const std::vector<s
 
 ConfigFile settings;
 
-void NONS_ScriptInterpreter::init(){
-	//this->interpreter_position=0;
-	this->thread=new NONS_ScriptThread(this->script);
-	this->store=new NONS_VariableStore();
-	this->interpreter_mode=UNDEFINED_MODE;
-	this->nsadir="./";
-	this->default_speed=0;
-	this->default_speed_slow=0;
-	this->default_speed_med=0;
-	this->default_speed_fast=0;
-
-	if (settings.exists(L"textSpeedMode"))
-		this->current_speed_setting=(char)settings.getInt(L"textSpeedMode");
-	else
-		this->current_speed_setting=1;
-
-	srand((unsigned int)time(0));
-	this->defaultfs=18;
-	this->legacy_set_window=1;
-	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->screen);
-	if (!this->arrowCursor->data){
-		delete this->arrowCursor;
-		this->arrowCursor=new NONS_Cursor(this->screen);
-	}
-	this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0,this->screen);
-	if (!this->pageCursor->data){
-		delete this->pageCursor;
-		this->pageCursor=new NONS_Cursor(this->screen);
-	}
-	this->gfx_store=this->screen->gfx_store;
-	this->hideTextDuringEffect=1;
-	this->selectOn.r=0xFF;
-	this->selectOn.g=0xFF;
-	this->selectOn.b=0xFF;
-	this->selectOff.r=0xA9;
-	this->selectOff.g=0xA9;
-	this->selectOff.b=0xA9;
-	this->autoclick=0;
-	this->timer=SDL_GetTicks();
-	this->menu=new NONS_Menu(this);
-	this->imageButtons=0;
-	this->new_if=0;
-	this->btnTimer=0;
-	this->imageButtonExpiration=0;
-	this->saveGame=new NONS_SaveFile();
-	this->saveGame->format='N';
-	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
-	this->printed_lines.clear();
-	this->screen->char_baseline=this->screen->screen->inRect.h-1;
-	this->useWheel=0;
-	this->useEscapeSpace=0;
-	this->screenshot=0;
-	this->base_size[0]=this->virtual_size[0]=CLOptions.virtualWidth;
-	this->base_size[1]=this->virtual_size[1]=CLOptions.virtualHeight;
-}
-
-void NONS_ScriptInterpreter::uninit(){
-	if (this->store)
-		delete this->store;
-	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
-		delete i->second;
-	delete this->thread;
-	this->INIcache.clear();
-	delete this->arrowCursor;
-	delete this->pageCursor;
-	if (this->menu)
-		delete this->menu;
-	this->selectVoiceClick.clear();
-	this->selectVoiceEntry.clear();
-	this->selectVoiceMouseOver.clear();
-	this->clickStr.clear();
-	if (this->imageButtons)
-		delete this->imageButtons;
-	delete this->saveGame;
-
-	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-	settings.writeOut(config_directory+settings_filename);
-
-	this->textgosub.clear();
-	if (!!this->screenshot)
-		SDL_FreeSurface(this->screenshot);
-}
-
 ErrorCode init_script(NONS_Script *&script,NONS_GeneralArchive *archive,const std::wstring &filename,ENCODING::ENCODING encoding,ENCRYPTION::ENCRYPTION encryption){
 	script=new NONS_Script();
 	ErrorCode error_code=script->init(filename,archive,encoding,encryption);
@@ -289,43 +206,6 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->thread=0;
 	this->screenshot=0;
 	if (initialize){
-		{
-			this->archive=new NONS_GeneralArchive();
-			{
-				std::string fontfile=getDefaultFontFilename();
-				this->main_font=init_font(this->archive,getDefaultFontFilename());
-				if (!this->main_font || !this->main_font->good()){
-					delete this->main_font;
-					if (!this->main_font)
-						o_stderr <<"FATAL ERROR: Could not find \""<<fontfile<<"\". If your system is case-sensitive, "
-							"make sure the file name is capitalized correctly.\n";
-					else
-						o_stderr <<"FATAL ERROR: \""<<fontfile<<"\" is not a valid font file.\n";
-					exit(0);
-				}
-				SDL_Color c={255,255,255,255};
-				this->font_cache=new NONS_FontCache(*this->main_font,20,c,0,0 FONTCACHE_DEBUG_PARAMETERS);
-			}
-			{
-				ErrorCode error=NONS_NO_ERROR;
-				if (CLOptions.scriptPath.size())
-					error=init_script(this->script,this->archive,CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
-				else
-					error=init_script(this->script,this->archive,CLOptions.scriptencoding);
-				if (error!=NONS_NO_ERROR){
-					handleErrors(error,-1,"NONS_ScriptInterpreter::NONS_ScriptInterpreter",0);
-					exit(error);
-				}
-			}
-			labellog.init(L"NScrllog.dat",L"nonsllog.dat");
-			ImageLoader=new NONS_ImageLoader(this->archive);
-			o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
-			o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
-			this->audio=new NONS_Audio(CLOptions.musicDirectory);
-			if (CLOptions.musicFormat.size())
-				this->audio->musicFormat=CLOptions.musicFormat;
-			this->screen=init_screen(this->archive,*this->font_cache);
-		}
 		this->init();
 	}
 	this->was_initialized=initialize;
@@ -700,6 +580,142 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 		this->listImplementation();
 }
 
+NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
+	if (this->was_initialized)
+		this->uninit();
+	delete this->screen;
+	delete this->font_cache;
+	delete this->main_font;
+	delete this->audio;
+	delete this->archive;
+	delete this->script;
+	while (this->commandQueue.size()){
+		delete this->commandQueue.front();
+		this->commandQueue.pop();
+	}
+}
+
+void NONS_ScriptInterpreter::init(){
+	this->defaultfs=18;
+	this->base_size[0]=this->virtual_size[0]=CLOptions.virtualWidth;
+	this->base_size[1]=this->virtual_size[1]=CLOptions.virtualHeight;
+	this->archive=new NONS_GeneralArchive();
+	{
+		std::string fontfile=getDefaultFontFilename();
+		this->main_font=init_font(this->archive,getDefaultFontFilename());
+		if (!this->main_font || !this->main_font->good()){
+			delete this->main_font;
+			if (!this->main_font)
+				o_stderr <<"FATAL ERROR: Could not find \""<<fontfile<<"\". If your system is case-sensitive, "
+					"make sure the file name is capitalized correctly.\n";
+			else
+				o_stderr <<"FATAL ERROR: \""<<fontfile<<"\" is not a valid font file.\n";
+			exit(0);
+		}
+		SDL_Color white={255,255,255,255},
+			black={0,0,0,255};
+		ulong fs=this->defaultfs*this->virtual_size[1]/this->base_size[1];
+		this->font_cache=new NONS_FontCache(*this->main_font,fs,white,0,0,0,black FONTCACHE_DEBUG_PARAMETERS);
+	}
+	{
+		ErrorCode error=NONS_NO_ERROR;
+		if (CLOptions.scriptPath.size())
+			error=init_script(this->script,this->archive,CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
+		else
+			error=init_script(this->script,this->archive,CLOptions.scriptencoding);
+		if (error!=NONS_NO_ERROR){
+			handleErrors(error,-1,"NONS_ScriptInterpreter::NONS_ScriptInterpreter",0);
+			exit(error);
+		}
+	}
+	{
+		labellog.init(L"NScrllog.dat",L"nonsllog.dat");
+		ImageLoader=new NONS_ImageLoader(this->archive);
+		o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
+		o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
+		this->audio=new NONS_Audio(CLOptions.musicDirectory);
+		if (CLOptions.musicFormat.size())
+			this->audio->musicFormat=CLOptions.musicFormat;
+		this->screen=init_screen(this->archive,*this->font_cache);
+	}
+	this->thread=new NONS_ScriptThread(this->script);
+	this->store=new NONS_VariableStore();
+	this->interpreter_mode=UNDEFINED_MODE;
+	this->nsadir="./";
+	this->default_speed=0;
+	this->default_speed_slow=0;
+	this->default_speed_med=0;
+	this->default_speed_fast=0;
+
+	if (settings.exists(L"textSpeedMode"))
+		this->current_speed_setting=(char)settings.getInt(L"textSpeedMode");
+	else
+		this->current_speed_setting=1;
+
+	srand((unsigned int)time(0));
+	this->legacy_set_window=1;
+	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->screen);
+	if (!this->arrowCursor->data){
+		delete this->arrowCursor;
+		this->arrowCursor=new NONS_Cursor(this->screen);
+	}
+	this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0,this->screen);
+	if (!this->pageCursor->data){
+		delete this->pageCursor;
+		this->pageCursor=new NONS_Cursor(this->screen);
+	}
+	this->gfx_store=this->screen->gfx_store;
+	this->hideTextDuringEffect=1;
+	this->selectOn.r=0xFF;
+	this->selectOn.g=0xFF;
+	this->selectOn.b=0xFF;
+	this->selectOff.r=0xA9;
+	this->selectOff.g=0xA9;
+	this->selectOff.b=0xA9;
+	this->autoclick=0;
+	this->timer=SDL_GetTicks();
+	this->menu=new NONS_Menu(this);
+	this->imageButtons=0;
+	this->new_if=0;
+	this->btnTimer=0;
+	this->imageButtonExpiration=0;
+	this->saveGame=new NONS_SaveFile();
+	this->saveGame->format='N';
+	memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
+	this->printed_lines.clear();
+	this->screen->char_baseline=this->screen->screen->inRect.h-1;
+	this->useWheel=0;
+	this->useEscapeSpace=0;
+	this->screenshot=0;
+}
+
+void NONS_ScriptInterpreter::uninit(){
+	if (this->store)
+		delete this->store;
+	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
+		delete i->second;
+	delete this->thread;
+	this->INIcache.clear();
+	delete this->arrowCursor;
+	delete this->pageCursor;
+	if (this->menu)
+		delete this->menu;
+	this->selectVoiceClick.clear();
+	this->selectVoiceEntry.clear();
+	this->selectVoiceMouseOver.clear();
+	this->clickStr.clear();
+	if (this->imageButtons)
+		delete this->imageButtons;
+	delete this->saveGame;
+
+	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
+	settings.writeOut(config_directory+settings_filename);
+
+	this->textgosub.clear();
+	if (!!this->screenshot)
+		SDL_FreeSurface(this->screenshot);
+}
+
 void NONS_ScriptInterpreter::listImplementation(){
 	std::vector<std::wstring> implemented,
 		notyetimplemented,
@@ -742,21 +758,6 @@ void NONS_ScriptInterpreter::listImplementation(){
 		o_stdout <<unimplemented[a]<<"\n";
 	o_stdout.indent(-1);
 	o_stdout <<"Count: "<<(ulong)unimplemented.size()<<"\n";
-}
-
-NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
-	if (this->was_initialized)
-		this->uninit();
-	delete this->screen;
-	delete this->font_cache;
-	delete this->main_font;
-	delete this->audio;
-	delete this->archive;
-	delete this->script;
-	while (this->commandQueue.size()){
-		delete this->commandQueue.front();
-		this->commandQueue.pop();
-	}
 }
 
 void NONS_ScriptInterpreter::stop(){
@@ -1133,7 +1134,7 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 			break;
 		case StatementType::PRINTER:
 			if (this->interpreter_mode!=RUN_MODE){
-				handleErrors(NONS_NOT_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+				handleErrors(NONS_NOT_ALLOWED_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
 			}else{
 				if (this->printed_lines.find(current_line)==this->printed_lines.end()){
 					//softwareCtrlIsPressed=0;
@@ -1152,10 +1153,10 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 				}
 				if (i!=this->commandList.end()){
 					if (!i->second.allow_define && this->interpreter_mode==DEFINE_MODE){
-						handleErrors(NONS_NOT_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+						handleErrors(NONS_NOT_ALLOWED_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
 						break;
 					}else if (!i->second.allow_run && this->interpreter_mode==RUN_MODE){
-						handleErrors(NONS_NOT_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
+						handleErrors(NONS_NOT_ALLOWED_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",0);
 						break;
 					}
 					commandFunctionPointer function=i->second.function;
@@ -1250,7 +1251,7 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 			break;
 		case StatementType::PRINTER:
 			if (this->interpreter_mode!=RUN_MODE){
-				handleErrors(NONS_NOT_IN_RUN_MODE,0,"NONS_ScriptInterpreter::interpretString",0);
+				handleErrors(NONS_NOT_ALLOWED_IN_DEFINE_MODE,0,"NONS_ScriptInterpreter::interpretString",0);
 			}else{
 				if (!stmt.lineOfOrigin || this->printed_lines.find(stmt.lineOfOrigin->lineNumber)==this->printed_lines.end()){
 					//softwareCtrlIsPressed=0;
@@ -1266,9 +1267,9 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 				commandMapType::iterator i=this->commandList.find(stmt.commandName);
 				if (i!=this->commandList.end()){
 					if (!i->second.allow_define && this->interpreter_mode==DEFINE_MODE)
-						return handleErrors(NONS_NOT_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",1);
+						return handleErrors(NONS_NOT_ALLOWED_IN_DEFINE_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",1);
 					if (!i->second.allow_run && this->interpreter_mode==RUN_MODE)
-						return handleErrors(NONS_NOT_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",1);
+						return handleErrors(NONS_NOT_ALLOWED_IN_RUN_MODE,current_line,"NONS_ScriptInterpreter::interpretNextLine",1);
 					commandFunctionPointer function=i->second.function;
 					if (!function){
 						if (this->implementationErrors.find(i->first)!=this->implementationErrors.end()){
@@ -1492,9 +1493,9 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						takeOut.first=temp2.stops[stop].first+1;
 						takeOut.second=temp2.stops[stop].second+1;
 						temp2.stops.erase(temp2.stops.begin(),temp2.stops.begin()+stop+1);
-						for (std::vector<std::pair<ulong,ulong> >::iterator i=temp2.stops.begin();i<temp2.stops.end();i++){
-							i->first-=takeOut.first;
-							i->second-=takeOut.second;
+						for (std::vector<std::pair<ulong,ulong> >::iterator i2=temp2.stops.begin();i2<temp2.stops.end();++i2){
+							i2->first-=takeOut.first;
+							i2->second-=takeOut.second;
 						}
 						temp.push_back(temp2);
 						for (i2++;i2!=pages.end();i2++)
@@ -1528,9 +1529,9 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 						takeOut.first=temp2.stops[stop].first;
 						takeOut.second=temp2.stops[stop].second+1;
 						temp2.stops.erase(temp2.stops.begin(),temp2.stops.begin()+stop+1);
-						for (std::vector<std::pair<ulong,ulong> >::iterator i=temp2.stops.begin();i<temp2.stops.end();i++){
-							i->first-=takeOut.first;
-							i->second-=takeOut.second;
+						for (std::vector<std::pair<ulong,ulong> >::iterator i2=temp2.stops.begin();i2<temp2.stops.end();++i2){
+							i2->first-=takeOut.first;
+							i2->second-=takeOut.second;
 						}
 						temp.push_back(temp2);
 						for (i2++;i2!=pages.end();i2++)
@@ -1592,7 +1593,6 @@ bool NONS_ScriptInterpreter::Printer_support(std::vector<printingPage> &pages,ul
 								notbee=firstcharsCI(*str,reduced,L"!b");
 							if (noti || notbee){
 								reduced+=2;
-								NONS_StandardOutput *out=this->screen->output;
 								NONS_FontCache *caches[2];
 								caches[0]=out->foregroundLayer->fontCache;
 								if (out->shadowLayer)
@@ -1917,7 +1917,13 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 	au->stopAllSound();
 	out->ephemeralOut(&out->currentBuffer,0,0,1,0);
 	{
-		SDL_Surface *srf=makeSurface(scr->screen->screens[VIRTUAL]->w,scr->screen->screens[VIRTUAL]->h,32);
+		ulong w,h;
+		{
+			NONS_MutexLocker ml(screenMutex);
+			w=scr->screen->screens[VIRTUAL]->w;
+			h=scr->screen->screens[VIRTUAL]->h;
+		}
+		SDL_Surface *srf=makeSurface(w,h,32);
 		SDL_FillRect(srf,0,amask);
 		NONS_GFX::callEffect(10,1000,0,srf,0,scr->screen);
 		SDL_FreeSurface(srf);
@@ -2003,9 +2009,9 @@ bool NONS_ScriptInterpreter::save(int file){
 					break;
 				case StackFrameType::FOR_NEST:
 					el->variable=0;
-					for (variables_map_T::iterator i=this->store->variables.begin();i!=this->store->variables.end() && !el->variable;i++)
-						if (i->second->intValue==el0->var)
-							el->variable=i->first;
+					for (variables_map_T::iterator i2=this->store->variables.begin();i2!=this->store->variables.end() && !el->variable;++i2)
+						if (i2->second->intValue==el0->var)
+							el->variable=i2->first;
 					el->to=el0->to;
 					el->step=el0->step;
 					break;
@@ -2362,6 +2368,9 @@ ErrorCode NONS_ScriptInterpreter::command_base_resolution(NONS_Statement &stmt){
 	this->base_size[1]=h;
 	for (int a=0;a<2;a++)
 		ImageLoader->base_scale[a]=double(this->virtual_size[a])/double(this->base_size[a]);
+	ulong size=this->defaultfs*this->virtual_size[1]/this->base_size[1];
+	this->font_cache->set_size(size);
+	this->screen->output->set_size(size);
 	return NONS_NO_ERROR;
 }
 
@@ -2796,7 +2805,7 @@ ErrorCode NONS_ScriptInterpreter::command_draw(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
-	if (!this->screen->Background && !this->screen->Background->data)
+	if (!this->screen->Background || !this->screen->Background->data)
 		SDL_FillRect(this->screen->screenBuffer,0,this->screen->screenBuffer->format->Amask);
 	else if (!stdStrCmpCI(stmt.commandName,L"drawbg"))
 		manualBlit(
@@ -2887,17 +2896,8 @@ ErrorCode NONS_ScriptInterpreter::command_drawfill(NONS_Statement &stmt){
 	g=ulong(g)&0xFF;
 	b=ulong(b)&0xFF;
 	SDL_Surface *dst=this->screen->screenBuffer;
-	Uint32 rmask=dst->format->Rmask,
-		gmask=dst->format->Gmask,
-		bmask=dst->format->Bmask,
-		amask=dst->format->Amask,
-		R=r,
-		G=g,
-		B=b;
-	R=R|R<<8|R<<16|R<<24;
-	G=G|G<<8|G<<16|G<<24;
-	B=B|B<<8|B<<16|B<<24;
-	SDL_FillRect(dst,0,R&rmask|G&gmask|B&bmask|amask);
+	surfaceData sd(dst);
+	SDL_FillRect(dst,0,r<<sd.Roffset|g<<sd.Goffset|b<<sd.Boffset|0xFF<<sd.Aoffset);
 	return NONS_NO_ERROR;
 }
 
@@ -2991,9 +2991,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 					src=dst;
 				}else{
 					if (xscale!=100 || yscale!=100 || this->virtual_size[0]!=this->base_size[0] || this->virtual_size[1]!=this->base_size[1]){
-						int x=src->w*xscale/100,
-							y=src->h*yscale/100;
-						dst=resizeFunction(src,x,y);
+						dst=resizeFunction(src,src->w*xscale/100,src->h*yscale/100);
 						SDL_FreeSurface(src);
 						src=dst;
 					}
@@ -4632,14 +4630,14 @@ ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_Statement &stmt){
 	}
 	if (mouseover.size()){
 		ulong l;
-		uchar *buffer=this->archive->getFileBuffer(mouseover,l);
+		buffer=this->archive->getFileBuffer(mouseover,l);
 		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
 		delete[] buffer;
 	}
 	if (click.size()){
 		ulong l;
-		uchar *buffer=this->archive->getFileBuffer(click,l);
+		buffer=this->archive->getFileBuffer(click,l);
 		if (!buffer)
 			return NONS_FILE_NOT_FOUND;
 		delete[] buffer;
@@ -4793,7 +4791,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 				this->screen->output->shadowLayer->fontCache
 			};
 			for (int a=0;a<3;a++){
-				fc[a]->resetStyle((ulong)fontsize,fc[a]->get_italic(),fc[a]->get_bold());
+				fc[a]->set_size((ulong)fontsize);
 				fc[a]->spacing=(long)spacingX;
 				if (forceLineSkip)
 					fc[a]->line_skip=forceLineSkip;

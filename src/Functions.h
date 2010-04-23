@@ -31,14 +31,15 @@
 #define NONS_FUNCTIONS_H
 
 #include "ErrorCodes.h"
-#include <map>
 #include "Common.h"
+#include "enums.h"
 #include <SDL/SDL.h>
 #include <iomanip>
 #include <sstream>
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <map>
 #include <ctime>
 
 #ifndef M_PI
@@ -135,15 +136,9 @@ inline T HEX2DEC(T x){
 	return x<='9'?x-'0':(x<='F'?x-'A'+10:x-'a'+10);
 }
 
-template <typename T>
-long atoi(const std::basic_string<T> &str){
-	std::basic_stringstream<T> stream(str);
-	long res;
-	return !(stream >>res)?0:res;
-}
-
 template <typename T,typename T2>
 std::basic_string<T> itoa(T2 n,unsigned w=0){
+#ifndef PSP
 	std::basic_stringstream<T> stream;
 	if (w){
 		stream.fill('0');
@@ -151,6 +146,22 @@ std::basic_string<T> itoa(T2 n,unsigned w=0){
 	}
 	stream <<n;
 	return stream.str();
+#else
+	bool sign=n<0;
+	if (n<0)
+		n=-n;
+	std::basic_string<T> res;
+	while (n>0){
+		res.push_back(n%10+'0');
+		n/=10;
+	}
+	while (res.size()<1 || res.size()<w)
+		res.push_back('0');
+	if (sign)
+		res[res.size()-1]='-';
+	std::reverse(res.begin(),res.end());
+	return res;
+#endif
 }
 template <typename T> inline std::string  itoac(T n,unsigned w=0){ return itoa<char>   (n,w); }
 template <typename T> inline std::wstring itoaw(T n,unsigned w=0){ return itoa<wchar_t>(n,w); }
@@ -456,6 +467,28 @@ inline bool NONS_isidnchar(unsigned character){
 	return NONS_isid1char(character) || NONS_isdigit(character);
 }
 
+template <typename T>
+long atoi(const std::basic_string<T> &str){
+#if !NONS_SYS_PSP
+	std::basic_stringstream<T> stream(str);
+	long res;
+	return !(stream >>res)?0:res;
+#else
+	long res=0;
+	bool sign=0;
+	ulong a=0;
+	if (str[a]=='-'){
+		sign=1;
+		a++;
+	}
+	for (;a<str.size() && NONS_isdigit(str[a]);a++)
+		res=res*10+str[a]-'0';
+	if (sign)
+		res=-res;
+	return res;
+#endif
+}
+
 template <typename T1,typename T2>
 int lexcmp(const T1 *a,const T2 *b){
 	for (;*a || *b;a++,b++){
@@ -502,17 +535,14 @@ int lexcmp_CI_bounded(const T1 *a,size_t sizeA,const T2 *b,size_t sizeB){
 ulong getUTF8size(const wchar_t *buffer,ulong size);
 std::wstring UniFromISO88591(const std::string &str);
 std::wstring UniFromUTF8(const std::string &str);
-/*
-Important note: this procedure assumes that the text string is a valid UCS-2
-string, so while it does take BOM into account, it doesn't compensate for
-streams with an odd length, as all valid UCS-2 strings have an even length.
-*/
-std::wstring UniFromUCS2(const std::string &str,char end=UNDEFINED_ENDIANNESS);
 std::wstring UniFromSJIS(const std::string &str);
 std::string UniToISO88591(const std::wstring &str);
 std::string UniToUTF8(const std::wstring &str,bool addBOM=0);
-std::string UniToUCS2(const std::wstring &str,char end=UNDEFINED_ENDIANNESS);
 std::string UniToSJIS(const std::wstring &str);
+bool ConvertSingleCharacter(wchar_t &dst,void *buffer,size_t size,ulong &bytes_used,ENCODING::ENCODING encoding);
+void ConvertSingleCharacterToUTF8(char dst[4],wchar_t src,ulong &bytes_used);
+ulong find_first_not_of_in_utf8(const std::string &,const wchar_t *,ulong =0);
+ulong find_last_not_of_in_utf8(const std::string &,const wchar_t *,ulong =ULONG_MAX);
 
 template <typename T>
 inline void toupper(std::basic_string<T> &str){
