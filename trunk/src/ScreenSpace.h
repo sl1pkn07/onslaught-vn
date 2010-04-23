@@ -113,7 +113,7 @@ struct NONS_StandardOutput{
 	void setPosition(int x,int y);
 	//if return==1, there should be a call to the page cursor and a screen clear before
 	//calling print().
-	bool prepareForPrinting(const std::wstring str);
+	bool prepareForPrinting(std::wstring str);
 	bool print(ulong start,ulong end,NONS_VirtualScreen *dst,ulong *printedChars=0);
 	void endPrinting();
 	void ephemeralOut(std::wstring *str,NONS_VirtualScreen *dst,bool update,bool writeToLayers,SDL_Color *col);
@@ -125,6 +125,7 @@ struct NONS_StandardOutput{
 	bool get_italic(){ return this->foregroundLayer->fontCache->get_italic(); }
 	void set_bold(bool);
 	bool get_bold(){ return this->foregroundLayer->fontCache->get_bold(); }
+	void set_size(ulong);
 private:
 	int predictLineLength(std::wstring *arr,long start,int width);
 	int predictTextHeight(std::wstring *arr);

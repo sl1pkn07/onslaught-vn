@@ -147,7 +147,7 @@ WINDOWS_VERSION::WINDOWS_VERSION getWindowsVersion(){
 		}
 	}else{
 		std::string str(size,0);
-		RegQueryValueEx(k,(LPCTSTR)"VersionNumber",0,&type,(LPBYTE)&str[0],&size);
+		RegQueryValueEx(k,TEXT("VersionNumber"),0,&type,(LPBYTE)&str[0],&size);
 		RegCloseKey(k);
 		switch (str[2]){
 			case '0':
@@ -240,12 +240,14 @@ std::wstring getSaveLocation(unsigned hash[5]){
 #else
 	return root;
 #endif
+#if NONS_SYS_WINDOWS || NONS_SYS_UNIX
 	if (!CLOptions.savedir.size()){
 		path.append(itohexw(hash[0],8));
 		path.push_back(' ');
 		path.append(itohexw(hash[1],8));
 	}else
 		path.append(CLOptions.savedir);
+#endif
 #if NONS_SYS_WINDOWS
 	if (!CreateDirectory((LPCTSTR)path.c_str(),0) && GetLastError()!=ERROR_ALREADY_EXISTS)
 		return root;
@@ -325,8 +327,8 @@ void NONS_SaveFile::load(std::wstring filename){
 					case StackFrameType::USERCMD_CALL:
 						el->leftovers=UniFromUTF8(readString(buffer,offset));
 						el->parameters.resize(readDWord(buffer,offset));
-						for (ulong a=0;a<el->parameters.size();a++)
-							el->parameters[a]=UniFromUTF8(readString(buffer,offset));
+						for (ulong b=0;b<el->parameters.size();b++)
+							el->parameters[b]=UniFromUTF8(readString(buffer,offset));
 						break;
 
 				}
@@ -435,8 +437,8 @@ void NONS_SaveFile::load(std::wstring filename){
 			this->windowTextColor.b=readByte(buffer,offset);
 			{
 				uchar style=readByte(buffer,offset);
-				this->italic=bool(style&1);
-				this->bold=bool(style&2);
+				this->italic=(style&1)==1;
+				this->bold=(style&2)==2;
 			}
 			this->textSpeed=readDWord(buffer,offset);
 			this->fontShadow=!!readByte(buffer,offset);
@@ -583,7 +585,7 @@ void NONS_SaveFile::load(std::wstring filename){
 			for (ushort a=0;a<this->channels.size();a++){
 				Channel *b=new Channel();
 				b->name=UniFromUTF8(readString(buffer,offset));
-				char vol=readByte(buffer,offset);
+				vol=readByte(buffer,offset);
 				b->volume=(vol&0x7F);
 				b->loop=!!(vol&0x80);
 				this->channels[a]=b;
@@ -663,8 +665,8 @@ bool NONS_SaveFile::save(std::wstring filename){
 				case StackFrameType::USERCMD_CALL:
 					writeString(el->leftovers,buffer);
 					writeDWord(el->parameters.size(),buffer);
-					for (ulong a=0;a<el->parameters.size();a++)
-						writeString(el->parameters[a],buffer);
+					for (ulong b=0;a<el->parameters.size();b++)
+						writeString(el->parameters[b],buffer);
 					break;
 			}
 		}

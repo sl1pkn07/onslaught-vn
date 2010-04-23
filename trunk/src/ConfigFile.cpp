@@ -75,9 +75,6 @@ void ConfigFile::init(const std::wstring &filename,ENCODING::ENCODING encoding){
 		case ENCODING::ISO_8859_1:
 			decoded=UniFromISO88591(std::string(buffer,l));
 			break;
-		case ENCODING::UCS2:
-			decoded=UniFromUCS2(std::string(buffer,l),UNDEFINED_ENDIANNESS);
-			break;
 		case ENCODING::UTF8:
 			decoded=UniFromUTF8(std::string(buffer,l));
 			break;
@@ -119,22 +116,20 @@ long ConfigFile::getInt(const std::wstring &index,ulong subindex){
 		return 0;
 	std::wstring &str=i->second[subindex];
 	long ret=0;
-	std::wstringstream stream;
 	switch (getDataType(str)){
 		case 1:
-			stream <<str;
-			stream >>ret;
+			ret=atoi(str);
 			break;
 		case 2:
-			for (std::wstring::iterator i=str.begin()+2;i!=str.end();i++){
+			for (size_t a=0;a<str.size();a++){
 				ret<<=4;
-				ret|=HEX2DEC(*i);
+				ret|=HEX2DEC(str[a]);
 			}
 			break;
 		case 3:
-			for (std::wstring::iterator i=str.begin()+2;*i!='b';i++){
+			for (size_t a=2;a<str.size() && str[a]!='b';a++){
 				ret<<=1;
-				ret|=*i-'0';
+				ret|=str[a]-'0';
 			}
 			break;
 		default:
@@ -161,16 +156,14 @@ void ConfigFile::assignWString(const std::wstring &var,const std::wstring &val,u
 
 void ConfigFile::assignInt(const std::wstring &var,long val,ulong subindex){
 	config_map_t::iterator i=this->entries.find(var);
-	std::wstringstream stream;
-	stream <<val;
 	if (i!=this->entries.end()){
 		if (subindex>=i->second.size())
-			i->second.push_back(stream.str());
+			i->second.push_back(itoaw(val));
 		else
-			i->second[subindex]=stream.str();
+			i->second[subindex]=itoaw(val);
 	}else{
 		this->entries[var]=std::vector<std::wstring>();
-		this->entries[var].push_back(stream.str());
+		this->entries[var].push_back(itoaw(val));
 	}
 }
 
@@ -198,9 +191,6 @@ std::string ConfigFile::writeOut(ENCODING::ENCODING encoding){
 	switch (encoding){
 		case ENCODING::ISO_8859_1:
 			return UniToISO88591(buffer);
-			break;
-		case ENCODING::UCS2:
-			return UniToUCS2(buffer);
 			break;
 		case ENCODING::UTF8:
 			return UniToUTF8(buffer);
