@@ -829,8 +829,7 @@ void NONS_ScriptInterpreter::queue(NONS_ScriptLine *line){
 	this->commandQueue.push(line);
 }
 
-//#include "../video_player.h"
-#include "f:\Documents and Settings\root\My Documents\Visual Studio 2008\Projects\VLC\video_player\video_player.h"
+#include "../../video_player.h"
 
 struct playback_input_thread_params{
 	bool allow_quit;
