@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2005 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2009 Baptiste Coudurier <baptiste.coudurier@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -18,23 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_INTFLOAT_READWRITE_H
-#define AVUTIL_INTFLOAT_READWRITE_H
+#ifndef AVUTIL_RANDOM_SEED_H
+#define AVUTIL_RANDOM_SEED_H
 
 #include <stdint.h>
-#include "attributes.h"
 
-/* IEEE 80 bits extended float */
-typedef struct AVExtFloat  {
-    uint8_t exponent[2];
-    uint8_t mantissa[8];
-} AVExtFloat;
+/**
+ * Gets a seed to use in conjunction with random functions.
+ */
+uint32_t av_get_random_seed(void);
 
-double av_int2dbl(int64_t v) av_const;
-float av_int2flt(int32_t v) av_const;
-double av_ext2dbl(const AVExtFloat ext) av_const;
-int64_t av_dbl2int(double d) av_const;
-int32_t av_flt2int(float d) av_const;
-AVExtFloat av_dbl2ext(double d) av_const;
-
-#endif /* AVUTIL_INTFLOAT_READWRITE_H */
+#endif /* AVUTIL_RANDOM_SEED_H */
