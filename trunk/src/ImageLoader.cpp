@@ -429,13 +429,14 @@ SDL_Surface *generateEmptySurface(ulong w,ulong h){
 
 #undef LoadImage
 
-SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffer,ulong bufferSize,NONS_DiskCache *dcache,double base_scale[2]){
-	if (!buffer || !bufferSize || this->image && this->refCount)
+SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,NONS_DataStream *stream,NONS_DiskCache *dcache,double base_scale[2]){
+	if (!stream || this->image && this->refCount)
 		return 0;
+	stream->reset();
 	if (this->image)
 		SDL_FreeSurface(this->image);
-	SDL_RWops *rwops=SDL_RWFromMem((void *)buffer,bufferSize);
-	SDL_Surface *surface=IMG_Load_RW(rwops,0);
+	SDL_RWops rwops=stream->to_rwops();
+	SDL_Surface *surface=IMG_Load_RW(&rwops,0);
 	if (surface){
 		this->image=makeSurface(surface->w,surface->h,32);
 		if (!!surface && surface->format->BitsPerPixel<24)
@@ -443,10 +444,11 @@ SDL_Surface *NONS_Image::LoadImage(const std::wstring &string,const uchar *buffe
 		else
 			manualBlit(surface,0,this->image,0);
 		SDL_FreeSurface(surface);
-		SDL_FreeRW(rwops);
 	}else if (svg_functions && svg_functions->valid){
 		if (!dcache || !(this->image=dcache->get(string))){
-			this->svg_source=svg_functions->SVG_load((void *)buffer,bufferSize);
+			std::vector<uchar> buffer;
+			stream->read_all(buffer);
+			this->svg_source=svg_functions->SVG_load(&buffer[0],buffer.size());
 			if (!this->svg_source)
 				this->image=0;
 			else{
@@ -530,18 +532,18 @@ void NONS_DiskCache::add(const std::wstring &filename,SDL_Surface *surface){
 		this->cache_list[src]=dst;
 	}else
 		dst=i->second;
-	std::string buffer;
+	std::vector<uchar> buffer;
 	surfaceData sd=surface;
 	writeDWord(sd.w,buffer);
 	writeDWord(sd.h,buffer);
-	buffer.append(4,0);
+	writeDWord(0,buffer);
 	buffer[8+sd.Roffset]='R';
 	buffer[8+sd.Goffset]='G';
 	buffer[8+sd.Boffset]='B';
 	if (sd.alpha)
 		buffer[8+sd.Aoffset]='A';
-	buffer.append(sd.w*sd.h*sd.advance,0);
-	char *p=&buffer[0];
+	buffer.resize(buffer.size()+sd.w*sd.h*sd.advance,0);
+	uchar *p=&buffer[0];
 	p+=12;
 	{
 		SDL_LockSurface(surface);
@@ -564,7 +566,7 @@ SDL_Surface *NONS_DiskCache::get(const std::wstring &filename){
 	map_t::iterator i=this->cache_list.find(filename);
 	if (i==this->cache_list.end())
 		return 0;
-	ulong size;
+	size_t size;
 	uchar *buffer=NONS_File::read(i->second,size);
 	if (!buffer)
 		return 0;
@@ -621,15 +623,22 @@ SDL_Surface *NONS_DiskCache::get(const std::wstring &filename){
 #define LOG_FILENAME_OLD L"NScrflog.dat"
 #define LOG_FILENAME_NEW L"nonsflog.dat"
 
-NONS_ImageLoader *ImageLoader=0;
+NONS_ImageLoader ImageLoader;
 
-NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive)
-		:filelog(LOG_FILENAME_OLD,LOG_FILENAME_NEW),
-		svg_library("svg_loader",0){
-	this->archive=archive;
+NONS_ImageLoader::NONS_ImageLoader(){
+	this->initialized=0;
+	this->filelog=0;
+	this->svg_library=0;
+}
+
+void NONS_ImageLoader::init(){
+	if (this->initialized)
+		return;
+	this->filelog=new NONS_FileLog(LOG_FILENAME_OLD,LOG_FILENAME_NEW);
+	this->svg_library=new NONS_LibraryLoader("svg_loader",0);
 	this->imageCache.reserve(50);
 	this->svg_functions.valid=1;
-#define NONS_ImageLoader_INIT_MEMBER(id) if (this->svg_functions.valid && !(this->svg_functions.id=(id##_f)this->svg_library.getFunction(#id)))\
+#define NONS_ImageLoader_INIT_MEMBER(id) if (this->svg_functions.valid && !(this->svg_functions.id=(id##_f)this->svg_library->getFunction(#id)))\
 	this->svg_functions.valid=0
 	NONS_ImageLoader_INIT_MEMBER(SVG_load);
 	NONS_ImageLoader_INIT_MEMBER(SVG_unload);
@@ -645,12 +654,15 @@ NONS_ImageLoader::NONS_ImageLoader(NONS_GeneralArchive *archive)
 	NONS_Image::svg_functions=&this->svg_functions;
 	this->fast_svg=1;
 	this->base_scale[0]=this->base_scale[1]=1;
+	this->initialized=1;
 }
 
 NONS_ImageLoader::~NONS_ImageLoader(){
 	for (ulong a=0;a<this->imageCache.size();a++)
 		if (this->imageCache[a])
 			delete this->imageCache[a];
+	delete this->svg_library;
+	delete this->filelog;
 }
 
 bool NONS_ImageLoader::fetchSprite(SDL_Surface *&dst,const std::wstring &string,optim_t *rects){
@@ -688,18 +700,17 @@ bool NONS_ImageLoader::fetchSprite(SDL_Surface *&dst,const std::wstring &string,
 		if (fileMatch>=0)
 			primary=this->imageCache[fileMatch];
 		else{
-			ulong l;
-			uchar *buffer=this->archive->getFileBuffer(anim.getFilename(),l);
-			if (!buffer)
+			NONS_DataStream *stream=general_archive.open(anim.getFilename());
+			if (!stream)
 				goto fetchSprite_fail;
-			primary=new (std::nothrow) NONS_Image;
-			if (!primary->LoadImage(anim.getFilename(),buffer,l,(this->fast_svg)?&this->disk_cache:0,this->base_scale)){
-				delete[] buffer;
+			primary=new NONS_Image;
+			bool result=!primary->LoadImage(anim.getFilename(),stream,(this->fast_svg)?&this->disk_cache:0,this->base_scale);
+			general_archive.close(stream);
+			if (result){
 				delete primary;
 				goto fetchSprite_fail;
 			}
-			this->filelog.addString(anim.getFilename());
-			delete[] buffer;
+			this->filelog->addString(anim.getFilename());
 			freePrimary=1;
 		}
 		NONS_Image *secondary=0;
@@ -707,14 +718,13 @@ bool NONS_ImageLoader::fetchSprite(SDL_Surface *&dst,const std::wstring &string,
 		if (maskMatch>=0)
 			secondary=this->imageCache[maskMatch];
 		else if (anim.method==NONS_AnimationInfo::SEPARATE_MASK){
-			ulong l;
-			uchar *buffer=this->archive->getFileBuffer(anim.getMaskFilename(),l);
-			if (!buffer)
+			NONS_DataStream *stream=general_archive.open(anim.getMaskFilename());
+			if (!stream)
 				goto fetchSprite_fail;
 			secondary=new NONS_Image;
-			secondary->LoadImage(anim.getMaskFilename(),buffer,l,(this->fast_svg)?&this->disk_cache:0,this->base_scale);
-			this->filelog.addString(anim.getMaskFilename());
-			delete[] buffer;
+			bool result=!secondary->LoadImage(anim.getMaskFilename(),stream,(this->fast_svg)?&this->disk_cache:0,this->base_scale);
+			this->filelog->addString(anim.getFilename());
+			general_archive.close(stream);
 			freeSecondary=1;
 		}
 		NONS_Image *image=new NONS_Image(&anim,primary,secondary,this->base_scale,rects);

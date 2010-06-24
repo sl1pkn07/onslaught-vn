@@ -264,6 +264,15 @@ void manualBlit_threaded(void *parameters){
 
 uchar integer_division_lookup[0x10000];
 
+//#define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION((a)^0xFF,(c1))+INTEGER_MULTIPLICATION((a),(c0)))
+#ifdef _DEBUG
+#define APPLY_ALPHA(c0,c1,a) ((((a)^0xFF)*(c1)+(a)*(c0))/255)
+#else
+inline uchar APPLY_ALPHA(ulong c0,ulong c1,ulong a){
+	return uchar(((a^0xFF)*c1+a*c0)/255);
+}
+#endif
+
 void do_alpha_blend(uchar *r1,uchar *g1,uchar *b1,uchar *a1,long r0,long g0,long b0,long a0,bool alpha1,bool alpha0,uchar alpha){
 #define do_alpha_blend_SINGLE_ALPHA_SOURCE(alpha_source)\
 	ulong as=(alpha_source);							\
@@ -280,8 +289,6 @@ void do_alpha_blend(uchar *r1,uchar *g1,uchar *b1,uchar *a1,long r0,long g0,long
 		*g1=(uchar)APPLY_ALPHA(g0,*g1,composite);					\
 		*b1=(uchar)APPLY_ALPHA(b0,*b1,composite);					\
 	}
-//#define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION((a)^0xFF,(c1))+INTEGER_MULTIPLICATION((a),(c0)))
-#define APPLY_ALPHA(c0,c1,a) (INTEGER_MULTIPLICATION(a,(c0)-(c1))+(c1))
 
 	if (alpha==255){
 		if (!alpha0){
@@ -364,7 +371,7 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 	ulong as=(alpha_source);									\
 	*rgba1[0]=(uchar)APPLY_ALPHA(rgba0[0],*rgba1[0],as);		\
 	*rgba1[1]=(uchar)APPLY_ALPHA(rgba0[1],*rgba1[1],as);		\
-	*rgba1[2]=(uchar)APPLY_ALPHA(rgba0[2],*rgba1[2],as)
+	*rgba1[2]=(uchar)APPLY_ALPHA(rgba0[2],*rgba1[2],as);
 #define manualBlit_threaded_DOUBLE_ALPHA_SOURCE(alpha_source)			\
 	ulong as=(alpha_source);											\
 	ulong bottom_alpha=													\
@@ -375,7 +382,7 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 		*rgba1[1]=(uchar)APPLY_ALPHA(rgba0[1],*rgba1[1],composite);		\
 		*rgba1[2]=(uchar)APPLY_ALPHA(rgba0[2],*rgba1[2],composite);		\
 	}
-
+#if 1
 	if (alpha==255){
 		if (!sd[0].alpha){
 			manualBlit_threaded_DO_ALPHA(
@@ -421,6 +428,228 @@ void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL
 			}
 		}
 	}
+#else
+	if (alpha==255) {
+        if (!sd[0].alpha) {
+            {
+                for (int y0=0; y0<h0; y0++) {
+                    uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                    for (int x0=0; x0<w0; x0++) {
+                        long rgba0[4];
+                        uchar *rgba1[4];
+                        for (int a=0; a<4; a++) {
+                            rgba0[a]=pos[0][sd[0].offsets[a]];
+                            rgba1[a]=pos[1]+sd[1].offsets[a];
+                        } {
+                            *rgba1[0]=(uchar)rgba0[0];
+                            *rgba1[1]=(uchar)rgba0[1];
+                            *rgba1[2]=(uchar)rgba0[2];
+                            if (sd[1].alpha) *rgba1[3]=0xFF;
+                        }
+                        if (!(negate && rgba0[3])) {
+                            pos[0]+=sd[0].advance;
+                            pos[1]+=sd[1].advance;
+                            continue;
+                        }
+                        for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                    }
+                    sd[0].pixels+=sd[0].pitch;
+                    sd[1].pixels+=sd[1].pitch;
+                }
+            }
+        } else {
+            if (!sd[1].alpha) {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                ulong as=(rgba0[3]);
+                                *rgba1[0]=(uchar)((((as)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                *rgba1[1]=(uchar)((((as)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                ulong temp=((((as)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                (void)( (!!(temp<0x100)) || (_wassert(L"temp<0x100", L"f:\\onslaught\\sourceforge-svn\\trunk\\src\\functions.cpp", 403), 0) );
+                                *rgba1[2]=(uchar)temp;;
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            } else {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                ulong as=(rgba0[3]);
+                                ulong bottom_alpha= *rgba1[3]=~(uchar)(((as^0xFF)*(*rgba1[3]^0xFF))/255);
+                                ulong composite=integer_division_lookup[as+bottom_alpha*256];
+                                if (composite) {
+                                    *rgba1[0]=(uchar)((((composite)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                    *rgba1[1]=(uchar)((((composite)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                    *rgba1[2]=(uchar)((((composite)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                };
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            }
+        }
+    } else {
+        if (!sd[0].alpha) {
+            if (!sd[1].alpha) {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                ulong as=(alpha);
+                                *rgba1[0]=(uchar)((((as)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                *rgba1[1]=(uchar)((((as)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                ulong temp=((((as)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                (void)( (!!(temp<0x100)) || (_wassert(L"temp<0x100", L"f:\\onslaught\\sourceforge-svn\\trunk\\src\\functions.cpp", 415), 0) );
+                                *rgba1[2]=(uchar)temp;;
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            } else {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                ulong as=(alpha);
+                                ulong bottom_alpha= *rgba1[3]=~(uchar)(((as^0xFF)*(*rgba1[3]^0xFF))/255);
+                                ulong composite=integer_division_lookup[as+bottom_alpha*256];
+                                if (composite) {
+                                    *rgba1[0]=(uchar)((((composite)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                    *rgba1[1]=(uchar)((((composite)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                    *rgba1[2]=(uchar)((((composite)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                };
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            }
+        } else {
+            if (!sd[1].alpha) {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                rgba0[3]=(((rgba0[3])*(alpha))/255);
+                                ulong as=(rgba0[3]);
+                                *rgba1[0]=(uchar)((((as)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                *rgba1[1]=(uchar)((((as)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                ulong temp=((((as)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                (void)( (!!(temp<0x100)) || (_wassert(L"temp<0x100", L"f:\\onslaught\\sourceforge-svn\\trunk\\src\\functions.cpp", 426), 0) );
+                                *rgba1[2]=(uchar)temp;;
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            } else {
+                {
+                    for (int y0=0; y0<h0; y0++) {
+                        uchar *pos[]= { sd[0].pixels, sd[1].pixels };
+                        for (int x0=0; x0<w0; x0++) {
+                            long rgba0[4];
+                            uchar *rgba1[4];
+                            for (int a=0; a<4; a++) {
+                                rgba0[a]=pos[0][sd[0].offsets[a]];
+                                rgba1[a]=pos[1]+sd[1].offsets[a];
+                            } {
+                                rgba0[3]=(((rgba0[3])*(alpha))/255);
+                                ulong as=(rgba0[3]);
+                                ulong bottom_alpha= *rgba1[3]=~(uchar)(((as^0xFF)*(*rgba1[3]^0xFF))/255);
+                                ulong composite=integer_division_lookup[as+bottom_alpha*256];
+                                if (composite) {
+                                    *rgba1[0]=(uchar)((((composite)*((rgba0[0])-(*rgba1[0])))/255)+(*rgba1[0]));
+                                    *rgba1[1]=(uchar)((((composite)*((rgba0[1])-(*rgba1[1])))/255)+(*rgba1[1]));
+                                    *rgba1[2]=(uchar)((((composite)*((rgba0[2])-(*rgba1[2])))/255)+(*rgba1[2]));
+                                };
+                            }
+                            if (!(negate && rgba0[3])) {
+                                pos[0]+=sd[0].advance;
+                                pos[1]+=sd[1].advance;
+                                continue;
+                            }
+                            for (int a=0; a<3; a++) *rgba1[a]=~*rgba1[a];
+                        }
+                        sd[0].pixels+=sd[0].pitch;
+                        sd[1].pixels+=sd[1].pitch;
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 void multiplyBlend_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect);
@@ -1184,21 +1413,22 @@ SDL_Surface *verticalShear(SDL_Surface *src,float amount){
 	return res;
 }
 
-Uint8 readByte(void *buffer,ulong &offset){
+Uint8 readByte(const void *buffer,ulong &offset){
 	return ((uchar *)buffer)[offset++];
 }
 
-Sint16 readSignedWord(char *buffer,ulong &offset){
+Sint16 readSignedWord(const void *_buffer,ulong &offset){
+	uchar *buffer=(uchar *)_buffer;
 	Sint16 r=0;
 	for (char a=2;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[offset+a];
+		r|=buffer[offset+a];
 	}
 	offset+=2;
 	return r;
 }
 
-Uint16 readWord(void *_buffer,ulong &offset){
+Uint16 readWord(const void *_buffer,ulong &offset){
 	uchar *buffer=(uchar *)_buffer;
 	Uint16 r=0;
 	for (char a=2;a>=0;a--){
@@ -1209,17 +1439,18 @@ Uint16 readWord(void *_buffer,ulong &offset){
 	return r;
 }
 
-Sint32 readSignedDWord(char *buffer,ulong &offset){
+Sint32 readSignedDWord(const void *_buffer,ulong &offset){
+	uchar *buffer=(uchar *)_buffer;
 	Sint32 r=0;
 	for (char a=3;a>=0;a--){
 		r<<=8;
-		r|=(uchar)buffer[offset+a];
+		r|=buffer[offset+a];
 	}
 	offset+=4;
 	return r;
 }
 
-Uint32 readDWord(void *_buffer,ulong &offset){
+Uint32 readDWord(const void *_buffer,ulong &offset){
 	uchar *buffer=(uchar *)_buffer;
 	Uint32 r=0;
 	for (char a=3;a>=0;a--){
@@ -1230,20 +1461,31 @@ Uint32 readDWord(void *_buffer,ulong &offset){
 	return r;
 }
 
-std::string readString(char *buffer,ulong &offset){
-	std::string r(buffer+offset);
+Uint64 readQWord(const void *_buffer,ulong &offset){
+	uchar *buffer=(uchar *)_buffer;
+	Uint64 r=0;
+	for (char a=7;a>=0;a--){
+		r<<=8;
+		r|=buffer[offset+a];
+	}
+	offset+=8;
+	return r;
+}
+
+std::string readString(const void *buffer,ulong &offset){
+	std::string r(((char *)buffer)+offset);
 	offset+=r.size()+1;
 	return r;
 }
 
-void writeByte(Uint8 a,std::string &str,ulong offset){
+void writeByte(Uint8 a,std::vector<uchar> &str,ulong offset){
 	if (offset==ULONG_MAX)
 		str.push_back(a&0xFF);
 	else
 		str[offset]=a&0xFF;
 }
 
-void writeWord(Uint16 a,std::string &str,ulong offset){
+void writeWord(Uint16 a,std::vector<uchar> &str,ulong offset){
 	ulong off=(offset==ULONG_MAX)?str.size():offset;
 	for (ulong b=0;b<2;b++,off++){
 		if (str.size()>off)
@@ -1254,7 +1496,7 @@ void writeWord(Uint16 a,std::string &str,ulong offset){
 	}
 }
 
-void writeDWord(Uint32 a,std::string &str,ulong offset){
+void writeDWord(Uint32 a,std::vector<uchar> &str,ulong offset){
 	ulong off=(offset==ULONG_MAX)?str.size():offset;
 	for (ulong b=0;b<4;b++,off++){
 		if (str.size()>off)
@@ -1265,7 +1507,7 @@ void writeDWord(Uint32 a,std::string &str,ulong offset){
 	}
 }
 
-void writeWordBig(Uint16 a,std::string &str,ulong offset){
+void writeWordBig(Uint16 a,std::vector<uchar> &str,ulong offset){
 	if (offset==ULONG_MAX)
 		offset=str.size();
 	for (ulong b=0;b<2;b++,offset++){
@@ -1277,7 +1519,7 @@ void writeWordBig(Uint16 a,std::string &str,ulong offset){
 	}
 }
 
-void writeDWordBig(Uint32 a,std::string &str,ulong offset){
+void writeDWordBig(Uint32 a,std::vector<uchar> &str,ulong offset){
 	if (offset==ULONG_MAX)
 		offset=str.size();
 	for (ulong b=0;b<4;b++,offset++){
@@ -1289,47 +1531,10 @@ void writeDWordBig(Uint32 a,std::string &str,ulong offset){
 	}
 }
 
-void writeString(const std::wstring &a,std::string &str){
-	str.append(UniToUTF8(a));
+void writeString(const std::wstring &a,std::vector<uchar> &str){
+	std::string s=UniToUTF8(a);
+	str.insert(str.end(),s.begin(),s.end());
 	str.push_back(0);
-}
-
-char *compressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl){
-	unsigned long l=srcl,realsize=l;
-	char *dst=new char[l];
-	while (BZ2_bzBuffToBuffCompress(dst,(unsigned int *)&l,src,srcl,1,0,0)==BZ_OUTBUFF_FULL){
-		delete[] dst;
-		l*=2;
-		realsize=l;
-		dst=new char[l];
-	}
-	if (l!=realsize){
-		char *temp=new char[l];
-		memcpy(temp,dst,l);
-		delete[] dst;
-		dst=temp;
-	}
-	*dstl=l;
-	return dst;
-}
-
-char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl){
-	unsigned long l=srcl,realsize=l;
-	char *dst=new char[l];
-	while (BZ2_bzBuffToBuffDecompress(dst,(unsigned int *)&l,src,srcl,1,0)==BZ_OUTBUFF_FULL){
-		delete[] dst;
-		l*=2;
-		realsize=l;
-		dst=new char[l];
-	}
-	if (l!=realsize){
-		char *temp=new char[l];
-		memcpy(temp,dst,l);
-		delete[] dst;
-		dst=temp;
-	}
-	*dstl=l;
-	return dst;
 }
 
 std::wstring readline(std::wstring::const_iterator start,std::wstring::const_iterator end,std::wstring::const_iterator *out){
@@ -1342,7 +1547,8 @@ std::wstring readline(std::wstring::const_iterator start,std::wstring::const_ite
 	return std::wstring(start,end2);
 }
 
-ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
+ErrorCode inPlaceDecryption(void *vbuffer,size_t length,ulong mode){
+	uchar *buffer=(uchar *)vbuffer;
 	switch (mode){
 		case ENCRYPTION::NONE:
 		default:
@@ -1356,7 +1562,7 @@ ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode){
 				uchar magic_numbers[5]={0x79,0x57,0x0d,0x80,0x04};
 				ulong index=0;
 				for (ulong a=0;a<length;a++){
-					((uchar *)buffer)[a]^=magic_numbers[index];
+					buffer[a]^=magic_numbers[index];
 					index=(index+1)%5;
 				}
 				return NONS_NO_ERROR;
@@ -1588,36 +1794,6 @@ ulong WC_SJIS(uchar *dst,const wchar_t *src,ulong srcl){
 	return ret;
 }
 
-std::wstring UniFromISO88591(const std::string &str){
-	std::wstring res;
-	res.resize(str.size());
-	ISO_WC(&res[0],(const uchar *)&str[0],str.size());
-	return res;
-}
-
-std::wstring UniFromUTF8(const std::string &str){
-	ulong start=0;
-	if (str.size()>=3 && (uchar)str[0]==BOM8A && (uchar)str[1]==BOM8B && (uchar)str[2]==BOM8C)
-		start+=3;
-	const uchar *str2=(const uchar *)&str[0]+start;
-	ulong size=0;
-	for (ulong a=start,end=str.size();a<end;a++,str2++)
-		if (*str2<128 || (*str2&192)==192)
-			size++;
-	std::wstring res;
-	res.resize(size);
-	str2=(const uchar *)&str[0]+start;
-	UTF8_WC(&res[0],str2,str.size()-start);
-	return res;
-}
-
-std::wstring UniFromSJIS(const std::string &str){
-	std::wstring res;
-	res.resize(str.size());
-	res.resize(SJIS_WC(&res[0],(const uchar *)&str[0],str.size()));
-	return res;
-}
-
 std::string UniToISO88591(const std::wstring &str){
 	std::string res;
 	res.resize(str.size());
@@ -1741,7 +1917,7 @@ bool isbreakspaceASCIIe(char character){
 	return character==0x20;
 }
 
-bool isValidUTF8(const char *buffer,ulong size){
+bool isValidUTF8(const void *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++){
 		ulong char_len;
@@ -1766,7 +1942,7 @@ bool isValidUTF8(const char *buffer,ulong size){
 	return 1;
 }
 
-bool isValidSJIS(const char *buffer,ulong size){
+bool isValidSJIS(const void *buffer,ulong size){
 	const uchar *unsigned_buffer=(const uchar *)buffer;
 	for (ulong a=0;a<size;a++,unsigned_buffer++){
 		if (!IS_SJIS_WIDE(*unsigned_buffer)){

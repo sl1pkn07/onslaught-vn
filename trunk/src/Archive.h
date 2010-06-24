@@ -37,16 +37,11 @@
 #include <vector>
 #include <map>
 #include <fstream>
-
-struct TreeNodeComp{
-	bool operator()(const std::wstring &opA,const std::wstring &opB) const{
-		return stdStrCmpCI(opA,opB)<0;
-	}
-};
+#include <zlib.h>
 
 struct TreeNode{
 	std::wstring name;
-	typedef std::map<std::wstring,TreeNode,TreeNodeComp> container;
+	typedef std::map<std::wstring,TreeNode,stdStringCmpCI<wchar_t> > container;
 	typedef container::iterator container_iterator;
 	typedef container::const_iterator const_container_iterator;
 	container branches;
@@ -66,6 +61,7 @@ class Archive{
 protected:
 	TreeNode root;
 public:
+	std::wstring path;
 	bool good;
 	Archive():root(L""),good(0){
 		this->root.is_dir=1;
@@ -73,11 +69,12 @@ public:
 	}
 	virtual ~Archive(){}
 	bool exists(const std::wstring &path);
-	bool test();
-	bool test_rec(TreeNode *node);
-	uchar *get_file_buffer(const std::wstring &path,ulong &size);
-protected:
-	virtual uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size)=0;
+	bool read_raw_bytes(void *dst,size_t read_bytes,size_t &bytes_read,const std::wstring &path,Uint64 offset);
+	bool get_file_size(Uint64 &size,const std::wstring &path);
+	virtual Uint64 get_size(TreeNode *tn)=0;
+	virtual Uint64 get_compressed_size(TreeNode *tn)=0;
+	virtual bool read_raw_bytes(void *dst,size_t read_bytes,size_t &bytes_read,TreeNode *node,Uint64 offset)=0;
+	TreeNode *find_file(const std::wstring &path);
 };
 
 struct NSAdata{
@@ -86,24 +83,30 @@ struct NSAdata{
 		COMPRESSION_NONE=0,
 		COMPRESSION_SPB=1,
 		COMPRESSION_LZSS=2,
-		COMPRESSION_BZ2=4
+		COMPRESSION_BZ2=4,
+		COMPRESSION_DEFLATE=5,
 	} compression;
-	ulong compressed,
+	size_t compressed,
 		uncompressed;
 	NSAdata():offset(0),compression(COMPRESSION_NONE),compressed(0),uncompressed(0){}
 };
 
 class NSAarchive:public Archive{
-	std::wstring path;
 	NONS_File file;
 public:
 	bool nsa;
 	NSAarchive(const std::wstring &path,bool nsa);
-	uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size);
+	bool read_raw_bytes(void *dst,size_t read_bytes,size_t &bytes_read,TreeNode *node,Uint64 offset);
 	static void freeExtraData(void *);
 	//dereference extra data
 	static const NSAdata &derefED(void *p){
 		return *(NSAdata *)p;
+	}
+	Uint64 get_size(TreeNode *tn){
+		return derefED(tn->extraData).uncompressed;
+	}
+	Uint64 get_compressed_size(TreeNode *tn){
+		return derefED(tn->extraData).compressed;
 	}
 };
 
@@ -116,10 +119,10 @@ struct ZIPdata{
 		COMPRESSION_LZMA=14
 	} compression;
 	Uint32 crc32;
-	ulong compressed,
+	Uint64 compressed,
 		uncompressed,
-		disk,
 		data_offset;
+	ulong disk;
 	ZIPdata()
 		:bit_flag(0),
 		compression(COMPRESSION_NONE),
@@ -134,31 +137,196 @@ class ZIParchive:public Archive{
 	std::vector<std::wstring> disks;
 public:
 	ZIParchive(const std::wstring &path);
-	uchar *get_file_buffer(const std::wstring &path,TreeNode *node,ulong &size);
+	bool read_raw_bytes(void *dst,size_t read_bytes,size_t &bytes_read,TreeNode *node,Uint64 offset);
 	static void freeExtraData(void *);
 	static const ZIPdata &derefED(void *p){
 		return *(ZIPdata *)p;
+	}
+	Uint64 get_size(TreeNode *tn){
+		return derefED(tn->extraData).uncompressed;
+	}
+	Uint64 get_compressed_size(TreeNode *tn){
+		return derefED(tn->extraData).compressed;
 	}
 
 	enum SignatureType{
 		NOT_A_SIGNATURE=0,
 		LOCAL_HEADER,
 		CENTRAL_HEADER,
-		EOCDR
+		EOCDR,
+		EOCDR64_LOCATOR,
+		EOCDR64,
 	};
 	static SignatureType getSignatureType(void *buffer);
-	static const ulong   local_signature=0x04034B50,
-	                   central_signature=0x02014B50,
-	                     EOCDR_signature=0x06054b50;
+	static const Uint64   local_signature=0x04034B50,
+	                    central_signature=0x02014B50,
+	                      EOCDR_signature=0x06054b50,
+	            EOCDR64_locator_signature=0x07064b50,
+	                    EOCDR64_signature=0x06064b50;
 };
 
 struct NONS_GeneralArchive{
-	std::vector<Archive *> archives;
-	NONS_GeneralArchive();
+	std::vector<NONS_DataSource *> archives;
 	~NONS_GeneralArchive();
-	uchar *getFileBuffer(const std::wstring &filepath,ulong &buffersize);
+	void init();
+	uchar *getFileBuffer(const std::wstring &filepath,size_t &buffersize,bool use_filesystem=1);
 	//Same as above, but doesn't try the file system
-	uchar *getFileBufferWithoutFS(const std::wstring &filepath,ulong &buffersize);
+	uchar *getFileBufferWithoutFS(const std::wstring &filepath,size_t &buffersize);
+	NONS_DataStream *open(const std::wstring &path);
+	bool close(NONS_DataStream *stream);
 	bool exists(const std::wstring &filepath);
+};
+
+extern NONS_GeneralArchive general_archive;
+
+class NONS_ArchiveStream;
+
+class NONS_ArchiveSource:public NONS_DataSource{
+protected:
+	Archive *archive;
+public:
+	virtual bool good(){ return this->archive->good; }
+	bool get_size(Uint64 &size,const std::wstring &name);
+	Uint64 get_size(TreeNode *node);
+	bool read(void *dst,size_t &bytes_read,NONS_DataStream &stream,size_t count);
+	bool read(void *dst,size_t &bytes_read,NONS_ArchiveStream &stream,size_t count);
+	TreeNode *get_node(const std::wstring &path);
+	uchar *read_all(const std::wstring &name,size_t &bytes_read);
+	virtual uchar *read_all(TreeNode *node,size_t &bytes_read)=0;
+	bool exists(const std::wstring &name);
+};
+
+class NONS_nsaArchiveSource:public NONS_ArchiveSource{
+public:
+	NONS_nsaArchiveSource(const std::wstring &name,bool nsa);
+	~NONS_nsaArchiveSource();
+	NONS_DataStream *open(const std::wstring &name);
+	uchar *read_all(TreeNode *node,size_t &bytes_read);
+};
+
+class NONS_zipArchiveSource:public NONS_ArchiveSource{
+public:
+	NONS_zipArchiveSource(const std::wstring &name);
+	~NONS_zipArchiveSource();
+	NONS_DataStream *open(const std::wstring &name);
+	uchar *read_all(TreeNode *node,size_t &bytes_read);
+};
+
+class NONS_ArchiveStream:public NONS_DataStream{
+protected:
+	Uint64 compressed_offset;
+	TreeNode *node;
+public:
+	NONS_ArchiveStream(NONS_DataSource &ds,const std::wstring &name);
+	TreeNode *get_node() const{ return this->node; }
+};
+
+class NONS_nsaArchiveStream:public NONS_ArchiveStream{
+public:
+	NONS_nsaArchiveStream(NONS_DataSource &ds,const std::wstring &name):NONS_ArchiveStream(ds,name){}
+	~NONS_nsaArchiveStream(){}
+	bool read(void *dst,size_t &bytes_read,size_t count);
+};
+
+class NONS_zipArchiveStream:public NONS_ArchiveStream{
+public:
+	NONS_zipArchiveStream(NONS_DataSource &ds,const std::wstring &name):NONS_ArchiveStream(ds,name){}
+	~NONS_zipArchiveStream(){}
+	bool read(void *dst,size_t &bytes_read,size_t count);
+};
+
+struct base_in_decompression{
+	uchar *in_buffer;
+	size_t remaining,
+		default_in_size;
+	base_in_decompression():in_buffer(0),default_in_size(1<<14){}
+	virtual ~base_in_decompression(){}
+	virtual in_func get_f()=0;
+	virtual bool eof()=0;
+};
+
+struct base_out_decompression{
+	static const ulong bits=15,
+		size=1<<bits;
+	std::vector<uchar> out;
+	Uint64 output_limit;
+	base_out_decompression():out(size),output_limit(0){}
+	virtual ~base_out_decompression(){}
+	virtual out_func get_f()=0;
+	bool eof(){ return !this->output_limit; }
+};
+
+struct decompress_from_regular_file:public base_in_decompression{
+	NONS_File *file;
+	Uint64 offset;
+	std::vector<uchar> in;
+	decompress_from_regular_file():base_in_decompression(),offset(0){}
+	in_func get_f(){ return in_func; }
+	static unsigned in_func(void *p,unsigned char **buffer);
+	bool eof(){ return this->offset>=this->file->filesize(); }
+};
+
+struct decompress_from_file:public base_in_decompression{
+	Archive *archive;
+	TreeNode *node;
+	Uint64 offset;
+	std::vector<uchar> in;
+	decompress_from_file():base_in_decompression(),offset(0){}
+	in_func get_f(){ return in_func; }
+	static unsigned in_func(void *p,unsigned char **buffer);
+	bool eof(){ return this->offset>=this->archive->get_compressed_size(this->node); }
+};
+
+struct decompress_from_memory:public base_in_decompression{
+	uchar *src;
+	decompress_from_memory():base_in_decompression(){}
+	in_func get_f(){ return in_func; }
+	static unsigned in_func(void *p,unsigned char **buffer);
+	bool eof(){ return 1; }
+};
+
+class CRC32{
+	Uint32 crc32;
+	static Uint32 CRC32lookup[];
+public:
+	CRC32(){
+		this->Reset();
+	}
+	void Reset(){
+		this->crc32^=~this->crc32;
+	}
+	void Input(const void *message_array,size_t length){
+		for (const uchar *array=(const uchar *)message_array;length;length--,array++)
+			this->Input(*array);
+	}
+	void Input(uchar message_element){
+		this->crc32=(this->crc32>>8)^CRC32lookup[message_element^(this->crc32&0xFF)];
+	}
+	Uint32 Result(){
+		return ~this->crc32;
+	}
+};
+
+struct decompress_to_file:public base_out_decompression{
+	NONS_File *file;
+	CRC32 crc32;
+	bool compute_crc;
+	decompress_to_file():file(0),compute_crc(0){}
+	out_func get_f(){ return out_func; }
+	static int out_func(void *p,unsigned char *buffer,unsigned size);
+};
+
+struct decompress_to_memory:public base_out_decompression{
+	void *buffer;
+	out_func get_f(){ return out_func; }
+	static int out_func(void *p,unsigned char *buffer,unsigned size);
+};
+
+struct decompress_to_unknown_size:public base_out_decompression{
+	std::list<std::vector<uchar> > *dst;
+	size_t final_size;
+	decompress_to_unknown_size():base_out_decompression(),final_size(0){}
+	out_func get_f(){ return out_func; }
+	static int out_func(void *p,unsigned char *buffer,unsigned size);
 };
 #endif

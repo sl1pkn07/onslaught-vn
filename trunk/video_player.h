@@ -54,7 +54,18 @@ typedef SDL_Surface *(*playback_cb)(volatile SDL_Surface *,void *);
 typedef unsigned long ulong;
 
 typedef struct{
+	void *data;
+	int (*open)(void *,const char *);
+	int (*close)(void *);
+	int (*read)(void *,uint8_t *,int);
+	/* We can safely assume 64-bit integer support at this point. */
+	int64_t (*seek)(void *,int64_t,int);
+} file_protocol;
+
+typedef struct{
+/*versionless section*/
 	ulong version;
+/*version 1:*/
 	SDL_Surface *screen;
 	const char *input;
 	void *user_data;
@@ -68,6 +79,8 @@ typedef struct{
 	int print_debug;
 	char *exception_string;
 	size_t exception_string_size;
+	file_protocol protocol;
+/*version 2:*/
 } C_play_video_params;
 #define C_PLAY_VIDEO_PARAMS_VERSION 1
 

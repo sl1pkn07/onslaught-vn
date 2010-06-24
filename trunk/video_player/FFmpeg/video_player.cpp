@@ -90,6 +90,7 @@ VirtualConsole::VirtualConsole(const std::string &name,ulong color){
 #else
 	swprintf(arguments,L"0 %d",color);
 #endif
+	this->process=INVALID_HANDLE_VALUE;
 	if (!CreateProcess(program,arguments,0,0,1,CREATE_NEW_CONSOLE|CREATE_UNICODE_ENVIRONMENT,0,0,&si,&pi))
 		return;
 	this->process=pi.hProcess;
@@ -624,30 +625,34 @@ private:
 		((AudioOutput *)p)->running_thread();
 	}
 	void running_thread(){
-		if (this->expect_buffers)
+		if (this->expect_buffers){
 			while (this->incoming_queue->is_empty());
-		for (ulong a=0;a<this->n;a++){
-			this->current=a;
-			ulong t;
-			fill(this->buffers[this->current],this->buffers_size,this->incoming_queue,t);
-			alBufferData(
-				this->ALbuffers[this->current],
-				this->format,
-				this->buffers[this->current],
-				this->buffers_size*sizeof(int16_t),
-				this->frequency
-			);
-			alSourceQueueBuffers(this->source,1,this->ALbuffers+this->current);
+			for (ulong a=0;a<this->n;a++){
+				this->current=a;
+				ulong t;
+				fill(this->buffers[this->current],this->buffers_size,this->incoming_queue,t);
+				alBufferData(
+					this->ALbuffers[this->current],
+					this->format,
+					this->buffers[this->current],
+					this->buffers_size*sizeof(int16_t),
+					this->frequency
+				);
+				alSourceQueueBuffers(this->source,1,this->ALbuffers+this->current);
+			}
+			this->current=0;
 		}
-		this->current=0;
 
 		real_start_time=start_time=SDL_GetTicks();
-		this->play();
+		if (this->expect_buffers)
+			this->play();
 		while (!this->stop_thread){
 			SDL_Delay(10);
 			ulong now=SDL_GetTicks();
 			global_time=now-start_time;
 			real_global_time=now-real_start_time;
+			if (!this->expect_buffers)
+				continue;
 			ALint buffers_finished=0,
 				queued;
 			alGetSourcei(this->source,AL_BUFFERS_PROCESSED,&buffers_finished);
@@ -940,6 +945,9 @@ void decode_audio(void *p){
 
 	TSqueue<audioBuffer> *queue=params.output->startThread();
 
+	if (!params.audioCC)
+		return;
+
 	params.audioCC->get_buffer=this_player::get_buffer;
 	params.audioCC->release_buffer=this_player::release_buffer;
 	while (1){
@@ -1093,6 +1101,51 @@ void decode_video(void *p){
 
 #include "../C_play_video.cpp"
 
+namespace protocol{
+	int read(void *p,uint8_t *dst,int count){
+		file_protocol *fp=(file_protocol *)p;
+		return fp->read(fp->data,dst,count);
+	}
+	int64_t seek(void *p,int64_t pos,int whence){
+		file_protocol *fp=(file_protocol *)p;
+		if (!fp)
+			return 0;
+		switch (whence){
+			case SEEK_SET:
+				whence=1;
+				break;
+			case SEEK_CUR:
+				whence=0;
+				break;
+			case SEEK_END:
+				whence=-1;
+				break;
+			case AVSEEK_SIZE:
+				whence=2;
+				break;
+		}
+		return fp->seek(fp->data,pos,whence);
+	}
+};
+
+struct auto_stream{
+	AVFormatContext *&avfc;
+	auto_stream(AVFormatContext *&avfc):avfc(avfc){}
+	~auto_stream(){
+		av_close_input_stream(this->avfc);
+	}
+};
+
+struct auto_codec_context{
+	AVCodecContext *&cc;
+	bool close;
+	auto_codec_context(AVCodecContext *&cc,bool close):cc(cc),close(close){}
+	~auto_codec_context(){
+		if (close)
+			avcodec_close(this->cc);
+	}
+};
+
 play_video_SIGNATURE{
 	stop_playback=0;
 	debug_messages=!!print_debug;
@@ -1109,12 +1162,27 @@ play_video_SIGNATURE{
 	};
 #endif
 
-	if (av_open_input_file(&avfc,input,0,0,0)!=0){
+	ByteIOContext bioc;
+	std::vector<uchar> io_buffer(4096+FF_INPUT_BUFFER_PADDING_SIZE);
+	init_put_byte(&bioc,&io_buffer[0],io_buffer.size(),0,&fp,protocol::read,0,protocol::seek);
+
+	AVInputFormat *aif;
+	{
+		AVProbeData pd;
+		pd.filename=input;
+		std::vector<uchar> temp(pd.buf_size=1<<12);
+		pd.buf=&temp[0];
+		fp.read(fp.data,pd.buf,temp.size());
+		aif=av_probe_input_format(&pd,1);
+	}
+	
+	fp.seek(fp.data,0,1);
+	if (av_open_input_stream(&avfc,&bioc,input,aif,0)!=0){
 		exception_string="File not found.";
 		return 0;
 	}
+	auto_stream as(avfc);
 	if (av_find_stream_info(avfc)<0){
-		av_close_input_file(avfc);
 		exception_string="Stream info not found.";
 		return 0;
 	}
@@ -1133,14 +1201,10 @@ play_video_SIGNATURE{
 	}
 	bool useAudio=(audioStream!=-1);
 	if (videoStream==-1){
-		av_close_input_file(avfc);
 		if (videoStream==-1)
-			exception_string="No video stream.";
-		if (audioStream==-1){
-			if (exception_string.size())
-				exception_string.push_back(' ');
+			exception_string="No video stream. ";
+		if (audioStream==-1)
 			exception_string.append("No audio stream.");
-		}
 		return 0;
 	}
 	videoCC=avfc->streams[videoStream]->codec;
@@ -1152,38 +1216,25 @@ play_video_SIGNATURE{
 	if (useAudio)
 		audioCodec=avcodec_find_decoder(audioCC->codec_id);
 	if (!videoCodec || useAudio && !audioCodec){
-		av_close_input_file(avfc);
 		if (!videoCodec)
-			exception_string="Unsupported video codec.";
-		if (!audioCodec){
-			if (exception_string.size())
-				exception_string.push_back(' ');
+			exception_string="Unsupported video codec. ";
+		if (!audioCodec)
 			exception_string.append("Unsupported audio codec.");
-		}
 		return 0;
 	}
-	{
-		int video_codec=avcodec_open(videoCC,videoCodec),
-			audio_codec=0;
-		if (useAudio)
-			audio_codec=avcodec_open(audioCC,audioCodec);
-		if (video_codec<0 || useAudio && audio_codec<0){
-			int ret=0;
-			if (video_codec<0)
-				exception_string="Open video codec failed.";
-			else
-				avcodec_close(videoCC);
-			if (useAudio){
-				if (audio_codec<0){
-					if (exception_string.size())
-						exception_string.push_back(' ');
-					exception_string.append("Open audio codec failed.");
-				}else
-					avcodec_close(audioCC);
-			}
-			av_close_input_file(avfc);
-			return 0;
-		}
+	int video_codec=avcodec_open(videoCC,videoCodec),
+		audio_codec=0;
+	if (useAudio)
+		audio_codec=avcodec_open(audioCC,audioCodec);
+	auto_codec_context acc_video(videoCC,video_codec>=0);
+	auto_codec_context acc_audio(audioCC,useAudio && audio_codec>=0);
+	if (video_codec<0 || useAudio && audio_codec<0){
+		int ret=0;
+		if (video_codec<0)
+			exception_string="Open video codec failed. ";
+		if (useAudio && audio_codec<0)
+			exception_string.append("Open audio codec failed.");
+		return 0;
 	}
 	ulong channels,sample_rate;
 	if (useAudio){
@@ -1196,10 +1247,6 @@ play_video_SIGNATURE{
 	{
 		AudioOutput output(channels,sample_rate);
 		if (!output.good){
-			avcodec_close(videoCC);
-			if (useAudio)
-				avcodec_close(audioCC);
-			av_close_input_file(avfc);
 			exception_string="Open audio output failed.";
 			return 0;
 		}
@@ -1245,11 +1292,9 @@ play_video_SIGNATURE{
 		stop_playback=1;
 		audio_decoder.join();
 		video_decoder.join();
+		if (!useAudio)
+			output.stopThread(0);
 		output.wait_until_stop();
-		avcodec_close(videoCC);
-		if (useAudio)
-			avcodec_close(audioCC);
-		av_close_input_file(avfc);
 	}
 	return 1;
 }
