@@ -35,12 +35,231 @@
 #include <cassert>
 #if NONS_SYS_WINDOWS
 #include <windows.h>
+#elif NONS_SYS_UNIX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #endif
 
 NONS_InputObserver InputObserver;
 NONS_RedirectedOutput o_stdout(std::cout);
 NONS_RedirectedOutput o_stderr(std::cerr);
 //NONS_RedirectedOutput o_stdlog(std::clog);
+NONS_FileSystem filesystem;
+
+NONS_File::NONS_File(const std::wstring &path,bool read){
+	this->is_open=0;
+#if NONS_SYS_WINDOWS
+	this->file=INVALID_HANDLE_VALUE;
+#elif NONS_SYS_UNIX
+	this->file=0;
+#endif
+	this->open(path,read);
+}
+
+void NONS_File::open(const std::wstring &path,bool open_for_read){
+	this->close();
+	this->opened_for_read=open_for_read;
+#if NONS_SYS_WINDOWS
+	this->file=CreateFile(
+		&path[0],
+		(open_for_read?GENERIC_READ:GENERIC_WRITE),
+		(open_for_read?FILE_SHARE_READ:0),
+		0,
+		(open_for_read?OPEN_EXISTING:TRUNCATE_EXISTING),
+		FILE_ATTRIBUTE_NORMAL,
+		0
+	);
+	if (this->file==INVALID_HANDLE_VALUE && GetLastError()==ERROR_FILE_NOT_FOUND){
+		this->file=CreateFile(
+			&path[0],
+			(open_for_read?GENERIC_READ:GENERIC_WRITE),
+			(open_for_read?FILE_SHARE_READ:0),
+			0,
+			(open_for_read?OPEN_EXISTING:CREATE_NEW),
+			FILE_ATTRIBUTE_NORMAL,
+			0
+		);
+	}
+#elif NONS_SYS_UNIX
+	this->file=open(
+		UniToUTF8(path).c_str(),
+		(open_for_read?O_RDONLY:O_WRONLY|O_TRUNC)|O_LARGEFILE
+	);
+	if (this->file<0)
+		this->file=open(
+			UniToUTF8(path).c_str(),
+			(open_for_read?O_RDONLY:O_WRONLY|O_CREAT)|O_LARGEFILE
+		);
+#else
+	this->file.open(UniToUTF8(path).c_str(),std::ios::binary|(open_for_read?std::ios::in:std::ios::out));
+#endif
+	this->_filesize=this->reload_filesize();
+}
+
+Uint64 NONS_File::reload_filesize(){
+	if (this->is_open=!!*this){
+#if NONS_SYS_WINDOWS
+		LARGE_INTEGER li;
+		return (GetFileSizeEx(this->file,&li))?li.QuadPart:0;
+#elif NONS_SYS_UNIX
+		return (Uint64)lseek64(this->file,0,SEEK_END);
+#else
+		if (this->opened_for_read){
+			this->file.seekg(0,std::ios::end);
+			return this->file.tellg();
+		}else{
+			this->file.seekp(0,std::ios::end);
+			return this->file.tellp();
+		}
+#endif
+	}
+	return 0;
+}
+
+void NONS_File::close(){
+	if (!this->is_open)
+		return;
+#if NONS_SYS_WINDOWS
+	if (!!*this)
+		CloseHandle(this->file);
+#elif NONS_SYS_UNIX
+	if (!!*this)
+		close(this->file);
+#else
+	this->file.close();
+#endif
+	this->is_open=0;
+}
+	
+bool NONS_File::operator!(){
+	return
+#if NONS_SYS_WINDOWS
+		this->file==INVALID_HANDLE_VALUE;
+#elif NONS_SYS_UNIX
+		this->file>=0;
+#else
+		!this->file;
+#endif
+}
+
+bool NONS_File::read(void *dst,size_t read_bytes,size_t &bytes_read,Uint64 offset){
+	if (!this->is_open || !this->opened_for_read){
+		bytes_read=0;
+		return 0;
+	}
+	if (offset>=this->_filesize){
+		bytes_read=0;
+		return 0;
+	}
+#if NONS_SYS_WINDOWS
+	{
+		LARGE_INTEGER temp;
+		temp.QuadPart=offset;
+		SetFilePointerEx(this->file,temp,0,FILE_BEGIN);
+	}
+#elif NONS_SYS_UNIX
+	lseek64(this->file,offset,SEEK_SET);
+#else
+	this->file.seekg((size_t)offset);
+#endif
+	if (this->_filesize-offset<read_bytes)
+		read_bytes=size_t(this->_filesize-offset);
+	if (dst){
+#if NONS_SYS_WINDOWS
+		DWORD rb=read_bytes,br=0;
+		ReadFile(this->file,dst,rb,&br,0);
+#elif NONS_SYS_UNIX
+		read(this->file,dst,read_bytes);
+#else
+		this->file.read((char *)dst,read_bytes);
+#endif
+	}
+	bytes_read=read_bytes;
+	return 1;
+}
+
+NONS_File::type *NONS_File::read(size_t read_bytes,size_t &bytes_read,Uint64 offset){
+	if (!this->read(0,read_bytes,bytes_read,offset)){
+		bytes_read=0;
+		return 0;
+	}
+	NONS_File::type *buffer=new NONS_File::type[bytes_read];
+	this->read(buffer,read_bytes,bytes_read,offset);
+	return buffer;
+}
+
+bool NONS_File::write(void *buffer,size_t size,bool write_at_end){
+	if (!this->is_open || this->opened_for_read)
+		return 0;
+#if NONS_SYS_WINDOWS
+	if (!write_at_end)
+		SetFilePointer(this->file,0,0,FILE_BEGIN);
+	else
+		SetFilePointer(this->file,0,0,FILE_END);
+	DWORD a=size;
+	WriteFile(this->file,buffer,a,&a,0);
+#elif NONS_SYS_UNIX
+	if (!write_at_end)
+		lseek64(this->file,0,SEEK_SET);
+	else
+		lseek64(this->file,0,SEEK_END);
+	write(this->file,buffer,size);
+#else
+	if (!write_at_end)
+		this->file.seekp(0);
+	else
+		this->file.seekp(0,std::ios::end);
+	this->file.write((char *)buffer,size);
+#endif
+	return 1;
+}
+
+NONS_File::type *NONS_File::read(const std::wstring &path,size_t read_bytes,size_t &bytes_read,Uint64 offset){
+	NONS_File file(path,1);
+	return file.read(read_bytes,bytes_read,offset);
+}
+
+NONS_File::type *NONS_File::read(const std::wstring &path,size_t &bytes_read){
+	NONS_File file(path,1);
+	return file.read(bytes_read);
+}
+
+bool NONS_File::write(const std::wstring &path,void *buffer,size_t size){
+	NONS_File file(path,0);
+	return file.write(buffer,size);
+}
+
+bool NONS_File::delete_file(const std::wstring &path){
+#if NONS_SYS_WINDOWS
+	return !!DeleteFile(&path[0]);
+#else
+	std::string s=UniToUTF8(path);
+	return remove(&s[0])==0;
+#endif
+}
+
+bool NONS_File::file_exists(const std::wstring &name){
+	bool ret;
+#if NONS_SYS_WINDOWS
+	HANDLE file=CreateFile(&name[0],0,0,0,OPEN_EXISTING,0,0);
+	ret=(file!=INVALID_HANDLE_VALUE);
+	CloseHandle(file);
+#else
+	std::ifstream file(UniToUTF8(name).c_str());
+	ret=!!file;
+	file.close();
+#endif
+	return ret;
+}
+
+bool NONS_File::get_file_size(Uint64 &size,const std::wstring &name){
+	NONS_File file(name,1);
+	if (!file)
+		return 0;
+	size=file.filesize();
+	return 1;
+}
 
 NONS_EventQueue::NONS_EventQueue(){
 	InputObserver.attach(this);
@@ -429,173 +648,128 @@ void NONS_RedirectedOutput::indent(long a){
 		this->indentation+=a;
 }
 
-NONS_File::NONS_File(const std::wstring &path,bool read){
-	this->is_open=0;
-#if NONS_SYS_WINDOWS
-	this->file=INVALID_HANDLE_VALUE;
-#endif
-	this->open(path,read);
-}
-
-void NONS_File::open(const std::wstring &path,bool open_for_read){
-	this->close();
-	this->opened_for_read=open_for_read;
-#if NONS_SYS_WINDOWS
-	this->file=CreateFile(
-		&path[0],
-		(open_for_read?GENERIC_READ:GENERIC_WRITE),
-		(open_for_read?FILE_SHARE_READ:0),
-		0,
-		(open_for_read?OPEN_EXISTING:TRUNCATE_EXISTING),
-		FILE_ATTRIBUTE_NORMAL,
-		0
-	);
-	if (this->file==INVALID_HANDLE_VALUE && GetLastError()==ERROR_FILE_NOT_FOUND){
-		this->file=CreateFile(
-			&path[0],
-			(open_for_read?GENERIC_READ:GENERIC_WRITE),
-			(open_for_read?FILE_SHARE_READ:0),
-			0,
-			(open_for_read?OPEN_EXISTING:CREATE_NEW),
-			FILE_ATTRIBUTE_NORMAL,
-			0
-		);
+NONS_DataSource::~NONS_DataSource(){
+	while (this->streams.size()){
+		delete this->streams.back();
+		this->streams.pop_back();
 	}
-#else
-	this->file.open(UniToUTF8(path).c_str(),std::ios::binary|(open_for_read?std::ios::in:std::ios::out));
-#endif
-	this->is_open=!!*this;
 }
 
-void NONS_File::close(){
-	if (!this->is_open)
-		return;
-#if NONS_SYS_WINDOWS
-	if (!!*this)
-		CloseHandle(this->file);
-#else
-	this->file.close();
-#endif
-	this->is_open=0;
-}
-	
-bool NONS_File::operator!(){
-#if NONS_SYS_WINDOWS
-	return this->file==INVALID_HANDLE_VALUE;
-#else
-	return !this->file;
-#endif
+NONS_DataStream *NONS_DataSource::open(NONS_DataStream *p,const std::wstring &path){
+	p->original_path=path;
+	std::cout <<"Opening stream to "<<p->original_path<<"\n";
+	this->streams.push_back(p);
+	return p;
 }
 
-ulong NONS_File::filesize(){
-	if (!this->is_open)
+NONS_DataStream *NONS_FileSystem::open(const std::wstring &name){
+	if (!NONS_File::file_exists(name))
 		return 0;
-#if NONS_SYS_WINDOWS
-	return GetFileSize(this->file,0);
-#else
-	this->file.seekg(0,std::ios::end);
-	return this->file.tellg();
-#endif
+	NONS_InputFile *p=new NONS_InputFile(*this,name);
+	return NONS_DataSource::open(p,normalize_path(p->get_name()));
 }
 
-NONS_File::type *NONS_File::read(ulong read_bytes,ulong &bytes_read,ulong offset){
-	if (!this->is_open || !this->opened_for_read)
+bool NONS_DataSource::close(NONS_DataStream *p){
+	std::list<NONS_DataStream *>::iterator i=std::find(
+		this->streams.begin(),
+		this->streams.end(),
+		p
+	);
+	if (i==this->streams.end())
 		return 0;
-	ulong filesize=this->filesize();
-	if (offset>=filesize)
-		offset=filesize-1;
-#if NONS_SYS_WINDOWS
-	SetFilePointer(this->file,offset,0,FILE_BEGIN);
-#else
-	this->file.seekg(offset);
-#endif
-	if (filesize-offset<read_bytes)
-		read_bytes=filesize-offset;
-	NONS_File::type *buffer=new NONS_File::type[read_bytes];
-#if NONS_SYS_WINDOWS
-	DWORD rb=read_bytes,br=0;
-	ReadFile(this->file,buffer,rb,&br,0);
-#else
-	this->file.read((char *)buffer,read_bytes);
-#endif
-	bytes_read=read_bytes;
-	return buffer;
-}
-
-NONS_File::type *NONS_File::read(ulong &bytes_read){
-	if (!this->is_open || !this->opened_for_read)
-		return 0;
-	ulong filesize=this->filesize();
-#if NONS_SYS_WINDOWS
-	SetFilePointer(this->file,0,0,FILE_BEGIN);
-#else
-	this->file.seekg(0);
-#endif
-	NONS_File::type *buffer=new NONS_File::type[filesize];
-#if NONS_SYS_WINDOWS
-	DWORD rb=filesize,br=0;
-	ReadFile(this->file,buffer,rb,&br,0);
-#else
-	this->file.read((char *)buffer,filesize);
-#endif
-	bytes_read=filesize;
-	return buffer;
-}
-
-bool NONS_File::write(void *buffer,ulong size,bool write_at_end){
-	if (!this->is_open || this->opened_for_read)
-		return 0;
-#if NONS_SYS_WINDOWS
-	if (!write_at_end)
-		SetFilePointer(this->file,0,0,FILE_BEGIN);
-	else
-		SetFilePointer(this->file,0,0,FILE_END);
-	DWORD a=size;
-	WriteFile(this->file,buffer,a,&a,0);
-#else
-	if (!write_at_end)
-		this->file.seekp(0);
-	else
-		this->file.seekp(0,std::ios::end);
-	this->file.write((char *)buffer,size);
-#endif
+	std::cout <<"Closing stream to "<<p->original_path<<"\n";
+	delete *i;
+	this->streams.erase(i);
 	return 1;
 }
 
-NONS_File::type *NONS_File::read(const std::wstring &path,ulong read_bytes,ulong &bytes_read,ulong offset){
-	NONS_File file(path,1);
-	return file.read(read_bytes,bytes_read,offset);
+NONS_DataStream *NONS_FileSystem::new_temporary_file(const std::wstring &path){
+	return new NONS_TemporaryFile(*this,path);
 }
 
-NONS_File::type *NONS_File::read(const std::wstring &path,ulong &bytes_read){
-	NONS_File file(path,1);
-	return file.read(bytes_read);
+Uint64 NONS_DataStream::seek(Sint64 offset,int direction){
+	switch (direction){
+		case -1:
+			this->offset=this->size-offset;
+			break;
+		case 0:
+			this->offset+=offset;
+			break;
+		case 1:
+			this->offset=offset;
+			break;
+		default:
+			return 0;
+	}
+	return this->offset;
 }
 
-bool NONS_File::write(const std::wstring &path,void *buffer,ulong size){
-	NONS_File file(path,0);
-	return file.write(buffer,size);
+SDL_RWops NONS_DataStream::to_rwops(){
+	SDL_RWops ops;
+	memset(&ops,0,sizeof(ops));
+	ops.hidden.unknown.data1=this;
+	ops.seek=rw_seek;
+	ops.read=rw_read;
+	ops.write=rw_write;
+	ops.close=rw_close;
+	return ops;
 }
 
-bool NONS_File::delete_file(const std::wstring &path){
-#if NONS_SYS_WINDOWS
-	return !!DeleteFile(&path[0]);
-#elif NONS_SYS_UNIX
-	std::string s=UniToUTF8(path);
-	return remove(&s[0])==0;
-#endif
+int SDLCALL NONS_DataStream::rw_seek(SDL_RWops *ops,int offset,int whence){
+	NONS_DataStream *ds=(NONS_DataStream *)ops->hidden.unknown.data1;
+	switch (whence){
+		case RW_SEEK_SET:
+			whence=1;
+			break;
+		case RW_SEEK_CUR:
+			whence=0;
+			if (!offset)
+				return (int)ds->get_offset();
+			break;
+		case RW_SEEK_END:
+			whence=-1;
+			break;
+	}
+	return (int)ds->seek(offset,whence);
 }
 
-bool fileExists(const std::wstring &name){
-	bool ret;
-#if NONS_SYS_WINDOWS
-	HANDLE file=CreateFile(&name[0],0,0,0,OPEN_EXISTING,0,0);
-	ret=(file!=INVALID_HANDLE_VALUE);
-	CloseHandle(file);
-#else
-	std::ifstream file(UniToUTF8(name).c_str());
-	ret=!!file;
-	file.close();
-#endif
-	return ret;
+int SDLCALL NONS_DataStream::rw_read(SDL_RWops *ops,void *dst,int a,int b){
+	NONS_DataStream *ds=(NONS_DataStream *)ops->hidden.unknown.data1;
+	size_t size=a*b;
+	if (size<=0)
+		return -1;
+	if (!ds->read(dst,size,size))
+		return -1;
+	return size/a;
+}
+
+int SDLCALL NONS_DataStream::rw_write(SDL_RWops *,const void *,int,int){
+	return -1;
+}
+
+int SDLCALL NONS_DataStream::rw_close(SDL_RWops *ops){
+	NONS_DataStream *ds=(NONS_DataStream *)ops->hidden.unknown.data1;
+	NONS_DataSource *source=ds->source;
+	source->close(ds);
+	return 0;
+}
+
+NONS_InputFile::NONS_InputFile(NONS_DataSource &ds,const std::wstring &name):NONS_DataStream(ds,name),file(name,1){
+	this->size=file.filesize();
+}
+
+bool NONS_InputFile::read(void *dst,size_t &bytes_read,size_t count){
+	if (!this->file.read(dst,count,bytes_read,this->offset))
+		return 0;
+	this->offset+=bytes_read;
+	return 1;
+}
+
+NONS_TemporaryFile::NONS_TemporaryFile(NONS_DataSource &ds,const std::wstring &name)
+		:NONS_InputFile(ds,name){
+}
+
+NONS_TemporaryFile::~NONS_TemporaryFile(){
+	this->file.close();
+	NONS_File::delete_file(this->name);
 }

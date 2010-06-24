@@ -145,9 +145,9 @@ NONS_StackElement::NONS_StackElement(NONS_StackElement *copy,const std::vector<s
 
 ConfigFile settings;
 
-ErrorCode init_script(NONS_Script *&script,NONS_GeneralArchive *archive,const std::wstring &filename,ENCODING::ENCODING encoding,ENCRYPTION::ENCRYPTION encryption){
+ErrorCode init_script(NONS_Script *&script,const std::wstring &filename,ENCODING::ENCODING encoding,ENCRYPTION::ENCRYPTION encryption){
 	script=new NONS_Script();
-	ErrorCode error_code=script->init(filename,archive,encoding,encryption);
+	ErrorCode error_code=script->init(filename,encoding,encryption);
 	if (error_code!=NONS_NO_ERROR){
 		delete script;
 		script=0;
@@ -156,35 +156,45 @@ ErrorCode init_script(NONS_Script *&script,NONS_GeneralArchive *archive,const st
 	return NONS_NO_ERROR;
 }
 
-ErrorCode init_script(NONS_Script *&script,NONS_GeneralArchive *archive,ENCODING::ENCODING encoding){
-	if (init_script(script,archive,L"0.txt",encoding,ENCRYPTION::NONE)==NONS_NO_ERROR)
-		return NONS_NO_ERROR;
-	if (init_script(script,archive,L"00.txt",encoding,ENCRYPTION::NONE)==NONS_NO_ERROR)
-		return NONS_NO_ERROR;
-	if (init_script(script,archive,L"nscr_sec.dat",encoding,ENCRYPTION::VARIABLE_XOR)==NONS_NO_ERROR)
-		return NONS_NO_ERROR;
-	ErrorCode error_code=init_script(script,archive,L"nscript.___",encoding,ENCRYPTION::TRANSFORM_THEN_XOR84);
-	if (error_code==NONS_NO_ERROR)
-		return NONS_NO_ERROR;
-	if (init_script(script,archive,L"nscript.dat",encoding,ENCRYPTION::XOR84)==NONS_NO_ERROR)
-		return NONS_NO_ERROR;
-	if (error_code==NONS_NOT_IMPLEMENTED)
-		return NONS_NOT_IMPLEMENTED;
+ErrorCode init_script(NONS_Script *&script,ENCODING::ENCODING encoding){
+	const wchar_t *names[]={
+		L"0.txt",
+		L"00.txt",
+		L"nscr_sec.dat",
+		L"nscript.___",
+		L"nscript.dat",
+		0
+	};
+	ENCRYPTION::ENCRYPTION encryptions[]={
+		ENCRYPTION::NONE,
+		ENCRYPTION::NONE,
+		ENCRYPTION::VARIABLE_XOR,
+		ENCRYPTION::TRANSFORM_THEN_XOR84,
+		ENCRYPTION::XOR84
+	};
+	for (ulong a=0;names[a];a++){
+		ErrorCode error_code=init_script(script,names[a],encoding,encryptions[a]);
+		if (error_code==NONS_NO_ERROR)
+			return NONS_NO_ERROR;
+		if (error_code==NONS_NOT_IMPLEMENTED)
+			return NONS_NOT_IMPLEMENTED;
+	}
 	return NONS_SCRIPT_NOT_FOUND;
 }
 
-std::string getDefaultFontFilename(){
+std::wstring getDefaultFontFilename(){
 	if (!settings.exists(L"default font"))
 		settings.assignWString(L"default font",L"default.ttf");
-	return UniToUTF8(settings.getWString(L"default font"));
+	return settings.getWString(L"default font");
 }
 
-NONS_ScreenSpace *init_screen(NONS_GeneralArchive *archive,NONS_FontCache &fc){
-	std::string fontfile=getDefaultFontFilename();
+NONS_ScreenSpace *init_screen(NONS_FontCache &fc){
 	NONS_ScreenSpace *screen=new NONS_ScreenSpace(20,fc);
-	screen->output->shadeLayer->Clear();
-	screen->Background->Clear();
-	screen->BlendNoCursor(1);
+	if (!CLOptions.play.size()){
+		screen->output->shadeLayer->Clear();
+		screen->Background->Clear();
+		screen->BlendNoCursor(1);
+	}
 	std::cout <<"Screen initialized."<<std::endl;
 	return screen;
 }
@@ -197,7 +207,6 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->saveGame=0;
 	this->screen=0;
 	this->audio=0;
-	this->archive=0;
 	this->script=0;
 	this->store=0;
 	this->gfx_store=0;
@@ -585,10 +594,7 @@ NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
 	if (this->was_initialized)
 		this->uninit();
 	delete this->screen;
-	delete this->font_cache;
 	delete this->main_font;
-	delete this->audio;
-	delete this->archive;
 	delete this->script;
 	while (this->commandQueue.size()){
 		delete this->commandQueue.front();
@@ -600,10 +606,10 @@ void NONS_ScriptInterpreter::init(){
 	this->defaultfs=18;
 	this->base_size[0]=this->virtual_size[0]=CLOptions.virtualWidth;
 	this->base_size[1]=this->virtual_size[1]=CLOptions.virtualHeight;
-	this->archive=new NONS_GeneralArchive();
-	{
-		std::string fontfile=getDefaultFontFilename();
-		this->main_font=init_font(this->archive,getDefaultFontFilename());
+	if (!CLOptions.play.size()){
+		std::wstring fontfile=getDefaultFontFilename();
+		if (!this->main_font)
+			this->main_font=init_font(fontfile);
 		if (!this->main_font || !this->main_font->good()){
 			delete this->main_font;
 			if (!this->main_font)
@@ -619,27 +625,32 @@ void NONS_ScriptInterpreter::init(){
 		this->font_cache=new NONS_FontCache(*this->main_font,fs,white,0,0,0,black FONTCACHE_DEBUG_PARAMETERS);
 	}
 	if (!CLOptions.play.size()){
-		ErrorCode error=NONS_NO_ERROR;
-		if (CLOptions.scriptPath.size())
-			error=init_script(this->script,this->archive,CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
-		else
-			error=init_script(this->script,this->archive,CLOptions.scriptencoding);
-		if (error!=NONS_NO_ERROR){
-			handleErrors(error,-1,"NONS_ScriptInterpreter::NONS_ScriptInterpreter",0);
-			exit(error);
+		if (!this->script){
+			ErrorCode error=NONS_NO_ERROR;
+			if (CLOptions.scriptPath.size())
+				error=init_script(this->script,CLOptions.scriptPath,CLOptions.scriptencoding,CLOptions.scriptEncryption);
+			else
+				error=init_script(this->script,CLOptions.scriptencoding);
+			if (error!=NONS_NO_ERROR){
+				handleErrors(error,-1,"NONS_ScriptInterpreter::NONS_ScriptInterpreter",0);
+				exit(error);
+			}
 		}
 		this->thread=new NONS_ScriptThread(this->script);
+		this->saveGame=new NONS_SaveFile;
+		this->saveGame->format='N';
 		memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	}
 	{
 		labellog.init(L"NScrllog.dat",L"nonsllog.dat");
-		ImageLoader=new NONS_ImageLoader(this->archive);
+		ImageLoader.init();
 		o_stdout <<"Global files go in \""<<config_directory<<"\".\n";
 		o_stdout <<"Local files go in \""<<save_directory<<"\".\n";
 		this->audio=new NONS_Audio(CLOptions.musicDirectory);
 		if (CLOptions.musicFormat.size())
 			this->audio->musicFormat=CLOptions.musicFormat;
-		this->screen=init_screen(this->archive,*this->font_cache);
+		if (!this->screen)
+			this->screen=init_screen(*this->font_cache);
 	}
 	this->store=new NONS_VariableStore();
 	this->interpreter_mode=UNDEFINED_MODE;
@@ -680,8 +691,6 @@ void NONS_ScriptInterpreter::init(){
 	this->new_if=0;
 	this->btnTimer=0;
 	this->imageButtonExpiration=0;
-	this->saveGame=new NONS_SaveFile();
-	this->saveGame->format='N';
 	this->printed_lines.clear();
 	this->screen->char_baseline=this->screen->screen->inRect.h-1;
 	this->useWheel=0;
@@ -690,23 +699,22 @@ void NONS_ScriptInterpreter::init(){
 }
 
 void NONS_ScriptInterpreter::uninit(){
-	if (this->store)
-		delete this->store;
+	delete this->store;
 	for (INIcacheType::iterator i=this->INIcache.begin();i!=this->INIcache.end();i++)
 		delete i->second;
-	delete this->thread;
+	delete this->font_cache;
 	this->INIcache.clear();
 	delete this->arrowCursor;
 	delete this->pageCursor;
-	if (this->menu)
-		delete this->menu;
+	delete this->menu;
 	this->selectVoiceClick.clear();
 	this->selectVoiceEntry.clear();
 	this->selectVoiceMouseOver.clear();
 	this->clickStr.clear();
-	if (this->imageButtons)
-		delete this->imageButtons;
+	delete this->imageButtons;
 	delete this->saveGame;
+	delete this->thread;
+	delete this->audio;
 
 	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
 	settings.writeOut(config_directory+settings_filename);
@@ -893,6 +901,42 @@ SDL_Surface *playback_screenshot_callback(volatile SDL_Surface *screen,void *use
 	return (SDL_Surface *)screen;
 }
 
+struct ff_file{
+	NONS_DataStream *stream;
+	ff_file():stream(0){}
+	~ff_file(){
+		general_archive.close(this->stream);
+	}
+	static int open(void *p,const char *a){
+		ff_file *_this=(ff_file *)p;
+		_this->stream=general_archive.open(UniFromUTF8(std::string(a)));
+		return (_this->stream)?0:-1;
+	}
+	static int close(void *p){
+		ff_file *_this=(ff_file *)p;
+		general_archive.close(_this->stream);
+		_this->stream=0;
+		return 0;
+	}
+	static int read(void *p,uint8_t *a,int b){
+		ff_file *_this=(ff_file *)p;
+		if (b<0)
+			return -1;
+		size_t l=(size_t)b;
+		if (!_this->stream->read(a,l,l))
+			return -1;
+		return l;
+	}
+	static int64_t seek(void *p,int64_t a,int b){
+		ff_file *_this=(ff_file *)p;
+		if (b<-1 || b>2)
+			return -1;
+		if (b!=2)
+			return _this->stream->seek(a,b);
+		return _this->stream->get_size();
+	}
+};
+
 ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool skippable){
 	NONS_LibraryLoader video_player("video_player",0);
 #define play_video_TRY_GET_FUNCTION(type,name,string)\
@@ -923,7 +967,18 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 	o_stdout <<"Loaded video player based on "<<get_player_type()<<" (v"<<get_player_version()<<").\n";
 	bool success;
 	std::string exception_string(10000,0);
-	{
+	std::string utf8_filename=UniToUTF8(filename);
+	file_protocol fp;
+	ff_file file;
+	fp.data=&file;
+	fp.close=ff_file::close;
+	fp.open=ff_file::open;
+	fp.read=ff_file::read;
+	fp.seek=ff_file::seek;
+	if (file.open(&file,utf8_filename.c_str())<0){
+		success=0;
+		exception_string="File not found.";
+	}else{
 		NONS_MutexLocker ml(screenMutex);
 		SDL_Surface *screen=this->screen->screen->screens[REAL];
 		SDL_FillRect(screen,0,0);
@@ -942,11 +997,15 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 			{&toggle_fullscreen,playback_fullscreen_callback},
 			{&take_screenshot,playback_screenshot_callback}
 		};
-		std::string utf8_filename=UniToUTF8(filename);
+		std::string utf8_filename_copy=utf8_filename;
+		if (get_player_type()==std::string("libVLC")){
+			utf8_filename_copy.push_back('/');
+			utf8_filename_copy.append(itoac(&fp));
+		}
 		C_play_video_params parameters={
 			C_PLAY_VIDEO_PARAMS_VERSION,
 			screen,
-			&utf8_filename[0],
+			&utf8_filename_copy[0],
 			&playback_params,
 			sizeof(pairs)/sizeof(*pairs),
 			pairs,
@@ -954,16 +1013,18 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 			CLOptions.verbosity>=255,
 			&exception_string[0],
 			exception_string.size(),
+			fp
 		};
 		success=!!C_play_video(&parameters);
 		exception_string.resize(strlen(exception_string.c_str()));
 		stop=1;
+		file.close(&file);
 	}
 	if (!success){
 		if (exception_string.size())
-			o_stderr <<"NONS_ScriptInterpreter::play_video(): "<<exception_string<<"\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video( \""<<utf8_filename<<"\" ): "<<exception_string<<"\n";
 		else
-			o_stderr <<"NONS_ScriptInterpreter::play_video(): Unknown error.\n";
+			o_stderr <<"NONS_ScriptInterpreter::play_video( \""<<utf8_filename<<"\" ): Unknown error.\n";
 		return NONS_UNDEFINED_ERROR;
 	}
 	return NONS_NO_ERROR;
@@ -1005,19 +1066,19 @@ const wchar_t *image_formats[]={
 };
 
 const wchar_t *sound_formats[]={
-	L"669",
+	L"ogg",
+	L"mp3",
+	L"mid",
+	L"it",
+	L"xm",
+	L"s3m",
+	L"mod",
 	L"aiff",
 	L"flac",
-	L"it",
+	L"669",
 	L"med",
-	L"mid",
-	L"mod",
-	L"mp3",
-	L"ogg",
-	L"s3m",
 	L"voc",
 	L"wav",
-	L"xm",
 	0
 };
 
@@ -1056,20 +1117,8 @@ bool NONS_ScriptInterpreter::generic_play(const std::wstring &filename,bool from
 			}
 			return 1;
 		case 2:
-			if (from_archive){
-				ulong l;
-				uchar *buffer=this->archive->getFileBuffer(filename,l);
-				if (!buffer)
-					return 0;
-				ErrorCode error=this->audio->playMusic(filename,(char *)buffer,l,1);
-				delete[] buffer;
-				if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
-					return 0;
-			}else{
-				ErrorCode error=this->audio->playMusic(&filename,1);
-				if (!CHECK_FLAG(error,NONS_NO_ERROR_FLAG))
-					return 0;
-			}
+			if (!CHECK_FLAG(this->audio->playMusic(&filename,1),NONS_NO_ERROR_FLAG))
+				return 0;
 			generic_play_loop(this->audio->music->is_playing());
 			return 1;
 		case 3:
@@ -2009,27 +2058,14 @@ ErrorCode NONS_ScriptInterpreter::load(int file){
 		std::wstring temp=L"track";
 		temp+=itoaw(save.musicTrack,2);
 		au->playMusic(&temp,save.loopMp3?-1:0);
-	}else if (save.music.size()){
-		ulong size;
-		char *buffer=(char *)this->archive->getFileBufferWithoutFS(save.music,size);
-		if (buffer)
-			this->audio->playMusic(save.music,buffer,size,save.loopMp3?-1:0);
-		else
-			this->audio->playMusic(&save.music,save.loopMp3?-1:0);
-	}
+	}else if (save.music.size())
+		this->audio->playMusic(&save.music,save.loopMp3?-1:0);
 	au->musicVolume(save.musicVolume);
 	for (ushort a=0;a<save.channels.size();a++){
 		NONS_SaveFile::Channel *c=save.channels[a];
 		if (!c->name.size())
 			continue;
-		if (au->bufferIsLoaded(c->name))
-			au->playSoundAsync(&c->name,0,0,a,c->loop?-1:0);
-		else{
-			ulong size;
-			char *buffer=(char *)this->archive->getFileBuffer(c->name,size);
-			if (!!buffer)
-				this->audio->playSoundAsync(&c->name,buffer,size,a,c->loop);
-		}
+		au->playSoundAsync(&c->name,a,c->loop?-1:0);
 	}
 	if (this->loadgosub.size())
 		this->gosub_label(this->loadgosub);
@@ -2157,7 +2193,7 @@ bool NONS_ScriptInterpreter::save(int file){
 		}
 		//graphic
 		{
-			NONS_Image *i=ImageLoader->elementFromSurface(scr->Background->data);
+			NONS_Image *i=ImageLoader.elementFromSurface(scr->Background->data);
 			if (i){
 				this->saveGame->background=i->animation.getString();
 			}else{
@@ -2180,8 +2216,12 @@ bool NONS_ScriptInterpreter::save(int file){
 			}else
 				this->saveGame->characters[a].string.clear();
 		}
-		std::copy(scr->charactersBlendOrder.begin(),scr->charactersBlendOrder.end(),this->saveGame->charactersBlendOrder);
-		std::fill(this->saveGame->charactersBlendOrder+scr->charactersBlendOrder.size(),this->saveGame->charactersBlendOrder+3,255);
+		//std::copy(scr->charactersBlendOrder.begin(),scr->charactersBlendOrder.end(),this->saveGame->charactersBlendOrder);
+		for (size_t a=0;a<scr->charactersBlendOrder.size();a++)
+			this->saveGame->charactersBlendOrder[a]=(uchar)scr->charactersBlendOrder[a];
+		//std::fill(this->saveGame->charactersBlendOrder+scr->charactersBlendOrder.size(),this->saveGame->charactersBlendOrder+3,255);
+		for (size_t a=scr->charactersBlendOrder.size();a<3;a++)
+			this->saveGame->charactersBlendOrder[a]=255;
 		//update sprite record
 		this->saveGame->blendSprites=scr->blendSprites;
 		for (ulong a=0;a<scr->layerStack.size();a++){
@@ -2197,7 +2237,7 @@ bool NONS_ScriptInterpreter::save(int file){
 			}else{
 				if (!b){
 					NONS_SaveFile::Sprite *spr=new NONS_SaveFile::Sprite();
-					NONS_Image *i=ImageLoader->elementFromSurface(c->data);
+					NONS_Image *i=ImageLoader.elementFromSurface(c->data);
 					if (i){
 						spr->string=i->animation.getString();
 						this->saveGame->sprites[a]=spr;
@@ -2250,7 +2290,7 @@ bool NONS_ScriptInterpreter::save(int file){
 	bool ret=this->saveGame->save(save_directory+L"save"+itoaw(file)+L".dat");
 	//Also save user data
 	this->store->saveData();
-	ImageLoader->filelog.writeOut();
+	ImageLoader.filelog->writeOut();
 	return ret;
 }
 
@@ -2432,7 +2472,7 @@ ErrorCode NONS_ScriptInterpreter::command_base_resolution(NONS_Statement &stmt){
 	this->base_size[0]=w;
 	this->base_size[1]=h;
 	for (int a=0;a<2;a++)
-		ImageLoader->base_scale[a]=double(this->virtual_size[a])/double(this->base_size[a]);
+		ImageLoader.base_scale[a]=double(this->virtual_size[a])/double(this->base_size[a]);
 	ulong size=this->defaultfs*this->virtual_size[1]/this->base_size[1];
 	this->font_cache->set_size(size);
 	this->screen->output->set_size(size);
@@ -2593,18 +2633,22 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 	std::wstring filename;
 	GET_STR_VALUE(filename,0);
 	if (!filename.size()){
-		SDL_Surface *tmpSrf=makeSurface(
-			this->screen->screen->screens[VIRTUAL]->w,
-			this->screen->screen->screens[VIRTUAL]->h,
-			32);
+		SDL_Surface *tmpSrf;
+		{
+			NONS_MutexLocker ml=screenMutex;
+			tmpSrf=makeSurface(
+				this->screen->screen->screens[VIRTUAL]->w,
+				this->screen->screen->screens[VIRTUAL]->h,
+				32);
+		}
 		this->imageButtons=new NONS_ButtonLayer(tmpSrf,this->screen);
 		this->imageButtons->inputOptions.Wheel=this->useWheel;
 		this->imageButtons->inputOptions.EscapeSpace=this->useEscapeSpace;
 		return NONS_NO_ERROR;
 	}
 	SDL_Surface *img;
-	if (!ImageLoader->fetchSprite(img,filename)){
-		ImageLoader->unfetchImage(img);
+	if (!ImageLoader.fetchSprite(img,filename)){
+		ImageLoader.unfetchImage(img);
 		return NONS_FILE_NOT_FOUND;
 	}
 	this->imageButtons=new NONS_ButtonLayer(img,this->screen);
@@ -2899,7 +2943,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 			SDL_FillRect(this->screen->screenBuffer,0,this->screen->screenBuffer->format->Amask);
 		else{
 			SDL_Surface *src=this->screen->Background->data;
-			NONS_Image *img=ImageLoader->elementFromSurface(src);
+			NONS_Image *img=ImageLoader.elementFromSurface(src);
 			bool freeSrc=0;
 
 			if (xscale<0 || yscale<0){
@@ -2922,10 +2966,10 @@ ErrorCode NONS_ScriptInterpreter::command_drawbg(NONS_Statement &stmt){
 				freeSrc=1;
 			}
 			if (img->svg_source){
-				ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
-				ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(angle));
-				ImageLoader->svg_functions.SVG_add_scale(img->svg_source,ImageLoader->base_scale[0],ImageLoader->base_scale[1]);
-				SDL_Surface *dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
+				ImageLoader.svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
+				ImageLoader.svg_functions.SVG_set_rotation(img->svg_source,-double(angle));
+				ImageLoader.svg_functions.SVG_add_scale(img->svg_source,ImageLoader.base_scale[0],ImageLoader.base_scale[1]);
+				SDL_Surface *dst=ImageLoader.svg_functions.SVG_render(img->svg_source);
 				if (freeSrc)
 					SDL_FreeSurface(src);
 				src=dst;
@@ -3025,7 +3069,7 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 	if (!sprite || !sprite->data)
 		return NONS_NO_SPRITE_LOADED_THERE;
 	SDL_Surface *src=sprite->data;
-	NONS_Image *img=ImageLoader->elementFromSurface(src);
+	NONS_Image *img=ImageLoader.elementFromSurface(src);
 	if (cell<0 || (ulong)cell>=sprite->animation.animation_length)
 		return NONS_NO_ERROR;
 	if (functionVersion==2 && !(xscale*yscale))
@@ -3063,10 +3107,10 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 					src=dst;
 				}
 				if (img->svg_source){
-					ImageLoader->svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
-					ImageLoader->svg_functions.SVG_set_rotation(img->svg_source,-double(rotation));
-					ImageLoader->svg_functions.SVG_add_scale(img->svg_source,ImageLoader->base_scale[0],ImageLoader->base_scale[1]);
-					dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
+					ImageLoader.svg_functions.SVG_set_scale(img->svg_source,double(xscale)/100.0,double(yscale)/100.0);
+					ImageLoader.svg_functions.SVG_set_rotation(img->svg_source,-double(rotation));
+					ImageLoader.svg_functions.SVG_add_scale(img->svg_source,ImageLoader.base_scale[0],ImageLoader.base_scale[1]);
+					dst=ImageLoader.svg_functions.SVG_render(img->svg_source);
 					SDL_FreeSurface(src);
 					src=dst;
 				}else{
@@ -3092,9 +3136,9 @@ ErrorCode NONS_ScriptInterpreter::command_drawsp(NONS_Statement &stmt){
 					double(matrix_10)/1000.0,
 					double(matrix_11)/1000.0
 				};
-				ImageLoader->svg_functions.SVG_set_matrix(img->svg_source,matrix_safe);
-				ImageLoader->svg_functions.SVG_set_matrix(img->svg_source,matrix);
-				SDL_Surface *dst=ImageLoader->svg_functions.SVG_render(img->svg_source);
+				ImageLoader.svg_functions.SVG_set_matrix(img->svg_source,matrix_safe);
+				ImageLoader.svg_functions.SVG_set_matrix(img->svg_source,matrix);
+				SDL_Surface *dst=ImageLoader.svg_functions.SVG_render(img->svg_source);
 				SDL_FreeSurface(src);
 				src=dst;
 			}else{
@@ -3158,7 +3202,6 @@ ErrorCode NONS_ScriptInterpreter::command_drawtext(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
-	ulong size;
 	long channel;
 	GET_INT_VALUE(channel,0);
 	if (channel<0 || channel>7)
@@ -3167,17 +3210,8 @@ ErrorCode NONS_ScriptInterpreter::command_dwave(NONS_Statement &stmt){
 	GET_STR_VALUE(name,1);
 	tolower(name);
 	toforwardslash(name);
-	ErrorCode error;
 	long loop=!stdStrCmpCI(stmt.commandName,L"dwave")?0:-1;
-	if (this->audio->bufferIsLoaded(name))
-		error=this->audio->playSoundAsync(&name,0,0,channel,loop);
-	else{
-		char *buffer=(char *)this->archive->getFileBuffer(name,size);
-		if (!buffer)
-			return NONS_FILE_NOT_FOUND;
-		error=this->audio->playSoundAsync(&name,buffer,size,channel,loop);
-	}
-	return error;
+	return this->audio->playSoundAsync(&name,channel,loop);
 }
 
 ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_Statement &stmt){
@@ -3191,14 +3225,8 @@ ErrorCode NONS_ScriptInterpreter::command_dwaveload(NONS_Statement &stmt){
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error=NONS_NO_ERROR;
-	if (!this->audio->bufferIsLoaded(name)){
-		ulong size;
-		char *buffer=(char *)this->archive->getFileBuffer(name,size);
-		if (!buffer)
-			error=NONS_FILE_NOT_FOUND;
-		else
-			error=this->audio->loadAsyncBuffer(name,buffer,size,channel);
-	}
+	if (!this->audio->bufferIsLoaded(name))
+		this->audio->loadAsyncBuffer(name,channel);
 	return error;
 }
 
@@ -3247,12 +3275,12 @@ ErrorCode NONS_ScriptInterpreter::command_fileexist(NONS_Statement &stmt){
 	GET_INT_VARIABLE(dst,0);
 	std::wstring filename;
 	GET_STR_VALUE(filename,1);
-	dst->set(this->archive->exists(filename));
+	dst->set(general_archive.exists(filename));
 	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_filelog(NONS_Statement &stmt){
-	ImageLoader->filelog.commit=1;
+	ImageLoader.filelog->commit=1;
 	return NONS_NO_ERROR;
 }
 
@@ -3334,12 +3362,12 @@ ErrorCode NONS_ScriptInterpreter::command_getini(NONS_Statement &stmt){
 	INIcacheType::iterator i=this->INIcache.find(filename);
 	INIfile *file=0;
 	if (i==this->INIcache.end()){
-		ulong l;
-		char *buffer=(char *)this->archive->getFileBuffer(filename,l);
-		if (!buffer)
+		NONS_DataStream *stream=general_archive.open(filename);
+		if (!stream)
 			return NONS_FILE_NOT_FOUND;
-		file=new INIfile(buffer,l,CLOptions.scriptencoding);
-		this->INIcache[filename]=file;
+		std::vector<uchar> buffer;
+		stream->read_all(buffer);
+		this->INIcache[filename]=new INIfile(buffer,CLOptions.scriptencoding);
 	}else
 		file=i->second;
 	INIsection *sec=file->getSection(section);
@@ -4281,7 +4309,7 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 		this->mp3_save=1;
 	}
 	if (name[0]=='*'){
-		int track=atoi(UniToISO88591(name.substr(1)).c_str());
+		int track=atoi(name.substr(1));
 		std::wstring temp=L"track";
 		temp+=itoaw(track,2);
 		error=this->audio->playMusic(&temp,this->mp3_loop?-1:0);
@@ -4289,19 +4317,10 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 			this->saveGame->musicTrack=track;
 		else
 			this->saveGame->musicTrack=-1;
-	}else{
-		ulong size;
-		char *buffer=(char *)this->archive->getFileBufferWithoutFS(name,size);
-		this->saveGame->musicTrack=-1;
-		if (buffer)
-			error=this->audio->playMusic(name,buffer,size,this->mp3_loop?-1:0);
-		else
-			error=this->audio->playMusic(&name,this->mp3_loop?-1:0);
-		if (error==NONS_NO_ERROR)
-			this->saveGame->music=name;
-		else
-			this->saveGame->music.clear();
-	}
+	}else if ((error=this->audio->playMusic(&name,this->mp3_loop?-1:0))==NONS_NO_ERROR)
+		this->saveGame->music=name;
+	else
+		this->saveGame->music.clear();
 	return error;
 }
 
@@ -4488,7 +4507,7 @@ ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoaw(file)+L".dat";
-	dst->set(fileExists(path));
+	dst->set(NONS_File::file_exists(path));
 	return NONS_NO_ERROR;
 }
 
@@ -4554,7 +4573,7 @@ ErrorCode NONS_ScriptInterpreter::command_savetime(NONS_Statement &stmt){
 	if (file<1)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoaw(file)+L".dat";
-	if (!fileExists(path)){
+	if (!NONS_File::file_exists(path)){
 		day->set(0);
 		month->set(0);
 		hour->set(0);
@@ -4584,7 +4603,7 @@ ErrorCode NONS_ScriptInterpreter::command_savetime2(NONS_Statement &stmt){
 		if (file<1)
 			return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	std::wstring path=save_directory+L"save"+itoaw(file)+L".dat";
-	if (!fileExists(path)){
+	if (!NONS_File::file_exists(path)){
 		year->set(0);
 		month->set(0);
 		day->set(0);
@@ -4641,7 +4660,6 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 		&this->selectVoiceMouseOver,
 		&this->selectVoiceClick,
 		this->audio,
-		this->archive,
 		this->screen->output->w,
 		this->screen->output->h);
 	ctrlIsPressed=0;
@@ -4691,40 +4709,16 @@ ErrorCode NONS_ScriptInterpreter::command_selectcolor(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_selectvoice(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(3);
-	std::wstring entry,
-		mouseover,
-		click;
-	GET_STR_VALUE(entry,0);
-	GET_STR_VALUE(mouseover,1);
-	GET_STR_VALUE(click,2);
-	tolower(entry);
-	tolower(mouseover);
-	tolower(click);
-	uchar *buffer;
-	if (entry.size()){
-		ulong l;
-		buffer=this->archive->getFileBuffer(entry,l);
-		if (!buffer)
+	std::wstring strings[3];
+	for (int a=0;a<3;a++){
+		GET_STR_VALUE(strings[a],a);
+		tolower(strings[a]);
+		if (strings[a].size() && !general_archive.exists(strings[a]))
 			return NONS_FILE_NOT_FOUND;
-		delete[] buffer;
 	}
-	if (mouseover.size()){
-		ulong l;
-		buffer=this->archive->getFileBuffer(mouseover,l);
-		if (!buffer)
-			return NONS_FILE_NOT_FOUND;
-		delete[] buffer;
-	}
-	if (click.size()){
-		ulong l;
-		buffer=this->archive->getFileBuffer(click,l);
-		if (!buffer)
-			return NONS_FILE_NOT_FOUND;
-		delete[] buffer;
-	}
-	this->selectVoiceEntry=entry;
-	this->selectVoiceMouseOver=mouseover;
-	this->selectVoiceClick=click;
+	this->selectVoiceEntry=strings[0];
+	this->selectVoiceMouseOver=strings[1];
+	this->selectVoiceClick=strings[2];
 	return NONS_NO_ERROR;
 }
 
@@ -4861,7 +4855,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 		if (frameRect.x+frameRect.w>scr->w || frameRect.y+frameRect.h>scr->h)
 			o_stderr <<"Warning: The text frame is larger than the screen\n";
 		if (this->screen->output->shadeLayer->useDataAsDefaultShade){
-			ImageLoader->unfetchImage(this->screen->output->shadeLayer->data);
+			ImageLoader.unfetchImage(this->screen->output->shadeLayer->data);
 			this->screen->output->shadeLayer->data=0;
 		}
 		{
@@ -4883,7 +4877,7 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 			this->screen->output->shadeLayer->setShade(uchar((color&0xFF0000)>>16),(color&0xFF00)>>8,color&0xFF);
 			this->screen->output->shadeLayer->Clear();
 		}else{
-			ImageLoader->fetchSprite(pic,filename);
+			ImageLoader.fetchSprite(pic,filename);
 			windowRect.w=(float)pic->w;
 			windowRect.h=(float)pic->h;
 			this->screen->resetParameters(&windowRect.to_SDL_Rect(),&frameRect.to_SDL_Rect(),*this->font_cache,shadow!=0);
@@ -5214,7 +5208,7 @@ ErrorCode NONS_ScriptInterpreter::command_use_nice_svg(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	long a;
 	GET_INT_VALUE(a,0);
-	ImageLoader->fast_svg=!a;
+	ImageLoader.fast_svg=!a;
 	return NONS_NO_ERROR;
 }
 
@@ -5233,11 +5227,11 @@ ErrorCode NONS_ScriptInterpreter::command_versionstr(NONS_Statement &stmt){
 	std::wstring str1,str2;
 	GET_STR_VALUE(str1,0);
 	GET_STR_VALUE(str2,1);
-	o_stdout <<"--------------------------------------------------------------------------------\n"
+	o_stdout <<"-------------------------------------------------------------------------------\n"
 		"versionstr says:\n"
 		<<str1<<"\n"
 		<<str2<<"\n"
-		"--------------------------------------------------------------------------------\n";
+		"-------------------------------------------------------------------------------\n";
 	return NONS_NO_ERROR;
 }
 
@@ -5280,19 +5274,13 @@ ErrorCode NONS_ScriptInterpreter::command_waittimer(NONS_Statement &stmt){
 
 ErrorCode NONS_ScriptInterpreter::command_wave(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
-	ulong size;
 	std::wstring name;
 	GET_STR_VALUE(name,0);
 	tolower(name);
 	toforwardslash(name);
 	ErrorCode error;
 	this->wav_loop=!!stdStrCmpCI(stmt.commandName,L"wave");
-	if (this->audio->bufferIsLoaded(name))
-		error=this->audio->playSoundAsync(&name,0,0,0,this->wav_loop?-1:0);
-	else{
-		char *buffer=(char *)this->archive->getFileBuffer(name,size);
-		error=!buffer?NONS_FILE_NOT_FOUND:this->audio->playSoundAsync(&name,buffer,size,0,this->wav_loop?-1:0);
-	}
+	error=this->audio->playSoundAsync(&name,0,this->wav_loop?-1:0);
 	return error;
 }
 

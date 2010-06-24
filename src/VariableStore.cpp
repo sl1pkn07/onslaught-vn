@@ -223,7 +223,7 @@ namespace NONS_Expression{
 	NONS_Expression_DECLARE_OPERATOR(fchk){
 		CHECK_OPERANDS(1);
 		EXPECT_STRING(0);
-		long a=ImageLoader->filelog.check(OPERAND(0)->string);
+		long a=ImageLoader.filelog->check(OPERAND(0)->string);
 		deleteTop(operands);
 		return new Value(a);
 	}
@@ -821,7 +821,7 @@ NONS_LabelLog labellog;
 extern std::wstring save_directory;
 
 NONS_VariableStore::NONS_VariableStore(){
-	ulong l;
+	size_t l;
 	this->commitGlobals=0;
 #ifdef _DEBUG
 	//expressionParser_yydebug=1;
@@ -829,7 +829,7 @@ NONS_VariableStore::NONS_VariableStore(){
 	std::wstring dir=save_directory+L"global.sav";
 	uchar *buffer=NONS_File::read(dir.c_str(),l);
 	if (!buffer){
-		buffer=NONS_File::read(L"gloval.sav",l);
+		buffer=NONS_File::read((std::wstring)L"gloval.sav",l);
 		if (!buffer)
 			return;
 		for (ulong a=0,stackpos=200;a<l;stackpos++){
@@ -839,8 +839,8 @@ NONS_VariableStore::NONS_VariableStore(){
 			this->variables[stackpos]=var;
 		}
 	}else{
-		if (firstchars(std::string((char *)buffer),0,"BZh")){
-			char *temp=decompressBuffer_BZ2((char *)buffer,l,(unsigned long *)&l);
+		if (firstchars((char *)buffer,"BZh")){
+			uchar *temp=decompressBuffer_BZ2(buffer,l,l);
 			delete[] buffer;
 			buffer=(uchar *)temp;
 		}
@@ -895,7 +895,7 @@ void NONS_VariableStore::reset(){
 void NONS_VariableStore::saveData(){
 	if (!this->commitGlobals)
 		return;
-	std::string buffer;
+	std::vector<uchar> buffer;
 	variables_map_T::iterator i=this->variables.find(200);
 	if (i==this->variables.end())
 		i--;
@@ -939,8 +939,8 @@ void NONS_VariableStore::saveData(){
 			}
 		}
 	}
-	ulong l;
-	char *writebuffer=compressBuffer_BZ2((char *)buffer.c_str(),buffer.size(),&l);
+	size_t l;
+	uchar *writebuffer=compressBuffer_BZ2(&buffer[0],buffer.size(),l);
 	std::wstring dir=save_directory+L"global.sav";
 	NONS_File::write(dir.c_str(),writebuffer,l);
 	delete[] writebuffer;

@@ -179,15 +179,60 @@ std::basic_string<T> itohex(T2 n,unsigned w=0){
 template <typename T> inline std::string  itohexc(T n,unsigned w=0){ return itohex<char>   (n,w); }
 template <typename T> inline std::wstring itohexw(T n,unsigned w=0){ return itohex<wchar_t>(n,w); }
 
+template <typename T>
+bool firstchars(const T *s1,const T *s2){
+	for (;*s2;s1++,s2++)
+		if (*s1!=*s2)
+			return 0;
+	return 1;
+}
+
+template <typename T>
+std::basic_string<T> normalize_path(std::basic_string<T> path){
+	toforwardslash(path);
+	bool r;
+	do{
+		r=0;
+		std::basic_string<T> temp;
+		for (size_t a=0;a<path.size();){
+			T c;
+			static T string_0[]={'/','/',0};
+			static T string_1[]={'/','.','/',0};
+			static T string_2[]={'.','.','/',0};
+			if (firstchars(&path[a],string_0)){
+				c='/';
+				r=1;
+				a+=2;
+			}else if (firstchars(&path[a],string_1)){
+				c='/';
+				r=1;
+				a+=3;
+			}else if (firstchars(&path[a],string_2)){
+				c=0;
+				if (temp.size()){
+					temp.erase(temp.end()-1);
+					while (temp.size() && temp[temp.size()-1]!='/')
+						temp.erase(temp.end()-1);
+				}
+				r=1;
+				a+=3;
+			}else
+				c=path[a++];
+			if (!c)
+				continue;
+			temp.push_back(c);
+		}
+		path=temp;
+	}while (r);
+	return path;
+}
+
 //1 if the s1 begins with s2 at off
 template <typename T>
 bool firstchars(const std::basic_string<T> &s1,size_t off,const std::basic_string<T> &s2){
 	if (s1.size()-off<s2.size())
 		return 0;
-	for (ulong a=0;a<s2.size();a++)
-		if (s1[off+a]!=s2[a])
-			return 0;
-	return 1;
+	return firstchars(&s1[off],&s2[0]);
 }
 
 template <typename T>
@@ -197,10 +242,7 @@ bool firstchars(const std::basic_string<T> &s1,size_t off,const T *s2){
 		l++;
 	if (s1.size()-off<l)
 		return 0;
-	for (ulong a=0;a<l;a++)
-		if (s1[off+a]!=s2[a])
-			return 0;
-	return 1;
+	return firstchars(&s1[off],s2);
 }
 
 template <typename T>
@@ -290,18 +332,19 @@ std::basic_string<T> tagValue(const std::basic_string<T> &string,size_t off){
 //binary parsing functions
 bool getbit(void *arr,ulong *byteoffset,uchar *bitoffset);
 ulong getbits(void *arr,uchar bits,ulong *byteoffset,uchar *bitoffset);
-Uint8 readByte(void *buffer,ulong &offset);
-Sint16 readSignedWord(char *buffer,ulong &offset);
-Uint16 readWord(void *buffer,ulong &offset);
-Sint32 readSignedDWord(char *buffer,ulong &offset);
-Uint32 readDWord(void *buffer,ulong &offset);
-std::string readString(char *buffer,ulong &offset);
-void writeByte(Uint8 a,std::string &str,ulong offset=ULONG_MAX);
-void writeWord(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
-void writeDWord(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
-void writeWordBig(Uint16 a,std::string &str,ulong offset=ULONG_MAX);
-void writeDWordBig(Uint32 a,std::string &str,ulong offset=ULONG_MAX);
-void writeString(const std::wstring &a,std::string &str);
+Uint8 readByte(const void *buffer,ulong &offset);
+Sint16 readSignedWord(const void *buffer,ulong &offset);
+Uint16 readWord(const void *buffer,ulong &offset);
+Sint32 readSignedDWord(const void *buffer,ulong &offset);
+Uint32 readDWord(const void *buffer,ulong &offset);
+Uint64 readQWord(const void *buffer,ulong &offset);
+std::string readString(const void *buffer,ulong &offset);
+void writeByte(Uint8 a,std::vector<uchar> &str,ulong offset=ULONG_MAX);
+void writeWord(Uint16 a,std::vector<uchar> &str,ulong offset=ULONG_MAX);
+void writeDWord(Uint32 a,std::vector<uchar> &str,ulong offset=ULONG_MAX);
+void writeWordBig(Uint16 a,std::vector<uchar> &str,ulong offset=ULONG_MAX);
+void writeDWordBig(Uint32 a,std::vector<uchar> &str,ulong offset=ULONG_MAX);
+void writeString(const std::wstring &a,std::vector<uchar> &str);
 
 template <typename T>
 std::vector<Sint32> getIntervals(typename std::map<Sint32,T>::iterator i,typename std::map<Sint32,T>::iterator end){
@@ -372,7 +415,7 @@ src: input buffer.
 srcl: length of the input buffer in bytes.
 dstl: the length of the compressed buffer will be written here.
 */
-char *compressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl);
+uchar *compressBuffer_BZ2(uchar *src,size_t src_l,size_t &dstl);
 /*
 Decompresses src[0..srcl-1].
 Return value: allocated decompressed buffer.
@@ -380,7 +423,7 @@ src: input buffer.
 srcl: length of the input buffer in bytes.
 dstl: the length of the decompressed buffer will be written here.
 */
-char *decompressBuffer_BZ2(char *src,unsigned long srcl,unsigned long *dstl);
+uchar *decompressBuffer_BZ2(uchar *src,size_t src_l,size_t &dst_l);
 
 template <typename T1,typename T2>
 bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t &at_offset,int (*comp_f)(const T2 &,const T1 &)){
@@ -410,7 +453,7 @@ bool binary_search(const T1 *set,size_t begin,size_t end,const T2 &value,size_t 
 	return 0;
 }
 
-ErrorCode inPlaceDecryption(char *buffer,ulong length,ulong mode);
+ErrorCode inPlaceDecryption(void *buffer,size_t length,ulong mode);
 
 #if NONS_SYS_WINDOWS
 void findMainWindow(const wchar_t *caption);
@@ -533,9 +576,43 @@ int lexcmp_CI_bounded(const T1 *a,size_t sizeA,const T2 *b,size_t sizeB){
 }
 
 ulong getUTF8size(const wchar_t *buffer,ulong size);
-std::wstring UniFromISO88591(const std::string &str);
-std::wstring UniFromUTF8(const std::string &str);
-std::wstring UniFromSJIS(const std::string &str);
+
+template <typename T>
+std::wstring UniFromISO88591(const T &str){
+	std::wstring res;
+	res.resize(str.size());
+	void ISO_WC(wchar_t *dst,const uchar *src,ulong srcl);
+	ISO_WC(&res[0],(const uchar *)&str[0],str.size());
+	return res;
+}
+
+template <typename T>
+std::wstring UniFromUTF8(const T &str){
+	ulong start=0;
+	if (str.size()>=3 && (uchar)str[0]==BOM8A && (uchar)str[1]==BOM8B && (uchar)str[2]==BOM8C)
+		start+=3;
+	const uchar *str2=(const uchar *)&str[0]+start;
+	ulong size=0;
+	for (ulong a=start,end=str.size();a<end;a++,str2++)
+		if (*str2<128 || (*str2&192)==192)
+			size++;
+	std::wstring res;
+	res.resize(size);
+	str2=(const uchar *)&str[0]+start;
+	void UTF8_WC(wchar_t *dst,const uchar *src,ulong srcl);
+	UTF8_WC(&res[0],str2,str.size()-start);
+	return res;
+}
+
+template <typename T>
+std::wstring UniFromSJIS(const T &str){
+	std::wstring res;
+	res.resize(str.size());
+	ulong SJIS_WC(wchar_t *dst,const uchar *src,ulong srcl);
+	res.resize(SJIS_WC(&res[0],(const uchar *)&str[0],str.size()));
+	return res;
+}
+
 std::string UniToISO88591(const std::wstring &str);
 std::string UniToUTF8(const std::wstring &str,bool addBOM=0);
 std::string UniToSJIS(const std::wstring &str);
@@ -580,8 +657,8 @@ char checkEnd(wchar_t a);
 //Determines the system's endianness.
 char checkNativeEndianness();
 
-bool isValidUTF8(const char *buffer,ulong size);
-bool isValidSJIS(const char *buffer,ulong size);
+bool isValidUTF8(const void *buffer,ulong size);
+bool isValidSJIS(const void *buffer,ulong size);
 
 bool iswhitespace(char character);
 bool iswhitespace(wchar_t character);
@@ -610,15 +687,20 @@ int stdStrCmpCI(const std::basic_string<T1> &s1,const std::basic_string<T2> &s2)
 	return lexcmp_CI_bounded(s1.c_str(),s1.size(),s2.c_str(),s2.size());
 }
 
+template <typename T>
+bool firstcharsCI(const T *s1,const T *s2){
+	for (;*s2;s1++,s2++)
+		if (NONS_tolower(*s1)!=NONS_tolower(*s2))
+			return 0;
+	return 1;
+}
+
 //1 if the s1 begins with s2 at off
 template <typename T>
 bool firstcharsCI(const std::basic_string<T> &s1,size_t off,const std::basic_string<T> &s2){
 	if (s1.size()-off<s2.size())
 		return 0;
-	for (ulong a=0;a<s2.size();a++)
-		if (NONS_tolower(s1[off+a])!=NONS_tolower(s2[a]))
-			return 0;
-	return 1;
+	return firstcharsCI(&s1[off],&s2[off]);
 }
 
 template <typename T>
@@ -628,10 +710,7 @@ bool firstcharsCI(const std::basic_string<T> &s1,size_t off,const T *s2){
 		l++;
 	if (s1.size()-off<l)
 		return 0;
-	for (ulong a=0;a<l;a++)
-		if (NONS_tolower(s1[off+a])!=NONS_tolower(s2[a]))
-			return 0;
-	return 1;
+	return firstcharsCI(&s1[off],s2);
 }
 
 template <typename T>
