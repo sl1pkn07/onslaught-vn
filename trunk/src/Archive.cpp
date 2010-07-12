@@ -85,7 +85,7 @@ inline size_t find_slash(const std::basic_string<T> &str,size_t off=0){
 //------------------- COMPRESSION-RELATED FUNCTIONS ----------------------------
 //------------------------------------------------------------------------------
 
-unsigned decompress_from_regular_file::in_func(void *p,unsigned char **buffer){
+unsigned decompress_from_regular_file::in_f(void *p,unsigned char **buffer){
 	decompress_from_regular_file *_this=(decompress_from_regular_file *)p;
 	size_t l=_this->default_in_size;
 	_this->in.resize(l);
@@ -106,7 +106,7 @@ unsigned decompress_from_regular_file::in_func(void *p,unsigned char **buffer){
 	return _this->in.size();
 }
 
-unsigned decompress_from_file::in_func(void *p,unsigned char **buffer){
+unsigned decompress_from_file::in_f(void *p,unsigned char **buffer){
 	decompress_from_file *_this=(decompress_from_file *)p;
 	size_t l=_this->default_in_size;
 	_this->in.resize(l);
@@ -127,7 +127,7 @@ unsigned decompress_from_file::in_func(void *p,unsigned char **buffer){
 	return _this->in.size();
 }
 
-unsigned decompress_from_memory::in_func(void *p,unsigned char **buffer){
+unsigned decompress_from_memory::in_f(void *p,unsigned char **buffer){
 	decompress_from_memory *_this=(decompress_from_memory *)p;
 	if (buffer)
 		*buffer=_this->src;
@@ -137,7 +137,7 @@ unsigned decompress_from_memory::in_func(void *p,unsigned char **buffer){
 	return a;
 }
 
-int decompress_to_file::out_func(void *p,unsigned char *buffer,unsigned size){
+int decompress_to_file::out_f(void *p,unsigned char *buffer,unsigned size){
 	Uint64 &limit=((decompress_to_file *)p)->output_limit;
 	assert(limit!=0);
 	if (size>limit)
@@ -148,7 +148,7 @@ int decompress_to_file::out_func(void *p,unsigned char *buffer,unsigned size){
 	return 0;
 }
 
-int decompress_to_memory::out_func(void *p,unsigned char *buffer,unsigned size){
+int decompress_to_memory::out_f(void *p,unsigned char *buffer,unsigned size){
 	Uint64 &limit=((decompress_to_file *)p)->output_limit;
 	if (size>limit)
 		size=(unsigned)limit;
@@ -157,7 +157,7 @@ int decompress_to_memory::out_func(void *p,unsigned char *buffer,unsigned size){
 	return 0;
 }
 
-int decompress_to_unknown_size::out_func(void *p,unsigned char *buffer,unsigned size){
+int decompress_to_unknown_size::out_f(void *p,unsigned char *buffer,unsigned size){
 	decompress_to_unknown_size *_this=(decompress_to_unknown_size *)p;
 	_this->dst->push_back(std::vector<uchar>(buffer,buffer+size));
 	_this->final_size+=size;
@@ -485,6 +485,9 @@ TreeNode::~TreeNode(){
 }
 
 TreeNode *TreeNode::get_branch(const std::wstring &_path,bool create){
+	if (_path[0]=='/' || _path[0]=='\\')
+		//Path is absolute and to a file in the file system. Do nothing.
+		return 0;
 	TreeNode *_this=this;
 	std::wstring path=_path;
 	while (1){
@@ -1160,7 +1163,7 @@ bool ZIParchive::read_raw_bytes(void *dst,size_t read_bytes,size_t &bytes_read,T
 
 void ZIParchive::freeExtraData(void *p){
 	if (p)
-		delete[] &derefED(p);
+		delete &derefED(p);
 }
 
 ZIParchive::SignatureType ZIParchive::getSignatureType(void *buffer){
@@ -1197,7 +1200,7 @@ void NONS_GeneralArchive::init(){
 	this->archives.push_back(&filesystem);
 	for (ulong a=ULONG_MAX;;a++){
 		std::wstring full_name;
-		ulong format;
+		ulong format=0;
 		if (a!=ULONG_MAX){
 			std::wstring name=base;
 			if (a)
@@ -1221,7 +1224,7 @@ void NONS_GeneralArchive::init(){
 				continue;
 			format=0;
 		}
-		NONS_ArchiveSource *ds;
+		NONS_ArchiveSource *ds=0;
 		switch (format){
 			case 0:
 				ds=new NONS_nsaArchiveSource(full_name,0);
@@ -1382,7 +1385,7 @@ NONS_nsaArchiveSource::~NONS_nsaArchiveSource(){
 
 uchar *NONS_nsaArchiveSource::read_all(TreeNode *node,size_t &bytes_read){
 	NSAdata data=NSAarchive::derefED(node->extraData);
-	uchar *ret;
+	uchar *ret=0;
 	bytes_read=data.uncompressed;
 	if (data.compression==NSAdata::COMPRESSION_NONE){
 		ret=new uchar[(size_t)data.uncompressed];

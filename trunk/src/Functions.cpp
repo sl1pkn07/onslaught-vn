@@ -76,7 +76,7 @@ Uint32 secondsSince1970(){
 void manualBlit_threaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha);
 void manualBlit_threaded(void *parameters);
 
-DECLSPEC void manualBlit_unthreaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
+NONS_DLLexport void manualBlit_unthreaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
 		return;
 	SDL_Rect srcRect0,dstRect0;
@@ -142,7 +142,7 @@ DECLSPEC void manualBlit_unthreaded(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surfa
 	SDL_UnlockSurface(src);
 }
 
-DECLSPEC void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
+NONS_DLLexport void manualBlit(SDL_Surface *src,SDL_Rect *srcRect,SDL_Surface *dst,SDL_Rect *dstRect,manualBlitAlpha_t alpha){
 	if (!src || !dst || src->format->BitsPerPixel<24 ||dst->format->BitsPerPixel<24 || !alpha)
 		return;
 	SDL_Rect srcRect0,dstRect0;
@@ -1420,7 +1420,7 @@ Uint8 readByte(const void *buffer,ulong &offset){
 Sint16 readSignedWord(const void *_buffer,ulong &offset){
 	uchar *buffer=(uchar *)_buffer;
 	Sint16 r=0;
-	for (char a=2;a>=0;a--){
+	for (char a=1;a>=0;a--){
 		r<<=8;
 		r|=buffer[offset+a];
 	}
@@ -1431,7 +1431,7 @@ Sint16 readSignedWord(const void *_buffer,ulong &offset){
 Uint16 readWord(const void *_buffer,ulong &offset){
 	uchar *buffer=(uchar *)_buffer;
 	Uint16 r=0;
-	for (char a=2;a>=0;a--){
+	for (char a=1;a>=0;a--){
 		r<<=8;
 		r|=buffer[offset+a];
 	}
