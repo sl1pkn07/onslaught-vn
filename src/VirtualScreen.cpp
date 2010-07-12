@@ -36,9 +36,9 @@
 #include <iostream>
 
 #ifndef DEBUG_SCREEN_MUTEX
-DLLexport NONS_Mutex screenMutex;
+NONS_DECLSPEC NONS_Mutex screenMutex;
 #else
-DLLexport NONS_Mutex screenMutex(1);
+NONS_DECLSPEC NONS_Mutex screenMutex(1);
 #endif
 
 //#define ONLY_NEAREST_NEIGHBOR
@@ -111,8 +111,9 @@ NONS_VirtualScreen::NONS_VirtualScreen(ulong w,ulong h){
 	std::fill(this->screens,this->screens+REAL+1,(SDL_Surface *)0);
 	this->screens[REAL]=SDL_SetVideoMode(w,h,DEFAULT_SCREEN_COLOR_DEPTH,USE_HARDWARE_SURFACES|SDL_DOUBLEBUF|((CLOptions.startFullscreen)?SDL_FULLSCREEN:0));
 	if (!this->screens[REAL]){
-		std::cerr <<"FATAL ERROR: Could not allocate screen!"<<std::endl
-			<<"Terminating."<<std::endl;
+		std::cerr <<"FATAL ERROR: Could not allocate screen!\n"
+			"Did you forget to install libx11-dev before building?\n"
+			"Terminating.\n";
 		exit(0);
 	}
 	this->screens[VIRTUAL]=this->screens[REAL];
@@ -211,7 +212,7 @@ NONS_VirtualScreen::~NONS_VirtualScreen(){
 		SDL_FreeSurface(this->screens[VIRTUAL]);
 }
 
-DECLSPEC void NONS_VirtualScreen::blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rect *dstrect){
+NONS_DLLexport void NONS_VirtualScreen::blitToScreen(SDL_Surface *src,SDL_Rect *srcrect,SDL_Rect *dstrect){
 	NONS_MutexLocker ml(screenMutex);
 	if (!!src && src->format->BitsPerPixel<24)
 		SDL_BlitSurface(src,srcrect,this->screens[VIRTUAL],dstrect);
@@ -283,12 +284,12 @@ void NONS_VirtualScreen::updateScreen(ulong x,ulong y,ulong w,ulong h,bool fast)
 		SDL_UpdateRect(this->screens[REAL],x,y,w,h);
 }
 
-DECLSPEC void NONS_VirtualScreen::updateWholeScreen(bool fast){
+NONS_DLLexport void NONS_VirtualScreen::updateWholeScreen(bool fast){
 	NONS_MutexLocker ml(screenMutex);
 	this->updateWithoutLock(fast);
 }
 
-DECLSPEC void NONS_VirtualScreen::updateWithoutLock(bool fast){
+NONS_DLLexport void NONS_VirtualScreen::updateWithoutLock(bool fast){
 	if (this->usingFeature[OVERALL_FILTER]){
 		SDL_Surface *src=this->screens[VIRTUAL];
 		for (ulong a=0;a<this->filterPipeline.size();a++){

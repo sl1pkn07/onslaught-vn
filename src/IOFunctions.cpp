@@ -81,28 +81,34 @@ void NONS_File::open(const std::wstring &path,bool open_for_read){
 			0
 		);
 	}
+	this->is_open=this->file!=INVALID_HANDLE_VALUE;
 #elif NONS_SYS_UNIX
-	this->file=open(
+	this->file=::open(
 		UniToUTF8(path).c_str(),
 		(open_for_read?O_RDONLY:O_WRONLY|O_TRUNC)|O_LARGEFILE
 	);
-	if (this->file<0)
-		this->file=open(
+	if (this->file<0){
+		this->file=::open(
 			UniToUTF8(path).c_str(),
-			(open_for_read?O_RDONLY:O_WRONLY|O_CREAT)|O_LARGEFILE
+			(open_for_read?O_RDONLY:O_WRONLY|O_CREAT)|O_LARGEFILE,
+			S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH
 		);
+	}
+	this->is_open=this->file>=0;
 #else
 	this->file.open(UniToUTF8(path).c_str(),std::ios::binary|(open_for_read?std::ios::in:std::ios::out));
+	this->is_open=this->file.is_open();
 #endif
 	this->_filesize=this->reload_filesize();
 }
 
 Uint64 NONS_File::reload_filesize(){
-	if (this->is_open=!!*this){
+	if (this->is_open){
 #if NONS_SYS_WINDOWS
 		LARGE_INTEGER li;
 		return (GetFileSizeEx(this->file,&li))?li.QuadPart:0;
 #elif NONS_SYS_UNIX
+		assert(this->file>=0);
 		return (Uint64)lseek64(this->file,0,SEEK_END);
 #else
 		if (this->opened_for_read){
@@ -125,7 +131,7 @@ void NONS_File::close(){
 		CloseHandle(this->file);
 #elif NONS_SYS_UNIX
 	if (!!*this)
-		close(this->file);
+		::close(this->file);
 #else
 	this->file.close();
 #endif
@@ -137,7 +143,7 @@ bool NONS_File::operator!(){
 #if NONS_SYS_WINDOWS
 		this->file==INVALID_HANDLE_VALUE;
 #elif NONS_SYS_UNIX
-		this->file>=0;
+		this->file<0;
 #else
 		!this->file;
 #endif
@@ -170,7 +176,7 @@ bool NONS_File::read(void *dst,size_t read_bytes,size_t &bytes_read,Uint64 offse
 		DWORD rb=read_bytes,br=0;
 		ReadFile(this->file,dst,rb,&br,0);
 #elif NONS_SYS_UNIX
-		read(this->file,dst,read_bytes);
+		::read(this->file,dst,read_bytes);
 #else
 		this->file.read((char *)dst,read_bytes);
 #endif
@@ -180,10 +186,12 @@ bool NONS_File::read(void *dst,size_t read_bytes,size_t &bytes_read,Uint64 offse
 }
 
 NONS_File::type *NONS_File::read(size_t read_bytes,size_t &bytes_read,Uint64 offset){
-	if (!this->read(0,read_bytes,bytes_read,offset)){
+	bool a;
+	if (!(a=this->read(0,read_bytes,bytes_read,offset)) || !bytes_read){
 		bytes_read=0;
 		return 0;
 	}
+	assert(bytes_read>0);
 	NONS_File::type *buffer=new NONS_File::type[bytes_read];
 	this->read(buffer,read_bytes,bytes_read,offset);
 	return buffer;
@@ -204,7 +212,7 @@ bool NONS_File::write(void *buffer,size_t size,bool write_at_end){
 		lseek64(this->file,0,SEEK_SET);
 	else
 		lseek64(this->file,0,SEEK_END);
-	write(this->file,buffer,size);
+	::write(this->file,buffer,size);
 #else
 	if (!write_at_end)
 		this->file.seekp(0);
@@ -657,7 +665,8 @@ NONS_DataSource::~NONS_DataSource(){
 
 NONS_DataStream *NONS_DataSource::open(NONS_DataStream *p,const std::wstring &path){
 	p->original_path=path;
-	std::cout <<"Opening stream to "<<p->original_path<<"\n";
+	if (CLOptions.verbosity>=2)
+		o_stderr <<"Opening stream to "<<p->original_path<<"\n";
 	this->streams.push_back(p);
 	return p;
 }
@@ -677,7 +686,8 @@ bool NONS_DataSource::close(NONS_DataStream *p){
 	);
 	if (i==this->streams.end())
 		return 0;
-	std::cout <<"Closing stream to "<<p->original_path<<"\n";
+	if (CLOptions.verbosity>=2)
+		o_stderr <<"Closing stream to "<<p->original_path<<"\n";
 	delete *i;
 	this->streams.erase(i);
 	return 1;

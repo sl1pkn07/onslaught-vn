@@ -40,8 +40,8 @@
 HWND mainWindow=0;
 #endif
 
-DECLSPEC volatile bool ctrlIsPressed=0;
-DECLSPEC volatile bool forceSkip=0;
+NONS_DLLexport volatile bool ctrlIsPressed=0;
+NONS_DLLexport volatile bool forceSkip=0;
 NONS_ScriptInterpreter *gScriptInterpreter=0;
 
 #undef ABS
@@ -1015,7 +1015,18 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 			exception_string.size(),
 			fp
 		};
+#if NONS_SYS_UNIX
+		//If the audio isn't stopped under UNIX, C_play_video() will fail
+		//because it won't be able to open the audio device.
+		delete this->audio;
+#endif
 		success=!!C_play_video(&parameters);
+#if NONS_SYS_UNIX
+		//Restore audio.
+		this->audio=new NONS_Audio(CLOptions.musicDirectory);
+		if (CLOptions.musicFormat.size())
+			this->audio->musicFormat=CLOptions.musicFormat;
+#endif
 		exception_string.resize(strlen(exception_string.c_str()));
 		stop=1;
 		file.close(&file);
@@ -1122,7 +1133,12 @@ bool NONS_ScriptInterpreter::generic_play(const std::wstring &filename,bool from
 			generic_play_loop(this->audio->music->is_playing());
 			return 1;
 		case 3:
-			return !CHECK_FLAG(this->play_video(filename,1),NONS_NO_ERROR_FLAG);
+			return !CHECK_FLAG(handleErrors(
+					this->play_video(filename,1),
+					ULONG_MAX,
+					"NONS_ScriptInterpreter::generic_play",
+					0
+				),NONS_NO_ERROR_FLAG);
 	}
 	return 0;
 }
@@ -1222,8 +1238,8 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 	ulong current_line=stmt->lineOfOrigin->lineNumber;
 	if (CLOptions.verbosity>=1 && CLOptions.verbosity<255)
 		o_stderr <<"Interpreting line "<<current_line<<"\n";
-	if (CLOptions.verbosity>=3 && CLOptions.verbosity<255 && stmt->type==StatementType::COMMAND)
-		print_command(o_stderr,0,stmt->commandName,stmt->parameters,0);
+	if (CLOptions.verbosity>=4 && CLOptions.verbosity<255 && stmt->type==StatementType::COMMAND)
+		print_command(o_stderr,current_line,stmt->commandName,stmt->parameters,0);
 	this->saveGame->textX=this->screen->output->x;
 	this->saveGame->textY=this->screen->output->y;
 	this->saveGame->italic=this->screen->output->get_italic();
@@ -1356,7 +1372,7 @@ ErrorCode NONS_ScriptInterpreter::interpretString(NONS_Statement &stmt,NONS_Scri
 	stmt.parse(this->script);
 	stmt.lineOfOrigin=line;
 	stmt.fileOffset=offset;
-	if (CLOptions.verbosity>=3 && CLOptions.verbosity<255 && stmt.type==StatementType::COMMAND){
+	if (CLOptions.verbosity>=4 && CLOptions.verbosity<255 && stmt.type==StatementType::COMMAND){
 		o_stderr <<"String: ";
 		print_command(o_stderr,0,stmt.commandName,stmt.parameters,0);
 	}
@@ -2541,18 +2557,8 @@ ErrorCode NONS_ScriptInterpreter::command_blt(NONS_Statement &stmt){
 	GET_COORDINATE(imgY,1,5);
 	GET_COORDINATE(imgW,0,6);
 	GET_COORDINATE(imgH,1,7);
-	NONS_Rect dstRect={
-			screenX,
-			screenY,
-			screenW,
-			screenH
-		},
-		srcRect={
-			imgX,
-			imgY,
-			imgW,
-			imgH
-	};
+	NONS_Rect dstRect(screenX,screenY,screenW,screenH),
+		srcRect(imgX,imgY,imgW,imgH);
 	void (*interpolationFunction)(SDL_Surface *,SDL_Rect *,SDL_Surface *,SDL_Rect *,ulong,ulong)=&nearestNeighborInterpolation;
 	ulong x_multiplier=1,y_multiplier=1;
 	if (imgW==screenW && imgH==screenH){
@@ -2635,7 +2641,7 @@ ErrorCode NONS_ScriptInterpreter::command_btndef(NONS_Statement &stmt){
 	if (!filename.size()){
 		SDL_Surface *tmpSrf;
 		{
-			NONS_MutexLocker ml=screenMutex;
+			NONS_MutexLocker ml(screenMutex);
 			tmpSrf=makeSurface(
 				this->screen->screen->screens[VIRTUAL]->w,
 				this->screen->screen->screens[VIRTUAL]->h,
@@ -4837,18 +4843,8 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow(NONS_Statement &stmt){
 			fontsize<1){
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	}
-	NONS_Rect windowRect={
-		windowXstart,
-		windowYstart,
-		windowXend-windowXstart+1,
-		windowYend-windowYstart+1
-	},
-	frameRect={
-		frameXstart,
-		frameYstart,
-		frameXend-frameXstart,
-		frameYend-frameYstart
-	};
+	NONS_Rect windowRect(windowXstart,windowYstart,windowXend-windowXstart+1,windowYend-windowYstart+1),
+		frameRect(frameXstart,frameYstart,frameXend-frameXstart,frameYend-frameYstart);
 	{
 		NONS_MutexLocker ml(screenMutex);
 		SDL_Surface *scr=this->screen->screen->screens[VIRTUAL];
