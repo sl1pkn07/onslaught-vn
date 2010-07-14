@@ -1,0 +1,37 @@
+This document describes the compilation and/or installation for the various
+platforms.
+
+Windows:
+Compilation:
+Compiling for Windows is pretty much straightforward. The src package includes
+projects for Visual C++ 2008, plus static dependencies. The
+only thing noteworthy is that ONSlaught doesn't compile with MinGW 3.x and
+below; only with MinGW 4.x and above. This is because 3.x has an incomplete
+implementation of the C++ standard library.
+
+To compile using MinGW, you'll also need MSYS. Run
+  make -f Makefile.MSYS
+This will build both the engine and the plugin.
+
+Runtime:
+A binary built with the static libraries and built scripts provided has no
+external dependencies. Compiling with MinGW automatically generates a
+DLL (plugin.dll). This DLL is also included in the Windows binary package. It
+is a purely optional component provided as an example of what can be done with
+the plugin interface.
+
+
+Unices:
+Compilation:
+  cmake .
+  make
+
+After a successful build, the binary will be put in ./ONSlaught.
+
+There's also a separate package (fulldep) that includes all the dependecies
+with their sources, in case the target system doesn't have them. This package
+is almost guaranteed to produce a correct executable.
+
+Installation:
+The best way to install is to move this file to /usr/bin/ (most likely will
+require root priviledges). Failing that, ~/bin/ should also work.
