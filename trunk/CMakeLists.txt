@@ -22,14 +22,13 @@ set(LIBS
 add_executable(ONSlaught
 src/SJIS.table.cpp
 src/ScriptInterpreter.cpp
-src/MacroParser.tab.cpp
 src/GUI.cpp
 src/ExpressionParser.tab.cpp
 src/Image.cpp
+src/MacroParser.tab.cpp
 src/INIParser.tab.cpp
 src/Archive.cpp
 src/ScreenSpace.cpp
-src/MacroParser.cpp
 src/LZMA.c
 src/VariableStore.cpp
 src/Script.cpp
@@ -42,6 +41,7 @@ src/CommandLineOptions.cpp
 src/Audio.cpp
 src/sha1.cpp
 src/ONSlaught.cpp
+src/MacroParser.cpp
 src/ErrorCodes.cpp
 src/Thread.cpp
 src/ConfigFile.cpp
