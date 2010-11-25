@@ -657,10 +657,6 @@ NONS_LongRect NONS_TextButton::GetBoundingBox(const std::wstring &str,NONS_FontC
 }
 
 void NONS_TextButton::write(const std::wstring &str,int offsetX,int offsetY,float center){
-	/*SDL_FillRect(this->getOnLayer()->data,0,gmask|amask);
-	SDL_FillRect(this->getOffLayer()->data,0,gmask|amask);
-	if (this->getShadowLayer())
-		SDL_FillRect(this->getShadowLayer()->data,0,gmask|amask);*/
 	std::vector<NONS_Glyph *> outputBuffer;
 	std::vector<NONS_Glyph *> outputBuffer2;
 	std::vector<NONS_Glyph *> outputBuffer3;
@@ -890,17 +886,19 @@ void NONS_ButtonLayer::makeTextButtons(const std::vector<std::wstring> &arr,
 	}
 }
 
-int NONS_ButtonLayer::getUserInput(int x,int y){
+int NONS_ButtonLayer::getUserInput(int x,int y,bool override_placement){
 	if (!this->buttons.size())
 		return -1;
-	for (ulong a=0;a<this->buttons.size();a++){
-		NONS_TextButton *cB=(NONS_TextButton *)this->buttons[a];
-		cB->setPosx()=x;
-		cB->setPosy()=y;
-		y+=int(cB->getBox().y+cB->getBox().h);
+	if (override_placement){
+		for (ulong a=0;a<this->buttons.size();a++){
+			NONS_TextButton *cB=(NONS_TextButton *)this->buttons[a];
+			cB->setPosx()=x;
+			cB->setPosy()=y;
+			y+=int(cB->getBox().y+cB->getBox().h);
+		}
+		if (y>this->screen->output->y0+this->screen->output->h)
+			return -2;
 	}
-	if (y>this->screen->output->y0+this->screen->output->h)
-		return -2;
 	if (this->voiceEntry.size())
 		this->audio->playSoundAsync(&this->voiceEntry,7,0);
 	if (this->voiceMouseOver.size())

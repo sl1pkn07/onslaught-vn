@@ -73,7 +73,7 @@ ErrorCode getIntVar(NONS_VariableMember *&var,const std::wstring &str,NONS_Varia
 ErrorCode getStrVar(NONS_VariableMember *&var,const std::wstring &str,NONS_VariableStore *store){
 	ErrorCode error=getVar(var,str,store);
 	HANDLE_POSSIBLE_ERRORS(error);
-	if (var->getType()!=INTEGER)
+	if (var->getType()!=STRING)
 		return NONS_EXPECTED_STRING_VARIABLE;
 	return NONS_NO_ERROR;
 }
@@ -133,6 +133,17 @@ NONS_StackElement::NONS_StackElement(NONS_StackElement *copy,const std::vector<s
 	this->textgosubTriggeredBy=copy->textgosubTriggeredBy;
 	this->type=StackFrameType::USERCMD_CALL;
 	this->parameters=vector;
+}
+
+NONS_StackElement::NONS_StackElement(const std::vector<std::wstring> &strings,const std::vector<std::wstring> &jumps,ulong level)
+		:strings(strings),jumps(jumps),type(StackFrameType::CSEL_CALL),buttons(0){
+	this->textgosubLevel=level;
+	this->textgosubTriggeredBy=0;
+}
+
+NONS_StackElement::~NONS_StackElement(){
+	if (this->type==StackFrameType::CSEL_CALL)
+		delete buttons;
 }
 
 ConfigFile settings;
@@ -252,9 +263,9 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"clickvoice"]=              0                                                     |ALLOW_IN_DEFINE             ;
 	this->commandList[L"cmp"]=                     &NONS_ScriptInterpreter::command_cmp                  |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"cos"]=                     &NONS_ScriptInterpreter::command_add                  |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
-	this->commandList[L"csel"]=                    0                                                                     |ALLOW_IN_RUN;
-	this->commandList[L"cselbtn"]=                 0                                                                     |ALLOW_IN_RUN;
-	this->commandList[L"cselgoto"]=                0                                                     |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
+	this->commandList[L"csel"]=                    &NONS_ScriptInterpreter::command_csel                                 |ALLOW_IN_RUN;
+	this->commandList[L"cselbtn"]=                 &NONS_ScriptInterpreter::command_cselbtn                              |ALLOW_IN_RUN;
+	this->commandList[L"cselgoto"]=                &NONS_ScriptInterpreter::command_cselgoto             |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"csp"]=                     &NONS_ScriptInterpreter::command_csp                                  |ALLOW_IN_RUN;
 	this->commandList[L"date"]=                    &NONS_ScriptInterpreter::command_date                                 |ALLOW_IN_RUN;
 	this->commandList[L"dec"]=                     &NONS_ScriptInterpreter::command_inc                  |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
@@ -299,8 +310,8 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"game"]=                    &NONS_ScriptInterpreter::command_game                 |ALLOW_IN_DEFINE             ;
 	this->commandList[L"getbgmvol"]=               &NONS_ScriptInterpreter::command_getmp3vol                            |ALLOW_IN_RUN;
 	this->commandList[L"getbtntimer"]=             &NONS_ScriptInterpreter::command_getbtntimer                          |ALLOW_IN_RUN;
-	this->commandList[L"getcselnum"]=              0                                                                     |ALLOW_IN_RUN;
-	this->commandList[L"getcselstr"]=              0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"getcselnum"]=              &NONS_ScriptInterpreter::command_getcselnum                           |ALLOW_IN_RUN;
+	this->commandList[L"getcselstr"]=              &NONS_ScriptInterpreter::command_getcselstr                           |ALLOW_IN_RUN;
 	this->commandList[L"getcursor"]=               &NONS_ScriptInterpreter::command_getcursor                            |ALLOW_IN_RUN;
 	this->commandList[L"getcursorpos"]=            &NONS_ScriptInterpreter::command_getcursorpos                         |ALLOW_IN_RUN;
 	this->commandList[L"getenter"]=                &NONS_ScriptInterpreter::command_getenter                             |ALLOW_IN_RUN;
@@ -445,7 +456,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"savetime"]=                &NONS_ScriptInterpreter::command_savetime                             |ALLOW_IN_RUN;
 	this->commandList[L"savetime2"]=               &NONS_ScriptInterpreter::command_savetime2                            |ALLOW_IN_RUN;
 	this->commandList[L"select"]=                  &NONS_ScriptInterpreter::command_select                               |ALLOW_IN_RUN;
-	this->commandList[L"selectbtnwait"]=           0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"selectbtnwait"]=           &NONS_ScriptInterpreter::command_selectbtnwait                        |ALLOW_IN_RUN;
 	this->commandList[L"selectcolor"]=             &NONS_ScriptInterpreter::command_selectcolor          |ALLOW_IN_DEFINE             ;
 	this->commandList[L"selectvoice"]=             &NONS_ScriptInterpreter::command_selectvoice          |ALLOW_IN_DEFINE             ;
 	this->commandList[L"selgosub"]=                &NONS_ScriptInterpreter::command_select                               |ALLOW_IN_RUN;
@@ -1128,6 +1139,15 @@ bool NONS_ScriptInterpreter::generic_play(const std::wstring &filename,bool from
 					"NONS_ScriptInterpreter::generic_play",
 					0
 				),NONS_NO_ERROR_FLAG);
+	}
+	return 0;
+}
+
+NONS_StackElement *NONS_ScriptInterpreter::get_last_csel_frame() const{
+	for (size_t a=this->callStack.size();a;a--){
+		NONS_StackElement *el=this->callStack[a-1];
+		if (el->type==StackFrameType::CSEL_CALL)
+			return el;
 	}
 	return 0;
 }
@@ -2858,6 +2878,85 @@ ErrorCode NONS_ScriptInterpreter::command_cmp(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_csel(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	if (stmt.parameters.size()%2)
+		return NONS_INSUFFICIENT_PARAMETERS;
+	if (!this->script->blockFromLabel(L"*customsel"))
+		return NONS_CUSTOMSEL_NOT_DEFINED;
+	std::vector<std::wstring> strings,jumps;
+	for (ulong a=0;a<stmt.parameters.size();a++){
+		std::wstring temp;
+		GET_STR_VALUE(temp,a);
+		strings.push_back(temp);
+		a++;
+		GET_LABEL(temp,a);
+		jumps.push_back(temp);
+	}
+	this->callStack.push_back(new NONS_StackElement(strings,jumps,this->insideTextgosub()));
+	this->goto_label(L"*customsel");
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_cselbtn(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(4);
+	long string_index,
+		button_index,
+		x,y;
+	GET_INT_VALUE(string_index,0);
+	GET_INT_VALUE(button_index,1);
+	GET_INT_COORDINATE(x,0,2);
+	GET_INT_COORDINATE(y,1,3);
+	NONS_StackElement *frame=this->get_last_csel_frame();
+	if (!frame)
+		return NONS_NOT_IN_CSEL_CALL;
+	if (string_index<0 || (size_t)string_index>=frame->strings.size())
+		return NONS_NOT_ENOUGH_PARAMETERS_TO_CSEL;
+	NONS_TextButton *button=new NONS_TextButton(
+		frame->strings[string_index],
+		*this->font_cache,
+		0,
+		this->selectOn,
+		this->selectOff,
+		!!this->screen->output->shadowLayer
+	);
+	if (!frame->buttons){
+		frame->buttons=new NONS_ButtonLayer(*this->font_cache,this->screen,0,this->menu);
+		frame->buttons->voiceEntry=this->selectVoiceEntry;
+		frame->buttons->voiceMouseOver=this->selectVoiceMouseOver;
+		frame->buttons->voiceClick=this->selectVoiceClick;
+		frame->buttons->audio=this->audio;
+	}
+	if (frame->buttons->buttons.size()<=(size_t)button_index)
+		frame->buttons->buttons.resize(button_index+1,0);
+	button->setPosx()=x;
+	button->setPosy()=y;
+	frame->buttons->buttons[button_index]=button;
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_cselgoto(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long label_index;
+	GET_INT_VALUE(label_index,0);
+	NONS_StackElement *frame=this->get_last_csel_frame();
+	if (!frame)
+		return NONS_NOT_IN_CSEL_CALL;
+	if (label_index<0 || (size_t)label_index>=frame->jumps.size())
+		return NONS_NOT_ENOUGH_PARAMETERS_TO_CSEL;
+	std::wstring label=frame->jumps[label_index];
+	if (!this->script->blockFromLabel(label))
+		return NONS_NO_SUCH_BLOCK;
+	while (this->callStack.back()!=frame){
+		delete this->callStack.back();
+		this->callStack.pop_back();
+	}
+	delete this->callStack.back();
+	this->callStack.pop_back();
+	this->goto_label(label);
+	return NONS_NO_ERROR;
+}
+
 ErrorCode NONS_ScriptInterpreter::command_csp(NONS_Statement &stmt){
 	long n=-1;
 	if (stmt.parameters.size()>0)
@@ -3256,6 +3355,32 @@ ErrorCode NONS_ScriptInterpreter::command_getbtntimer(NONS_Statement &stmt){
 	NONS_VariableMember *var;
 	GET_INT_VARIABLE(var,0);
 	var->set(long(NONS_Clock().get()-this->btnTimer));
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getcselnum(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	NONS_VariableMember *dst;
+	GET_STR_VARIABLE(dst,0);
+	NONS_StackElement *frame=this->get_last_csel_frame();
+	if (!frame)
+		return NONS_NOT_IN_CSEL_CALL;
+	dst->set(frame->jumps.size());
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getcselstr(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	NONS_VariableMember *dst;
+	long index;
+	GET_STR_VARIABLE(dst,0);
+	GET_INT_VALUE(index,1);
+	NONS_StackElement *frame=this->get_last_csel_frame();
+	if (!frame)
+		return NONS_NOT_IN_CSEL_CALL;
+	if (index<0 || (size_t)index>=frame->strings.size())
+		return NONS_NOT_ENOUGH_PARAMETERS_TO_CSEL;
+	dst->set(frame->strings[index]);
 	return NONS_NO_ERROR;
 }
 
@@ -4648,6 +4773,21 @@ ErrorCode NONS_ScriptInterpreter::command_select(NONS_Statement &stmt){
 		}
 		this->thread->gotoLabel(jumps[choice]);
 	}
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_selectbtnwait(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	NONS_VariableMember *dst;
+	GET_INT_VARIABLE(dst,0);
+	NONS_StackElement *frame=this->get_last_csel_frame();
+	if (!frame)
+		return NONS_NOT_IN_CSEL_CALL;
+	if (!frame->buttons)
+		return NONS_NO_BUTTONS_DEFINED;
+	ctrlIsPressed=0;
+	this->screen->showTextWindow();
+	dst->set(frame->buttons->getUserInput(0,0,0));
 	return NONS_NO_ERROR;
 }
 

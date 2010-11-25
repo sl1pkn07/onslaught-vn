@@ -1,12 +1,13 @@
 ????????
 Newly implemented commands:
-  bar, barclear, btndown, chvol, dwaveplay, dwaveplayloop, dwavestop,
-  getmousepos, getsevol, lookbacksp, movemousecursor, setwindow2, sevol, spbtn,
-  splitstring, texthide, textshow
+  bar, barclear, btndown, chvol, csel, cselgoto, dwaveplay, dwaveplayloop,
+  dwavestop, getcselnum, getcselstr, getmousepos, getsevol, lookbacksp,
+  movemousecursor, selectbtnwait, setwindow2, sevol, spbtn, splitstring,
+  texthide, textshow
 
 Important changes:
-  * Moved macro interpreter to Python. TODO: Update documentation and add error
-    handling.
+  * Moved macro interpreter to Python.
+    TODO: Update documentation and add error handling.
 
 Bug fixes:
   * Plugged memory leak in various routines.
@@ -14,6 +15,7 @@ Bug fixes:
   * Added missing \t escape sequence to expression parser.
   * Fixed stack overflow in video player.
   * Incorrect behavior in volume setting fixed.
+  * Fixed old bug when passing output variables to commands.
 
 
 20100714
