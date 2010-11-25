@@ -245,7 +245,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"cellcheckexbtn"]=          0                                                                     |ALLOW_IN_RUN;
 	this->commandList[L"cellcheckspbtn"]=          0                                                                     |ALLOW_IN_RUN;
 	this->commandList[L"checkpage"]=               &NONS_ScriptInterpreter::command_checkpage                            |ALLOW_IN_RUN;
-	this->commandList[L"chvol"]=                   0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"chvol"]=                   &NONS_ScriptInterpreter::command_chvol                                |ALLOW_IN_RUN;
 	this->commandList[L"cl"]=                      &NONS_ScriptInterpreter::command_cl                                   |ALLOW_IN_RUN;
 	this->commandList[L"click"]=                   &NONS_ScriptInterpreter::command_click                                |ALLOW_IN_RUN;
 	this->commandList[L"clickstr"]=                &NONS_ScriptInterpreter::command_clickstr             |ALLOW_IN_DEFINE             ;
@@ -307,7 +307,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"getfunction"]=             &NONS_ScriptInterpreter::command_getfunction                          |ALLOW_IN_RUN;
 	this->commandList[L"getinsert"]=               &NONS_ScriptInterpreter::command_getinsert                            |ALLOW_IN_RUN;
 	this->commandList[L"getlog"]=                  &NONS_ScriptInterpreter::command_getlog                               |ALLOW_IN_RUN;
-	this->commandList[L"getmousepos"]=             0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"getmousepos"]=             &NONS_ScriptInterpreter::command_getmousepos                          |ALLOW_IN_RUN;
 	this->commandList[L"getmp3vol"]=               &NONS_ScriptInterpreter::command_getmp3vol                            |ALLOW_IN_RUN;
 	this->commandList[L"getpage"]=                 &NONS_ScriptInterpreter::command_getpage                              |ALLOW_IN_RUN;
 	this->commandList[L"getpageup"]=               &NONS_ScriptInterpreter::command_undocumented                         |ALLOW_IN_RUN;
@@ -315,7 +315,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"getreg"]=                  &NONS_ScriptInterpreter::command_unimplemented        |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"getret"]=                  &NONS_ScriptInterpreter::command_unimplemented        |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"getscreenshot"]=           &NONS_ScriptInterpreter::command_getscreenshot                        |ALLOW_IN_RUN;
-	this->commandList[L"getsevol"]=                &NONS_ScriptInterpreter::command_undocumented                         |ALLOW_IN_RUN;
+	this->commandList[L"getsevol"]=                &NONS_ScriptInterpreter::command_getsevol                             |ALLOW_IN_RUN;
 	this->commandList[L"getspmode"]=               0                                                                     |ALLOW_IN_RUN;
 	this->commandList[L"getspsize"]=               0                                                                     |ALLOW_IN_RUN;
 	this->commandList[L"gettab"]=                  &NONS_ScriptInterpreter::command_gettab                               |ALLOW_IN_RUN;
@@ -455,7 +455,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"setwindow"]=               &NONS_ScriptInterpreter::command_setwindow                            |ALLOW_IN_RUN;
 	this->commandList[L"setwindow2"]=              &NONS_ScriptInterpreter::command_setwindow2                           |ALLOW_IN_RUN;
 	this->commandList[L"setwindow3"]=              0                                                                     |ALLOW_IN_RUN;
-	this->commandList[L"sevol"]=                   0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"sevol"]=                   &NONS_ScriptInterpreter::command_sevol                                |ALLOW_IN_RUN;
 	this->commandList[L"shadedistance"]=           &NONS_ScriptInterpreter::command_shadedistance        |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"sin"]=                     &NONS_ScriptInterpreter::command_add                  |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"skip"]=                    &NONS_ScriptInterpreter::command_skip                 |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
@@ -467,7 +467,7 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->commandList[L"spi"]=                     &NONS_ScriptInterpreter::command_unimplemented        |ALLOW_IN_DEFINE             ;
 	this->commandList[L"split"]=                   &NONS_ScriptInterpreter::command_split                |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
 	this->commandList[L"splitstring"]=             &NONS_ScriptInterpreter::command_split                |ALLOW_IN_DEFINE|ALLOW_IN_RUN;
-	this->commandList[L"spreload"]=                0                                                                     |ALLOW_IN_RUN;
+	this->commandList[L"spreload"]=                &NONS_ScriptInterpreter::command_undocumented                         |ALLOW_IN_RUN;
 	this->commandList[L"spstr"]=                   0                                                                     |ALLOW_IN_RUN;
 	this->commandList[L"stop"]=                    &NONS_ScriptInterpreter::command_stop                                 |ALLOW_IN_RUN;
 	this->commandList[L"stralias"]=                &NONS_ScriptInterpreter::command_alias                |ALLOW_IN_DEFINE             ;
@@ -2775,6 +2775,17 @@ ErrorCode NONS_ScriptInterpreter::command_checkpage(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_chvol(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	long channel,
+		volume;
+	GET_INT_VALUE(channel,0);
+	GET_INT_VALUE(volume,1);
+	NONS_Audio::set_channel_volume(channel,volume);
+	Mix_Volume(channel,volume);
+	return NONS_NO_ERROR;
+}
+
 ErrorCode NONS_ScriptInterpreter::command_cl(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(2);
 	switch (NONS_tolower(stmt.parameters[0][0])){
@@ -3344,6 +3355,19 @@ ErrorCode NONS_ScriptInterpreter::command_getlog(NONS_Statement &stmt){
 	return NONS_NO_ERROR;
 }
 
+ErrorCode NONS_ScriptInterpreter::command_getmousepos(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(2);
+	NONS_VariableMember *dst_x,
+		*dst_y;
+	GET_INT_VARIABLE(dst_x,0);
+	GET_INT_VARIABLE(dst_y,1);
+	int x,y;
+	SDL_GetMouseState(&x,&y);
+	dst_x->set(x);
+	dst_y->set(y);
+	return NONS_NO_ERROR;
+}
+
 ErrorCode NONS_ScriptInterpreter::command_getmp3vol(NONS_Statement &stmt){
 	MINIMUM_PARAMETERS(1);
 	NONS_VariableMember *dst;
@@ -3438,6 +3462,14 @@ ErrorCode NONS_ScriptInterpreter::command_getscreenshot(NONS_Statement &stmt){
 	if (w<=0 || h<=0)
 		return NONS_INVALID_RUNTIME_PARAMETER_VALUE;
 	this->screenshot=this->screen->screen->get_screen().resize(w,h);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_getsevol(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	NONS_VariableMember *dst;
+	GET_INT_VARIABLE(dst,0);
+	dst->set(this->audio->soundVolume(-1));
 	return NONS_NO_ERROR;
 }
 
@@ -4823,6 +4855,14 @@ ErrorCode NONS_ScriptInterpreter::command_setwindow2(NONS_Statement &stmt){
 	}else
 		layer->usePicAsDefaultShade(string);
 	this->screen->BlendNoCursor(1);
+	return NONS_NO_ERROR;
+}
+
+ErrorCode NONS_ScriptInterpreter::command_sevol(NONS_Statement &stmt){
+	MINIMUM_PARAMETERS(1);
+	long vol;
+	GET_INT_VALUE(vol,0);
+	this->audio->soundVolume(vol);
 	return NONS_NO_ERROR;
 }
 

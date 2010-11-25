@@ -411,6 +411,10 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_btndown(NONS_Statement &stmt);
 	ErrorCode command_lookbacksp(NONS_Statement &stmt);
 	ErrorCode command_spbtn(NONS_Statement &stmt);
+	ErrorCode command_sevol(NONS_Statement &stmt);
+	ErrorCode command_getsevol(NONS_Statement &stmt);
+	ErrorCode command_getmousepos(NONS_Statement &stmt);
+	ErrorCode command_chvol(NONS_Statement &stmt);
 	/*
 	ErrorCode command_(NONS_Statement &stmt);
 	*/
