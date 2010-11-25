@@ -135,6 +135,9 @@ typedef Uint32 ErrorCode;
 #define NONS_EXPECTED_INTEGRAL_VALUE				89
 #define NONS_EXPECTED_STRING_VALUE					90
 #define NONS_NOT_ALLOWED_IN_RUN_MODE				91
+#define NONS_CUSTOMSEL_NOT_DEFINED					92
+#define NONS_NOT_IN_CSEL_CALL						93
+#define NONS_NOT_ENOUGH_PARAMETERS_TO_CSEL			94
 
 extern const char *errorMessages[];
 #endif
