@@ -55,7 +55,7 @@ const double pi=3.1415926535897932384626433832795;
 	if (possible_error!=NONS_NO_ERROR)\
 		return possible_error;\
 }
-#define CHECK_FLAG(x,y) (((x)&(y))==(y))
+#define CHECK_FLAG(flag,pattern) (((flag)&(pattern))==(pattern))
 #ifdef USE_ACCURATE_MULTIPLICATION
 //Accurate version:
 #define INTEGER_MULTIPLICATION(a,b) (((a)*(b))/255)
@@ -787,31 +787,6 @@ std::basic_string<T> generate_filename(){
 	r.append(itoa<T>(SDL_GetTicks(),10));
 	return r;
 }
-
-/*
-Performs alpha blend between two pixels. None, either, or both pixels may
-actually have an alpha channel; the function will perform correctly. A
-general alpha may be applied to the source pixel (this is used when blending
-a surface with a second alpha value applied to the whole surface).
-
-Parameters:
-	r1, g1, b1, a1:
-		Pointers to the destination pixel's red, green, blue, and alpha
-		channels. If !alpha1, a1 is ignored.
-	r0, g0, b0, a0:
-		Values of the source pixel's red, green, blue, and alpha channels. If
-		!alpha0, a0 is ignored.
-		These are longs just to help internal computations. You shouldn't pass
-		abnormal values to these parameters.
-	alpha1:
-		Whether the destination pixel has an alpha channel.
-	alpha0:
-		Whether the source pixel has an alpha channel.
-	alpha:
-		General alpha value to apply to the source pixel. Leave as 255 if not
-		used.
-*/
-void do_alpha_blend(uchar *r1,uchar *g1,uchar *b1,uchar *a1,long r0,long g0,long b0,long a0,bool alpha1,bool alpha0,uchar alpha);
 
 template <typename dst_t,typename src_t>
 void append(dst_t &dst,const src_t &src,size_t start_from=0){

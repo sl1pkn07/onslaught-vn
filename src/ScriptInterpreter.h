@@ -180,6 +180,11 @@ class NONS_ScriptInterpreter{
 	bool was_initialized;
 	void uninit();
 	void init();
+	NONS_StackElement *get_last_frame_of_type(StackFrameType::StackFrameType) const;
+	NONS_StackElement *get_last_textgosub_frame() const{ return this->get_last_frame_of_type(StackFrameType::TEXTGOSUB_CALL); }
+	NONS_StackElement *get_last_csel_frame() const{ return this->get_last_frame_of_type(StackFrameType::CSEL_CALL); }
+	void parse_tag(std::wstring &s);
+	void handle_wait_state(std::vector<printingPage> &pages,std::vector<printingPage>::iterator,ulong stop,wchar_t trigger,long add);
 
 	bool stop_interpreting;
 	commandMapType commandList;
@@ -235,6 +240,8 @@ class NONS_ScriptInterpreter{
 	std::queue<NONS_ScriptLine *> commandQueue;
 	ulong base_size[2],
 		virtual_size[2];
+	std::wstring pretextgosub_label;
+	std::vector<std::wstring> tags;
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);
@@ -426,6 +433,10 @@ class NONS_ScriptInterpreter{
 	ErrorCode command_getcselnum(NONS_Statement &stmt);
 	ErrorCode command_cselbtn(NONS_Statement &stmt);
 	ErrorCode command_selectbtnwait(NONS_Statement &stmt);
+	ErrorCode command_pretextgosub(NONS_Statement &stmt);
+	ErrorCode command_gettag(NONS_Statement &stmt);
+	ErrorCode command_textcolor(NONS_Statement &stmt);
+	ErrorCode command_texec(NONS_Statement &stmt);
 	/*
 	ErrorCode command_(NONS_Statement &stmt);
 	*/
@@ -448,7 +459,6 @@ public:
 	ErrorCode load(int file);
 	bool save(int file);
 	std::wstring convertParametersToString(NONS_Statement &line);
-	ulong getCurrentTextgosubLevel();
 	ulong insideTextgosub();
 	bool goto_label(const std::wstring &label);
 	bool gosub_label(const std::wstring &label);
@@ -460,7 +470,6 @@ public:
 	void queue(NONS_ScriptLine *line);
 	bool generic_play(const std::wstring &filename,bool from_archive);
 	ErrorCode play_video(const std::wstring &filename,bool skippable);
-	NONS_StackElement *get_last_csel_frame() const;
 };
 
 extern NONS_ScriptInterpreter *gScriptInterpreter;
