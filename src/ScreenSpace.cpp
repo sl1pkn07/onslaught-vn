@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2011, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -154,7 +154,7 @@ bool NONS_Layer::load(const NONS_Surface &src){
 
 void NONS_Layer::unload(){
 	assert(this!=0);
-	if (!this || !this->data)
+	if (!this->data)
 		return;
 
 	this->data.unbind();
@@ -565,8 +565,10 @@ void NONS_StandardOutput::ephemeralOut(const std::wstring &str,const NONS_Surfac
 				CHECK_POINTER_AND_CALL(glyph2,put(this->shadowLayer->data,x+1,y+1));
 				glyph->put(this->foregroundLayer->data,x,y);
 			}
-			CHECK_POINTER_AND_CALL(glyph2,put(dst,x+1,y+1));
-			glyph->put(dst,x,y);
+			if (dst){
+				CHECK_POINTER_AND_CALL(glyph2,put(dst,x+1,y+1));
+				glyph->put(dst,x,y);
+			}
 			x+=glyph->get_advance();
 			glyph->done();
 			CHECK_POINTER_AND_CALL(glyph2,done());
@@ -577,11 +579,12 @@ void NONS_StandardOutput::ephemeralOut(const std::wstring &str,const NONS_Surfac
 }
 
 void NONS_StandardOutput::ephemeralOut(const std::wstring &str,NONS_VirtualScreen *dst,bool update,bool writeToLayers,const NONS_Color *col){
-	if (!!dst){
+	if (dst){
 		this->ephemeralOut(str,dst->get_screen(),writeToLayers,col);
 		if (update)
 			dst->updateWholeScreen();
-	}
+	}else
+		this->ephemeralOut(str,NONS_Surface(),writeToLayers,col);
 }
 
 int NONS_StandardOutput::setLineStart(std::wstring *arr,ulong start,NONS_LongRect *frame,float center){

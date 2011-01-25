@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2011, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -384,7 +384,7 @@ int main(int argc,char **argv){
 
 void mainThread(void *){
 	if (CLOptions.play.size())
-		gScriptInterpreter->generic_play(CLOptions.play,CLOptions.play_from_archive);
+		gScriptInterpreter->generic_play(CLOptions.play);
 	else
 		while (gScriptInterpreter->interpretNextLine());
 	stopEventHandling=1;
