@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2011, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ const double pi=3.1415926535897932384626433832795;
 //Fast version:
 #define INTEGER_MULTIPLICATION(a,b) (((a)*(b))>>8)
 #endif
-#define CHECK_POINTER_AND_CALL(p,c) if (p) p->c
+#define CHECK_POINTER_AND_CALL(p,c) if (p) (p)->c
 
 //string functions
 template <typename T,typename T2>

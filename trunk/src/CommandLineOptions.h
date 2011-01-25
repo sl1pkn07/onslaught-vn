@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2011, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -60,9 +60,9 @@ struct NONS_CommandLineOptions{
 	bool noThreads;
 	bool preprocessAndQuit;
 	std::wstring play;
-	bool play_from_archive;
 	typedef std::map<wchar_t,wchar_t> replaceArray_t;
 	replaceArray_t replaceArray;
+	bool use_long_audio_buffers;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);

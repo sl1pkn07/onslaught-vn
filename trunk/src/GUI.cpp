@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2008-2010, Helios (helios.vmg@gmail.com)
+* Copyright (c) 2008-2011, Helios (helios.vmg@gmail.com)
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -1677,8 +1677,9 @@ void NONS_FontCache::reset_style(ulong size,bool italic,bool bold,ulong outline_
 }
 
 NONS_Glyph *NONS_FontCache::get_glyph(wchar_t c){
-	NONS_CommandLineOptions::replaceArray_t::iterator i=CLOptions.replaceArray.find(c);
-	if (i!=CLOptions.replaceArray.end())
+	NONS_CommandLineOptions::replaceArray_t &array=CLOptions.replaceArray;
+	NONS_CommandLineOptions::replaceArray_t::iterator i=array.size()?array.find(c):array.end();
+	if (i!=array.end())
 		c=i->second;
 	if (c<32)
 		return 0;
