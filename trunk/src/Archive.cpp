@@ -438,7 +438,7 @@ uchar *decompress_memory_to_new_memory(size_t &dst_l,void *src,size_t src_l,T co
 	for (ulong a=0;a<dtus.final_size;){
 		size_t b=temp.front().size();
 		if (b)
-			memcpy(ret,&(temp.front())[0],b);
+			memcpy(ret+a,&(temp.front())[0],b);
 		a+=b;
 		temp.pop_front();
 	}
@@ -1195,6 +1195,7 @@ void NONS_GeneralArchive::init(){
 			L".sar",
 			L".nsa",
 			L".zip",
+			L".oaf",
 			0
 		};
 	this->archives.push_back(&filesystem);
@@ -1233,6 +1234,7 @@ void NONS_GeneralArchive::init(){
 				ds=new NONS_nsaArchiveSource(full_name,1);
 				break;
 			case 2:
+			case 3:
 				ds=new NONS_zipArchiveSource(full_name);
 				break;
 		}
