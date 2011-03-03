@@ -63,10 +63,10 @@ public:
 	~NONS_File(){ this->close(); }
 	void open(const std::wstring &path,bool open_for_read);
 	void close();
-	bool operator!();
-	bool read(void *dst,size_t read_bytes,size_t &bytes_read,Uint64 offset);
+	bool operator!() const;
+	bool read(void *dst,size_t read_bytes,size_t &bytes_read,Uint64 offset) const;
 	bool read(void *dst,size_t &bytes_read){ return this->read(dst,(size_t)this->_filesize,bytes_read,0); }
-	type *read(size_t read_bytes,size_t &bytes_read,Uint64 offset);
+	type *read(size_t read_bytes,size_t &bytes_read,Uint64 offset) const;
 	type *read(size_t &bytes_read){ return this->read((size_t)this->_filesize,bytes_read,0); }
 	bool write(void *buffer,size_t size,bool write_at_end=1);
 	Uint64 filesize(){ return (this->opened_for_read)?this->_filesize:this->reload_filesize(); }
@@ -136,21 +136,30 @@ public:
 
 struct NONS_RedirectedOutput{
 	std::ofstream *file;
+#ifndef NONS_NO_STDOUT
 	std::ostream &cout;
+#endif
 #if NONS_SYS_WINDOWS
 	VirtualConsole *vc;
 #endif
 	ulong indentation;
 	bool addIndentationNext;
+#ifndef NONS_NO_STDOUT
 	NONS_RedirectedOutput(std::ostream &a);
+#else
+	NONS_RedirectedOutput(std::ofstream *a);
+#endif
 	~NONS_RedirectedOutput();
 	NONS_RedirectedOutput &operator<<(ulong);
 	NONS_RedirectedOutput &operator<<(long);
 	NONS_RedirectedOutput &operator<<(wchar_t);
+	NONS_RedirectedOutput &operator<<(double);
 	NONS_RedirectedOutput &operator<<(const char *);
 	NONS_RedirectedOutput &operator<<(const std::string &);
 	NONS_RedirectedOutput &operator<<(const std::wstring &);
+#ifndef NONS_NO_STDOUT
 	void redirect();
+#endif
 	void indent(long);
 private:
 	void write_to_stream(const std::stringstream &str);
@@ -167,7 +176,7 @@ class NONS_DataSource{
 	std::list<NONS_DataStream *> streams;
 public:
 	virtual ~NONS_DataSource();
-	virtual NONS_DataStream *open(const std::wstring &name)=0;
+	virtual NONS_DataStream *open(const std::wstring &name,bool keep_in_memory)=0;
 	NONS_DataStream *open(NONS_DataStream *p,const std::wstring &path);
 	virtual bool close(NONS_DataStream *stream);
 	virtual bool get_size(Uint64 &size,const std::wstring &name)=0;
@@ -176,12 +185,14 @@ public:
 	virtual bool exists(const std::wstring &name)=0;
 };
 
+std::wstring get_temp_path();
+
 class NONS_FileSystem:public NONS_DataSource{
 	NONS_Mutex mutex;
 	ulong temp_id;
 public:
 	NONS_FileSystem():temp_id(0){}
-	NONS_DataStream *open(const std::wstring &name);
+	NONS_DataStream *open(const std::wstring &name,bool keep_in_memory);
 	NONS_DataStream *new_temporary_file(const std::wstring &path);
 	bool get_size(Uint64 &size,const std::wstring &name){
 		return NONS_File::get_file_size(size,name);
@@ -192,18 +203,37 @@ public:
 	uchar *read_all(const std::wstring &name,size_t &bytes_read){
 		return (uchar *)NONS_File::read(name,bytes_read);
 	}
-	bool exists(const std::wstring &name){
+	bool exists(const std::wstring &path){
+		std::wstring name=path;
+		toforwardslash(name);
 		return NONS_File::file_exists(name);
 	}
-	std::wstring new_temp_name(){
-		this->mutex.lock();
-		ulong id=this->temp_id++;
-		this->mutex.unlock();
-		return L"__ONSlaught_temp_"+itoaw(id)+L".tmp";
+	std::wstring new_temp_name();
+};
+
+class NONS_MemoryFS:public NONS_DataSource{
+	NONS_Mutex mutex;
+public:
+	NONS_DataStream *open(const std::wstring &name,bool){
+		return 0;
+	}
+	NONS_DataStream *new_temporary_file(const void *src,size_t n);
+	bool get_size(Uint64 &size,const std::wstring &name){
+		return 0;
+	}
+	bool read(void *dst,size_t &bytes_read,NONS_DataStream &stream,size_t count){
+		return 0;
+	}
+	uchar *read_all(const std::wstring &name,size_t &bytes_read){
+		return 0;
+	}
+	bool exists(const std::wstring &name){
+		return 0;
 	}
 };
 
 extern NONS_FileSystem filesystem;
+extern NONS_MemoryFS memoryFS;
 
 class NONS_DataStream{
 protected:
@@ -217,6 +247,7 @@ public:
 	virtual ~NONS_DataStream(){}
 	virtual bool read(void *dst,size_t &bytes_read,size_t count)=0;
 	virtual Uint64 seek(Sint64 offset,int direction);
+	Uint64 stdio_seek(Sint64 offset,int direction);
 	void reset(){ this->seek(0,1); }
 	void read_all(std::vector<uchar> &dst){
 		this->reset();
@@ -241,13 +272,24 @@ protected:
 	NONS_File file;
 public:
 	NONS_InputFile(NONS_DataSource &ds,const std::wstring &name);
+	virtual ~NONS_InputFile(){}
 	bool read(void *dst,size_t &bytes_read,size_t count);
 };
 
 class NONS_TemporaryFile:public NONS_InputFile{
 public:
-	NONS_TemporaryFile(NONS_DataSource &ds,const std::wstring &name);
+	NONS_TemporaryFile(NONS_DataSource &ds,const std::wstring &name):NONS_InputFile(ds,name){}
 	~NONS_TemporaryFile();
+};
+
+class NONS_MemoryFile:public NONS_DataStream{
+protected:
+	uchar *data;
+public:
+	NONS_MemoryFile(NONS_DataSource &ds,const void *src,size_t n);
+	NONS_MemoryFile(NONS_DataSource &ds,NONS_File &file);
+	~NONS_MemoryFile();
+	bool read(void *dst,size_t &bytes_read,size_t count);
 };
 
 class NONS_DECLSPEC NONS_Clock{
