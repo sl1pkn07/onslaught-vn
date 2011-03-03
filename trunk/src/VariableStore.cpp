@@ -292,9 +292,9 @@ namespace NONS_Expression{
 		this->expr=0;
 #ifdef _DEBUG
 		if (expressionParser_yydebug)
-			std::cout <<"--------------------------------------------------------------------------------"
-				<<'['<<exp<<']'<<std::endl
-				<<"--------------------------------------------------------------------------------";
+			STD_COUT <<"-------------------------------------------------------------------------------\n"
+				"["<<exp<<"]\n"
+				"-------------------------------------------------------------------------------\n";
 #endif
 		switch (expressionParser_yyparse(&stream,store,this->expr,0)){
 			case 0:
@@ -838,7 +838,7 @@ NONS_VariableStore::NONS_VariableStore(){
 			this->variables[stackpos]=var;
 		}
 	}else{
-		if (firstchars((char *)buffer,"BZh")){
+		if (begins_with((char *)buffer,"BZh")){
 			uchar *temp=decompressBuffer_BZ2(buffer,l,l);
 			delete[] buffer;
 			buffer=(uchar *)temp;
