@@ -32,9 +32,12 @@
 #include "ThreadManager.h"
 #include "IOFunctions.h"
 #include "enums.h"
+#include "tinyxml/tinyxml.h"
 #include <bzlib.h>
-
 #include <cassert>
+#if NONS_SYS_WINDOWS
+#include <windows.h>
+#endif
 
 bool getbit(void *arr,ulong *byteoffset,uchar *bitoffset){
 	uchar *array=(uchar *)arr;
@@ -236,7 +239,6 @@ ErrorCode inPlaceDecryption(void *vbuffer,size_t length,ulong mode){
 }
 
 #if NONS_SYS_WINDOWS
-#include <windows.h>
 extern HWND mainWindow;
 
 BOOL CALLBACK findMainWindow_callback(HWND handle,LPARAM lparam){
@@ -627,4 +629,23 @@ void NONS_tolower(wchar_t *param){
 void NONS_tolower(char *param){
 	for (;*param;param++)
 		*param=NONS_tolower(*param);
+}
+
+template <typename T>
+TiXmlElement *NONS_BasicRect<T>::save(const char *override_name){
+	TiXmlElement *rect=new TiXmlElement(override_name?override_name:"rect");
+	rect->SetAttribute("x",itoac(this->x));
+	rect->SetAttribute("y",itoac(this->y));
+	rect->SetAttribute("w",itoac(this->w));
+	rect->SetAttribute("h",itoac(this->h));
+	return rect;
+}
+template TiXmlElement *NONS_BasicRect<long>::save(const char *override_name);
+
+template <>
+NONS_BasicRect<long>::NONS_BasicRect(TiXmlElement *rect):sdl(0){
+	this->x=rect->QueryIntAttribute("x");
+	this->y=rect->QueryIntAttribute("y");
+	this->w=rect->QueryIntAttribute("w");
+	this->h=rect->QueryIntAttribute("h");
 }

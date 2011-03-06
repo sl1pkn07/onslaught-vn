@@ -52,6 +52,22 @@ void pipelineElement::operator=(const pipelineElement &o){
 	this->ruleStr=o.ruleStr;
 }
 
+TiXmlElement *pipelineElement::save(const char *override_name){
+	TiXmlElement *effect=new TiXmlElement(override_name?override_name:"effect");
+	effect->SetAttribute("effect_no",this->effectNo);
+	effect->LinkEndChild(this->color.save());
+	effect->SetAttribute("rule",(this->rule)?this->ruleStr:L"");
+	return effect;
+}
+
+pipelineElement::pipelineElement(TiXmlElement *effect)
+		:color(effect->FirstChildElement("color")){
+	this->effectNo=effect->QueryIntAttribute("effect_no");
+	this->ruleStr=effect->QueryWStringAttribute("rule");
+	if (this->ruleStr.size())
+		this->rule=this->ruleStr;
+}
+
 void asyncEffectThread(NONS_VirtualScreen *vs){
 	ulong effectNo=vs->aeffect_no;
 	ulong freq=vs->aeffect_freq;
@@ -314,7 +330,7 @@ void NONS_VirtualScreen::initEffectList(){
 }
 
 ErrorCode NONS_VirtualScreen::callEffect(ulong effectNo,ulong frequency){
-	if (this->effects.size()<=effectNo)
+	if (effectNo>=this->effects.size())
 		return NONS_NO_EFFECT;
 	this->stopEffect();
 	{
@@ -465,15 +481,45 @@ void NONS_VirtualScreen::printCurrentState(){
 	STD_COUT <<"3\n";
 }
 
+TiXmlElement *NONS_VirtualScreen::save_async_fx(const char *override_name){
+	TiXmlElement *async_fx=new TiXmlElement("async_fx");
+	if (this->usingFeature[ASYNC_EFFECT]){
+		async_fx->SetAttribute("effect_no",this->aeffect_no);
+		async_fx->SetAttribute("frequency",this->aeffect_freq);
+	}
+	return async_fx;
+}
+
+void NONS_VirtualScreen::load_async_fx(TiXmlElement *parent,const char *name){
+	TiXmlElement *async_fx=parent->FirstChildElement(name?name:"async_fx");
+	this->callEffect(async_fx->QueryIntAttribute("effect_no"),async_fx->QueryIntAttribute("frequency"));
+}
+
+TiXmlElement *NONS_VirtualScreen::save_filter_pipeline(const char *override_name){
+	TiXmlElement *filter_pipeline=new TiXmlElement(override_name?override_name:"filter_pipeline");
+	for (size_t a=0;a<this->filterPipeline.size();a++)
+		filter_pipeline->LinkEndChild(this->filterPipeline[a].save());
+	return filter_pipeline;
+}
+
+void NONS_VirtualScreen::load_filter_pipeline(TiXmlElement *parent,const char *name){
+	TiXmlElement *filter_pipeline=parent->FirstChildElement(name?name:"filter_pipeline");
+	this->applyFilter(0,NONS_Color::black_transparent,L"");
+	for (TiXmlElement *i=filter_pipeline->FirstChildElement();i;i=i->NextSiblingElement()){
+		pipelineElement pe(i);
+		this->applyFilter(pe.effectNo+1,pe.color,pe.ruleStr);
+	}
+}
+
 #define RED_MONOCHROME(x) ((x)*3/10)
 #define GREEN_MONOCHROME(x) ((x)*59/100)
 #define BLUE_MONOCHROME(x) ((x)*11/100)
 
-void effectMonochrome_threaded(NONS_Surface dst,NONS_ConstSurface src,NONS_LongRect rect,NONS_Color color){
+void effectMonochrome_threaded(const NONS_Surface *dst,NONS_ConstSurface src,NONS_LongRect rect,NONS_Color color){
 	NONS_ConstSurfaceProperties src_p;
 	NONS_SurfaceProperties dst_p;
 	src.get_properties(src_p);
-	dst.get_properties(dst_p);
+	dst->get_properties(dst_p);
 	long w=(long)rect.w,
 		h=(long)rect.h;
 	src_p.pixels+=long(rect.x)*4+long(rect.y)*src_p.pitch;
@@ -507,13 +553,13 @@ FILTER_EFFECT_F(effectMonochrome){
 		return;
 	NONS_LongRect &dstRect=area;
 	if (cpu_count==1){
-		effectMonochrome_threaded(dst,src,dstRect,color);
+		effectMonochrome_threaded(&dst,src,dstRect,color);
 		return;
 	}
 #ifndef USE_THREAD_MANAGER
 	std::vector<NONS_Thread> threads(cpu_count);
 #endif
-	BINDER_TYPEDEF_4(monochrome_parameters,NONS_Surface,NONS_ConstSurface,NONS_LongRect,NONS_Color);
+	BINDER_TYPEDEF_4(monochrome_parameters,const NONS_Surface *,NONS_ConstSurface,NONS_LongRect,NONS_Color);
 	std::vector<monochrome_parameters> parameters(cpu_count);
 	ulong division=ulong(float(dstRect.h)/float(cpu_count)),
 		total=0;
@@ -523,7 +569,7 @@ FILTER_EFFECT_F(effectMonochrome){
 	for (ushort a=0;a<cpu_count;a++){
 		monochrome_parameters &p=parameters[a];
 		p=parameters.front();
-		p.pt0=dst;
+		p.pt0=&dst;
 		p.pt1=src;
 		p.pt2=dstRect;
 		p.pt2.y+=a*division;
@@ -547,11 +593,11 @@ FILTER_EFFECT_F(effectMonochrome){
 #endif
 }
                             
-void effectNegative_threaded(NONS_Surface dst,NONS_ConstSurface src,NONS_LongRect rect){
+void effectNegative_threaded(const NONS_Surface *dst,NONS_ConstSurface src,NONS_LongRect rect){
 	NONS_ConstSurfaceProperties src_p;
 	NONS_SurfaceProperties dst_p;
 	src.get_properties(src_p);
-	dst.get_properties(dst_p);
+	dst->get_properties(dst_p);
 	long w=(long)rect.w,
 		h=(long)rect.h;
 	src_p.pixels+=long(rect.x)*4+long(rect.y)*src_p.pitch;
@@ -577,13 +623,13 @@ FILTER_EFFECT_F(effectNegative){
 		return;
 	NONS_LongRect &dstRect=area;
 	if (cpu_count==1){
-		effectMonochrome_threaded(dst,src,dstRect,color);
+		effectMonochrome_threaded(&dst,src,dstRect,color);
 		return;
 	}
 #ifndef USE_THREAD_MANAGER
 	std::vector<NONS_Thread> threads(cpu_count);
 #endif
-	BINDER_TYPEDEF_3(negative_parameters,NONS_Surface,NONS_ConstSurface,NONS_LongRect);
+	BINDER_TYPEDEF_3(negative_parameters,const NONS_Surface *,NONS_ConstSurface,NONS_LongRect);
 	std::vector<negative_parameters> parameters(cpu_count);
 	ulong division=ulong(float(dstRect.h)/float(cpu_count)),
 		total=0;
@@ -593,7 +639,7 @@ FILTER_EFFECT_F(effectNegative){
 	for (ushort a=0;a<cpu_count;a++){
 		negative_parameters &p=parameters[a];
 		p=parameters.front();
-		p.pt0=dst;
+		p.pt0=&dst;
 		p.pt1=src;
 		p.pt2=dstRect;
 		p.pt2.y+=a*division;
