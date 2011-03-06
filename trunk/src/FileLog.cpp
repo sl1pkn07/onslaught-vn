@@ -28,7 +28,6 @@
 */
 
 #include "FileLog.h"
-#include "SaveFile.h"
 #include "IOFunctions.h"
 #include <cstring>
 
@@ -59,7 +58,7 @@ void NONS_LogStrings::init(const std::wstring &oldName,const std::wstring &newNa
 		return;
 	}
 	*str=0;
-	ulong entries=atoi((std::string)(char *)buffer);
+	ulong entries=atol((std::string)(char *)buffer);
 	ulong offset=str-buffer+1;
 	for (;buffer[offset]==10 || buffer[offset]==13;offset++);
 	bool newFormat=0;

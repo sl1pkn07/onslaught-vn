@@ -29,10 +29,10 @@
 
 #include "Script.h"
 #include "IOFunctions.h"
-#include "SaveFile.h"
 #include "sha1.h"
 #include "ScriptInterpreter.h"
 #include "ExpressionParser.tab.hpp"
+#include <iostream>
 
 //Returns then position of the ending quote, of npos if couldn't be found before
 //the end of the string or if there isn't a string beginning at 'start'.
@@ -467,8 +467,6 @@ ErrorCode NONS_Script::init(const std::wstring &scriptname,ENCODING::ENCODING en
 	return NONS_NO_ERROR;
 }
 #else
-#include <iostream>
-
 ErrorCode NONS_Script::init(const std::wstring &scriptname,ENCODING::ENCODING encoding,ENCRYPTION::ENCRYPTION encryption){
 	if (encoding!=ENCODING::UTF8 || encryption!=ENCRYPTION::NONE){
 		this->cache_filename=CACHE_FILENAME;
@@ -647,8 +645,6 @@ NONS_Script::~NONS_Script(){
 NONS_ScriptBlock *NONS_Script::blockFromLabel(std::wstring name){
 	if (name[0]=='*')
 		name=name.substr(1);
-	else
-		name=name;
 	trim_string(name);
 	size_t off;
 	if (!this->blocksByName.size() || !binary_search<NONS_ScriptBlock *,std::wstring>(

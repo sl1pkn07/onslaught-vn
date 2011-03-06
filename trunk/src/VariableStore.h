@@ -34,6 +34,7 @@
 #include "ErrorCodes.h"
 #include "FileLog.h"
 #include "ExpressionParser.tab.hpp"
+#include "tinyxml/tinyxml.h"
 #include <vector>
 #include <map>
 #include <set>
@@ -136,6 +137,10 @@ class NONS_VariableMember{
 	long _long_upper_limit;
 	long _long_lower_limit;
 	const static std::wstring null;
+	void set_default_limits(){
+		this->_long_upper_limit=LONG_MAX;
+		this->_long_lower_limit=LONG_MIN;
+	}
 public:
 	NONS_VariableMember **dimension;
 	ulong dimensionSize;
@@ -145,6 +150,7 @@ public:
 	//Assumes: All dimensions have a non-negative size.
 	NONS_VariableMember(std::vector<long> &sizes,size_t startAt);
 	NONS_VariableMember(const NONS_VariableMember &b);
+	NONS_VariableMember(TiXmlElement *);
 	~NONS_VariableMember();
 	void makeConstant();
 	bool isConstant();
@@ -163,6 +169,7 @@ public:
 	void div(long a);
 	void mod(long a);
 	void setlimits(long lower,long upper);
+	TiXmlElement *save(int index);
 private:
 	void fixint();
 };
@@ -173,7 +180,9 @@ struct NONS_Variable{
 	NONS_Variable();
 	NONS_Variable(const NONS_Variable &b);
 	NONS_Variable &operator=(const NONS_Variable &b);
+	NONS_Variable(TiXmlElement *);
 	~NONS_Variable();
+	TiXmlElement *save(int index);
 };
 
 #define VARIABLE_HAS_NO_DATA(x) (!(x) || !(x)->intValue->getInt() && !(x)->wcsValue->getWcs().size())
@@ -197,6 +206,8 @@ struct NONS_VariableStore{
 	//Destroys all variables and arrays. Use with care!
 	void reset();
 	void saveData();
+	TiXmlElement *save_locals();
+	void load_locals(TiXmlElement *);
 	/*
 	exp: (IN) The expression to be evaluated.
 	invert_terms: (IN) Pass 1 if the expression comes from command_notif and

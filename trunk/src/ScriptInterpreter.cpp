@@ -32,9 +32,15 @@
 #include "CommandLineOptions.h"
 #include "Image.h"
 #include "Plugin/LibraryLoader.h"
+#include "version.h"
+#include "sha1.h"
 #include <iomanip>
 #include <iostream>
-#include "version.h"
+#if NONS_SYS_WINDOWS
+#include <windows.h>
+HWND mainWindow=0;
+#endif
+#include "../video_player.h"
 
 #define MINIMUM_PARAMETERS(min) if (stmt.parameters.size()<(min)) return NONS_INSUFFICIENT_PARAMETERS
 #define GET_INT_VALUE(dst,src) HANDLE_POSSIBLE_ERRORS(this->store->getIntValue(stmt.parameters[(src)],(dst),0))
@@ -73,11 +79,6 @@
 		GET_STR_VALUE((dst),(src));                      \
 	}                                                    \
 }
-
-#if NONS_SYS_WINDOWS
-#include <windows.h>
-HWND mainWindow=0;
-#endif
 
 NONS_DLLexport volatile bool ctrlIsPressed=0;
 NONS_DLLexport volatile bool forceSkip=0;
@@ -184,7 +185,76 @@ NONS_StackElement::~NONS_StackElement(){
 		delete buttons;
 }
 
-ConfigFile settings;
+TiXmlElement *NONS_StackElement::save(NONS_Script *script,NONS_VariableStore *store){
+	TiXmlElement *stack_frame=new TiXmlElement("stack_frame");
+	stack_frame->SetAttribute("type",(int)this->type);
+	NONS_ScriptBlock *block=script->blockFromLine(this->returnTo.line);
+	stack_frame->SetAttribute("label",UniToUTF8(block->name));
+	stack_frame->SetAttribute("lines_below",this->returnTo.line-block->first_line);
+	stack_frame->SetAttribute("substatement",this->returnTo.statement);
+	stack_frame->SetAttribute("textgosub_level",this->textgosubLevel);
+	switch (this->type){
+		case StackFrameType::SUBROUTINE_CALL:
+			stack_frame->SetAttribute("leftovers",UniToUTF8(this->interpretAtReturn.toString()));
+			break;
+		case StackFrameType::FOR_NEST:
+			for (variables_map_T::iterator i2=store->variables.begin();i2!=store->variables.end();++i2){
+				if (i2->second->intValue==this->var){
+					stack_frame->SetAttribute("variable",(int)i2->first);
+					break;
+				}
+			}
+			stack_frame->SetAttribute("to",(int)this->to);
+			stack_frame->SetAttribute("step",(int)this->step);
+			break;
+		/*case StackFrameType::TEXTGOSUB_CALL:
+			break;*/
+		case StackFrameType::USERCMD_CALL:
+			stack_frame->SetAttribute("leftovers",UniToUTF8(this->interpretAtReturn.toString()));
+			for (size_t a=0;a<this->parameters.size();a++){
+				TiXmlElement *parameter=new TiXmlElement("parameter");
+				stack_frame->LinkEndChild(parameter);
+				parameter->SetAttribute("string",this->parameters[a]);
+			}
+			break;
+	}
+	return stack_frame;
+}
+
+NONS_StackElement::NONS_StackElement(TiXmlElement *stack_frame,NONS_Script *script,NONS_VariableStore *store){
+	std::wstring label=stack_frame->QueryWStringAttribute("label");
+	ulong lines_below=stack_frame->QueryIntAttribute("lines_below");
+
+	this->returnTo.line=script->blockFromLabel(label)->first_line+lines_below;
+	this->returnTo.statement=stack_frame->QueryIntAttribute("substatement");
+
+	this->type=(StackFrameType::StackFrameType)stack_frame->QueryIntAttribute("type");
+
+	this->textgosubLevel=stack_frame->QueryIntAttribute("textgosub_level");
+	switch (this->type){
+		case StackFrameType::SUBROUTINE_CALL:
+			{
+				std::wstring leftovers=stack_frame->QueryWStringAttribute("leftovers");
+				this->interpretAtReturn=NONS_ScriptLine(0,leftovers,0,1);
+			}
+			break;
+		case StackFrameType::FOR_NEST:
+			this->var=store->retrieve(stack_frame->QueryIntAttribute("variable"),0)->intValue;
+			this->to=stack_frame->QueryIntAttribute("to");
+			this->step=stack_frame->QueryIntAttribute("step");
+			break;
+		//To be implemented in the future:
+		/*case TEXTGOSUB_CALL:
+			push=new NONS_StackElement(el->pages,el->trigger,el->textgosubLevel);*/
+		case StackFrameType::USERCMD_CALL:
+			{
+				std::wstring leftovers=stack_frame->QueryWStringAttribute("leftovers");
+				this->interpretAtReturn=NONS_ScriptLine(0,leftovers,0,1);
+			}
+			for (TiXmlElement *i=stack_frame->FirstChildElement();i;i=i->NextSiblingElement())
+				this->parameters.push_back(i->QueryWStringAttribute("string"));
+	}
+}
 
 ErrorCode init_script(NONS_Script *&script,const std::wstring &filename,ENCODING::ENCODING encoding,ENCRYPTION::ENCRYPTION encryption){
 	script=new NONS_Script();
@@ -223,12 +293,6 @@ ErrorCode init_script(NONS_Script *&script,ENCODING::ENCODING encoding){
 	return NONS_SCRIPT_NOT_FOUND;
 }
 
-std::wstring getDefaultFontFilename(){
-	if (!settings.exists(L"default font"))
-		settings.assignWString(L"default font",L"default.ttf");
-	return settings.getWString(L"default font");
-}
-
 NONS_ScreenSpace *init_screen(NONS_FontCache &fc){
 	NONS_ScreenSpace *screen=new NONS_ScreenSpace(20,fc);
 	if (!CLOptions.play.size()){
@@ -245,7 +309,6 @@ NONS_ScriptInterpreter::NONS_ScriptInterpreter(bool initialize):stop_interpretin
 	this->pageCursor=0;
 	this->menu=0;
 	this->imageButtons=0;
-	this->saveGame=0;
 	this->screen=0;
 	this->audio=0;
 	this->script=0;
@@ -645,12 +708,33 @@ NONS_ScriptInterpreter::~NONS_ScriptInterpreter(){
 	}
 }
 
+extern TiXmlDocument settings;
+
+void NONS_ScriptInterpreter::load_speed_setting(){
+	this->current_speed_setting=1;
+	TiXmlElement *element=settings.FirstChildElement("settings");
+	if (!element)
+		return;
+	int speed;
+	if (!element->QueryIntAttribute("text_speed",&speed))
+		return;
+	saturate_value(speed,0,2);
+	this->current_speed_setting=(char)speed;
+}
+
+void NONS_ScriptInterpreter::save_speed_setting(){
+	TiXmlElement *element=settings.FirstChildElement("settings");
+	if (!element)
+		return;
+	element->SetAttribute("text_speed",(int)this->current_speed_setting);
+}
+
 void NONS_ScriptInterpreter::init(){
 	this->defaultfs=18;
 	this->base_size[0]=this->virtual_size[0]=CLOptions.virtualWidth;
 	this->base_size[1]=this->virtual_size[1]=CLOptions.virtualHeight;
 	if (!CLOptions.play.size()){
-		std::wstring fontfile=getDefaultFontFilename();
+		const std::wstring &fontfile=CLOptions.default_font;
 		if (!this->main_font)
 			this->main_font=init_font(fontfile);
 		if (!this->main_font || !this->main_font->good()){
@@ -678,9 +762,6 @@ void NONS_ScriptInterpreter::init(){
 			}
 		}
 		this->thread=new NONS_ScriptThread(this->script);
-		this->saveGame=new NONS_SaveFile;
-		this->saveGame->format='N';
-		memcpy(this->saveGame->hash,this->script->hash,sizeof(unsigned)*5);
 	}
 	{
 		labellog.init(L"NScrllog.dat",L"nonsllog.dat");
@@ -701,10 +782,7 @@ void NONS_ScriptInterpreter::init(){
 	this->default_speed_med=0;
 	this->default_speed_fast=0;
 
-	if (settings.exists(L"textSpeedMode"))
-		this->current_speed_setting=(char)settings.getInt(L"textSpeedMode");
-	else
-		this->current_speed_setting=1;
+	this->load_speed_setting();
 
 	this->legacy_set_window=1;
 	this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->screen);
@@ -732,6 +810,7 @@ void NONS_ScriptInterpreter::init(){
 	this->screen->char_baseline=(long)this->screen->screen->inRect.h-1;
 	this->useWheel=0;
 	this->useEscapeSpace=0;
+	this->skip_save_on_load=0;
 }
 
 void NONS_ScriptInterpreter::uninit(){
@@ -748,12 +827,11 @@ void NONS_ScriptInterpreter::uninit(){
 	this->selectVoiceMouseOver.clear();
 	this->clickStr.clear();
 	delete this->imageButtons;
-	delete this->saveGame;
 	delete this->thread;
 	delete this->audio;
 
-	settings.assignInt(L"textSpeedMode",this->current_speed_setting);
-	settings.writeOut(config_directory+settings_filename);
+	this->save_speed_setting();
+	settings.SaveFile(config_directory+settings_filename);
 
 	this->textgosub.clear();
 	this->screenshot.unbind();
@@ -877,8 +955,6 @@ std::wstring NONS_ScriptInterpreter::interpretFromConsole(const std::wstring &st
 void NONS_ScriptInterpreter::queue(NONS_ScriptLine *line){
 	this->commandQueue.push(line);
 }
-
-#include "../video_player.h"
 
 extern bool video_playback;
 
@@ -1347,10 +1423,10 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 		o_stderr <<"Interpreting line "<<current_line<<"\n";
 	if (CLOptions.verbosity>=VERBOSITY_LOG_EVERYTHING && CLOptions.verbosity<VERBOSITY_RESERVED && stmt->type==StatementType::COMMAND)
 		print_command(o_stderr,current_line,stmt->commandName,stmt->parameters,0);
-	this->saveGame->textX=this->screen->output->x;
-	this->saveGame->textY=this->screen->output->y;
-	this->saveGame->italic=this->screen->output->get_italic();
-	this->saveGame->bold=this->screen->output->get_bold();
+	this->stored_state.textX=this->screen->output->x;
+	this->stored_state.textY=this->screen->output->y;
+	this->stored_state.italic=this->screen->output->get_italic();
+	this->stored_state.bold=this->screen->output->get_bold();
 #if defined _DEBUG && defined STOP_AT_LINE && STOP_AT_LINE>0
 	//Reserved for debugging:
 	bool break_at_this_line=0;
@@ -1359,7 +1435,6 @@ bool NONS_ScriptInterpreter::interpretNextLine(){
 #endif
 	switch (stmt->type){
 		case StatementType::BLOCK:
-			this->saveGame->currentLabel=stmt->commandName;
 			labellog.addString(stmt->commandName);
 			if (!stdStrCmpCI(stmt->commandName,L"define"))
 				this->interpreter_mode=DEFINE_MODE;
@@ -1960,445 +2035,249 @@ bool NONS_ScriptInterpreter::gosub_label(const std::wstring &label){
 	return 1;
 }
 
-ErrorCode NONS_ScriptInterpreter::load(int file){
-	NONS_SaveFile save;
-	save.load(save_directory+L"save"+itoaw(file)+L".dat");
-	if (save.error!=NONS_NO_ERROR)
-		return NONS_NO_SUCH_SAVEGAME;
-	//**********************************************************************
-	//NONS save file
-	//**********************************************************************
-	if (save.version>NONS_SAVEFILE_VERSION)
-		return NONS_UNSUPPORTED_SAVEGAME_VERSION;
-	for (ulong a=0;a<5;a++)
-		if (save.hash[a]!=this->script->hash[a])
-			return NONS_HASH_DOES_NOT_MATCH;
-	//stack
-	//flush
+template <typename T>
+T reverse_bits(T input){
+	T output=0;
+	for (int a=sizeof(T)*8;a;--a){
+		output<<=1;
+		output|=input&1;
+		input>>=1;
+	}
+	return output;
+}
+
+uchar scramble_bits(uchar byte){
+	uchar even=byte&0x55,
+		odd=byte&0xAA;
+	return (even<<1)|(odd>>1);
+}
+
+void generate_encryption_table(uchar table[256],const std::vector<uchar> &program){
+	for (int a=0;a<256;a++){
+		uchar byte=(uchar)a;
+		for (size_t b=0;b<program.size();b++){
+			uchar op=program[b];
+			bool xor    =op&1,
+				reverse =op&2,
+				scramble=op&4;
+			if (xor)
+				byte^=op;
+			if (reverse)
+				byte=reverse_bits(byte);
+			if (scramble)
+				byte=scramble_bits(byte);
+		}
+		table[a]=byte;
+	}
+}
+
+void generate_decryption_table(uchar table[256],const std::vector<uchar> &program){
+	uchar temp[256];
+	generate_encryption_table(temp,program);
+	for (int a=0;a<256;a++)
+		table[temp[a]]=a;
+}
+
+void decrypt_buffer_with_buffer(std::vector<uchar> &output,std::vector<uchar> &hash,const std::vector<uchar> &input){
+	std::vector<uchar> program(20);
+	std::copy(input.begin(),input.begin()+program.size(),program.begin());
+	hash=program;
+	output.resize(input.size()-program.size());
+	uchar table[256];
+	generate_decryption_table(table,program);
+	for (size_t a=program.size();a<input.size();a++)
+		output[a-program.size()]=table[input[a]];
+}
+
+void encrypt_buffer_with_buffer(std::vector<uchar> &output,const void *input,size_t n,const std::vector<uchar> &program){
+	output=program;
+	output.insert(output.end(),(const uchar *)input,(const uchar *)input+n);
+	uchar table[256];
+	generate_encryption_table(table,program);
+	for (size_t a=program.size();a<output.size();a++)
+		output[a]=table[output[a]];
+}
+
+bool decode_buffer(std::vector<uchar> &output,const std::vector<uchar> &input){
+	std::vector<uchar> decoded_hash,
+		computed_hash,
+		compressed;
+	decrypt_buffer_with_buffer(compressed,decoded_hash,input);
+	computed_hash=SHA1::HashToVector(&compressed[0],compressed.size());
+	if (memcmp(&decoded_hash[0],&computed_hash[0],decoded_hash.size()))
+		return 0;
+	size_t decompressed_size;
+	uchar *decompressed_buffer=decompressBuffer_BZ2(&compressed[0],compressed.size(),decompressed_size);
+	output.assign(decompressed_buffer,decompressed_buffer+decompressed_size);
+	delete[] decompressed_buffer;
+	return 1;
+}
+
+void encode_buffer(std::vector<uchar> &output,const std::string &input){
+	size_t compressed_size;
+	uchar *compressed_buffer=compressBuffer_BZ2((uchar *)&input[0],input.size(),compressed_size);
+	std::vector<uchar> serialized_hash=SHA1::HashToVector(compressed_buffer,compressed_size);
+	encrypt_buffer_with_buffer(output,compressed_buffer,compressed_size,serialized_hash);
+	delete[] compressed_buffer;
+}
+
+TiXmlElement *NONS_ScriptInterpreter::save_control(){
+	TiXmlElement *control=new TiXmlElement("control");
+	TiXmlElement *stack=new TiXmlElement("stack");
+	control->LinkEndChild(stack);
+	for (std::vector<NONS_StackElement *>::iterator i=this->callStack.begin();i!=this->callStack.end();i++)
+		stack->LinkEndChild((*i)->save(this->script,this->store));
+	const NONS_ScriptBlock *block=this->thread->currentBlock;
+	control->SetAttribute("label",block->name);
+	NONS_Statement *stmt=this->thread->getCurrentStatement();
+	control->SetAttribute("lines_below",stmt->lineOfOrigin->lineNumber-block->first_line);
+	control->SetAttribute("substatement",stmt->statementNo);
+	control->SetAttribute("loadgosub",this->loadgosub);
+	return control;
+}
+
+void NONS_ScriptInterpreter::load_control(TiXmlElement *parent){
+	TiXmlElement *control=parent->FirstChildElement("control");
+	TiXmlElement *stack=control->FirstChildElement("stack");
 	while (this->callStack.size()){
 		delete this->callStack.back();
 		this->callStack.pop_back();
 	}
-	for (ulong a=0;a<save.stack.size();a++){
-		NONS_SaveFile::stackEl *el=save.stack[a];
-		NONS_StackElement *push;
-		std::pair<ulong,ulong> pair(this->script->blockFromLabel(el->label)->first_line+el->linesBelow,el->statementNo);
-		switch (el->type){
-			case StackFrameType::SUBROUTINE_CALL:
-				push=new NONS_StackElement(
-					pair,
-					NONS_ScriptLine(0,el->leftovers,0,1),
-					0,
-					el->textgosubLevel);
-				break;
-			case StackFrameType::FOR_NEST:
-				push=new NONS_StackElement(
-					this->store->retrieve(el->variable,0)->intValue,
-					pair,
-					0,
-					el->to,
-					el->step,
-					el->textgosubLevel);
-				break;
-			//To be implemented in the future:
-			/*case TEXTGOSUB_CALL:
-				push=new NONS_StackElement(el->pages,el->trigger,el->textgosubLevel);*/
-			case StackFrameType::USERCMD_CALL:
-				push=new NONS_StackElement(
-					pair,
-					NONS_ScriptLine(0,el->leftovers,0,1),
-					0,
-					el->textgosubLevel);
-				{
-					NONS_StackElement *temp=new NONS_StackElement(push,el->parameters);
-					delete push;
-					push=temp;
-				}
-		}
-		this->callStack.push_back(push);
-	}
-	std::pair<ulong,ulong> pair(this->script->blockFromLabel(save.currentLabel)->first_line+save.linesBelow,save.statementNo);
-	this->thread->gotoPair(pair);
-	this->saveGame->currentLabel=save.currentLabel;
-	this->loadgosub=save.loadgosub;
-	//variables
-	variables_map_T::iterator first=this->store->variables.begin(),last=first;
-	if (first->first<200){
-		for (;last!=this->store->variables.end() && last->first<200;last++)
-			delete last->second;
-		this->store->variables.erase(first,last);
-	}
-	for (variables_map_T::iterator i=save.variables.begin();i!=save.variables.end();i++){
-		NONS_Variable *var=i->second;
-		NONS_Variable *dst=this->store->retrieve(i->first,0);
-		(*dst)=(*var);
-	}
-	for (arrays_map_T::iterator i=this->store->arrays.begin();i!=this->store->arrays.end();i++)
-		delete i->second;
-	this->store->arrays.clear();
-	for (arrays_map_T::iterator i=save.arrays.begin();i!=save.arrays.end();i++)
-		this->store->arrays[i->first]=new NONS_VariableMember(*(i->second));
-	//screen
-	//window
-	NONS_ScreenSpace *scr=this->screen;
-	this->font_cache->set_size(save.fontSize);
-	this->font_cache->spacing=save.spacing;
-	this->font_cache->line_skip=save.lineSkip;
-	scr->resetParameters(save.textWindow,save.windowFrame,*this->font_cache,save.fontShadow);
-	NONS_StandardOutput *out=scr->output;
-	out->shadeLayer->setShade(save.windowColor);
-	out->shadeLayer->Clear();
-	out->transition->effect=save.windowTransition;
-	out->transition->duration=save.windowTransitionDuration;
-	out->transition->rule=save.windowTransitionRule;
-	this->hideTextDuringEffect=save.hideWindow;
-	out->foregroundLayer->fontCache->set_color(save.windowTextColor);
-	out->set_italic(save.italic);
-	out->set_bold(save.bold);
-	out->display_speed=save.textSpeed;
-	if (save.version>2){
-		out->shadowPosX=save.shadowPosX;
-		out->shadowPosY=save.shadowPosY;
-	}else{
-		out->shadowPosX=1;
-		out->shadowPosY=1;
-	}
-	out->log.clear();
-	for (ulong a=0;a<save.logPages.size();a++)
-		out->log.push_back(save.logPages[a]);
-	out->currentBuffer=save.currentBuffer;
-	out->indentationLevel=save.indentationLevel;
-	out->x=save.textX;
-	out->y=save.textY;
-	if (this->arrowCursor)
-		delete this->arrowCursor;
-	if (this->pageCursor)
-		delete this->pageCursor;
-	if (!save.arrow.string.size())
-		//this->arrowCursor=new NONS_Cursor(this->screen);
-		this->arrowCursor=new NONS_Cursor(L":l/3,160,2;cursor0.bmp",0,0,0,this->screen);
-	else
-		this->arrowCursor=new NONS_Cursor(
-			save.arrow.string,
-			save.arrow.x,
-			save.arrow.y,
-			save.arrow.absolute,
-			this->screen);
-	if (!save.page.string.size())
-		//this->pageCursor=new NONS_Cursor(this->screen);
-		this->pageCursor=new NONS_Cursor(L":l/3,160,2;cursor1.bmp",0,0,0,this->screen);
-	else
-		this->pageCursor=new NONS_Cursor(
-			save.page.string,
-			save.page.x,
-			save.page.y,
-			save.page.absolute,
-			this->screen);
-	//graphics
-	if (save.background.size()){
-		if (!scr->Background)
-			scr->Background=new NONS_Layer(&save.background);
-		else
-			scr->Background->load(&save.background);
-	}else{
-		if (!scr->Background){
-			scr->Background=new NONS_Layer(NONS_LongRect(scr->screen->inRect),save.bgColor);
-		}else{
-			scr->Background->setShade(save.bgColor);
-			scr->Background->Clear();
-		}
-	}
-	if (save.version>1)
-		scr->char_baseline=save.char_baseline;
-	else
-		scr->char_baseline=scr->screenBuffer.clip_rect().h-1;
-	NONS_Layer **characters[]={
-		&scr->leftChar,
-		&scr->centerChar,
-		&scr->rightChar
-	};
-	for (int a=0;a<3;a++){
-		CHECK_POINTER_AND_CALL(*characters[a],unload());
-		if (!save.characters[a].string.size())
-			continue;
-		if (!*characters[a])
-			*characters[a]=new NONS_Layer(&save.characters[a].string);
-		else
-			(*characters[a])->load(&save.characters[a].string);
-		(*characters[a])->position.x=(Sint16)save.characters[a].x;
-		(*characters[a])->position.y=(Sint16)save.characters[a].y;
-		(*characters[a])->visible=save.characters[a].visibility;
-		(*characters[a])->alpha=save.characters[a].alpha;
-		if ((*characters[a])->animated())
-			(*characters[a])->animation.animation_time_offset=save.characters[a].animOffset;
-	}
-	if (save.version>2){
-		scr->charactersBlendOrder.clear();
-		for (ulong a=0;a<3 && save.charactersBlendOrder[a]!=255;a++)
-			scr->charactersBlendOrder.push_back(save.charactersBlendOrder[a]);
-	}
+	for (TiXmlElement *i=stack->FirstChildElement();i;i=i->NextSiblingElement())
+		this->callStack.push_back(new NONS_StackElement(i,this->script,this->store));
+	for (std::vector<NONS_StackElement *>::iterator i=this->callStack.begin();i!=this->callStack.end();i++)
+		stack->LinkEndChild((*i)->save(this->script,this->store));
 
-	scr->blendSprites=save.blendSprites;
-	for (ulong a=0;a<scr->layerStack.size();a++){
-		if (!scr->layerStack[a])
-			continue;
-		scr->layerStack[a]->unload();
-	}
-	for (ulong a=0;a<save.sprites.size();a++){
-		NONS_SaveFile::Sprite *spr=save.sprites[a];
-		if (spr)
-			scr->loadSprite(a,spr->string,spr->x,spr->y,0xFF,spr->visibility);
-	}
-	scr->sprite_priority=save.spritePriority;
-	this->screen->apply_monochrome_first=save.nega_parameter;
-	this->screen->filterPipeline=save.pipelines[0];
-	//Preparations for audio
-	NONS_Audio *au=this->audio;
-	au->stop_all_sound();
-	out->ephemeralOut(out->currentBuffer,0,0,1,0);
-	{
-		ulong w=(ulong)scr->screen->inRect.w,
-			h=(ulong)scr->screen->inRect.h;
-		NONS_Surface s(w,h);
-		s.fill(NONS_Color::black);
-		NONS_GFX::callEffect(10,1000,0,s,NONS_Surface::null,*scr->screen);
-	}
-	SDL_Delay(1500);
-	scr->BlendNoCursor(10,1000,0);
-	this->screen->screen->applyFilter(0,NONS_Color::black,L"");
-	for (ulong a=0;a<save.pipelines[1].size();a++){
-		pipelineElement &el=save.pipelines[1][a];
-		this->screen->screen->applyFilter(el.effectNo+1,el.color,el.ruleStr);
-	}
-	this->screen->screen->stopEffect();
-	if (save.asyncEffect_no)
-		this->screen->screen->callEffect(save.asyncEffect_no,save.asyncEffect_freq);
-	scr->showTextWindow();
-	//audio
-	if (save.musicTrack>=0){
-		std::wstring temp=L"track";
-		temp+=itoaw(save.musicTrack,2);
-		au->play_music(temp,save.loopMp3?-1:0);
-	}else if (save.music.size())
-		this->audio->play_music(save.music,save.loopMp3?-1:0);
-	au->music_volume(save.musicVolume);
-	for (ushort a=0;a<save.channels.size();a++){
-		NONS_SaveFile::Channel *c=save.channels[a];
-		if (!c->name.size())
-			continue;
-		au->play_sound(c->name,a,c->loop?-1:0,1);
-	}
-	if (this->loadgosub.size())
-		this->gosub_label(this->loadgosub);
-	return NONS_NO_ERROR;
+	std::wstring current_label=control->QueryWStringAttribute("label"),
+		loadgosub=control->QueryWStringAttribute("loadgosub");
+	ulong lines_below=control->QueryIntAttribute("lines_below"),
+		substatement=control->QueryIntAttribute("substatement");
+	std::pair<ulong,ulong> pair(this->script->blockFromLabel(current_label)->first_line+lines_below,substatement);
+	this->thread->gotoPair(pair);
+	this->loadgosub=loadgosub;
+}
+
+TiXmlElement *NONS_ScriptInterpreter::save_interpreter(){
+	TiXmlElement *interpreter=new TiXmlElement("interpreter");
+	interpreter->SetAttribute("hide_window_during_effect",this->hideTextDuringEffect);
+	interpreter->SetAttribute("skip_save_on_load",this->skip_save_on_load);
+	if (this->arrowCursor)
+		interpreter->LinkEndChild(this->arrowCursor->save("arror_cursor"));
+	if (this->pageCursor)
+		interpreter->LinkEndChild(this->pageCursor->save("page_cursor"));
+	return interpreter;
+}
+
+void NONS_ScriptInterpreter::load_interpreter(TiXmlElement *parent){
+	TiXmlElement *interpreter=parent->FirstChildElement("interpreter");
+	this->hideTextDuringEffect=interpreter->QueryIntAttribute("hide_window_during_effect");
+	this->skip_save_on_load=interpreter->QueryIntAttribute("skip_save_on_load");
+	delete this->arrowCursor;
+	delete this->pageCursor;
+	this->arrowCursor=(interpreter->FirstChildElement("arror_cursor"))?new NONS_Cursor(interpreter,this->screen,"arror_cursor"):0;
+	this->pageCursor=(interpreter->FirstChildElement("page_cursor"))?new NONS_Cursor(interpreter,this->screen,"page_cursor"):0;
+}
+
+inline std::wstring get_save_filename(int file){
+	return save_directory+L"save"+itoaw(file)+L".dat";
+}
+inline std::wstring get_human_save_filename(int file){
+	return save_directory+L"save"+itoaw(file)+L".xml";
 }
 
 bool NONS_ScriptInterpreter::save(int file){
 	if (this->insideTextgosub())
 		return 0;
-	for (ulong a=0;a<this->saveGame->stack.size();a++)
-		delete this->saveGame->stack[a];
-	this->saveGame->stack.clear();
-	for (variables_map_T::iterator i=this->saveGame->variables.begin();i!=this->saveGame->variables.end();i++)
-		delete i->second;
-	this->saveGame->variables.clear();
-	for (arrays_map_T::iterator i=this->saveGame->arrays.begin();i!=this->saveGame->arrays.end();i++)
-		delete i->second;
-	this->saveGame->arrays.clear();
-	this->saveGame->logPages.clear();
-	for (ulong a=0;a<this->saveGame->sprites.size();a++)
-		if (this->saveGame->sprites[a])
-			delete this->saveGame->sprites[a];
-	this->saveGame->sprites.clear();
-	for (ulong a=0;a<this->saveGame->channels.size();a++)
-		if (this->saveGame->channels[a])
-			delete this->saveGame->channels[a];
-	this->saveGame->channels.clear();
-	//stack
+	std::string xml,
+		human_xml;
 	{
-		for (std::vector<NONS_StackElement *>::iterator i=this->callStack.begin();i!=this->callStack.end();i++){
-			NONS_SaveFile::stackEl *el=new NONS_SaveFile::stackEl();
-			NONS_StackElement *el0=*i;
-			el->type=el0->type;
-			NONS_ScriptBlock *block=this->script->blockFromLine(el0->returnTo.line);
-			el->label=block->name;
-			el->linesBelow=el0->returnTo.line-block->first_line;
-			el->statementNo=el0->returnTo.statement;
-			el->textgosubLevel=el0->textgosubLevel;
-			switch (el->type){
-				case StackFrameType::SUBROUTINE_CALL:
-					el->leftovers=el0->interpretAtReturn.toString();
-					break;
-				case StackFrameType::FOR_NEST:
-					el->variable=0;
-					for (variables_map_T::iterator i2=this->store->variables.begin();i2!=this->store->variables.end() && !el->variable;++i2)
-						if (i2->second->intValue==el0->var)
-							el->variable=i2->first;
-					el->to=el0->to;
-					el->step=el0->step;
-					break;
-				/*case StackFrameType::TEXTGOSUB_CALL:
-					break;*/
-				case StackFrameType::USERCMD_CALL:
-					el->leftovers=el0->interpretAtReturn.toString();
-					el->parameters=el0->parameters;
-					break;
-			}
-			this->saveGame->stack.push_back(el);
-		}
+		TiXmlDocument doc("");
+		TiXmlElement *root=new TiXmlElement("savegame");
+		doc.LinkEndChild(root);
 		{
-			const NONS_ScriptBlock *block=this->thread->currentBlock;
-			this->saveGame->currentLabel=block->name;
-			NONS_Statement *stmt=this->thread->getCurrentStatement();
-			this->saveGame->linesBelow=stmt->lineOfOrigin->lineNumber-block->first_line;
-			this->saveGame->statementNo=stmt->statementNo;
+			std::string hash;
+			for (ulong a=0;a<5;a++)
+				hash.append(itohexc(this->script->hash[a],8));
+			root->SetAttribute("hash",hash);
 		}
-		this->saveGame->loadgosub=this->loadgosub;
+		root->LinkEndChild(this->save_control());
+		root->LinkEndChild(this->store->save_locals());
+		root->LinkEndChild(this->screen->save(this->stored_state));
+		root->LinkEndChild(this->save_interpreter());
+		root->LinkEndChild(this->audio->save());
+		if (CLOptions.verbosity==VERBOSITY_RESERVED)
+			doc.Print(human_xml,0);
+		xml <<doc;
 	}
-	//variables
-	{
-		variables_map_T *varStack=&this->store->variables;
-		for (variables_map_T::iterator i=varStack->begin();i!=varStack->end() && i->first<200;i++)
-			if (!VARIABLE_HAS_NO_DATA(i->second))
-				this->saveGame->variables[i->first]=new NONS_Variable(*i->second);;
-		for (arrays_map_T::iterator i=this->store->arrays.begin();
-				i!=this->store->arrays.end();i++){
-			this->saveGame->arrays[i->first]=new NONS_VariableMember(*(i->second));
-		}
-	}
-	//screen
-	{
-		//window
-		NONS_ScreenSpace *scr=this->screen;
-		NONS_StandardOutput *out=scr->output;
-		this->saveGame->textWindow=out->shadeLayer->clip_rect.to_SDL_Rect();
-		this->saveGame->windowFrame.x=out->x0;
-		this->saveGame->windowFrame.y=out->y0;
-		this->saveGame->windowFrame.w=out->w;
-		this->saveGame->windowFrame.h=out->h;
-		this->saveGame->windowColor=out->shadeLayer->defaultShade;
-		this->saveGame->windowTransition=out->transition->effect;
-		this->saveGame->windowTransitionDuration=out->transition->duration;
-		this->saveGame->windowTransitionRule=out->transition->rule;
-		this->saveGame->hideWindow=this->hideTextDuringEffect;
-		this->saveGame->fontSize=(ushort)out->foregroundLayer->fontCache->get_size();
-		this->saveGame->windowTextColor=out->foregroundLayer->fontCache->get_color();
-		this->saveGame->textSpeed=out->display_speed;
-		this->saveGame->fontShadow=!!out->shadowLayer;
-		this->saveGame->shadowPosX=out->shadowPosX;
-		this->saveGame->shadowPosY=out->shadowPosY;
-		this->saveGame->spacing=out->foregroundLayer->fontCache->spacing;
-		this->saveGame->lineSkip=(ushort)out->foregroundLayer->fontCache->line_skip;
-		for (ulong a=0;a<out->log.size();a++)
-			this->saveGame->logPages.push_back(out->log[a]);
-		this->saveGame->currentBuffer=out->currentBuffer;
-		this->saveGame->indentationLevel=out->indentationLevel;
-		if (!this->arrowCursor || !this->arrowCursor->data)
-			this->saveGame->arrow.string.clear();
-		else{
-			this->saveGame->arrow.string=this->arrowCursor->data->animation.getString();
-			this->saveGame->arrow.x=this->arrowCursor->xpos;
-			this->saveGame->arrow.y=this->arrowCursor->ypos;
-			this->saveGame->arrow.absolute=this->arrowCursor->absolute;
-		}
-		if (!this->pageCursor || !this->pageCursor->data)
-			this->saveGame->page.string.clear();
-		else{
-			this->saveGame->page.string=this->pageCursor->data->animation.getString();
-			this->saveGame->page.x=this->pageCursor->xpos;
-			this->saveGame->page.y=this->pageCursor->ypos;
-			this->saveGame->page.absolute=this->pageCursor->absolute;
-		}
-		//graphic
-		{
-			this->saveGame->background=scr->Background->animation.getString();
-			if (!this->saveGame->background.size())
-				this->saveGame->bgColor=scr->Background->defaultShade;
-		}
-		this->saveGame->char_baseline=scr->char_baseline;
-		NONS_Layer **characters[]={&scr->leftChar,&scr->centerChar,&scr->rightChar};
-		for (int a=0;a<3;a++){
-			if (!!*characters[a] && !!(*characters[a])->data){
-				this->saveGame->characters[a].string=(*characters[a])->animation.getString();
-				this->saveGame->characters[a].x=long((*characters[a])->position.x);
-				this->saveGame->characters[a].y=long((*characters[a])->position.y);
-				this->saveGame->characters[a].visibility=(*characters[a])->visible;
-				this->saveGame->characters[a].alpha=(*characters[a])->alpha;
-			}else
-				this->saveGame->characters[a].string.clear();
-		}
-		//std::copy(scr->charactersBlendOrder.begin(),scr->charactersBlendOrder.end(),this->saveGame->charactersBlendOrder);
-		for (size_t a=0;a<scr->charactersBlendOrder.size();a++)
-			this->saveGame->charactersBlendOrder[a]=(uchar)scr->charactersBlendOrder[a];
-		//std::fill(this->saveGame->charactersBlendOrder+scr->charactersBlendOrder.size(),this->saveGame->charactersBlendOrder+3,255);
-		for (size_t a=scr->charactersBlendOrder.size();a<3;a++)
-			this->saveGame->charactersBlendOrder[a]=255;
-		//update sprite record
-		this->saveGame->blendSprites=scr->blendSprites;
-		for (ulong a=0;a<scr->layerStack.size();a++){
-			if (this->saveGame->sprites.size()==a)
-				this->saveGame->sprites.push_back(0);
-			else if (this->saveGame->sprites.size()<a)
-				this->saveGame->sprites.resize(a+1,0);
-			NONS_SaveFile::Sprite *b=this->saveGame->sprites[a];
-			NONS_Layer *c=scr->layerStack[a];
-			if (!c || !c->data){
-				delete b;
-				this->saveGame->sprites[a]=0;
-			}else{
-				if (!b){
-					NONS_SaveFile::Sprite *spr=new NONS_SaveFile::Sprite();
-					spr->string=c->animation.getString();
-					if (spr->string.size()){
-						this->saveGame->sprites[a]=spr;
-						b=spr;
-					}else
-						delete spr;
-				}
-				if (b){
-					b->x=(long)c->position.x;
-					b->y=(long)c->position.y;
-					b->visibility=c->visible;
-					b->alpha=c->alpha;
-				}else
-					o_stderr <<"NONS_ScriptInterpreter::save(): unresolvable inconsistent internal state.\n";
-			}
-		}
-		this->saveGame->spritePriority=this->screen->sprite_priority;
-		this->saveGame->nega_parameter=this->screen->apply_monochrome_first;
-		this->saveGame->pipelines[0]=this->screen->filterPipeline;
-		if (this->screen->screen->usingFeature[ASYNC_EFFECT]){
-			this->saveGame->asyncEffect_no=this->screen->screen->aeffect_no;
-			this->saveGame->asyncEffect_freq=this->screen->screen->aeffect_freq;
-		}
-		this->saveGame->pipelines[1]=this->screen->screen->filterPipeline;
-	}
-	{
-		NONS_Audio *au=this->audio;
-		channel_listing cl;
-		au->get_channel_listing(cl);
-		if (cl.music.filename.size())
-			this->saveGame->loopMp3=this->mp3_loop;
-		this->saveGame->musicVolume=this->audio->music_volume(-1);
-		this->saveGame->channels.clear();
-		typedef std::map<int,channel_listing::channel> map_t;
-		for (map_t::iterator i=cl.sounds.begin(),e=cl.sounds.end();i!=e;++i){
-			if (i->second.loop>=0)
-				continue;
-			NONS_SaveFile::Channel *ch=new NONS_SaveFile::Channel();
-			ch->name=i->second.filename;
-			ch->loop=1;
-			ch->volume=i->second.volume;
-			if ((size_t)i->first>=this->saveGame->channels.size())
-				this->saveGame->channels.resize(i->first+1,0);
-			this->saveGame->channels[i->first]=ch;
-		}
-	}
-	bool ret=this->saveGame->save(save_directory+L"save"+itoaw(file)+L".dat");
-	//Also save user data
+	if (CLOptions.verbosity==VERBOSITY_RESERVED)
+		NONS_File::write(get_human_save_filename(file),&human_xml[0],human_xml.size());
+	std::vector<uchar> encoded_buffer,
+		decoded_buffer;
+	encode_buffer(encoded_buffer,xml);
+	NONS_File::write(get_save_filename(file),&encoded_buffer[0],encoded_buffer.size());
+
 	this->store->saveData();
 	NONS_Surface::filelog_writeout();
-	return ret;
+
+	return 1;
+}
+
+ErrorCode NONS_ScriptInterpreter::load(int file){
+	std::string xml;
+	{
+		NONS_File file(get_save_filename(file),1);
+		if (!file)
+			return NONS_NO_SUCH_SAVEGAME;
+		std::vector<uchar> buffer((size_t)file.filesize()),
+			decoded_buffer;
+		{
+			size_t bytes_read;
+			file.read(&buffer[0],buffer.size(),bytes_read,0);
+		}
+		if (!decode_buffer(decoded_buffer,buffer))
+			return NONS_CORRUPTED_SAVEGAME;
+		xml.resize(decoded_buffer.size());
+		std::copy(decoded_buffer.begin(),decoded_buffer.end(),xml.begin());
+		normalize_line_endings(xml);
+	}
+	TiXmlDocument doc;
+	doc.Parse(xml.c_str());
+	if (doc.Error())
+		return NONS_CORRUPTED_SAVEGAME;
+	TiXmlElement *savegame=doc.FirstChildElement("savegame");
+	std::string hash;
+	savegame->QueryStringAttribute("hash",&hash);
+	if (hash!=SHA1::StringizeResult(this->script->hash))
+		return NONS_HASH_DOES_NOT_MATCH;
+	this->load_control(savegame);
+	this->store->load_locals(savegame);
+	this->screen->load(savegame,*this->font_cache);
+	this->load_interpreter(savegame);
+
+	//transition effect
+	this->screen->screen->stopEffect();
+	this->audio->stop_all_sound();
+	{
+		ulong w=(ulong)this->screen->screen->inRect.w,
+			h=(ulong)this->screen->screen->inRect.h;
+		NONS_Surface s(w,h);
+		s.fill(NONS_Color::black);
+		NONS_GFX::callEffect(10,1000,0,s,NONS_Surface::null,*this->screen->screen);
+	}
+	SDL_Delay(1500);
+	bool show_text=this->screen->output->visible;
+	this->screen->output->visible=0;
+	this->screen->load_filters(savegame);
+	this->screen->BlendNoCursor(10,1000,0);
+
+	this->screen->load_async_effect(savegame);
+	//this->screen->output->visible=0;
+	if (show_text)
+		this->screen->showTextWindow();
+	this->audio->load(savegame);
+	if (this->loadgosub.size())
+		this->gosub_label(this->loadgosub);
+	return NONS_NO_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command___userCommandCall__(NONS_Statement &stmt){
@@ -4393,7 +4272,7 @@ ErrorCode NONS_ScriptInterpreter::command_movl(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_movN(NONS_Statement &stmt){
-	ulong functionVersion=atoi(stmt.commandName.substr(3));
+	ulong functionVersion=atol(stmt.commandName.substr(3));
 	MINIMUM_PARAMETERS(functionVersion+1);
 	NONS_VariableMember *first;
 	GET_VARIABLE(first,0);
@@ -4590,18 +4469,12 @@ ErrorCode NONS_ScriptInterpreter::command_play(NONS_Statement &stmt){
 		this->mp3_save=1;
 	}
 	if (name[0]=='*'){
-		int track=atoi(name.substr(1));
+		int track=atol(name.substr(1));
 		std::wstring temp=L"track";
-		temp+=itoaw(track,2);
-		error=this->audio->play_music(temp,this->mp3_loop?-1:0);
-		if (error==NONS_NO_ERROR)
-			this->saveGame->musicTrack=track;
-		else
-			this->saveGame->musicTrack=-1;
-	}else if ((error=this->audio->play_music(name,this->mp3_loop?-1:0))==NONS_NO_ERROR)
-		this->saveGame->music=name;
-	else
-		this->saveGame->music.clear();
+		temp.append(itoaw(track,2));
+		name=temp;
+	}
+	error=this->audio->play_music(name,this->mp3_loop?-1:0);
 	return error;
 }
 
@@ -4805,12 +4678,19 @@ ErrorCode NONS_ScriptInterpreter::command_savefileexist(NONS_Statement &stmt){
 }
 
 ErrorCode NONS_ScriptInterpreter::command_savegame(NONS_Statement &stmt){
+	if (this->skip_save_on_load){
+		this->skip_save_on_load=0;
+		return NONS_NO_ERROR;
+	}
 	MINIMUM_PARAMETERS(1);
 	long file;
 	GET_INT_VALUE(file,0);
 	if (file<1)
 		return NONS_INVALID_RUN_TIME_PARAMETER_VALUE;
-	return this->save(file)?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
+	this->skip_save_on_load=1;
+	bool r=this->save(file);
+	this->skip_save_on_load=0;
+	return r?NONS_NO_ERROR:NONS_UNDEFINED_ERROR;
 }
 
 ErrorCode NONS_ScriptInterpreter::command_savename(NONS_Statement &stmt){
@@ -5317,7 +5197,7 @@ ErrorCode NONS_ScriptInterpreter::command_split(NONS_Statement &stmt){
 		bool _break=(next==srcStr.npos);
 		std::wstring copy=(!_break)?srcStr.substr(middle,next-middle):srcStr.substr(middle);
 		if (dsts[a]->getType()==INTEGER)
-			dsts[a]->set(atoi(copy));
+			dsts[a]->set(atol(copy));
 		else
 			dsts[a]->set(copy);
 		if (_break)

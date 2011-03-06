@@ -33,6 +33,7 @@
 #include "Common.h"
 #include "ErrorCodes.h"
 #include "VirtualScreen.h"
+#include "tinyxml/tinyxml.h"
 #include <SDL/SDL.h>
 #include <set>
 #include <map>
@@ -66,6 +67,7 @@ struct NONS_GFX{
 
 	NONS_GFX(ulong effect=0,ulong duration=0,const std::wstring *rule=0);
 	NONS_GFX(const NONS_GFX &b);
+	NONS_GFX(TiXmlElement *,const char *name=0);
 	NONS_GFX &operator=(const NONS_GFX &b);
 	static ErrorCode callEffect(
 		ulong number,
@@ -103,6 +105,8 @@ struct NONS_GFX{
 	void effectMosaicIn(const NONS_ConstSurface &src0,const NONS_ConstSurface &src1,NONS_VirtualScreen &dst);
 	void effectMosaicOut(const NONS_ConstSurface &src0,const NONS_ConstSurface &src1,NONS_VirtualScreen &dst);
 	void effectSoftMask(const NONS_ConstSurface &src0,const NONS_ConstSurface &src1,NONS_VirtualScreen &dst);
+
+	TiXmlElement *save(const char *override_name=0);
 
 	static void initializeLists();
 };

@@ -36,9 +36,9 @@
 #include "ScreenSpace.h"
 #include "Script.h"
 #include "INIfile.h"
-#include "SaveFile.h"
 #include "IOFunctions.h"
 #include "enums.h"
+#include "tinyxml/tinyxml.h"
 #include <set>
 #include <stack>
 #include <cmath>
@@ -98,7 +98,9 @@ struct NONS_StackElement{
 	NONS_StackElement(const std::vector<printingPage> &pages,wchar_t trigger,ulong level);
 	NONS_StackElement(NONS_StackElement *copy,const std::vector<std::wstring> &vector);
 	NONS_StackElement(const std::vector<std::wstring> &strings,const std::vector<std::wstring> &jumps,ulong level);
+	NONS_StackElement(TiXmlElement *,NONS_Script *script,NONS_VariableStore *store);
 	~NONS_StackElement();
+	TiXmlElement *save(NONS_Script *script,NONS_VariableStore *store);
 };
 
 class NONS_ScriptInterpreter;
@@ -132,6 +134,13 @@ typedef commandListType defineModeCommandListType;
 typedef commandListType userCommandListType;
 typedef commandListType allowedCommandListType;
 
+struct interpreter_stored_state{
+	int textX,
+		textY;
+	bool italic,
+		bold;
+};
+
 class NONS_ScriptInterpreter{
 	bool Printer_support(std::vector<printingPage> &pages,ulong *totalprintedchars,bool *justTurnedPage,ErrorCode *error);
 	ErrorCode Printer(const std::wstring &line);
@@ -147,6 +156,12 @@ class NONS_ScriptInterpreter{
 	void parse_tag(std::wstring &s);
 	void handle_wait_state(std::vector<printingPage> &pages,std::vector<printingPage>::iterator,ulong stop,wchar_t trigger,long add);
 	void print_command(NONS_RedirectedOutput &ro,ulong current_line,const std::wstring &commandName,const std::vector<std::wstring> &parameters,ulong mode);
+	TiXmlElement *save_control();
+	void load_control(TiXmlElement *);
+	TiXmlElement *save_interpreter();
+	void load_interpreter(TiXmlElement *);
+	void load_speed_setting();
+	void save_speed_setting();
 
 	bool stop_interpreting;
 	commandMapType commandList;
@@ -191,7 +206,6 @@ class NONS_ScriptInterpreter{
 	bool new_if;
 	NONS_Clock::t btnTimer;
 	ulong imageButtonExpiration;
-	NONS_SaveFile *saveGame;
 	std::wstring currentBuffer;
 	std::wstring textgosub;
 	bool textgosubRecurses;
@@ -204,6 +218,9 @@ class NONS_ScriptInterpreter{
 		virtual_size[2];
 	std::wstring pretextgosub_label;
 	std::vector<std::wstring> tags;
+	//Here, we keep state that's sensitive to modifications inside a command.
+	interpreter_stored_state stored_state;
+	bool skip_save_on_load;
 
 	ErrorCode command_caption(NONS_Statement &stmt);
 	ErrorCode command_alias(NONS_Statement &stmt);

@@ -299,6 +299,16 @@ NONS_Cursor::NONS_Cursor(const std::wstring &str,long x,long y,long absolute,NON
 	this->data=new NONS_Layer(&str);
 }
 
+NONS_Cursor::NONS_Cursor(TiXmlElement *parent,NONS_ScreenSpace *screen,const char *name){
+	TiXmlElement *cursor=parent->FirstChildElement(name?name:0);
+	this->xpos=cursor->QueryIntAttribute("x");
+	this->ypos=cursor->QueryIntAttribute("y");
+	this->absolute=!!cursor->QueryIntAttribute("absolute");
+	this->screen=screen;
+	std::wstring str=cursor->QueryWStringAttribute("string");
+	this->data=new NONS_Layer(&str);
+}
+
 NONS_Cursor::~NONS_Cursor(){
 	if (this->data)
 		delete this->data;
@@ -390,6 +400,17 @@ animate_000:
 		this->screen->cursor=0;
 	}
 	return ret;
+}
+
+TiXmlElement *NONS_Cursor::save(const char *override_name){
+	if (!this->data)
+		return 0;
+	TiXmlElement *cursor=new TiXmlElement(override_name?override_name:"cursor");
+	cursor->SetAttribute("string",this->data->animation.getString());
+	cursor->SetAttribute("x",this->xpos);
+	cursor->SetAttribute("y",this->ypos);
+	cursor->SetAttribute("absolute",this->absolute);
+	return cursor;
 }
 
 bool NONS_Cursor::callMenu(NONS_Menu *menu,NONS_EventQueue *queue){
@@ -1040,8 +1061,6 @@ int NONS_Menu::callMenu(){
 	return this->call(this->commands[choice]);
 }
 
-std::wstring getDefaultFontFilename();
-
 void NONS_Menu::reset(){
 	delete this->buttons;
 	delete this->font_cache;
@@ -1673,7 +1692,11 @@ void NONS_FontCache::reset_style(ulong size,bool italic,bool bold,ulong outline_
 	this->set_outline_size(outline_size);
 }
 
+#define INDENTATION_CHARACTER 0x2003
+
 NONS_Glyph *NONS_FontCache::get_glyph(wchar_t c){
+	if (c=='\t')
+		c=INDENTATION_CHARACTER;
 	NONS_CommandLineOptions::replaceArray_t &array=CLOptions.replaceArray;
 	NONS_CommandLineOptions::replaceArray_t::iterator i=array.size()?array.find(c):array.end();
 	if (i!=array.end())
@@ -1745,17 +1768,9 @@ ulong getGlyphWidth(NONS_FontCache *cache){
 	return res;
 }
 
-extern ConfigFile settings;
-
-std::wstring getConsoleFontFilename(){
-	if (!settings.exists(L"console font"))
-		settings.assignWString(L"console font",L"cour.ttf");
-	return settings.getWString(L"console font");
-}
-
 void NONS_DebuggingConsole::init(){
 	if (!this->font){
-		std::wstring font=getConsoleFontFilename();
+		const std::wstring &font=CLOptions.console_font;
 		this->font=init_font(font);
 		if (!this->font){
 			o_stderr <<"The font \""<<font<<"\" could not be found. The debugging console will not be available.\n";
