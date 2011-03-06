@@ -27,13 +27,15 @@
 * OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "CommandLineOptions.h"
+#include "Options.h"
 #include "ScriptInterpreter.h"
 #include "IOFunctions.h"
+#include <SDL/SDL_keysym.h>
 #include <iostream>
 
 NONS_CommandLineOptions CLOptions;
 extern std::ofstream textDumpFile;
+NONS_Settings settings;
 
 #define DEFAULT_INPUT_WIDTH 640
 #define DEFAULT_INPUT_HEIGHT 480
@@ -430,4 +432,33 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 				STD_CERR <<"Unrecognized command line option: \""<<arguments[a]<<"\"\n";
 		}
 	}
+}
+
+void NONS_Settings::init(const std::wstring &path){
+	this->path=path;
+	if (!this->doc.LoadFile(path)){
+		if (NONS_File::file_exists(path))
+			//Using old config format or file is damaged. Delete.
+			NONS_File::delete_file(path);
+		//Initialize.
+		this->doc.LinkEndChild(new TiXmlElement("settings"));
+	}
+	TiXmlElement *settings=this->doc.FirstChildElement("settings");
+	if (!settings)
+		this->doc.LinkEndChild(settings=new TiXmlElement("settings"));
+	this->load_text_speed(settings);
+}
+
+void NONS_Settings::save(){
+	this->save_text_speed(this->doc.FirstChildElement("settings"));
+	this->doc.SaveFile(this->path);
+}
+
+void NONS_Settings::load_text_speed(TiXmlElement *settings){
+	this->text_speed.set=settings->QueryIntAttribute("text_speed",&this->text_speed.data);
+}
+
+void NONS_Settings::save_text_speed(TiXmlElement *settings){
+	if (text_speed.set)
+		settings->SetAttribute("text_speed",this->text_speed.data);
 }
