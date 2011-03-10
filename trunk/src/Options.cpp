@@ -76,6 +76,7 @@ NONS_CommandLineOptions::NONS_CommandLineOptions(){
 	this->use_long_audio_buffers=0;
 	this->default_font=L"default.ttf";
 	this->console_font=L"cour.ttf";
+	this->never_clear_log=0;
 }
 
 void usage(){
@@ -166,10 +167,11 @@ void usage(){
 		"  -use-long-audio-buffers\n"
 		"      Allocates longer audio buffers. This fixes some problems with sound in\n"
 		"      older systems.\n"
-		"-default-font <filename>\n"
-		"Use <filename> as the main font. Defaults to \"default.ttf\".\n"
-		"-console-font <filename>\n"
-		"Use <filename> as the font for the debugging console. Defaults to \"cour.ttf\".\n"
+		"  -default-font <filename>\n"
+		"      Use <filename> as the main font. Defaults to \"default.ttf\".\n"
+		"  -console-font <filename>\n"
+		"      Use <filename> as the font for the debugging console. Defaults to"
+		"      \"cour.ttf\".\n"
 	;
 	exit(0);
 }
@@ -212,6 +214,7 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 		L"-use-long-audio-buffers", //31
 		L"-default-font",           //32
 		L"-console-font",           //33
+		L"-never-clear-log",        //34
 		0
 	};
 
@@ -425,6 +428,9 @@ void NONS_CommandLineOptions::parse(const std::vector<std::wstring> &arguments){
 						this->console_font=filename;
 				}
 				break;
+			case 34: //-never-clear-log
+				this->never_clear_log=1;
+				break;
 			case 7: //-image-cache-size
 			case 12: //-no-console
 			case 17: //-sdebug
@@ -447,10 +453,13 @@ void NONS_Settings::init(const std::wstring &path){
 	if (!settings)
 		this->doc.LinkEndChild(settings=new TiXmlElement("settings"));
 	this->load_text_speed(settings);
+	this->load_mute(settings);
 }
 
 void NONS_Settings::save(){
-	this->save_text_speed(this->doc.FirstChildElement("settings"));
+	TiXmlElement *settings=this->doc.FirstChildElement("settings");
+	this->save_text_speed(settings);
+	this->save_mute(settings);
 	this->doc.SaveFile(this->path);
 }
 
@@ -459,6 +468,17 @@ void NONS_Settings::load_text_speed(TiXmlElement *settings){
 }
 
 void NONS_Settings::save_text_speed(TiXmlElement *settings){
-	if (text_speed.set)
+	if (this->text_speed.set)
 		settings->SetAttribute("text_speed",this->text_speed.data);
+}
+
+void NONS_Settings::load_mute(TiXmlElement *settings){
+	int mute;
+	this->mute.set=!settings->QueryIntAttribute("mute",&mute);
+	this->mute.data=mute;
+}
+
+void NONS_Settings::save_mute(TiXmlElement *settings){
+	if (this->mute.set)
+		settings->SetAttribute("mute",(int)this->mute.data);
 }
