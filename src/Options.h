@@ -76,6 +76,7 @@ struct NONS_CommandLineOptions{
 	bool use_long_audio_buffers;
 	std::wstring default_font,
 		console_font;
+	bool never_clear_log;
 	NONS_CommandLineOptions();
 	~NONS_CommandLineOptions(){}
 	void parse(const std::vector<std::wstring> &arguments);
@@ -90,6 +91,8 @@ class NONS_Settings{
 	std::wstring path;
 	void load_text_speed(TiXmlElement *settings);
 	void save_text_speed(TiXmlElement *settings);
+	void load_mute(TiXmlElement *settings);
+	void save_mute(TiXmlElement *settings);
 public:
 	~NONS_Settings(){
 		this->save();
@@ -103,6 +106,7 @@ public:
 		setting():set(0),data(){}
 	};
 	setting<int> text_speed;
+	setting<bool> mute;
 };
 
 extern NONS_Settings settings;

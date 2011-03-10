@@ -337,8 +337,9 @@ int audio_stream::needs_update(){
 				this->notify.back()->set();
 				this->notify.pop_back();
 			}
+			return 1;
 		}
-		return 1;
+		return 0;
 	}
 	if (this->paused || !*this)
 		return 0;
@@ -377,13 +378,14 @@ audio_device::~audio_device(){
 #endif
 }
 
-void audio_device::update(){
+void audio_device::update(std::vector<audio_stream *> &removed_streams){
 	std::vector<audio_stream *> remove;
 	for (list_t::iterator i=this->streams.begin(),e=this->streams.end();i!=e;i++){
 		audio_stream &stream=**i;
 		if (stream.update() && stream.cleanup)
 			remove.push_back(&stream);
 	}
+	removed_streams=remove;
 	while (remove.size()){
 		this->remove(remove.back());
 		remove.pop_back();
