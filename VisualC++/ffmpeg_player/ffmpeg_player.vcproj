@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="avcodec.lib avformat.lib avutil.lib swscale.lib OpenAL32.lib ONSlaught_d.lib winmm.lib"
+				AdditionalDependencies="avcodec.lib avformat.lib avutil.lib swscale.lib ONSlaught_d.lib winmm.lib"
 				OutputFile="$(OutDir)\video_player.dll"
 				AdditionalLibraryDirectories="../../video_player/FFmpeg/lib-win32;../../bin-win32"
 				GenerateDebugInformation="true"
@@ -135,7 +135,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="avcodec.lib avformat.lib avutil.lib swscale.lib OpenAL32.lib ONSlaught.lib winmm.lib"
+				AdditionalDependencies="avcodec.lib avformat.lib avutil.lib swscale.lib ONSlaught.lib winmm.lib"
 				OutputFile="$(OutDir)\video_player.dll"
 				AdditionalLibraryDirectories="../../video_player/FFmpeg/lib-win32;../../bin-win32"
 				GenerateDebugInformation="true"
