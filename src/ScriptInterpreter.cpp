@@ -996,6 +996,7 @@ struct video_playback_params{
 	NONS_VirtualScreen *vs;
 	NONS_Surface screen;
 	asynchronous_audio_stream *stream;
+	NONS_Clock::t start_time;
 };
 
 SDL_Surface *playback_fullscreen_callback(volatile SDL_Surface *screen,void *user_data){
@@ -1054,8 +1055,14 @@ bool video_write(const void *src,ulong length,ulong channels,ulong frequency,voi
 
 double video_get_time_offset(void *user_data){
 	video_playback_params *vpp=(video_playback_params *)user_data;
-	if (!vpp->stream)
-		return 0;
+	if (!vpp->stream){
+		static NONS_Clock clock;
+		if (!vpp->start_time){
+			vpp->start_time=clock.get();
+			return 0;
+		}
+		return clock.get()-vpp->start_time;
+	}
 	return vpp->stream->get_time_offset();
 }
 
@@ -1063,6 +1070,7 @@ void video_wait(void *user_data){
 	video_playback_params *vpp=(video_playback_params *)user_data;
 	if (!vpp->stream)
 		return;
+	vpp->stream->stop();
 	while (vpp->stream->is_sink_playing())
 		SDL_Delay(10);
 }
@@ -1126,7 +1134,6 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 			toggle_fullscreen=0,
 			take_screenshot=0;
 		asynchronous_audio_stream *stream=this->audio->new_video_stream();
-		CHECK_POINTER_AND_CALL(stream,start());
 		video_playback_params playback_params={
 			this->screen->screen,
 			screen,
@@ -1161,24 +1168,12 @@ ErrorCode NONS_ScriptInterpreter::play_video(const std::wstring &filename,bool s
 			exception_string.size(),
 			fp
 		};
-#if NONS_SYS_UNIX && 0
-		//If the audio isn't stopped under UNIX, C_play_video() will fail
-		//because it won't be able to open the audio device.
-		delete this->audio;
-#endif
 		void *player=new_player();
 		success=!!C_play_video(player,&parameters);
 		delete_player(player);
-#if NONS_SYS_UNIX && 0
-		//Restore audio.
-		this->audio=new NONS_Audio(CLOptions.musicDirectory);
-		if (CLOptions.musicFormat.size())
-			this->audio->musicFormat=CLOptions.musicFormat;
-#endif
 		exception_string.resize(strlen(exception_string.c_str()));
 		stop=1;
 		file.close(&file);
-		this->audio->delete_video_stream(stream);
 	}
 	if (!success){
 		if (exception_string.size())
