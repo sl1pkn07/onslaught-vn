@@ -318,6 +318,7 @@ mp3_decoder::mp3_decoder(NONS_DataStream *stream):decoder(stream){
 	if (!*this)
 		return;
 	this->good=0;
+	this->has_played=0;
 	int error;
 	if (!mp3_decoder::static_data.init())
 		return;
@@ -329,6 +330,7 @@ mp3_decoder::mp3_decoder(NONS_DataStream *stream):decoder(stream){
 	HANDLE_MPG123_ERRORS(mpg123_replace_reader(this->handle,mp3_read,mp3_seek),);
 	HANDLE_MPG123_ERRORS(mpg123_open_fd(this->handle,tracker.add(stream)),);
 	HANDLE_MPG123_ERRORS(mpg123_format_none(this->handle),);
+	HANDLE_MPG123_ERRORS(mpg123_format(this->handle,44100,MPG123_STEREO,MPG123_ENC_SIGNED_16),);
 	this->good=1;
 }
 
@@ -355,11 +357,13 @@ audio_buffer *mp3_decoder::get_buffer(bool &there_was_an_error){
 	}
 	ulong channels=2;
 	there_was_an_error=0;
+	this->has_played=1;
 	return new audio_buffer(buffer,size/(channels*2),44100,channels,16);
 }
 
 void mp3_decoder::loop(){
-	mpg123_seek(this->handle,0,SEEK_SET);
+	if (this->has_played)
+		mpg123_seek(this->handle,0,SEEK_SET);
 }
 
 static const size_t BUFFERSIZE=32768;
