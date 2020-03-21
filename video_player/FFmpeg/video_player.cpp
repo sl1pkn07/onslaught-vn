@@ -27,6 +27,7 @@
 #include "../../video_player.h"
 #include "../../src/Thread.h"
 #include "../common.h"
+#include <mutex>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -175,9 +176,9 @@ public:
 	void lock(){
 		this->mutex.lock();
 	}
-	bool try_lock(){
-		return this->mutex.try_lock();
-	}
+// 	bool try_lock(){
+// 		return this->mutex.try_lock();
+// 	}
 	void unlock(){
 		this->mutex.unlock();
 	}
