@@ -76,8 +76,11 @@ src/VariableStore.cpp
 src/VirtualScreen.cpp
 )
 
-#add_library(plugin SHARED
-#	src/Plugin/Plugin.cpp
-#)
+if(UNIX)
+  add_definitions(-DREAD_LINKING_WARNING)
+  add_library(plugin SHARED
+              src/Plugin/Plugin.cpp
+  )
+endif()
 
 target_link_libraries(ONSlaught ${LIBS})
