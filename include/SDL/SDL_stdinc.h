@@ -63,7 +63,11 @@
 #if defined(HAVE_INTTYPES_H)
 # include <inttypes.h>
 #elif defined(HAVE_STDINT_H)
+#if define(__unix__)
 # include <stdint.h>
+#else
+# include <stdint_win.h>
+#endif
 #endif
 #ifdef HAVE_CTYPE_H
 # include <ctype.h>
