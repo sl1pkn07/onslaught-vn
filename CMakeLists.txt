@@ -26,6 +26,7 @@ set(LIBS
 	mpg123
 	dl
 	z
+	pthread
 )
 
 add_executable(ONSlaught
