@@ -1,0 +1,4 @@
+* text eol=lf
+*.vcproj text eol=crlf
+*.sln text eol=crlf
+*.png binary
