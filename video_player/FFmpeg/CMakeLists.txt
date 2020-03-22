@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.4.7)
+cmake_minimum_required (VERSION 3.0.0)
 project(video_player)
 
 include_directories(../../include ./include)
@@ -23,3 +23,7 @@ add_library(video_player SHARED
 )
 
 target_link_libraries(video_player ${LIBS})
+
+install(TARGETS video_player
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/ONSlaught
+)

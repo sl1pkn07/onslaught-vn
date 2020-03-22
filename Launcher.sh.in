@@ -1,0 +1,18 @@
+#!/bin/sh
+cd @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_DATADIR@/ONSlaught
+# Assign to LOCATION the directory where the script is located (the engine
+# should be there, too):
+LOCATION="`pwd`"
+# We don't want relative paths, so if the script was called with ./something-or-other...
+if [ $LOCATION = "." ]; then
+    # ...overwrite LOCATION with the absolute path. This doesn't work for every
+    # case, but it works with most.
+    LOCATION=$PWD
+fi
+# Look for shared objects in LOCATION.
+LD_LIBRARY_PATH=$LOCATION
+# Allows the system to use the environment variable in the next call.
+export LD_LIBRARY_PATH
+# Start the engine while also passing any and all arguments that were passed to
+# the script.
+./ONSlaught $@

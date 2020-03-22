@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.4.7)
+cmake_minimum_required (VERSION 3.0.0)
 project(svg_loader)
 
 set(EXECUTABLE_OUTPUT_PATH .)
@@ -27,3 +27,7 @@ add_library(svg_loader SHARED
 )
 
 target_link_libraries(svg_loader ${LIBS})
+
+install(TARGETS svg_loader
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/ONSlaught
+)
