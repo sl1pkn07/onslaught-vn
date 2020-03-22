@@ -25,9 +25,12 @@
 */
 
 #include "../svg_loader.h"
+#include "manualBlit.h"
 #include "../src/Functions.h"
 #include <librsvg/rsvg.h>
+#ifndef RSVG_CAIRO_H
 #include <librsvg/rsvg-cairo.h>
+#endif
 #include <cairo.h>
 #include <vector>
 #include <cmath>
@@ -75,15 +78,12 @@ private:
 static struct SVG_Manager{
 	std::vector<SVG *> array;
 	SVG_Manager(){
-		g_type_init();
-		rsvg_init();
 		this->array.push_back(0);
 	}
 	~SVG_Manager(){
 		for (ulong a=1;a<this->array.size();a++)
 			if (this->array[a])
 				delete this->array[a];
-		rsvg_term();
 	}
 	ulong load(void *buffer,size_t size);
 	bool unload(ulong index);
