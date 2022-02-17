@@ -7,6 +7,7 @@ include_directories(include)
 
 set(EXECUTABLE_OUTPUT_PATH .)
 set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_STANDARD 11)
 add_definitions(-DNONS_SVN)
 add_definitions(-DBUILD_ONSLAUGHT -DHAVE_INTTYPES_H -DSDL_HAS_64BIT_TYPE -w -fno-exceptions)
 
